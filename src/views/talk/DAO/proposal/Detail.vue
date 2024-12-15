@@ -2260,8 +2260,9 @@ async function confirmVote() {
                 ],
               },
             ],
-            broadcast: true,
+            broadcast: false,
           })
+          debugger
           if (transferRes.res.length) {
             const res = await Vote({
               symbol,
