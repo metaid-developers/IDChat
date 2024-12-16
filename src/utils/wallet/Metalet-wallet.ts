@@ -318,7 +318,7 @@ export class MetaletWallet {
   }
 
   // 初始化 metaId
-  public initMetaIdNode(retry: number = 10) {
+  public initMetaIdNode(retry: number = 5) {
     return new Promise<MetaIdInfoTypes>(async (resolve, reject) => {
       try {
         console.log('this.rootAddress', this.rootAddress)
@@ -339,7 +339,7 @@ export class MetaletWallet {
           })
 
           console.log('utxos', utxos)
-
+          
           // 初始化 metaId
           if (!metaIdInfo.metaId) {
             
@@ -348,7 +348,7 @@ export class MetaletWallet {
               const balance = utxos.reduce((pre, cur) => {
                 return (pre += cur.value)
               }, 0)
-              if (balance < 10000) {
+              if (balance < 1000) {
                 getInitAmountFlag = true
               }
             }
@@ -636,9 +636,11 @@ export class MetaletWallet {
           // for (let i = 0; i < unSignTransations.length; i++) {
           //   const pretx = await this.metaIDJsWallet.previewTransaction({
           //     transaction: unSignTransations[i],
+          //   }).catch((e)=>{
+          //     console.log("eee",e)
           //   })
           //   console.log('i', pretx)
-          //
+          
           // }
 
           const { signedTransactions } = await this.metaIDJsWallet
@@ -651,23 +653,24 @@ export class MetaletWallet {
             
           // 广播
           const metaidInfoList = []
-          for (let i = 0; i < unSignTransations.length; i++) {
-            try {
-              const { txid } = await this.metaIDJsWallet
-                .previewTransaction({
-                  transaction: unSignTransations[i],
-                })
-                .catch(error => {
-                  throw new Error(error.toString())
-                })
-              console.log('txid', i, txid)
-            } catch (error) {
-              errorMsg = error
-            }
-            if (errorMsg) {
-              break
-            }
-          }
+          // for (let i = 0; i < unSignTransations.length; i++) {
+          //   try {
+          //     const txId= await this.metaIDJsWallet
+          //       .previewTransaction({
+          //         transaction: unSignTransations[i],
+          //       }).catch((e)=>{
+          //         console.log("eee",e)
+          //       })
+               
+          //     console.log('txid', i, txId)
+          //     debugger
+          //   } catch (error) {
+          //     errorMsg = error
+          //   }
+          //   if (errorMsg) {
+          //     break
+          //   }
+          // }
 
           for (let i = 0; i < signedTransactions.length; i++) {
             try {
@@ -678,7 +681,7 @@ export class MetaletWallet {
               })
               console.log('tx', tx.txid, txid)
 
-              metaidInfoList.push(txid)
+              metaidInfoList.push(tx.txid)
               // console.log('metaidInfoList', metaidInfoList)
             } catch (error) {
               errorMsg = error

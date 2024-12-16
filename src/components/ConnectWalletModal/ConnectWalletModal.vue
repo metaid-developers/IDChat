@@ -1064,6 +1064,7 @@ async function connectMetalet() {
   if (isMobile.value) {
     return ElMessage.error(`${i18n.t('not_support_mobile_login_metalet')}`)
   }
+  
   const loading = ElLoading.service({
     text: 'Loading...',
     lock: true,
@@ -1079,9 +1080,10 @@ async function connectMetalet() {
       return ElMessage.error(`${i18n.t('wallet_addres_empty')}`)
     }
     let metaIdInfo
+    
     const { network } = await window.metaidwallet.getNetwork()
     const xpub = await window.metaidwallet.getXPublicKey()
-
+    
     const metaidWallet = new MetaletWallet({
       xpub,
       address: address,
@@ -1093,10 +1095,14 @@ async function connectMetalet() {
     metaIdInfo = await metaidWallet.getMetaIdInfo(address).catch(error => {
       throw new Error(error)
     })
+    
     if (!metaIdInfo.metaId && !metaIdInfo.infoTxId && !metaIdInfo.protocolTxId) {
+      
       metaIdInfo = await metaidWallet.initMetaIdNode().catch(e => {
+        
         throw new Error(e.toString())
       })
+      
     }
 
     console.log('metaletWallet', metaIdInfo)

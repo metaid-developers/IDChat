@@ -585,7 +585,8 @@ export default class ShowmoneyProvider {
     addressIndex: number
     addressType: number
   }): Promise<BaseUtxo[]> {
-    const res = await this.callMetasvApi(`/address/${params.address}/utxo`)
+    
+    const res =await this.cyber3Api(`/address/${params.address}/utxo`) //await this.callMetasvApi(`/address/${params.address}/utxo`)
     const utxos: BaseUtxo[] = []
     if (Array.isArray(res)) {
       res.forEach(item => {
