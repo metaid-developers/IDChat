@@ -54,8 +54,14 @@
                 {{ talk.activeCommunity?.dao?.governanceSymbol.toUpperCase() }}
               </div>
               <ElInput v-model="amountNumber" type="number" @change="onAmountChange" />
+
+              
             </div>
 
+            <div class="mt-3 text-xs text-[#fc6d5e]">
+              *{{ $t('stake.maintain') }}
+            </div>
+           
             <div
               class="main-border"
               :class="[amountNumber > 0 ? 'primary' : 'faded']"
@@ -118,7 +124,7 @@ const percentage = ref(0)
 const isSkeleton = ref(true)
 const loading = ref(false)
 const txFee = new Decimal(40000).div(Math.pow(10, 8)).toNumber()
-const extractTxFee = new Decimal(60000).div(Math.pow(10, 8)).toNumber()
+const extractTxFee = new Decimal(960000).div(Math.pow(10, 8)).toNumber()
 const currentSymbol = computed(() => {
   //return symbols.find(item => item.symbol === talk.activeCommunity?.dao?.governanceToken)
   return symbols.find(item => item.symbol === talk.activeCommunity?.dao?.governanceSymbol)
@@ -216,9 +222,12 @@ function onAmountChange() {
 }
 
 async function stake() {
+
   if (!amountNumber.value) return
-  if (props.type === StakeType.Pledge && amountNumber.value <= txFee + extractTxFee) {
-    return ElMessage.error(`${i18n.t('stakeAmountLimit')}`)
+  if (props.type === StakeType.Pledge ) {
+    if(amountNumber.value < 1){
+      return ElMessage.error(`${i18n.t('stakeAmountLimit')}`)
+    }
   }
   loading.value = true
 

@@ -1291,7 +1291,7 @@
     "bandUser": "Actions cannot be initiated against blocked users.",
     "blacktipsRepost": "This content has been blocked by the forwarder, and the forwarded content is not visible."
   },
-  "stakeAmountLimit": "The pledge amount cannot be less than 100,000 Satoshi",
+  "stakeAmountLimit": "The pledge amount cannot be less than 1 SPACE",
   "wallet_addres_empty": "Wallet address is empty",
   "not_support_mobile_login_metalet": "Mobile Metalet login is not currently supported.",
   "Dao": {
@@ -1315,5 +1315,8 @@
   "issue_check_vaild": "Please check whether the form items are filled in completely",
   "issue_before_serires": "NFT series needs to be created before minting",
   "issue_before_NFT_name": "NFT name needs to be created before minting",
-  "not allow_join_commutity": "Joining the community using the Metalet wallet is not supported at the moment"
+  "not allow_join_commutity": "Joining the community using the Metalet wallet is not supported at the moment",
+  "stake": {
+    "maintain": "Before staking, the account balance should be maintained at no less than 1.01 SPACE"
+  }
 }

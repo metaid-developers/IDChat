@@ -182,7 +182,7 @@ import { currentSupportChain } from '@/config'
 import AllNodeName from '@/utils/AllNodeName'
 import { computeStyles } from '@popperjs/core'
 import { setUser } from '@sentry/vue'
-import SPACEIcon from '@/assets/images/icon_mvc.png'
+import SPACEIcon from '@/assets/images/metalet-logo-v3.svg?url'
 import { encodingType, MetaletWallet, TransactionInfo } from '@/utils/wallet/Metalet-wallet'
 import { isAndroid, isIOS, isIosApp, isWechat } from '@/stores/root'
 
