@@ -195,7 +195,9 @@ function onAmountChange() {
     amountNumber.value = balance.value
   }
   if (props.type === StakeType.Pledge) {
-    if (amountNumber.value + txFee + extractTxFee >= balance.value) {
+  
+    if(+amountNumber.value + txFee + extractTxFee - balance.value < txFee + extractTxFee){
+     
       amountNumber.value = new Decimal(
         new Decimal(amountNumber.value)
           .sub(txFee)
@@ -203,8 +205,19 @@ function onAmountChange() {
           .toFixed(8)
       ).toNumber()
     }
+
+    if (+amountNumber.value + txFee + extractTxFee >= balance.value ) {
+      amountNumber.value = new Decimal(
+        new Decimal(amountNumber.value)
+          .sub(txFee)
+          .sub(extractTxFee)
+          .toFixed(8)
+      ).toNumber()
+    }
+
+
   } else {
-    if (amountNumber.value + txFee >= balance.value) {
+    if (+amountNumber.value + txFee >= balance.value) {
       amountNumber.value = new Decimal(new Decimal(amountNumber.value).toFixed(8)).toNumber()
     }
   }
