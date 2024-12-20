@@ -589,20 +589,26 @@ export default class ShowmoneyProvider {
     const res =await this.cyber3Api(`/address/${params.address}/utxo`) //await this.callMetasvApi(`/address/${params.address}/utxo`)
     const utxos: BaseUtxo[] = []
     if (Array.isArray(res)) {
+      
       res.forEach(item => {
-        item.script = mvc.Script.fromAddress(item.address).toHex()
-        item.amount = +item.value / 1e8
-        item.vout = item.outIndex
-        item.txIndex = item.outIndex
-        // sensible need satoshis,outputIndex,txId
-        item.satoshis = item.value
-        item.outputIndex = item.outIndex
-        item.txId = item.txid
-        item.xpub = params.xpub
-        item.addressIndex = params.addressIndex
-        item.addressType = params.addressType
-        utxos.push(item)
+        if(+item.satoshis  > 546){
+          
+          item.script = mvc.Script.fromAddress(item.address).toHex()
+          item.amount = +item.value / 1e8
+          item.vout = item.outIndex
+          item.txIndex = item.outIndex
+          // sensible need satoshis,outputIndex,txId
+          item.satoshis = item.value
+          item.outputIndex = item.outIndex
+          item.txId = item.txid
+          item.xpub = params.xpub
+          item.addressIndex = params.addressIndex
+          item.addressType = params.addressType
+          utxos.push(item)
+        }
+       
       })
+     
     }
     return utxos
   }

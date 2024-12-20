@@ -73,6 +73,7 @@ const layout = useLayoutStore()
 
 // 初始化頻道
 function init(communityId: string) {
+  
   // 先检查社区是否还佩戴有效的metaname
   talk.checkCommunityMetaName(communityId).then((isValid: boolean) => {
     layout.isShowNoMetaNameModal = false

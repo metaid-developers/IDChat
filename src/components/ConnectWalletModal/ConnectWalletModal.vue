@@ -645,7 +645,7 @@ async function onSetBaseInfoSuccessForMetalet(params: { name: string; nft: NFTAv
         addressType:0,
         addressIndex:1,
       })
-      if (!utxos.length) {
+      if (utxos && !utxos.length) {
         utxos =await wallet?.provider.getAddressUtxos({
         address:wallet.infoAddress,
         xpub:wallet?.xpub,
