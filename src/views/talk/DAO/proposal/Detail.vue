@@ -2154,7 +2154,7 @@ async function confirmMultiVote() {
     
     console.log('votedInfo', proposal.val, userStake.val)
 
-    const oricalRes = await Orical([0, 1, 4])
+    const oricalRes = await Orical([2, 3, 4])
 
     const signaturelist: any[] = []
     let digest: any = null

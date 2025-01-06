@@ -77,8 +77,8 @@ const emojiReg = /[\u{1F601}-\u{1F64F}\u{2702}-\u{27B0}\u{1F680}-\u{1F6C0}\u{1F1
 const oricalUrl = [
   'https://api.mvcswap.com/blockinfo1',
   'https://api.mvcswap.com/blockinfo2',
-  'https://www.metaidservices.com/oracle/',
-  'https://www.metaidservices.com/block-oracle/',
+  'https://api.metaid.io//oracle/',
+  'https://api.metaid.io/block-oracle/',
   'https://witnessonchain.com/v1/chain-info/mvc',
 ]
 export function randomString() {
