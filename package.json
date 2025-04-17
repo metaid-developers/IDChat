@@ -31,7 +31,6 @@
     "@vueuse/components": "^9.3.0",
     "@vueuse/core": "^9.3.0",
     "@vueuse/head": "^1.0.25",
-    "@walletconnect/auth-client": "^1.0.0",
     "@walletconnect/client": "^1.8.0",
     "@walletconnect/qrcode-modal": "^1.8.0",
     "amfe-flexible": "^2.2.1",
@@ -48,6 +47,7 @@
     "dexie": "^3.2.2",
     "dotenv": "^16.0.3",
     "element-plus": "2.3.0",
+    "elliptic": "6.6.1",
     "eth-ens-namehash": "^2.0.8",
     "ethers": "^5.7.2",
     "html2canvas": "^1.4.1",
@@ -140,5 +140,9 @@
     "vite-plugin-svg-icons": "^2.0.1",
     "vite-svg-loader": "^3.1.0",
     "wait-on": "~5.3"
+  },
+  "resolutions": {
+    "**/elliptic": "6.6.1" 
   }
+ 
 }
