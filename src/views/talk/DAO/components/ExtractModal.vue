@@ -159,7 +159,7 @@ async function extract() {
             )
           }
         }
-
+        
         const withdrawRes = await Withdraw({
           symbol,
           requestIndex: stakeRes.data.requestIndex,
@@ -168,6 +168,7 @@ async function extract() {
             : transfer.sendMoney.transaction.toString(),
           mvcOutputIndex: 0,
         })
+        
         if (withdrawRes.code === 0) {
           const tx = new mvc.Transaction(withdrawRes.data.txHex)
           // @ts-ignore

@@ -68,13 +68,14 @@ export async function resolveMetaName(metaName: string) {
 
   // 本地没有缓存，则计算sha256
   let communityId
+  
   if (inWhiteList || !isMetaIdSolution) {
     communityId = sha256(metaNameWithoutSuffix).toString()
   } else {
     communityId = await GetMetaNameResolver({ name: metaNameWithoutSuffix })
       .then((res: any) => {
         let communityId = res.data.communityId
-
+        
         if (!communityId) {
           console.log('metaname接口无社区id，尝试本地解析')
           communityId = sha256(metaNameWithoutSuffix).toString()
@@ -86,7 +87,7 @@ export async function resolveMetaName(metaName: string) {
         console.log('metaname接口无法解析，尝试本地解析')
         communityId = sha256(metaNameWithoutSuffix).toString()
         console.log('本地解析结果：', communityId)
-
+        
         return communityId
       })
   }
