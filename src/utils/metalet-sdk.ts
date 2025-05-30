@@ -358,7 +358,7 @@ export class MetaletSDK {
     return new Promise<NodeTransactions | null>(async (resolve, reject) => {
       //
       console.log('option', option?.payType)
-
+      
       const rootStore = useRootStore()
       const userStore = useUserStore()
       if (!rootStore.metaletWhiteProtocolList.includes(params.nodeName) && userStore.metaletLogin) {
@@ -571,6 +571,7 @@ export class MetaletSDK {
               console.log('hexTxs', hexTxs)
 
               const unSignTransations: TransactionInfo[] = []
+              
               for (let i = 0; i < hexTxs.length; i++) {
                 if (Array.isArray(hexTxs[i])) {
                   for (let j = 0; j < (hexTxs[i] as Array<any>).length; j++) {
@@ -613,6 +614,7 @@ export class MetaletSDK {
                   //
 
                   const { transation } = hexTxs[i]
+                  
                   console.log('transation', transation, hexTxs[i])
 
                   const { path } = await this.wallet.session.getAddressPath(
@@ -650,7 +652,8 @@ export class MetaletSDK {
               // hexTxs.forEach(async tx => {
 
               // })
-
+              console.log("unSignTransations",unSignTransations)
+              
               const { signedTransactions } = await this.wallet!.metaIDJsWallet.signTransactions({
                 transactions: unSignTransations,
               })

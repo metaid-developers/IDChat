@@ -72,24 +72,33 @@ export async function resolveMetaName(metaName: string) {
   if (inWhiteList || !isMetaIdSolution) {
     communityId = sha256(metaNameWithoutSuffix).toString()
   } else {
-    communityId = await GetMetaNameResolver({ name: metaNameWithoutSuffix })
-      .then((res: any) => {
-        let communityId = res.data.communityId
-        
-        if (!communityId) {
-          console.log('metaname接口无社区id，尝试本地解析')
-          communityId = sha256(metaNameWithoutSuffix).toString()
-        }
-        return communityId
-      })
 
-      .catch((err: any) => {
-        console.log('metaname接口无法解析，尝试本地解析')
+    if(metaNameWithoutSuffix == 'mvc'){
+      
+      communityId="f28bebcaabde3f60b5241324c206443123f59ed3432c2960cd59baa8b27081fa"
+      
+    }else{
+
+    communityId = await GetMetaNameResolver({ name: metaNameWithoutSuffix })
+    .then((res: any) => {
+      let communityId = res.data.communityId
+      
+      if (!communityId) {
+        console.log('metaname接口无社区id，尝试本地解析')
         communityId = sha256(metaNameWithoutSuffix).toString()
-        console.log('本地解析结果：', communityId)
-        
-        return communityId
-      })
+      }
+      return communityId
+    })
+
+    .catch((err: any) => {
+      console.log('metaname接口无法解析，尝试本地解析')
+      communityId = sha256(metaNameWithoutSuffix).toString()
+      console.log('本地解析结果：', communityId)
+      
+      return communityId
+    })
+    }
+
   }
 
   // 缓存到本地
