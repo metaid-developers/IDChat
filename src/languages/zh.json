@@ -175,7 +175,7 @@
       "save": "保存",
       "icon": "圖標",
       "cover": "封面",
-      "choose_cover_tip": "從你的封面 NFT 中選擇一個作為社區封面",
+      "choose_cover_tip": "從你的封面图片中選擇一個作為社區封面",
       "choose_cover": "選擇封面",
       "introduction": "社區介紹",
       "red_packet_all_claimed": "所有紅包都已被領取",
@@ -256,7 +256,7 @@
       "agree_tip": "創建社區，即代表您同意了 Show3.0 的",
       "agree_guidelines": "社區守則",
       "customize_information": "定製化您的社區",
-      "choose_nft_cover": "選擇一個 NFT 封面",
+      "choose_nft_cover": "選擇一個封面",
       "introduction": "社區介紹",
       "introduction_placeholder": "好好介紹一下您的社區！",
       "skip": "暫時跳過",
@@ -404,7 +404,8 @@
     },
     "No wallet": "沒有錢包",
     "mnemonic": "助记词",
-    "Mnemonic": "助记词登录"
+    "Mnemonic": "助记词登录",
+    "authorize": "授权"
   },
   "back": "返回",
   "UserOperate": {
@@ -595,7 +596,7 @@
     "Link Account": "賬號綁定"
   },
   "EditProfile": {
-    "intro": "選擇 NFT 作為您的頭像或用戶名，展現您的個性",
+    "intro": "選擇 一张图片 作為您的頭像或用戶名，展現您的個性",
     "User Name": "用戶名",
     "MetaName": {
       "drsc": "MetaName 將優先作為用戶名。"

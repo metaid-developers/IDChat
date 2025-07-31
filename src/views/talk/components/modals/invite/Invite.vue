@@ -26,7 +26,7 @@
           </div>
         </div>
 
-        <div class="pt-4 pb-6">
+        <!-- <div class="pt-4 pb-6">
           <p class="text-base mb-3">
             {{ $t('Talk.Modals.share_to_buzz_tip') }}
           </p>
@@ -37,7 +37,7 @@
             <Icon name="share_arrow" class="w-6 h-6" />
             <span class="text-base">{{ $t('Talk.Modals.share_to_buzz_button') }}</span>
           </button>
-        </div>
+        </div> -->
 
         <div class="pt-4">
           <p class="text-base mb-3">

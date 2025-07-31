@@ -27,14 +27,14 @@
     </div>
 
     <!--   -->
-    <div class="fast-btn" ref="FastBtnRef">
+    <!-- <div class="fast-btn" ref="FastBtnRef">
       <a class="top" @click="scrollTop">
         <Icon name="buzz_icon_top" />
       </a>
       <a class="main-border primary" @click="toPublish">
         <Icon name="buzz_icon_post" />
       </a>
-    </div>
+    </div> -->
     <!--   -->
   </div>
 
@@ -102,7 +102,7 @@ const menus = [
   {
     name: i18n.t('Buzz.Recommend'),
     icon: 'star',
-    path: '/buzz/recommend',
+    path: '/clubs/recommend',
   },
 ]
 
@@ -135,14 +135,14 @@ async function toPublish() {
 }
 
 onMounted(() => {
-  setPosition()
+  // setPosition()
 
-  resizeObserver = new ResizeObserver(entries => {
-    setPosition()
-  })
+  // resizeObserver = new ResizeObserver(entries => {
+  //   setPosition()
+  // })
 
-  //监听对应的dom
-  resizeObserver.observe(document.getElementById('buzz-warp')!)
+
+  // resizeObserver.observe(document.getElementById('buzz-warp')!)
 })
 
 function onPublishSuccess() {
@@ -150,7 +150,7 @@ function onPublishSuccess() {
 }
 
 onBeforeUnmount(() => {
-  resizeObserver.unobserve(document.getElementById('buzz-warp')!)
+  //resizeObserver.unobserve(document.getElementById('buzz-warp')!)
 })
 
 provide('isShowBuzzPublish', isShowBuzzPublish)

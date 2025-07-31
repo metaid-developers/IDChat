@@ -1,9 +1,9 @@
 <template>
   <div ref="refreshBoxRef"></div>
   <CommunityVue ref="CommunityRef" />
-  <FollowVue ref="FollowRef" />
-  <GuideVue />
-  <HomeBuzzListVue ref="recommentBuzzRef" />
+  <!-- <FollowVue ref="FollowRef" /> -->
+  <!-- <GuideVue /> -->
+  <!-- <HomeBuzzListVue ref="recommentBuzzRef" /> -->
 </template>
 
 <script setup lang="ts">
@@ -26,8 +26,8 @@ onActivated(() => {
       try {
         Promise.all([
           CommunityRef.value?.refreshDatas(),
-          FollowRef.value?.refreshDatas(),
-          recommentBuzzRef.value?.refreshDatas(),
+          //FollowRef.value?.refreshDatas(),
+          // recommentBuzzRef.value?.refreshDatas(),
         ]).then(() => {
           resolve()
         })

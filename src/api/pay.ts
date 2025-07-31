@@ -1,12 +1,12 @@
-import { getToken, getUserName } from '@/stores/user'
+// import { getToken, getUserName } from '@/stores/user'
 import HttpRequest from '@/utils/request'
 
 // const Pay = new HttpRequest(`${import.meta.env.VITE_WXCOREAPI}/showpaycore`, {
 // @ts-ignore
 const Pay = new HttpRequest(import.meta.env.VITE_Cloud_Pay_Api, {
   header: {
-    accessKey: () => getToken(),
-    userName: () => getUserName(),
+    // accessKey: () => getToken(),
+    // userName: () => getUserName(),
     timestamp: () => new Date().getTime(),
   },
   responseHandel: response => {

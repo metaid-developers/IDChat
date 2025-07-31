@@ -45,9 +45,10 @@
       />
       <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
         <div class="flex items-baseline space-x-2">
+          <!--message?.userInfo?.metaName-->
           <UserName
             :name="message.nickName"
-            :meta-name="message?.userInfo?.metaName"
+            :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
           <div class="text-dark-300 dark:text-gray-400 text-xs shrink-0 whitespace-nowrap">

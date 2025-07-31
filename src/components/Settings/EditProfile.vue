@@ -30,7 +30,7 @@
       </div>
 
       <ElForm :model="form" :rules="rule" label-width="0">
-        <ElFormItem prop="metaName" label="">
+        <!-- <ElFormItem prop="metaName" label="">
           <div class="form-item" @click="choose(EditType.MetaName)">
             <div class="label flex flex-align-center ">
               <span class="meta-name">MetaName</span><MetaName />
@@ -49,7 +49,7 @@
               {{ $t('EditProfile.MetaName.drsc') }}
             </div>
           </div>
-        </ElFormItem>
+        </ElFormItem> -->
         <ElFormItem prop="name">
           <div class="form-item">
             <div class="label">{{ $t('EditProfile.User Name') }}</div>
@@ -83,7 +83,7 @@
           @change="item => (currentAvatar.val = item)"
         />
       </template>
-      <template v-else>
+      <!-- <template v-else>
         <div class="choose-meta-name-warp flex flex-col h-full">
           <div class="tips mb-2">
             {{ $t('EditProfile.MetaNameTips') }}
@@ -94,7 +94,7 @@
             :selected="currentMetaName.val"
           />
         </div>
-      </template>
+      </template> -->
     </template>
   </ModalVue>
 </template>
@@ -134,11 +134,11 @@ const currentAvatar: { val: NFTAvatarItem } = reactive({
   },
 })
 // @ts-ignore
-const currentMetaName: { val: MetaNameItem } = reactive({
-  val: {
-    name: userStore.user?.metaName || '',
-  },
-})
+// const currentMetaName: { val: MetaNameItem } = reactive({
+//   val: {
+//     name: userStore.user?.metaName || '',
+//   },
+// })
 
 watch(
   () => userStore.isAuthorized,
@@ -164,15 +164,14 @@ const rule = {
 }
 
 async function confirm() {
-  if (userStore.metaletLogin) {
-    return ElMessage.error(i18n.t(`Editor not allow from metalet`))
-  }
+  // if (userStore.metaletLogin) {
+  //   return ElMessage.error(i18n.t(`Editor not allow from metalet`))
+  // }
   //
   if (
     form.name === '' ||
     (form.name === userStore.user!.name &&
-      currentAvatar.val.avatarImage === userStore.user?.avatarImage &&
-      userStore.user!.metaName === currentMetaName.val!.name)
+      currentAvatar.val.avatarImage === userStore.user?.avatarImage)
   )
     return
   loading.value = true
@@ -205,22 +204,22 @@ async function confirm() {
       })
     }
 
-    if (currentMetaName.val.name !== userStore.user!.metaName) {
-      console.log({ currentMetaName })
-      paramsList.push({
-        nodeName: NodeName.NftName,
-        data: JSON.stringify({
-          type: currentMetaName.val.name === '' ? 'name' : 'nft', //string type 取值⻅下⽅
-          chain: currentMetaName.val.chain, //string type 链类型
-          name: currentMetaName.val.name, //string type, 图片路由
-          codehash: currentMetaName.val.codeHash, //string type nft的codehash
-          genesis: currentMetaName.val.genesis, //string type nft的genesis 或 nft的tokenAddress
-          tokenIndex: currentMetaName.val.tokenIndex, //string type nft的tokenIndex 或 nft的tokenId
-          updateTime: new Date().getTime(), //long type 更新时间
-          memo: '', //string type 备注 预留字段
-        }),
-      })
-    }
+    // if (currentMetaName.val.name !== userStore.user!.metaName) {
+    //   console.log({ currentMetaName })
+    //   paramsList.push({
+    //     nodeName: NodeName.NftName,
+    //     data: JSON.stringify({
+    //       type: currentMetaName.val.name === '' ? 'name' : 'nft', //string type 取值⻅下⽅
+    //       chain: currentMetaName.val.chain, //string type 链类型
+    //       name: currentMetaName.val.name, //string type, 图片路由
+    //       codehash: currentMetaName.val.codeHash, //string type nft的codehash
+    //       genesis: currentMetaName.val.genesis, //string type nft的genesis 或 nft的tokenAddress
+    //       tokenIndex: currentMetaName.val.tokenIndex, //string type nft的tokenIndex 或 nft的tokenId
+    //       updateTime: new Date().getTime(), //long type 更新时间
+    //       memo: '', //string type 备注 预留字段
+    //     }),
+    //   })
+    // }
 
     const res = await userStore.showWallet.batchCreateBrfcChildNode(paramsList)
     if (res) {
@@ -231,7 +230,7 @@ async function confirm() {
         ...userStore.user,
         name: form.name,
         avatarImage: currentAvatar.val.avatarImage,
-        metaName: currentMetaName.val.name,
+        //metaName: currentMetaName.val.name,
       })
       ElMessage.success(i18n.t('Setting.Edit Profile') + ' ' + i18n.t('Success'))
       loading.value = false
@@ -247,18 +246,18 @@ function choose(type: EditType) {
   isShowSecondModal.value = true
 }
 
-function onChangeMetaName(metaName: MetaNameItem) {
-  if (metaName.name === currentMetaName.val.name) {
-    // @ts-ignore
-    currentMetaName.val = {
-      name: '',
-    }
-  } else {
-    currentMetaName.val = metaName
-  }
+// function onChangeMetaName(metaName: MetaNameItem) {
+//   if (metaName.name === currentMetaName.val.name) {
+//     // @ts-ignore
+//     currentMetaName.val = {
+//       name: '',
+//     }
+//   } else {
+//     currentMetaName.val = metaName
+//   }
 
-  isShowSecondModal.value = false
-}
+//   isShowSecondModal.value = false
+// }
 </script>
 
 <style lang="scss" scoped src="./EditProfile.scss"></style>

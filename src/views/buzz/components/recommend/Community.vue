@@ -73,7 +73,7 @@ import DefaultImage from '@/assets/icons/photo_3.svg?url'
 import { ElMessage } from 'element-plus'
 import { useRootStore } from '@/stores/root'
 
-const pagination = reactive({ ...initPagination, pageSize: 4, totalPages: 1 })
+const pagination = reactive({ ...initPagination, pageSize: 10, totalPages: 1 })
 const userStore = useUserStore()
 const talkStore = useTalkStore()
 const rootStore = useRootStore()
@@ -89,7 +89,7 @@ const showDifferentLang = ref(Boolean(Number(localStorage.getItem('showDiffLang'
 //   }
 // }
 watch(
-  () => userStore.metaletLogin,
+  () => userStore.isAuthorized,
   val => {
     if (val) {
       getRecommendCommunitys()
@@ -104,7 +104,7 @@ const loading: boolean[] = reactive([])
 function getRecommendCommunitys() {
   return new Promise<void>(async (resolve, reject) => {
     const res = await GetRecommendCommunitys({
-      metaId: userStore.user?.metaId,
+      metaId: userStore.last?.metaid,
       ...pagination,
     })
     if (res.code === 0) {

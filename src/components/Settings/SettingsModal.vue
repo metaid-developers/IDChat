@@ -23,7 +23,7 @@
 
     <div class="list">
       <!-- Edit Profile -->
-      <div
+      <!-- <div
         class="item flex flex-align-center"
         @click="isShowEditProfile = true"
         v-if="userStore.isAuthorized"
@@ -38,10 +38,10 @@
         </span>
         <span class="flex1 name">{{ $t('Setting.Edit Profile') }}</span>
         <Icon class="right" name="down" />
-      </div>
+      </div> -->
 
       <!-- Link Account -->
-      <div
+      <!-- <div
         class="item flex flex-align-center"
         @click="isShowLinkAccount = true"
         v-if="userStore.isAuthorized && !isMainnet"
@@ -51,7 +51,7 @@
         </span>
         <span class="flex1 name">{{ $t('Setting.Link Account') }}</span>
         <Icon class="right" name="down" />
-      </div>
+      </div> -->
 
       <div
         class="item flex flex-align-center"
@@ -137,18 +137,18 @@ const list = computed(() => {
       },
     },
   ]
-  if (userStore.isAuthorized) {
-    result.unshift({
-      name: i18n.t('Setting.Uplink settings'),
-      icon: 'link',
-      value: () => {
-        return ''
-      },
-      fun: function() {
-        isShowUploadLinkSet.value = true
-      },
-    })
-  }
+  // if (userStore.isAuthorized) {
+  //   result.unshift({
+  //     name: i18n.t('Setting.Uplink settings'),
+  //     icon: 'link',
+  //     value: () => {
+  //       return ''
+  //     },
+  //     fun: function() {
+  //       isShowUploadLinkSet.value = true
+  //     },
+  //   })
+  // }
 
   return result
 })

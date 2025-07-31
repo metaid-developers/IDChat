@@ -15,115 +15,117 @@ export const router = createRouter({
     {
       path: '/',
       redirect: () => {
-        const userStore = useUserStore()
-        if (userStore.isAuthorized) {
-          return { name: 'buzzIndex' }
-        } else {
-          return { name: 'home' }
-        }
+        //const userStore = useUserStore()
+         return { name: 'buzzRecommend' }
+        // if (userStore.isAuthorized) {
+        //   return { name: 'buzzRecommend' }
+        // } else {
+        //   return { name: 'home' }
+        // }
       },
       children: [],
     },
 
     // { path: '/', name: 'home', redirect: '/buzz' },
-    { path: '/home', name: 'home', component: () => import('@/views/home/index.vue') },
-    { path: '/randomly-dev', name: 'dev', component: import('@/views/dev/Index.vue') },
+    //{ path: '/home', name: 'home', component: () => import('@/views/home/index.vue') },
+    //{ path: '/randomly-dev', name: 'dev', component: import('@/views/dev/Index.vue') },
     {
-      path: '/buzz',
+      path: '/clubs',
       name: 'buzz',
       component: () => import('@/views/buzz/Layout.vue'),
       meta: { keepAlive: true },
       redirect: () => {
-        const userStore = useUserStore()
-        if (userStore.isAuthorized) {
-          return { name: 'buzzIndex' }
-        } else {
-          return { name: 'buzzRecommend' }
-        }
+       
+         return { name: 'buzzRecommend' }
+        // if (userStore.isAuthorized) {
+        //   return { name: 'buzzIndex' }
+        // } else {
+        //   return { name: 'buzzRecommend' }
+        // }
       },
       children: [
-        {
-          path: 'index',
-          name: 'buzzIndex',
-          component: () => import('@/views/buzz/Index.vue'),
-          meta: { isAuth: true, keepAlive: true },
-        },
+        // {
+        //   path: 'index',
+        //   name: 'buzzIndex',
+        //   component: () => import('@/views/buzz/Index.vue'),
+        //   meta: { isAuth: true, keepAlive: true },
+        // },
         {
           path: 'recommend',
           name: 'buzzRecommend',
           component: () => import('@/views/buzz/Recomment.vue'),
           meta: { keepAlive: true },
         },
-        {
-          path: 'tx/:txId',
-          name: 'buzzDetail',
-          component: () => import('@/views/buzz/Detail.vue'),
-        },
-        {
-          path: 'tag/:tagId',
-          name: 'buzzTag',
-          meta: { keepAlive: false },
-          component: () => import('@/views/buzz/Tag.vue'),
-        },
-        {
-          path: 'topic/:topic',
-          name: 'buzzTopic',
-          component: () => import('@/views/buzz/Topic.vue'),
-          meta: { keepAlive: true },
-        },
+        // {
+        //   path: 'tx/:txId',
+        //   name: 'buzzDetail',
+        //   component: () => import('@/views/buzz/Detail.vue'),
+        // },
+        // {
+        //   path: 'tag/:tagId',
+        //   name: 'buzzTag',
+        //   meta: { keepAlive: false },
+        //   component: () => import('@/views/buzz/Tag.vue'),
+        // },
+        // {
+        //   path: 'topic/:topic',
+        //   name: 'buzzTopic',
+        //   component: () => import('@/views/buzz/Topic.vue'),
+        //   meta: { keepAlive: true },
+        // },
       ],
     },
-    {
-      path: '/nft',
-      name: 'nft',
-      component: () => import('@/views/nft/Layout.vue'),
-      meta: { keepAlive: true },
-      redirect: {
-        name: 'nftIndex',
-      },
-      children: [
-        {
-          path: 'index',
-          name: 'nftIndex',
-          component: () => import('@/views/nft/Index.vue'),
-        },
-        {
-          path: 'issue',
-          name: 'nftIssue',
-          component: () => import('@/views/nft/Issue.vue'),
-        },
-        {
-          path: 'genesis',
-          name: 'nftGenesis',
-          component: () => import('@/views/nft/Genesis.vue'),
-        },
-        {
-          path: 'detail/:chain/:genesis/:codehash/:tokenIndex',
-          name: 'nftDetail',
-          component: () => import('@/views/nft/Detail.vue'),
-        },
-        {
-          path: 'collection',
-          name: 'nftCollection',
-          component: () => import('@/layout/BaseRouterView/BaseRouterView.vue'),
-          meta: { keepAlive: true },
-          children: [
-            {
-              path: 'index',
-              name: 'nftCollectionIndex',
-              component: () => import('@/views/nft/collection/Index.vue'),
-              meta: { keepAlive: true },
-            },
-            {
-              path: 'detail/:topicType',
-              name: 'nftCollectionDetail',
-              component: () => import('@/views/nft/collection/Collection.vue'),
-              meta: { keepAlive: true },
-            },
-          ],
-        },
-      ],
-    },
+    // {
+    //   path: '/nft',
+    //   name: 'nft',
+    //   component: () => import('@/views/nft/Layout.vue'),
+    //   meta: { keepAlive: true },
+    //   redirect: {
+    //     name: 'nftIndex',
+    //   },
+    //   children: [
+    //     {
+    //       path: 'index',
+    //       name: 'nftIndex',
+    //       component: () => import('@/views/nft/Index.vue'),
+    //     },
+    //     {
+    //       path: 'issue',
+    //       name: 'nftIssue',
+    //       component: () => import('@/views/nft/Issue.vue'),
+    //     },
+    //     {
+    //       path: 'genesis',
+    //       name: 'nftGenesis',
+    //       component: () => import('@/views/nft/Genesis.vue'),
+    //     },
+    //     {
+    //       path: 'detail/:chain/:genesis/:codehash/:tokenIndex',
+    //       name: 'nftDetail',
+    //       component: () => import('@/views/nft/Detail.vue'),
+    //     },
+    //     {
+    //       path: 'collection',
+    //       name: 'nftCollection',
+    //       component: () => import('@/layout/BaseRouterView/BaseRouterView.vue'),
+    //       meta: { keepAlive: true },
+    //       children: [
+    //         {
+    //           path: 'index',
+    //           name: 'nftCollectionIndex',
+    //           component: () => import('@/views/nft/collection/Index.vue'),
+    //           meta: { keepAlive: true },
+    //         },
+    //         {
+    //           path: 'detail/:topicType',
+    //           name: 'nftCollectionDetail',
+    //           component: () => import('@/views/nft/collection/Collection.vue'),
+    //           meta: { keepAlive: true },
+    //         },
+    //       ],
+    //     },
+    //   ],
+    // },
 
     // ShowTalk
     {
@@ -285,106 +287,106 @@ export const router = createRouter({
     },
 
     // pay
-    {
-      path: '/pay',
-      name: 'pay',
-      component: () => RouterView,
-      meta: { isHideHeader: true },
-      children: [
-        {
-          path: 'result',
-          name: 'payResult',
-          component: () => import('@/views/pay/Result.vue'),
-        },
-      ],
-    },
+    // {
+    //   path: '/pay',
+    //   name: 'pay',
+    //   component: () => RouterView,
+    //   meta: { isHideHeader: true },
+    //   children: [
+    //     {
+    //       path: 'result',
+    //       name: 'payResult',
+    //       component: () => import('@/views/pay/Result.vue'),
+    //     },
+    //   ],
+    // },
     // user
-    {
-      path: '/user/:metaId',
-      name: 'user',
-      component: () => import('@/views/user/User.vue'),
-      redirect: {
-        name: 'userBuzz',
-      },
-      children: [
-        {
-          path: 'buzz',
-          name: 'userBuzz',
-          component: () => import('@/views/user/Buzz.vue'),
-        },
-        {
-          path: 'nft',
-          name: 'userNFT',
-          component: () => import('@/views/user/NFT.vue'),
-        },
-      ],
-    },
+    // {
+    //   path: '/user/:metaId',
+    //   name: 'user',
+    //   component: () => import('@/views/user/User.vue'),
+    //   redirect: {
+    //     name: 'userBuzz',
+    //   },
+    //   children: [
+    //     {
+    //       path: 'buzz',
+    //       name: 'userBuzz',
+    //       component: () => import('@/views/user/Buzz.vue'),
+    //     },
+    //     {
+    //       path: 'nft',
+    //       name: 'userNFT',
+    //       component: () => import('@/views/user/NFT.vue'),
+    //     },
+    //   ],
+    // },
 
     // MetaName
-    {
-      path: '/metaname',
-      name: 'metaName',
-      component: () => import('@/views/metaname/Layout.vue'),
-      redirect: '/metaname/index',
-      children: [
-        {
-          path: 'index',
-          name: 'metaNameIndex',
-          component: () => import('@/views/metaname/Index.vue'),
-        },
-        {
-          path: 'mine',
-          name: 'metaNameMine',
-          meta: { isAuth: true },
-          component: () => RouterView,
-          redirect: { name: 'mineIndex' },
-          children: [
-            {
-              path: 'index',
-              name: 'mineIndex',
-              meta: { isAuth: true },
-              component: () => import('@/views/metaname/mine/Mine.vue'),
-            },
-            {
-              path: 'metaname/:metaName',
-              name: 'mineMetaName',
-              meta: { isAuth: true },
-              component: () => import('@/views/metaname/mine/MetaName.vue'),
-            },
-            {
-              path: 'status/:metaName/:orderId/:platform/:productType',
-              name: 'metaNameMineStatus',
-              meta: { isAuth: true },
-              component: () => import('@/views/metaname/mine/Status.vue'),
-            },
-          ],
-        },
-        {
-          path: 'market',
-          name: 'metaNameMarket',
-          component: () => import('@/views/metaname/Market.vue'),
-        },
-        {
-          path: 'search',
-          name: 'metaNameSearch',
-          component: () => RouterView,
-          redirect: '/metaname/search/index',
-          children: [
-            {
-              path: 'index',
-              name: 'metaNameSearchIndex',
-              component: () => import('@/views/metaname/search/Search.vue'),
-            },
-            {
-              path: 'register/:metaName/:orderId/:platform/:productType/:metaFile',
-              name: 'metaNameSearchRegister',
-              meta: { isAuth: true },
-              component: () => import('@/views/metaname/search/Register.vue'),
-            },
-          ],
-        },
-      ],
-    },
+    // {
+    //   path: '/metaname',
+    //   name: 'metaName',
+    //   component: () => import('@/views/metaname/Layout.vue'),
+    //   redirect: '/metaname/index',
+    //   children: [
+    //     {
+    //       path: 'index',
+    //       name: 'metaNameIndex',
+    //       component: () => import('@/views/metaname/Index.vue'),
+    //     },
+    //     {
+    //       path: 'mine',
+    //       name: 'metaNameMine',
+    //       meta: { isAuth: true },
+    //       component: () => RouterView,
+    //       redirect: { name: 'mineIndex' },
+    //       children: [
+    //         {
+    //           path: 'index',
+    //           name: 'mineIndex',
+    //           meta: { isAuth: true },
+    //           component: () => import('@/views/metaname/mine/Mine.vue'),
+    //         },
+    //         {
+    //           path: 'metaname/:metaName',
+    //           name: 'mineMetaName',
+    //           meta: { isAuth: true },
+    //           component: () => import('@/views/metaname/mine/MetaName.vue'),
+    //         },
+    //         {
+    //           path: 'status/:metaName/:orderId/:platform/:productType',
+    //           name: 'metaNameMineStatus',
+    //           meta: { isAuth: true },
+    //           component: () => import('@/views/metaname/mine/Status.vue'),
+    //         },
+    //       ],
+    //     },
+    //     {
+    //       path: 'market',
+    //       name: 'metaNameMarket',
+    //       component: () => import('@/views/metaname/Market.vue'),
+    //     },
+    //     {
+    //       path: 'search',
+    //       name: 'metaNameSearch',
+    //       component: () => RouterView,
+    //       redirect: '/metaname/search/index',
+    //       children: [
+    //         {
+    //           path: 'index',
+    //           name: 'metaNameSearchIndex',
+    //           component: () => import('@/views/metaname/search/Search.vue'),
+    //         },
+    //         {
+    //           path: 'register/:metaName/:orderId/:platform/:productType/:metaFile',
+    //           name: 'metaNameSearchRegister',
+    //           meta: { isAuth: true },
+    //           component: () => import('@/views/metaname/search/Register.vue'),
+    //         },
+    //       ],
+    //     },
+    //   ],
+    // },
 
     // 404
     { path: '/404', name: '404', component: NotFoundPage },

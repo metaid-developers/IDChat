@@ -5,7 +5,7 @@
     :type="type"
     :default-image="DefaultAvatar"
     :custom-class="customClass"
-    @click="e => openUserCard(e)"
+   
     ref="AvatarRef"
   />
 </template>
@@ -52,78 +52,78 @@ const toUserPage = () => {
   }
 }
 
-function openUserCard(e: any) {
-  if (props.disabled) return
-  e.stopPropagation()
-  if (popper) {
-    destroy()
-  } else {
-    const div = document.createElement('div')
-    div.id = userCardWarpId
-    div.className = 'user-card-warp'
-    document.body.append(div)
-    render(
-      // @ts-ignore
-      h(UserCard, {
-        i18n: i18n,
-        modelValue: true,
-        metaId: props.metaId,
-        name: props.name,
-        metaName: props.metaName,
-        onHide: () => {
-          destroy()
-        },
-      }),
-      document.getElementById(userCardWarpId)!
-    )
-    nextTick(() => {
-      popper = createPopper(AvatarRef.value.imgRef, document.getElementById(userCardWarpId)!, {
-        placement: 'right-start',
-      })
-      nextTick(() => {
-        const userCardWarp = document.getElementById(userCardWarpId)!
-        popperLeftRange = [
-          userCardWarp.getBoundingClientRect().left,
-          userCardWarp.getBoundingClientRect().left + userCardWarp.getBoundingClientRect().width,
-        ]
-        popperTopRange = [
-          userCardWarp.getBoundingClientRect().top,
-          userCardWarp.getBoundingClientRect().top + userCardWarp.getBoundingClientRect().height,
-        ]
-        buttonLeftRange = [
-          AvatarRef.value.imgRef.getBoundingClientRect().left,
-          AvatarRef.value.imgRef.getBoundingClientRect().left +
-            AvatarRef.value.imgRef.getBoundingClientRect().width,
-        ]
-        buttonTopRange = [
-          AvatarRef.value.imgRef.getBoundingClientRect().top,
-          AvatarRef.value.imgRef.getBoundingClientRect().top +
-            AvatarRef.value.imgRef.getBoundingClientRect().height,
-        ]
-      })
-    })
-    document.addEventListener(
-      'click',
-      e => {
-        if (
-          (e.clientX > popperLeftRange[0] &&
-            e.clientX < popperLeftRange[1] &&
-            e.clientY > popperTopRange[0] &&
-            e.clientY < popperTopRange[1]) ||
-          (e.clientX > buttonLeftRange[0] &&
-            e.clientX < buttonLeftRange[1] &&
-            e.clientY > buttonTopRange[0] &&
-            e.clientY < buttonTopRange[1])
-        ) {
-          return
-        } else {
-          destroy()
-        }
-      },
-      true
-    )
-  }
-}
+// function openUserCard(e: any) {
+//   if (props.disabled) return
+//   e.stopPropagation()
+//   if (popper) {
+//     destroy()
+//   } else {
+//     const div = document.createElement('div')
+//     div.id = userCardWarpId
+//     div.className = 'user-card-warp'
+//     document.body.append(div)
+//     render(
+//       // @ts-ignore
+//       h(UserCard, {
+//         i18n: i18n,
+//         modelValue: true,
+//         metaId: props.metaId,
+//         name: props.name,
+//         metaName: props.metaName,
+//         onHide: () => {
+//           destroy()
+//         },
+//       }),
+//       document.getElementById(userCardWarpId)!
+//     )
+//     nextTick(() => {
+//       popper = createPopper(AvatarRef.value.imgRef, document.getElementById(userCardWarpId)!, {
+//         placement: 'right-start',
+//       })
+//       nextTick(() => {
+//         const userCardWarp = document.getElementById(userCardWarpId)!
+//         popperLeftRange = [
+//           userCardWarp.getBoundingClientRect().left,
+//           userCardWarp.getBoundingClientRect().left + userCardWarp.getBoundingClientRect().width,
+//         ]
+//         popperTopRange = [
+//           userCardWarp.getBoundingClientRect().top,
+//           userCardWarp.getBoundingClientRect().top + userCardWarp.getBoundingClientRect().height,
+//         ]
+//         buttonLeftRange = [
+//           AvatarRef.value.imgRef.getBoundingClientRect().left,
+//           AvatarRef.value.imgRef.getBoundingClientRect().left +
+//             AvatarRef.value.imgRef.getBoundingClientRect().width,
+//         ]
+//         buttonTopRange = [
+//           AvatarRef.value.imgRef.getBoundingClientRect().top,
+//           AvatarRef.value.imgRef.getBoundingClientRect().top +
+//             AvatarRef.value.imgRef.getBoundingClientRect().height,
+//         ]
+//       })
+//     })
+//     document.addEventListener(
+//       'click',
+//       e => {
+//         if (
+//           (e.clientX > popperLeftRange[0] &&
+//             e.clientX < popperLeftRange[1] &&
+//             e.clientY > popperTopRange[0] &&
+//             e.clientY < popperTopRange[1]) ||
+//           (e.clientX > buttonLeftRange[0] &&
+//             e.clientX < buttonLeftRange[1] &&
+//             e.clientY > buttonTopRange[0] &&
+//             e.clientY < buttonTopRange[1])
+//         ) {
+//           return
+//         } else {
+//           destroy()
+//         }
+//       },
+//       true
+//     )
+//   }
+// }
 
 function destroy() {
   document.removeEventListener('click', () => {})

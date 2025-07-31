@@ -1,7 +1,7 @@
 <template>
   <BuzzWarpVue>
     <!-- menu -->
-    <div class="buzz-menu-warp" ref="MenuRef">
+    <!-- <div class="buzz-menu-warp" ref="MenuRef">
       <div class="buzz-menu">
         <router-link
           :to="item.path"
@@ -16,11 +16,11 @@
           <span class="name">{{ item.name() }}</span>
         </router-link>
       </div>
-    </div>
+    </div> -->
 
-    <div class="menu-select-wrap" ref="SelectRef">
+    <!-- <div class="menu-select-wrap" ref="SelectRef">
       <div class="menu-select">
-        <!-- <div class="spilt-line"></div> -->
+     
         <div
           :class="[
             'menu-select-item',
@@ -35,7 +35,7 @@
           <span class="name">{{ item.name() }}</span>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- router view -->
     <RouterView v-slot="{ Component, route }">
@@ -89,7 +89,7 @@ const menus = [
   {
     name: () => i18n.t('Buzz.Recommend'),
     icon: 'star',
-    path: '/buzz/recommend',
+    path: '/clubs/recommend',
   },
 ]
 
@@ -137,17 +137,17 @@ function refreshData(path: string) {
 }
 
 onMounted(() => {
-  setPosition()
-  resizeObserver = new ResizeObserver(entries => {
-    setPosition()
-  })
+  // setPosition()
+  // resizeObserver = new ResizeObserver(entries => {
+  //   setPosition()
+  // })
 
-  //监听对应的dom
-  resizeObserver.observe(document.getElementById('buzz-warp')!)
+  
+  // resizeObserver.observe(document.getElementById('buzz-warp')!)
 })
 
 onBeforeUnmount(() => {
-  resizeObserver.unobserve(document.getElementById('buzz-warp')!)
+ // resizeObserver.unobserve(document.getElementById('buzz-warp')!)
 })
 </script>
 

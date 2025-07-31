@@ -111,7 +111,7 @@ const userStore = useUserStore()
 // @ts-ignore
 const currentAvatar: { val: NFTAvatarItem } = reactive({
   val: {
-    avatarImage: userStore.user?.avatarImage,
+    avatarImage: userStore.last?.avatar,
   },
 })
 console.log('currentAvatar', currentAvatar.val)
@@ -119,8 +119,8 @@ console.log('currentAvatar', currentAvatar.val)
 watch(
   () => userStore.isAuthorized,
   () => {
-    if (userStore.isAuthorized && !userStore.metaletLogin) {
-      currentAvatar.val.avatarImage = userStore.user!.avatarImage
+    if (userStore.isAuthorized ) {
+      currentAvatar.val.avatarImage = userStore.last!.avatar
     }
   }
 )

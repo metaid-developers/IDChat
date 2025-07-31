@@ -71,12 +71,12 @@ export const useTalkStore = defineStore('talk', {
   getters: {
     selfMetaId(): string {
       const userStore = useUserStore()
-      return userStore.user?.metaId || ''
+      return 'f21f4fc0328e2398e0978d6171d970620c6827976bd77345188ae7a1ae85b5dd' //userStore.last?.metaid || ''
     },
 
     selfAddress(): string {
       const userStore = useUserStore()
-      return userStore.user?.address || ''
+      return userStore.last?.address || ''
     },
 
     realCommunities(state) {

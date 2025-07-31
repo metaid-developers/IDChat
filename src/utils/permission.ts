@@ -57,94 +57,91 @@ router.beforeEach(async (to, from, next) => {
     rootStore.getExchangeRate()
   }
 
-  if (!rootStore.isCertedMetaIds.length) {
-    rootStore.setSystemConfig()
-  }
+  // if (!rootStore.isCertedMetaIds.length) {
+  //   rootStore.setSystemConfig()
+  // }
 
-  if (userStore.showWallet) {
-    // App 未获取用户信息，先去获取用户信息
-    if (!userStore.isAuthorized && isApp) {
-      await userStore.showWallet.appSetUserInfo()
-    }
-  }
+  // if (userStore.showWallet) {
+  //   // App 未获取用户信息，先去获取用户信息
+  //   if (!userStore.isAuthorized && isApp) {
+  //     await userStore.showWallet.appSetUserInfo()
+  //   }
+  // }
 
-  if (!userStore.showWallet) {
-    if (userStore.getMetaletloginState) {
-      await sleep(5)
-      const address = await window.metaidwallet.getAddress()
+  // if (!userStore.showWallet) {
+  //   if (userStore.getMetaletloginState) {
+  //     await sleep(5)
+  //     const address = await window.metaidwallet.getAddress()
 
-      const { network } = await window.metaidwallet.getNetwork()
+  //     const { network } = await window.metaidwallet.getNetwork()
 
-      const xpub = await window.metaidwallet.getXPublicKey()
+  //     const xpub = await window.metaidwallet.getXPublicKey()
 
-      const metaidWallet = new MetaletWallet({
-        xpub,
-        address: address,
-        metaIDJsWallet: window.metaidwallet,
-        network: network,
-      })
-      userStore.$patch({
-        wallet: null,
-      })
-      userStore.$patch({
-        wallet: new MetaletSDK({
-          network: import.meta.env.VITE_NET_WORK,
-          wallet: metaidWallet,
-        }),
-      })
-    } else {
-      // userStore.$patch({
-      //   wallet: null,
-      // })
-      userStore.$patch({ wallet: new SDK(import.meta.env.VITE_NET_WORK) })
-    }
-  }
+  //     const metaidWallet = new MetaletWallet({
+  //       xpub,
+  //       address: address,
+  //       metaIDJsWallet: window.metaidwallet,
+  //       network: network,
+  //     })
+  //     userStore.$patch({
+  //       wallet: null,
+  //     })
+  //     userStore.$patch({
+  //       wallet: new MetaletSDK({
+  //         network: import.meta.env.VITE_NET_WORK,
+  //         wallet: metaidWallet,
+  //       }),
+  //     })
+  //   } else {
+  //     // userStore.$patch({
+  //     //   wallet: null,
+  //     // })
+  //     userStore.$patch({ wallet: new SDK(import.meta.env.VITE_NET_WORK) })
+  //   }
+  // }
 
   // MetaName
-  if (
-    to.path.indexOf('/metaname/') !== -1 &&
-    (metaNameStore.MetaNameFeePerYear.third === 0 ||
-      metaNameStore.MetaNameFeePerYear.four === 0 ||
-      metaNameStore.MetaNameFeePerYear.five === 0)
-  ) {
-    await metaNameStore.getMetaNameAllPrice()
-  }
+  // if (
+  //   to.path.indexOf('/metaname/') !== -1 &&
+  //   (metaNameStore.MetaNameFeePerYear.third === 0 ||
+  //     metaNameStore.MetaNameFeePerYear.four === 0 ||
+  //     metaNameStore.MetaNameFeePerYear.five === 0)
+  // ) {
+  //   await metaNameStore.getMetaNameAllPrice()
+  // }
 
-  if (userStore.isAuthorized && !userStore.metaletLogin) {
+  if (userStore.isAuthorized ) {
     // 用户已登录但未初始化sdk 里面钱包， 则去 初始化 sdk 里面的钱包
-    if (!userStore.showWallet.isInitSdked) {
-      if (rootStore.GetIsImportMnemonicLogin) {
-        await userStore.showWallet.initWalletFromMnemonic()
-      } else {
-        await userStore.showWallet.initWallet()
-      }
-    }
+    // if (!userStore.showWallet.isInitSdked) {
+    //   if (rootStore.GetIsImportMnemonicLogin) {
+    //     await userStore.showWallet.initWalletFromMnemonic()
+    //   } else {
+    //     await userStore.showWallet.initWallet()
+    //   }
+    // }
 
     // 没有拿用户实名信息时， 先要去拿用户实名信息
-    if (!userStore.isGetedKycInfo) {
-      // todo: 暂时注释掉
-      // await userStore.setKycInfo()
-    }
+    // if (!userStore.isGetedKycInfo) {
+    
+    // }
 
-    if (!userStore.isSetedisTestUser) {
-      //  设置是否是否测试用户
-      // todo:暂时注释掉
-      // await userStore.setIsTestUser()
-    }
+    // if (!userStore.isSetedisTestUser) {
+      
+    // }
 
     // 检查用户的token
-    await userStore.checkUserToken(to)
+    //await userStore.checkUserToken(to)
   }
 
   //  buzz 页面先获取一次 postTag 信息
-  if (postTagStroe.list.length <= 0) {
-    await postTagStroe.getPostTags()
-  }
+  // if (postTagStroe.list.length <= 0) {
+  //   await postTagStroe.getPostTags()
+  // }
 
   // 检查跳转 路由是否有权限
   const isAuth = to.meta?.isAuth ? to.meta?.isAuth : false
   if (isAuth) {
-    if (isIosApp && userStore.user!.flag) {
+    if (isIosApp ) {
       next()
     } else {
       if (userStore.isAuthorized) {

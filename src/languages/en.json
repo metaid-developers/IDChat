@@ -140,8 +140,8 @@
       "reset": "Reset",
       "save": "Save",
       "icon": "Icon",
-      "cover": "NFT Club Cover",
-      "choose_cover_tip": "Only supports NFT in Club Cover. you need to be a level X users to use this feature.",
+      "cover": "Club Cover",
+      "choose_cover_tip": "Only supports Image in Club Cover. you need to be a level X users to use this feature.",
       "choose_cover": "Choose Cover",
       "introduction": "Club Introduction",
       "red_packet_all_claimed": "All the Candy Bags have been opened.",
@@ -222,7 +222,7 @@
       "agree_tip": "By creating a club, you agree to Show3's",
       "agree_guidelines": "Club Guidelines",
       "customize_information": "Customize your club",
-      "choose_nft_cover": "Select NFT cover",
+      "choose_nft_cover": "Select cover",
       "introduction": "Club introduction",
       "introduction_placeholder": "Introduce your Club through a few sentences.",
       "skip": "Skip this step",
@@ -366,7 +366,8 @@
     "useMetaIdWallet": "Connect MetaID Wallet",
     "No wallet": "No Wallet",
     "mnemonic": "Mnemonic",
-    "Mnemonic": "Mnemonic Login"
+    "Mnemonic": "Mnemonic Login",
+    "authorize": "Authorize"
   },
   "UserOperate": {
     "search": "Search",
@@ -521,7 +522,7 @@
     "Link Account": "Link Account"
   },
   "EditProfile": {
-    "intro": "NFT can become your profile picture or user name!",
+    "intro": "Image can become your profile picture or user name!",
     "User Name": "User Name",
     "MetaName": {
       "drsc": "The system will use MetaName you chose as the username by default."

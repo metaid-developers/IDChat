@@ -16,6 +16,11 @@ import { Channel } from '@/@types/talk'
 import { GetFT, GetGenesis } from '@/api/aggregation'
 // @ts-ignore
 import { SHA256 } from 'crypto-es/lib/sha256.js'
+import Decimal from 'decimal.js-light'
+
+const MIN=1000
+const MAX=200_000_000
+
 
 export const useCommunityFormStore = defineStore('communityForm', {
   state: () => {
@@ -24,13 +29,13 @@ export const useCommunityFormStore = defineStore('communityForm', {
       description: '',
       cover: null as File | null,
       name: '',
-      metaName: null as MetaNameItem | null,
+     //metaName: null as MetaNameItem | null,
     }
   },
 
   getters: {
     isStep1Finished(state) {
-      return !!state.icon && !!state.metaName && state.name.length > 0
+      return !!state.icon &&  state.name.length > 0 //!!state.metaName && state.name.length > 0
       //return !!state.icon && state.name.length > 0
     },
 
@@ -40,12 +45,12 @@ export const useCommunityFormStore = defineStore('communityForm', {
 
     isFinished(state) {
       //return !!state.icon && !!state.name
-      return !!state.icon && !!state.metaName && !!state.name
+      return !!state.icon  && !!state.name //&& !!state.metaName
     },
 
     isAllFinished(state) {
       return (
-        !!state.icon && !!state.metaName && !!state.description && !!state.cover && !!state.name
+        !!state.icon && !!state.description  && !!state.name && !!state.cover //&& !!state.metaName 
       )
     },
 
@@ -64,7 +69,7 @@ export const useCommunityFormStore = defineStore('communityForm', {
       this.description = ''
       this.cover = null
       this.name = ''
-      this.metaName = null
+      //this.metaName = null
     },
   },
 })
@@ -76,7 +81,7 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       description: '',
       cover: null as File | null,
       original: null as any,
-      metaName: null as MetaNameItem | null,
+      //metaName: null as MetaNameItem | null,
       name: '',
     }
   },
@@ -85,7 +90,7 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
     isChanged(state) {
       const descriptionChanged = state.description !== state.original.description
       const nameChanged = state.name !== state.original.name
-      return state.icon || state.cover || descriptionChanged || nameChanged || !!state.metaName
+      return state.icon  || descriptionChanged  || state.cover || nameChanged  //||  !!state.metaName
     },
 
     isFinished(state): boolean {
@@ -106,14 +111,14 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       this.icon = null
       this.description = ''
       this.cover = null
-      this.metaName = null
+      //this.metaName = null
       this.name = ''
     },
 
     resetInForm() {
       this.icon = null
       this.cover = null
-      this.metaName = null
+      //this.metaName = null
       this.description = this.original.description
       this.name = this.original.name
     },
@@ -121,8 +126,8 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
     async submit() {
       if (!this.isFinished) return
 
-      const metaName = await getCommunityAuth(this.original.communityId)
-      const replacingMetaName = this.metaName
+      //const metaName = await getCommunityAuth(this.original.communityId)
+      //const replacingMetaName = this.metaName
 
       const layout = useLayoutStore()
       const user = useUserStore()
@@ -133,8 +138,8 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
         description: this.description,
         cover: this.cover,
         original: this.original,
-        metaName,
-        replacingMetaName,
+        //metaName,
+        //replacingMetaName,
         name: this.name,
       }
       await updateCommunity(form, user.showWallet)
@@ -309,6 +314,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     return {
       amount: 1000 as number | '',
       each: 1000 as number,
+      unit:'Sats' as 'Sats' | 'Space',
       quantity: 1,
       message: '',
       type: RedPacketDistributeType.Random,
@@ -320,14 +326,15 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
   getters: {
     nicerAmount(state): string {
       if (state.amount === '') return '0'
+      console.log("state.amount",state.amount)
       // 小于 0.01 的红包金额，会使用sat为单位
-
-      return state.amount.toFixed(0)
+      
+      return new Decimal(state.amount).toString()
       // return state.amount < 0.01 ? (state.amount * 100000000).toFixed(0) : state.amount.toFixed(2)
     },
 
     amountUnit(state) {
-      return 'sats'
+      return state.unit //'sats'
       // if (state.amount === 0 || state.amount === '') return 'Space'
       // return state.amount < 0.01 ? 'sats' : 'Space'
     },
@@ -364,27 +371,59 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     },
     validateAmount() {
       // 每个人最少 1000 sat（0.00001 Space）
-      const minAmount = 1000 * this.quantity
-      const maxAmount = 200_000_000 // 2 Space = 200_000_000 sat
-      if (this.amount < minAmount) {
+      const min = MIN
+      const max= MAX
+      if(this.unit == 'Sats'){
+      const minAmount = min * this.quantity
+      const maxAmount = max // 2 Space = 200_000_000 sat
+      if (+this.amount < minAmount) {
         this.amount = minAmount
       }
-      if (this.amount > maxAmount) {
+      if (+this.amount > maxAmount) {
         this.amount = maxAmount
       }
+      }else{
+      const minAmount = new Decimal(min).div(10 ** 8).mul(this.quantity).toNumber()
+      const maxAmount = new Decimal(max).div(10 ** 8).toNumber() // 2 Space = 200_000_000 sat
+      if (+this.amount < minAmount) {
+        this.amount = minAmount
+      }
+      if (+this.amount > maxAmount) {
+        this.amount = maxAmount
+      }
+      }
+
+    
     },
     validateEach() {
-      if (this.each < 1000) {
-        this.each = 1000
+      const min =MIN
+      const max=MAX
+      if(this.unit == 'Sats'){
+        const minAmount=min
+        const maxAmount=max
+          if (this.each < minAmount) {
+        this.each = minAmount
       }
-      if (this.each > 200_000_000) {
-        this.each = 200_000_000
+      if (this.each > maxAmount) {
+        this.each = maxAmount
       }
+      }else{
+         const minAmount=new Decimal(min).div(10 ** 8).toNumber()
+        const maxAmount=new Decimal(max).div(10 ** 8).toNumber()
+        if (this.each < minAmount) {
+        this.each = minAmount
+      }
+      if (this.each > maxAmount) {
+        this.each = maxAmount
+      }
+      }
+
+    
     },
 
     reset() {
-      this.amount = 1000
-      this.each = 1000
+      this.amount =this.unit == 'Sats' ? 1000 : 0.00001
+      this.each = this.unit == 'Sats' ? 1000 : 0.00001
       this.quantity = 1
       this.message = ''
       this.nft = null

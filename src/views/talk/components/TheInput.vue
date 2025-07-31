@@ -79,8 +79,8 @@
     </div>
 
     <div :class="[rows > 1 ? 'items-start' : 'items-center', 'flex h-fit']">
-      <!-- 左侧 + 按钮 -->
-      <Popover class="relative flex items-center" v-slot="{ open }">
+     
+      <!-- <Popover class="relative flex items-center" v-slot="{ open }">
         <PopoverButton
           as="button"
           class="w-14 flex items-center py-2 justify-center text-dark-800 dark:text-gray-100 outline-0"
@@ -132,7 +132,7 @@
             </div>
           </PopoverPanel>
         </transition>
-      </Popover>
+      </Popover> -->
 
       <!-- <button
         class="w-14 flex items-center py-2 justify-center text-dark-800 dark:text-gray-100"

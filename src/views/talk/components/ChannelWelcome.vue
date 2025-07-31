@@ -73,24 +73,24 @@ const utilities = ref([
       layout.isShowCommunitySettingsModal = true
     },
   },
-  {
-    name: 'Talk.Channel.utilities.learn',
-    icon: 'rocket',
-    bgColor: 'bg-yellow-400',
-    action: () => {
-      // 跳转到 https://show3.gitbook.io/show3.0/v/english/
-      window.open('https://show3.gitbook.io/show3.0/v/english/', '_blank')
-    },
-  },
-  {
-    name: 'Talk.Channel.utilities.download',
-    icon: 'phone',
-    bgColor: 'bg-blue-400',
-    action: () => {
-      // 跳转到 /home
-      router.push('/home')
-    },
-  },
+  // {
+  //   name: 'Talk.Channel.utilities.learn',
+  //   icon: 'rocket',
+  //   bgColor: 'bg-yellow-400',
+  //   action: () => {
+  //     // 跳转到 https://show3.gitbook.io/show3.0/v/english/
+  //     window.open('https://show3.gitbook.io/show3.0/v/english/', '_blank')
+  //   },
+  // },
+  // {
+  //   name: 'Talk.Channel.utilities.download',
+  //   icon: 'phone',
+  //   bgColor: 'bg-blue-400',
+  //   action: () => {
+  //     // 跳转到 /home
+  //     router.push('/home')
+  //   },
+  // },
 ])
 
 const visibleUtilities = computed(() => {

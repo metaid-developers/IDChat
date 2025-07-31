@@ -115,6 +115,7 @@ export function handlerFileService(url:string){
 }
 
 export function metafile(metafile: string, width = 235, type: 'metafile' | 'metaId' = 'metafile') {
+  
   if (typeof metafile !== 'string') return ''
   if (metafile.indexOf('http://') !== -1 || metafile.indexOf('https://') !== -1) return metafile
   metafile = metafile.replace('metafile://', '')
@@ -143,10 +144,16 @@ export function metafile(metafile: string, width = 235, type: 'metafile' | 'meta
     metafile = metafile.replace('mumbai://', 'evm/mumbai/')
     path = '/metafile/'
   } else {
+    if(metafile.indexOf('/content/') < 0){
+      path='/content/'
+    }
     //  普通txId
-    path = '/metafile/'
+    //path = '/metafile/'
+    //path='content'
   }
-  const fileUrl = `${import.meta.env.VITE_AppImgApi}${path}${metafile.replace('ipfs://', '')}`
+  //const fileUrl = `${import.meta.env.VITE_AppImgApi}${path}${metafile.replace('ipfs://', '')}`
+  const fileUrl = `${import.meta.env.VITE_MAN_API}${path}${metafile}`
+  
   // 文件后缀
   const fileSuffix = metafile.split('.')[metafile.split('.').length - 1]
   // 非图片格式返回源文件
@@ -163,6 +170,7 @@ export function metafile(metafile: string, width = 235, type: 'metafile' | 'meta
   if (width) {
     query += `/resize,m_lfit,w_${width}`
   }
+  
   return `${fileUrl}?${query}`
 }
 

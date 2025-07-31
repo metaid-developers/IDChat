@@ -20,7 +20,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // import { sentryVitePlugin } from '@sentry/vite-plugin'
 import type { ViteSentryPluginOptions } from 'vite-plugin-sentry'
 import viteSentry from 'vite-plugin-sentry'
-
+import VueDevTools from 'vite-plugin-vue-devtools'
 // import dns from 'dns'
 // dns.setDefaultResultOrder('verbatim')
 const pathSrc = path.resolve(__dirname, 'src')
@@ -63,6 +63,7 @@ export default ({ mode, command }) => {
         }),
         enforce: 'post',
       },
+      VueDevTools(),
       vue({
         template: {
           compilerOptions: {
@@ -205,6 +206,7 @@ export default ({ mode, command }) => {
     },
     optimizeDeps: {
       include: ['buffer', 'process'],
+ 
     },
     define: {
       _APP_VERSION: JSON.stringify(pkg.version),
@@ -225,6 +227,7 @@ export default ({ mode, command }) => {
     },
     esbuild: {
       drop: isProduction ? ['console', 'debugger'] : [],
+
     },
     build: {
       target: isProduction ? 'es2015' : 'modules',

@@ -30,7 +30,7 @@
     <ShareToBuzzModal v-if="layout.isShowShareToBuzzModal" />
     <ShareSuccessModal v-if="layout.isShowShareSuccessModal" />
     <CommunitySettingsModal v-if="layout.isShowCommunitySettingsModal" />
-    <NoMetaNameModal v-if="layout.isShowNoMetaNameModal" />
+    <!-- <NoMetaNameModal v-if="layout.isShowNoMetaNameModal" /> -->
     <leaveCommunityModal v-if="layout.isShowLeaveCommunityModal" />
   </div>
 </template>
@@ -81,7 +81,7 @@ function init(communityId: string) {
     if (!isValid) {
       // 显示社区没有metaname modal
       talk.activeCommunityId = communityId
-      layout.isShowNoMetaNameModal = true
+      //layout.isShowNoMetaNameModal = true
       return
     }
 

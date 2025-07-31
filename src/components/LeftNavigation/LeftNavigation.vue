@@ -147,25 +147,25 @@ function getCommunityKey(community: Community) {
 }
 
 const apps = reactive([
-  {
-    icon: 'feed',
-    path: '/buzz',
-    extraClass: 'left-navigation-item',
-    title: () => i18n.t('Talk.Community.feed'),
-    symbol: 'buzz',
-  },
+  // {
+  //   icon: 'feed',
+  //   path: '/buzz',
+  //   extraClass: 'left-navigation-item',
+  //   title: () => i18n.t('Talk.Community.feed'),
+  //   symbol: 'buzz',
+  // },
   {
     icon: 'talk',
     path: '/talk/channels/@me',
     title: () => i18n.t('Talk.Community.atme'),
     symbol: '@me',
   },
-  {
-    icon: 'market',
-    path: '/nft/collection/index',
-    title: () => i18n.t('NFT.NFT Market'),
-    symbol: 'nft',
-  },
+  // {
+  //   icon: 'market',
+  //   path: '/nft/collection/index',
+  //   title: () => i18n.t('NFT.NFT Market'),
+  //   symbol: 'nft',
+  // },
 ])
 
 if (userStore.isAuthorized) {

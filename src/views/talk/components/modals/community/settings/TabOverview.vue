@@ -83,13 +83,13 @@
     </div>
 
     <!-- metaName -->
-    <div class="py-6">
+    <!-- <div class="py-6">
       <h4 class="text-dark-400 dark:text-gray-200 text-sm mb-6">
         {{ $t('Talk.Modals.metaname') }}
       </h4>
 
       <div class="mt-2">
-        <!-- equipped => changed -->
+      
         <div class="grid grid-cols-9 items-center justify-between">
           <div class="space-y-2 col-span-4">
             <div class="text-dark-300 dark:text-gray-400 text-xs h-8 flex items-center">
@@ -113,13 +113,13 @@
             </div>
           </div>
 
-          <!-- arrow -->
+        
           <Icon
             name="chevron_double_right"
             class="w-4 h-4 lg:w-5 lg:h-5 text-dark-300 dark:text-gray-400 col-span-1 mx-1 lg:mx-0 place-self-center"
           />
 
-          <!-- change -->
+        
           <div class="col-span-4 space-y-2">
             <div class="flex items-center gap-x-2 h-8">
               <div class="text-dark-300 dark:text-gray-400 text-xs">
@@ -157,7 +157,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- 封面 -->
     <div class="py-6">
@@ -268,34 +268,34 @@ const handleIconChange = (e: Event) => {
 }
 
 const isAtMyAddress = ref(false)
-const getMetaNameAtOwnerAddress = async () => {
-  const nft = form?.original?.metaNameNft
+// const getMetaNameAtOwnerAddress = async () => {
+//   const nft = form?.original?.metaNameNft
 
-  if (!nft) {
-    isAtMyAddress.value = false
-    return
-  }
+//   if (!nft) {
+//     isAtMyAddress.value = false
+//     return
+//   }
 
-  // 不判断ens协议
-  if (nft.startsWith('ens://')) {
-    isAtMyAddress.value = false
-    return
-  }
+//   // 不判断ens协议
+//   if (nft.startsWith('ens://')) {
+//     isAtMyAddress.value = false
+//     return
+//   }
 
-  const { address } = await getMetaNameAddress(nft)
-  if (!address) {
-    isAtMyAddress.value = false
-    return
-  }
+//   const { address } = await getMetaNameAddress(nft)
+//   if (!address) {
+//     isAtMyAddress.value = false
+//     return
+//   }
 
-  isAtMyAddress.value = address === form?.original?.ownerInfo?.address
-}
-getMetaNameAtOwnerAddress()
+//   isAtMyAddress.value = address === form?.original?.ownerInfo?.address
+// }
+// getMetaNameAtOwnerAddress()
 
-const onChooseMetaName = (metaName: any) => {
-  console.log('here')
-  form.metaName = toRaw(metaName)
-}
+// const onChooseMetaName = (metaName: any) => {
+//   console.log('here')
+//   form.metaName = toRaw(metaName)
+// }
 
 const handleCoverChange = (e: Event) => {
   const target = e.target as HTMLInputElement

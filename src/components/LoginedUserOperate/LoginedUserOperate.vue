@@ -1,27 +1,45 @@
 <template>
-  <div class="version-warp hidden lg:block">
+  <!-- <div class="version-warp hidden lg:block">
     <VersionVue />
-  </div>
-  <a
+  </div> -->
+  <!-- <a
     @click="toMetaName"
     class="outsideMore flex flex-align-center flex-pack-center user-warp-item"
     v-if="!userStore.isAuthorized"
   >
     <img class="metanameLogo" :src="MetaNameLogo" alt="" />
-  </a>
-  <template v-if="userStore.isAuthorized">
+  </a> -->
+
+    <template  v-if="!connectionStore.connected">
+    <a
+      class="main-border primary connect-wallet"
+      @click="openConnectionModal"
+      >{{ $t('Login.connectWallet') }}</a
+    >
+  </template>
+
+
+   <template v-else-if="!credentialsStore.get">
+    <a
+      class="main-border primary connect-wallet"
+      @click="credentialsStore.login()"
+      >{{ $t('Login.authorize') }}</a
+    >
+  </template>
+
+  <template v-else>
     <div class="user-warp flex flex-align-center">
       <template v-if="!isMobile">
         <!-- MetaName -->
-        <a
+        <!-- <a
           @click="toMetaName"
           class="outsideMore flex flex-align-center flex-pack-center user-warp-item"
         >
           <img class="metanameLogo" :src="MetaNameLogo" alt="" />
-        </a>
+        </a> -->
 
           <!-- MintCollect -->
-          <el-tooltip
+          <!-- <el-tooltip
         class="box-item"
         effect="dark"
         content="Mint Collection"
@@ -35,27 +53,35 @@
           <span class="new-tag">New</span>
           <img class="MintLogo" :src="MintLogo" alt="" />
         </a>
-      </el-tooltip>
+      </el-tooltip> -->
         <!-- 🔍 搜索 -->
-        <a
+        <!-- <a
           class="flex flex-align-center flex-pack-center user-warp-item"
           @click="layout.$patch({ isShowSearchModal: true })"
           v-if="userStore.isAuthorized"
         >
           <Icon name="search" />
-        </a>
+        </a> -->
       </template>
 
       <!-- 💰 钱包 -->
-      <a
+      <!-- <a
         class="flex flex-align-center flex-pack-center user-warp-item"
         @click="layout.$patch({ isShowWallet: true })"
       >
         <Icon name="wallet_fill" />
-      </a>
+      </a> -->
 
       <!-- 👤 头像 -->
-      <el-popover placement="bottom" :width="'auto'" trigger="hover">
+         <UserAvatar
+            :image="userStore.last!.avatar"
+            :meta-id="userStore.last!.metaid"
+            :name="userStore.last.name"
+            class="user-warp-item overflow-hidden"
+            :meta-name="''"
+            :disabled="true"
+          />
+      <!-- <el-popover placement="bottom" :width="'auto'" trigger="hover">
         <template #reference>
           <UserAvatar
             :image="userStore.user!.avatarImage"
@@ -71,18 +97,15 @@
           :meta-id="userStore.user!.metaId"
           :meta-name="userStore.user!.metaName"
           :model-value="true"
-        />
-        <!-- <UserPersonaVue /> -->
-      </el-popover>
+        /> 
+    
+      </el-popover> -->
     </div>
   </template>
-  <template v-else>
-    <a
-      class="main-border primary connect-wallet"
-      @click="rootStore.$patch({ isShowLogin: true })"
-      >{{ $t('Login.connectWallet') }}</a
-    >
-  </template>
+
+  
+
+
 
   <!-- 更多操作 -->
   <ElDropdown trigger="click" @visible-change="val => (isShowUserMenu = val)">
@@ -94,20 +117,20 @@
     </a>
     <template #dropdown>
       <ElDropdownMenu>
-        <template v-if="isMobile">
+        <!-- <template v-if="isMobile">
           <ElDropdownItem @click="layout.$patch({ isShowSearchModal: true })">
             <div class="flex flex-align-center user-operate-item">
               <Icon name="search" />
               <span class="name">{{ $t('UserOperate.search') }}</span>
             </div>
           </ElDropdownItem>
-        </template>
+        </template> -->
 
         <ElDropdownItem v-for="(item, index) in userOperates" :key="index" @click="item.func()">
           <div class="flex flex-align-center user-operate-item">
             <Icon :name="item.icon" />
             <span class="name">{{ item.name }}</span>
-            <span class="isnew" v-if="item.isNew">New</span>
+            <!-- <span class="isnew" v-if="item.isNew">New</span> -->
           </div>
         </ElDropdownItem>
       </ElDropdownMenu>
@@ -138,6 +161,15 @@ import UserCardVue from '../UserCard/UserCard.vue'
 import { router } from '@/router'
 import MetaNameLogo from '@/assets/svg/meta_name.svg?url'
 import MintLogo from '@/assets/svg/mint.svg?url'
+import { useConnectionModal } from '@/hooks/use-connection-modal'
+import { useConnectionStore } from '@/stores/connection'
+import { useCredentialsStore } from '@/stores/credentials'
+const { openConnectionModal } =
+  useConnectionModal()
+
+const connectionStore = useConnectionStore()
+const credentialsStore = useCredentialsStore()
+
 const i18n = useI18n()
 const rootStore = useRootStore()
 const userStore = useUserStore()
@@ -155,47 +187,47 @@ const userOperates = computed(() => {
         layout.isShowSettingsModal = true
       },
     },
-    {
-      name: i18n.t('UserOperate.aboutShow'),
-      icon: 'show',
-      func: () => {
-        window.open('https://show3.gitbook.io/show3.0/v/english/', '_blank')
-      },
-    },
-    {
-      name: i18n.t('UserOperate.About MetaSo'),
-      icon: 'meta_so',
-      func: () => {
-        window.open('https://www.metaso.network/', '_blank')
-      },
-    },
-    {
-      name: 'Mint Collection',
-      icon: 'mint',
-      func: toMintNft,
-      isNew:true
-    },
-    {
-      name: 'MetaName',
-      icon: 'meta_name',
-      func: toMetaName,
-    },
-    {
-      name: i18n.t('UserOperate.help'),
-      icon: 'question_circle',
-      func: () => {
-        router.push(
-          `/talk/channels/74462f14a033849bf6067de63ad3d6c54edfa48ec1f2759e8ed8c6165b3f58b2/0dcdbc9d4eba293f8adce8a9b5d82370b66b80f0d53e2ed85a695fcda832c957`
-        )
-      },
-    },
+    // {
+    //   name: i18n.t('UserOperate.aboutShow'),
+    //   icon: 'show',
+    //   func: () => {
+    //     window.open('https://show3.gitbook.io/show3.0/v/english/', '_blank')
+    //   },
+    // },
+    // {
+    //   name: i18n.t('UserOperate.About MetaSo'),
+    //   icon: 'meta_so',
+    //   func: () => {
+    //     window.open('https://www.metaso.network/', '_blank')
+    //   },
+    // },
+    // {
+    //   name: 'Mint Collection',
+    //   icon: 'mint',
+    //   func: toMintNft,
+    //   isNew:true
+    // },
+    // {
+    //   name: 'MetaName',
+    //   icon: 'meta_name',
+    //   func: toMetaName,
+    // },
+    // {
+    //   name: i18n.t('UserOperate.help'),
+    //   icon: 'question_circle',
+    //   func: () => {
+    //     router.push(
+    //       `/talk/channels/74462f14a033849bf6067de63ad3d6c54edfa48ec1f2759e8ed8c6165b3f58b2/0dcdbc9d4eba293f8adce8a9b5d82370b66b80f0d53e2ed85a695fcda832c957`
+    //     )
+    //   },
+    // },
   ]
   if (userStore.isAuthorized) {
     result.push({
       name: i18n.t('UserOperate.logout'),
       icon: 'logout',
-      func: () => {
-        userStore.logout(route)
+      func: async() => {
+       await connectionStore.disconnect()
       },
     })
   }
@@ -214,12 +246,12 @@ const toMetaName = () => {
   window.open(routerUrl.href, '_blank')
 }
 
-function toMintNft(){
-  if(userStore.metaletLogin){
-    return ElMessage.error(`${i18n.t('nosupportmetaletissue')}`)
-  }
-  router.push('/nft/issue')
-}
+// function toMintNft(){
+//   if(userStore.metaletLogin){
+//     return ElMessage.error(`${i18n.t('nosupportmetaletissue')}`)
+//   }
+//   router.push('/nft/issue')
+// }
 </script>
 
 <style lang="scss" scoped src="./LoginedUserOperate.scss"></style>

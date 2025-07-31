@@ -1,12 +1,12 @@
 import { InviteActivityTag } from '@/enum'
-import { getToken, getUserName } from '@/stores/user'
+// import { getToken, getUserName } from '@/stores/user'
 import HttpRequest from '@/utils/request'
 
 // @ts-ignore
 const Broad = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/broad`, {
   header: {
-    accessKey: () => getToken(),
-    userName: () => getUserName(),
+    // accessKey: () => getToken(),
+    // userName: () => getUserName(),
     timestamp: () => new Date().getTime(),
   },
   errorHandel: (error: any) => {

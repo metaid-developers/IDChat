@@ -2,7 +2,7 @@
   <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
   <CreateConsensualChannelModal v-if="layout.isShowCreateConsensualChannelModal" />
   <CreateGeneralChannelModal v-if="layout.isShowCreateGeneralChannelModal" />
-  <CreateDaoModal v-if="layout.isShowCreateDaoModal" />
+  <!-- <CreateDaoModal v-if="layout.isShowCreateDaoModal" /> -->
   <CommunityInfoModal v-if="layout.isShowCommunityInfoModal" />
 
   <div
@@ -47,7 +47,7 @@
               </div>
 
               <!-- 社区MetaName -->
-              <div
+              <!-- <div
                 class="w-full mt-2 flex items-center justify-between space-x-2 cursor-pointer"
                 :title="talk.activeCommunitySymbolInfo.name"
                 v-if="talk.activeCommunity?.metaName"
@@ -67,7 +67,7 @@
 
               <div v-else class="mt-2 w-full">
                 <EmptyPit />
-              </div>
+              </div> -->
 
               <div
                 class="mt-4.5 text-xs text-dark-400 dark:text-gray-200 leading-kinda-loose break-all font-normal max-h-36 overflow-y-scroll"
@@ -125,24 +125,19 @@
                 </template>
 
                 <!-- 功能頻道 -->
-                <div class="flex justify-between">
+                <!-- <div class="flex justify-between">
                   <div class="uppercase text-dark-400 dark:text-gray-200 text-xs">
                     {{ $t('Talk.Community.general_channels') }}
                   </div>
-                  <!-- <Icon
-                    name="plus"
-                    class="w-4 h-4 text-black dark:text-white cursor-pointer"
-                    v-if="talk.isAdmin()"
-                    @click="layout.isShowCreateGeneralChannelModal = true"
-                  /> -->
-                </div>
+                
+                </div> -->
 
-                <CommunityChannelItem
+                <!-- <CommunityChannelItem
                   v-for="channel in generalChannels"
                   :key="channel.id"
                   :channel="channel"
                   :has-buttons="false"
-                />
+                /> -->
 
                 <!-- 公共頻道 -->
                 <div
@@ -169,7 +164,7 @@
                 </TransitionGroup>
 
                 <!-- 凭证頻道 -->
-                <div
+                <!-- <div
                   class="flex justify-between mt-4"
                   v-if="talk.activeCommunityConsensualChannels.length || talk.isAdmin()"
                 >
@@ -190,7 +185,7 @@
                     :key="channel.uuid"
                     :channel="channel"
                   />
-                </TransitionGroup>
+                </TransitionGroup> -->
               </div>
             </div>
           </div>
@@ -236,35 +231,35 @@ const popSettingsModal = () => {
 }
 
 // 功能頻道列表
-const generalChannels = computed(() => {
-  return talk.generalChannels
-    .filter(channel => {
-      console.log('channel', channel, talk.activeCommunityId, import.meta.env.MODE)
+// const generalChannels = computed(() => {
+//   return talk.generalChannels
+//     .filter(channel => {
+//       console.log('channel', channel, talk.activeCommunityId, import.meta.env.MODE)
 
-      // 如果社区没有metaname，不显示topics頻道
-      if (channel.id === 'topics' && !talk.activeCommunity?.metaName) {
-        return false
-      } else if (import.meta.env.MODE == 'mainnetgray' && channel.id === 'DAO') {
-        return true
-      } else if (
-        channel.id === 'DAO' &&
-        talk.activeCommunityId !==
-          'f28bebcaabde3f60b5241324c206443123f59ed3432c2960cd59baa8b27081fa' &&
-        talk.activeCommunityId !==
-          'd0b8c48101e13739ab71458e0d3de4b683b21142e359d06e0f43ca85bb64a1b6'
-      ) {
-        return false
-      }
+//       // 如果社区没有metaname，不显示topics頻道
+//       if (channel.id === 'topics' && !talk.activeCommunity?.metaName) {
+//         return false
+//       } else if (import.meta.env.MODE == 'mainnetgray' && channel.id === 'DAO') {
+//         return true
+//       } else if (
+//         channel.id === 'DAO' &&
+//         talk.activeCommunityId !==
+//           'f28bebcaabde3f60b5241324c206443123f59ed3432c2960cd59baa8b27081fa' &&
+//         talk.activeCommunityId !==
+//           'd0b8c48101e13739ab71458e0d3de4b683b21142e359d06e0f43ca85bb64a1b6'
+//       ) {
+//         return false
+//       }
 
-      return true
-    })
-    .map(channel => {
-      return {
-        id: channel.id,
-        name: i18n.t(channel.nameKey),
-      }
-    })
-})
+//       return true
+//     })
+//     .map(channel => {
+//       return {
+//         id: channel.id,
+//         name: i18n.t(channel.nameKey),
+//       }
+//     })
+// })
 
 function checkoutMetaName() {
   if (!talk.activeCommunity?.metaName) return

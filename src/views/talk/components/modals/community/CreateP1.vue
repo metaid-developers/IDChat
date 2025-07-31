@@ -45,14 +45,14 @@
         </div>
 
         <!-- MetaName -->
-        <h4 class="text-sm mt-8">
+        <!-- <h4 class="text-sm mt-8">
           {{ $t('Talk.Community.community_name_tip') }}
-          <!-- <span class="text-xs text-dark-300 dark:text-gray-400">
+          <span class="text-xs text-dark-300 dark:text-gray-400">
             {{ $t('Talk.Community.optional') }}
-          </span> -->
-        </h4>
+          </span>
+        </h4> -->
 
-        <div class="mt-2">
+        <!-- <div class="mt-2">
           <button
             class="outline-0 main-border w-full px-4 py-3 text-base flex justify-between items-center group"
             @click="layout.isShowChooseMetaNameModal = !layout.isShowChooseMetaNameModal"
@@ -60,11 +60,11 @@
             <div class="flex items-center gap-x-1.5">
               <template v-if="form.metaName">
                 <MetaNameDisplay :name="form.metaName.name" :text-class="'!text-sm !font-bold'" />
-                <!-- <span class="text-sm font-bold">
+                <span class="text-sm font-bold">
                   {{ form.metaName.name }}
                 </span>
 
-                <Icon name="tag_nft" class="w-9.5 h-4" /> -->
+                <Icon name="tag_nft" class="w-9.5 h-4" />
               </template>
               <template v-else>
                 <span class="text-dark-250 select-none font-sm dark:text-gray-400">{{
@@ -94,7 +94,7 @@
               {{ $t('Talk.period') }}
             </span>
           </p>
-        </div>
+        </div> -->
       </div>
     </div>
 

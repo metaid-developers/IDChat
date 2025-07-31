@@ -10,7 +10,12 @@
     <template #body>
       <TabGroup>
         <TabList class="w-full bg-dark-100 dark:bg-gray-900 rounded-xl text-base flex font-medium">
-          <Tab
+             <Tab
+           
+          >
+          
+          </Tab>
+          <!-- <Tab
             class="w-full py-3 capitalize border-2 outline-0 rounded-xl transition-[background-color] duration-150"
             :class="[
               activeTab === 'redPacket'
@@ -20,8 +25,8 @@
             @click="changeTab('redPacket')"
           >
             {{ $t('Talk.Modals.lucky_candy_bag') }}
-          </Tab>
-          <Tab
+          </Tab> -->
+          <!-- <Tab
             class="w-full py-3 capitalize border-2 outline-0 rounded-xl transition-[background-color] duration-150"
             :class="[
               activeTab === 'nft'
@@ -31,11 +36,11 @@
             @click="changeTab('nft')"
           >
             {{ $t('Talk.Modals.nft_candy_bag') }}
-          </Tab>
+          </Tab> -->
         </TabList>
 
         <TabPanels>
-          <!-- 红包 -->
+       
           <TabPanel class="">
             <form @submit.prevent="form.submit">
               <!-- 数量 -->
@@ -85,11 +90,11 @@
                     <div class="absolute right-0 z-10">
                       <Menu as="div" class="relative inline-block">
                         <div class="">
-                          <MenuButton
+                          <MenuButton v-slot="{ scope }"
                             class="text-base flex items-center font-medium px-3 py-1 outline-0"
                             @click="isShowSelectTokenModal = !isShowSelectTokenModal"
                           >
-                            <span>Sats</span>
+                            <span>{{ currentUnit }}</span>
                             <Icon name="chevron_right" class="w-5 h-5 text-dark-480" />
                           </MenuButton>
                         </div>
@@ -103,11 +108,13 @@
                           leave-to-class="transform scale-95 opacity-50 translate-y-[-10%]"
                         >
                           <MenuItems
-                            class="absolute p-2 bg-white right-0 translate-y-[20PX] rounded-xl shadow-lg z-50 main-border still w-36  dark:!bg-gray-700"
+                            class="absolute flex flex-col p-2 bg-white right-0 translate-y-[20PX] rounded-xl shadow-lg z-50 main-border still w-36  dark:!bg-gray-700"
                           >
                             <MenuItem v-slot="{ active }">
-                              <button class="p-2" type="button">Space Sats</button>
+                              <button class="p-2" type="button" @click="triggleUnit">{{ currentUnit == 'Space' ? 'Sats' : 'Space' }}</button>
                             </MenuItem>
+                          
+                          
                             <!-- <MenuItem v-slot="{ active }">
                             <button class="p-2">MC</button>
                           </MenuItem>
@@ -204,7 +211,7 @@
                           class="text-base flex items-center font-medium px-3 py-1 outline-0"
                           @click="isShowSelectTokenModal = !isShowSelectTokenModal"
                         >
-                          <span>Sats</span>
+                          <span>{{ currentUnit }}</span>
                           <Icon name="chevron_right" class="w-5 h-5 text-dark-480" />
                         </MenuButton>
                       </div>
@@ -221,7 +228,7 @@
                           class="absolute p-2 bg-white right-0 translate-y-[20PX] rounded-xl shadow-lg z-50 main-border still w-36 dark:!bg-gray-700"
                         >
                           <MenuItem v-slot="{ active }">
-                            <button class="p-2" type="button">Space Sats</button>
+                            <button class="p-2" type="button" @click="triggleUnit">{{ currentUnit == 'Space' ? 'Sats' : 'Space' }}</button>
                           </MenuItem>
                           <!-- <MenuItem v-slot="{ active }">
                             <button class="p-2">MC</button>
@@ -471,9 +478,13 @@ import { useRedPacketFormStore } from '@/stores/forms'
 import { useUserStore } from '@/stores/user'
 import { GetNFTs } from '@/api/aggregation'
 import { showLoading } from '@/utils/util'
+import Decimal from 'decimal.js-light'
 
 const layout = useLayoutStore()
 const userStore = useUserStore()
+const isShowSelectTokenModal=ref(false)
+
+const currentUnit=ref('Sats')
 
 const activeTab = ref('redPacket')
 const changeTab = (tab: string) => {
@@ -535,47 +546,60 @@ const selectedChain = ref(chains.value[0])
 
 const nftSeries: Ref<any[]> = ref([])
 const fetching = ref(false)
-const fetchNftSeries = async () => {
-  let selfAddress: string
-  switch (selectedChain.value.value) {
-    case 'mvc':
-      selfAddress = userStore.user!.address
-      break
-    case 'eth':
-      selfAddress = userStore.user?.evmAddress as string
-      break
-    case 'goerli':
-      selfAddress = userStore.user?.evmAddress as string
-      break
-    case 'polygon':
-      selfAddress = userStore.user?.evmAddress as string
-      break
-    case 'mumbai':
-      selfAddress = userStore.user?.evmAddress as string
-      break
-    default:
-      selfAddress = userStore.user!.address
-      break
+// const fetchNftSeries = async () => {
+//   let selfAddress: string
+//   switch (selectedChain.value.value) {
+//     case 'mvc':
+//       selfAddress = userStore.user!.address
+//       break
+//     case 'eth':
+//       selfAddress = userStore.user?.evmAddress as string
+//       break
+//     case 'goerli':
+//       selfAddress = userStore.user?.evmAddress as string
+//       break
+//     case 'polygon':
+//       selfAddress = userStore.user?.evmAddress as string
+//       break
+//     case 'mumbai':
+//       selfAddress = userStore.user?.evmAddress as string
+//       break
+//     default:
+//       selfAddress = userStore.user!.address
+//       break
+//   }
+
+//   // 如无对应地址，则不执行请求
+//   if (!selfAddress) return
+
+//   const {
+//     data: {
+//       results: { items: _nfts },
+//     },
+//   } = await GetNFTs({
+//     address: selfAddress,
+//     chain: selectedChain.value.value,
+//     page: 1,
+//     pageSize: 100,
+//   })
+//   nftSeries.value = _nfts
+// }
+// watchEffect(async () => {
+//   await showLoading(fetchNftSeries, fetching)
+// })
+const triggleUnit=()=>{
+  if(currentUnit.value == 'Space'){
+    currentUnit.value= 'Sats'
+    form.unit='Sats'
+     form.amount=new Decimal(form.amount).mul(10 ** 8).toNumber()
+  }else{
+    currentUnit.value= 'Space'
+    form.unit='Space'
+    form.amount=new Decimal(form.amount).div(10 ** 8).toNumber()
   }
-
-  // 如无对应地址，则不执行请求
-  if (!selfAddress) return
-
-  const {
-    data: {
-      results: { items: _nfts },
-    },
-  } = await GetNFTs({
-    address: selfAddress,
-    chain: selectedChain.value.value,
-    page: 1,
-    pageSize: 100,
-  })
-  nftSeries.value = _nfts
 }
-watchEffect(async () => {
-  await showLoading(fetchNftSeries, fetching)
-})
+
+
 const selectNft = (nft: any) => {
   form.nft = nft
   form.chain = selectedChain.value.value
@@ -586,7 +610,7 @@ watch(
   () => form.amount,
   (amount: number | string) => {
     if (amount === '') return
-    if (amount < 0 || typeof amount !== 'number') {
+    if (+amount < 0 || typeof amount !== 'number') {
       form.amount = 0
     }
   }
