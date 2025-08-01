@@ -50,6 +50,7 @@ export default ({ mode, command }) => {
   // const isProduction = productionEnvs.includes(mode) && command === 'build' ? true : false
   const isProduction = command === 'build'
   return defineConfig({
+    base: process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({

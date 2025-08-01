@@ -4,8 +4,8 @@ import { API_NET, API_TARGET, Wallet,TxComposer,mvc, } from 'meta-contract'
 import { useUserStore } from "@/stores/user";
 import {createScriptForMvc} from '@/lib/pin'
 import { useNetworkStore } from '@/stores/network';
-
-
+import {broadcast} from '@/api/metalet'
+import { ElMessage } from 'element-plus'
 export enum MetaFlag{
  metaid='metaid',
   testid='testid'
@@ -47,7 +47,7 @@ export const useBulidTx = createGlobalState(() => {
         return userStore.last?.address
     }))
   // actions
-  const createPin = async(metaidData:MetaIdData) => {
+  const createPin = async(metaidData:MetaIdData,isBroadcast=true) => {
    
     try {
        const transactions=[] 
@@ -65,22 +65,25 @@ export const useBulidTx = createGlobalState(() => {
 
         const payedTransactions= await window.metaidwallet.pay(transactions,true)
 
-
+        const txIDs=await txBroadcast(payedTransactions,isBroadcast)
+        console.log("txIDs",txIDs)
 
         debugger
-        return payedTransactions
+        return txIDs
 
 
     } catch (error) {
-        
+         throw new Error(error as any)
     }
   }
 
   const createShowMsg=async(params:{
     body:any,
-    protocol:string
+    protocol:string,
+    isBroadcast:boolean
   })=>{
-    const {body,protocol}=params
+    const {body,protocol,isBroadcast}=params
+   
     try {
       const metaidData={
         body:JSON.stringify(body),
@@ -93,37 +96,51 @@ export const useBulidTx = createGlobalState(() => {
         encoding: 'utf-8',
       }
 
-       await createPin(metaidData)
+      const pinRes= await createPin(metaidData,isBroadcast)
+      return pinRes
 
     } catch (error) {
-      
+       ElMessage.error(error as any)
     }
   }
 
-  // const txBroadcast = async( txComposer:string, isBroadcast:boolean=false)=>{
-  //     const txComposerObj=TxComposer.deserialize(txComposer)
-  //     const network=networkStore.isTestnet ? API_NET.TEST : API_NET.MAIN
-  //     const txHex = txComposerObj.getTx().toString()
-  //     let txid,hex
-  //     if(isBroadcast){
-  //       txid=await broadcast(txHex,'mvc',network)
-  //     }else{
-  //         txid=txComposerObj.getTxId()
-  //         hex=txComposerObj.getRawHex()
-  //     }
+  const txBroadcast = async( txComposers:string[], isBroadcast:boolean=false)=>{
+      try {
+          const network=networkStore.isTestnet ? API_NET.TEST : API_NET.MAIN
+         let txids=[]
+         let hexS=[]
+        for(let txComposer of txComposers){
+             const txComposerObj=TxComposer.deserialize(txComposer)
+  
+            const txHex = txComposerObj.getTx().toString()
+               if(isBroadcast){
+              let res=await broadcast(txHex,'mvc',network)
+              txids.push(res)
+      }else{
+          let txid=txComposerObj.getTxId()
+          let hex=txComposerObj.getRawHex()
+          txids.push(txid)
+          hexS.push(hex)
+      }
+        }
+   
+      return {
+          txids,
+          hexS
+      }
 
-  //     return {
-  //         txid,
-  //         hex
-  //     }
+      } catch (error) {
+        throw new Error(error as any)
+      }
 
-
-  // }
+  }
 
 
 
   return {
-    createPin
+    createPin,
+    createShowMsg,
+    txBroadcast
    
   }
 })
