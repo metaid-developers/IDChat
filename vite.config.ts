@@ -122,71 +122,71 @@ export default ({ mode, command }) => {
         //  */
         customDomId: '__svg__icons__dom__',
       }),
-      viteExternalsPlugin({
-        'mvc-lib': 'mvc',
-        'mvc-lib/ecies': 'ECIES',
-        'mvc-lib/mnemonic': 'Mnemonic',
-        bip39: 'bip39',
-      }),
+      // viteExternalsPlugin({
+      //   'mvc-lib': 'mvc',
+      //   'mvc-lib/ecies': 'ECIES',
+      //   'mvc-lib/mnemonic': 'Mnemonic',
+      //   bip39: 'bip39',
+      // }),
 
-      VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico'],
-        devOptions: {
-          enabled: true,
-          navigateFallbackAllowlist: [/^index.html$/],
-        },
-        manifest: {
-          name: 'ShowNow',
-          short_name: 'ShowNow',
-          description:
-            "ShowNow",
-          theme_color: '#ffffff',
-          icons: [
-            {
-              src: 'pwa-48x48.png',
-              sizes: '48x48',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-72x72.png',
-              sizes: '72x72',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-96x96.png',
-              sizes: '96x96',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-144x144.png',
-              sizes: '144x144',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-168x168.png',
-              sizes: '168x168',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable',
-            },
-          ],
-        },
-      }),
+      // VitePWA({
+      //   registerType: 'autoUpdate',
+      //   includeAssets: ['favicon.ico'],
+      //   devOptions: {
+      //     enabled: true,
+      //     navigateFallbackAllowlist: [/^index.html$/],
+      //   },
+      //   manifest: {
+      //     name: 'ShowNow',
+      //     short_name: 'ShowNow',
+      //     description:
+      //       "ShowNow",
+      //     theme_color: '#ffffff',
+      //     icons: [
+      //       {
+      //         src: 'pwa-48x48.png',
+      //         sizes: '48x48',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: 'pwa-72x72.png',
+      //         sizes: '72x72',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: 'pwa-96x96.png',
+      //         sizes: '96x96',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: 'pwa-144x144.png',
+      //         sizes: '144x144',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: 'pwa-168x168.png',
+      //         sizes: '168x168',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: 'pwa-192x192.png',
+      //         sizes: '192x192',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: 'pwa-512x512.png',
+      //         sizes: '512x512',
+      //         type: 'image/png',
+      //       },
+      //       {
+      //         src: 'pwa-512x512.png',
+      //         sizes: '512x512',
+      //         type: 'image/png',
+      //         purpose: 'any maskable',
+      //       },
+      //     ],
+      //   },
+      // }),
       // basicSsl(),
 
       // sentryVitePlugin({

@@ -38,10 +38,41 @@
         src: url('./public/fonts/SF_PRO_Regular.ttf');
       }
     </style>
-    <script src="/rem.js"></script>
-    <script>
-      rem(document, window, parseFloat('<% VITE_Design_Size />'), 100)
-    </script>
+
+     <script>
+      function rem(doc, win, designSize, htmlFontSize) {
+  var docEl = doc.documentElement,
+    isIOS = navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/),
+    dpr = isIOS ? Math.min(win.devicePixelRatio, 3) : 1,
+    dpr = window.top === window.self ? dpr : 1, //被iframe引用时，禁止缩放
+    resizeEvt = 'orientationchange' in window ? 'orientationchange' : 'resize'
+  docEl.dataset.dpr = dpr
+  var recalc = function() {
+    var width = docEl.clientWidth
+    if (width / dpr > designSize) {
+      width = designSize * dpr
+    }
+    docEl.dataset.width = width
+    docEl.dataset.percent = htmlFontSize * (width / designSize)
+    var fontSize = htmlFontSize * (width / designSize)
+    let minFontSize = 90
+    var agent = navigator.userAgent.toLowerCase()
+    //  微信浏览器
+    if (agent.match(/MicroMessenger/i) == 'micromessenger') {
+      minFontSize = 62
+    }
+    if (fontSize < minFontSize) {
+      fontSize = minFontSize
+    }
+    docEl.style.fontSize = fontSize + 'px'
+  }
+  recalc()
+  if (!doc.addEventListener) return
+  win.addEventListener(resizeEvt, recalc, false)
+}
+  rem(document, window, parseFloat("1920"), 100)
+     </script>
+ 
     <script>
       if (
         localStorage.theme === 'dark' ||
@@ -71,19 +102,7 @@
 
   <body>
     <div id="app"></div>
-    <script src="/mvc.min.js"></script>
-    <script src="/mvc-message.min.js"></script>
-    <script src="/mvc-ecies.min.js"></script>
-    <script src="/mvc-mnemonic.min.js"></script>
-    <script>
-      mvc.Message = mvcMessage
-      mvc.ECIES = mvcEcies
-      mvc.Mnemonic = mvcMnemonic
-      window.mvc = mvc
-      window.ECIES = mvc.ECIES
-      window.Mnemonic = mvc.Mnemonic
-    </script>
-    <script src="/bip39.min.js"></script>
+   
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
