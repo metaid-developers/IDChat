@@ -3,7 +3,7 @@
     <div
       class="flex border-b border-dark-200 mx-2 text-sm font-medium pb-2 pt-2 space-x-1 h-11 items-center"
     >
-      <div
+      <!-- <div
         class="py-0.5 px-2 rounded cursor-pointer"
         :class="[
           activeTab === 'nft'
@@ -14,7 +14,7 @@
         v-if="!isHideNFT"
       >
         {{ $t('Talk.Input.nft_stickers') }}
-      </div>
+      </div> -->
       <div
         class="py-0.5 px-2 rounded cursor-pointer"
         :class="[
@@ -28,14 +28,14 @@
       </div>
     </div>
     <div class="p-2 h-64 overflow-y-auto">
-      <div v-if="activeTab === 'nft'" class="h-full flex items-center justify-center">
+      <!-- <div v-if="activeTab === 'nft'" class="h-full flex items-center justify-center">
         <div class="flex flex-col items-center space-y-4">
           <img :src="Cat" class="w-32 h-32" alt="" />
           <div class="text-dark-400 text-sm font-medium">
             {{ $t('Talk.Input.no_nft_stickers') }}
           </div>
         </div>
-      </div>
+      </div> -->
       <div v-if="activeTab === 'emoji'">
         <span class="text-3xl p-0.5 cursor-pointer" @click="addEmoji('😃')">😃</span>
         <span class="text-3xl p-0.5 cursor-pointer" @click="addEmoji('😁')">😁</span>
@@ -122,7 +122,7 @@ interface Props {
   isHideNFT?: boolean
 }
 const props = withDefaults(defineProps<Props>(), {
-  isHideNFT: false,
+  isHideNFT: true,
 })
 
 const emit = defineEmits(['input'])
@@ -134,12 +134,12 @@ watch(
     if (props.isHideNFT) {
       activeTab.value = 'emoji'
     } else {
-      activeTab.value = localStorage.getItem(key) || 'nft'
+      activeTab.value = localStorage.getItem(key) || 'emoji'
     }
   }
 )
 
-const activeTab = ref(localStorage.getItem(key) || 'nft')
+const activeTab = ref(localStorage.getItem(key) || 'emoji')
 const addEmoji = (emoji: string) => {
   emit('input', {
     type: activeTab.value,

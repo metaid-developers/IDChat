@@ -89,7 +89,7 @@ const menus = [
   {
     name: () => i18n.t('Buzz.Recommend'),
     icon: 'star',
-    path: '/clubs/recommend',
+    path: '/recommend',
   },
 ]
 

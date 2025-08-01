@@ -106,22 +106,22 @@ const tryInitChannel = async (status: string) => {
         let selfAddress: string
         switch (chain) {
           case 'mvc':
-            selfAddress = user.user!.address
+            selfAddress = user.last!.address
             break
-          case 'eth':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'goerli':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'polygon':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'mumbai':
-            selfAddress = user.user?.evmAddress as string
-            break
+          // case 'eth':
+          //   selfAddress = user.last?.evmAddress as string
+          //   break
+          // case 'goerli':
+          //   selfAddress = user.last?.evmAddress as string
+          //   break
+          // case 'polygon':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
+          // case 'mumbai':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
           default:
-            selfAddress = user.user!.address
+            selfAddress = user.last!.address
             break
         }
         const consensualGenesis = talk.activeChannel.roomGenesis
@@ -212,22 +212,22 @@ const tryInitChannel = async (status: string) => {
         let selfAddress: string
         switch (chain) {
           case 'mvc':
-            selfAddress = user.user!.address
+            selfAddress = user.last!.address
             break
-          case 'eth':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'goerli':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'polygon':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'mumbai':
-            selfAddress = user.user?.evmAddress as string
-            break
+          // case 'eth':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
+          // case 'goerli':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
+          // case 'polygon':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
+          // case 'mumbai':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
           default:
-            selfAddress = user.user!.address
+            selfAddress = user.last!.address
             break
         }
         const consensualGenesis = talk.activeChannel.roomGenesis
@@ -337,22 +337,22 @@ const tryInitChannel = async (status: string) => {
         let selfAddress: string
         switch (chain) {
           case 'mvc':
-            selfAddress = user.user!.address
+            selfAddress = user.last!.address
             break
-          case 'eth':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'goerli':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'polygon':
-            selfAddress = user.user?.evmAddress as string
-            break
-          case 'mumbai':
-            selfAddress = user.user?.evmAddress as string
-            break
+          // case 'eth':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
+          // case 'goerli':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
+          // case 'polygon':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
+          // case 'mumbai':
+          //   selfAddress = user.user?.evmAddress as string
+          //   break
           default:
-            selfAddress = user.user!.address
+            selfAddress = user.last!.address
             break
         }
 
@@ -365,27 +365,22 @@ const tryInitChannel = async (status: string) => {
         // 检查币数量
         // 获取餘额
         let balance
-        if (user.metaletLogin) {
-          const { total } = await user.showWallet
-            .wallet!.metaIDJsWallet.getBalance()
+        if (user.isAuthorized) {
+          const { total } = await window.metaidwallet.getMvcBalance()
             .catch(error => {
               ElMessage.error(error.message)
             })
+            
           balance = total
         } else {
-          balance = await user
-            .showWallet!.wallet!.provider.getXpubBalance(
-              user.showWallet!.wallet!.rootAddress
-              //user.showWallet!.wallet!.wallet.xpubkey.toString()
-            )
-
+          balance = await window.metaidwallet.getMvcBalance()
             .catch(error => {
               ElMessage.error(error.message)
             })
         }
         const stakeAmount = await GetOwnerStakeInfo({
           symbol: import.meta.env.VITE_MY_STAKE_SYMBOL,
-          address: user.user?.address,
+          address: user.last?.address,
         })
 
         let requiredAmount = Number(talk.activeChannel.roomLimitAmount)

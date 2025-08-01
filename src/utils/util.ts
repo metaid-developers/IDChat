@@ -541,9 +541,9 @@ export function openLoading(params?: {
   return ElLoading.service({
     ...params,
     // svgViewBox: '0 0 156.99951171875 125.99756622314453',
-    svg: LoadingTEXT,
+    //svg: LoadingTEXT,
     lock: params?.lock || true,
-    svgViewBox: '0 0 20 20',
+    //svgViewBox: '0 0 20 20',
     // @ts-ignore
     text: params?.text || i18n.global.t('Loading') + '...',
   })

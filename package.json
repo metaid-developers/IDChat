@@ -1,12 +1,14 @@
 {
-  "name": "show3.0",
+  "name": "shownow",
   "version": "0.0.1",
   "scripts": {
     "gray": "yarn vite --mode gray",
     "mainnet": "yarn vite --mode mainnet",
     "mainnetgray": "yarn vite --mode mainnetgray",
+     "chat": "yarn vite --mode mainnetgray",
     "build:gray": "node --max_old_space_size=10336 ./node_modules/vite/bin/vite.js build --mode gray",
     "build:mainnetgray": "node --max_old_space_size=10336 ./node_modules/vite/bin/vite.js build --mode mainnetgray",
+    "build:chat": "node ./build/createCommitId.js && node --max_old_space_size=14336 ./node_modules/vite/bin/vite.js build --mode mainnetgray",
     "build:mainnet": "node ./build/createCommitId.js && node --max_old_space_size=14336 ./node_modules/vite/bin/vite.js build --mode mainnet"
   },
   "dependencies": {

@@ -131,16 +131,16 @@ export default ({ mode, command }) => {
 
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'show3.svg'],
+        includeAssets: ['favicon.ico'],
         devOptions: {
           enabled: true,
           navigateFallbackAllowlist: [/^index.html$/],
         },
         manifest: {
-          name: 'Show3',
-          short_name: 'Show3',
+          name: 'ShowNow',
+          short_name: 'ShowNow',
           description:
-            "Show3 is the World's First NFT-Universal Web3 Social Application. It is the first decentralized social platform based on the DID protocol with fully on-chain data.",
+            "ShowNow",
           theme_color: '#ffffff',
           icons: [
             {

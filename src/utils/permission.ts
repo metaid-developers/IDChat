@@ -190,15 +190,15 @@ function SetMeta(to: RouteLocationNormalized) {
     })
   } else {
     useHead({
-      title: `Show3, the World's First NFT-Universal Web3 Social Application.`,
+      title: `ShowNow`,
       meta: [
         {
           name: 'description',
-          content: `Show3 is the World's First NFT-Universal Web3 Social Application. It is the first decentralized social platform based on the DID protocol with fully on-chain data.`,
+          content: `ShowNow`,
         },
         {
           name: 'keywords',
-          content: 'did,web3,social,NFT,decentralized,socail,metaid,social-fi,show3',
+          content: 'ShowNow',
         },
       ],
       link: [

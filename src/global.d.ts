@@ -125,6 +125,14 @@ interface Window {
       eventName: string,
       handler: { mvcAddress: string; btcAddress: string } | any,
     ) => void
+    pay:(
+      transations:{
+          txComposer: string
+          message?: string
+      },
+      hasMetaid: boolean,
+      feeb?: number
+    )=>string
     removeListener: (
       eventName: string,
       handler: { mvcAddress: string; btcAddress: string } | any,

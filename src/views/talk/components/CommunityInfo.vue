@@ -164,7 +164,7 @@
                 </TransitionGroup>
 
                 <!-- 凭证頻道 -->
-                <!-- <div
+                <div
                   class="flex justify-between mt-4"
                   v-if="talk.activeCommunityConsensualChannels.length || talk.isAdmin()"
                 >
@@ -185,7 +185,7 @@
                     :key="channel.uuid"
                     :channel="channel"
                   />
-                </TransitionGroup> -->
+                </TransitionGroup>
               </div>
             </div>
           </div>

@@ -12,25 +12,25 @@ export const router = createRouter({
   history: routerHistory,
   strict: true,
   routes: [
-    {
-      path: '/',
-      redirect: () => {
-        //const userStore = useUserStore()
-         return { name: 'buzzRecommend' }
-        // if (userStore.isAuthorized) {
-        //   return { name: 'buzzRecommend' }
-        // } else {
-        //   return { name: 'home' }
-        // }
-      },
-      children: [],
-    },
+    // {
+    //   path: '/',
+    //   redirect: () => {
+    //     //const userStore = useUserStore()
+    //      return { name: 'buzzRecommend' }
+    //     // if (userStore.isAuthorized) {
+    //     //   return { name: 'buzzRecommend' }
+    //     // } else {
+    //     //   return { name: 'home' }
+    //     // }
+    //   },
+    //   children: [],
+    // },
 
     // { path: '/', name: 'home', redirect: '/buzz' },
     //{ path: '/home', name: 'home', component: () => import('@/views/home/index.vue') },
     //{ path: '/randomly-dev', name: 'dev', component: import('@/views/dev/Index.vue') },
     {
-      path: '/clubs',
+      path: '/',
       name: 'buzz',
       component: () => import('@/views/buzz/Layout.vue'),
       meta: { keepAlive: true },

@@ -16,10 +16,10 @@
       <div class="avatar">
         <div class="avatar-warp" @click="choose(EditType.Avatar)">
           <UserAvatar
-            :meta-id="userStore.user!.metaId"
+            :meta-id="userStore.last!.metaid"
             :image="currentAvatar.val.avatarImage"
-            :name="userStore.user!.name"
-            :meta-name="userStore.user!.metaName"
+            :name="userStore.last!.name"
+            :meta-name="''"
             :type="'metafile'"
             :disabled="true"
           />
@@ -144,13 +144,13 @@ watch(
   () => userStore.isAuthorized,
   () => {
     if (userStore.isAuthorized) {
-      currentAvatar.val.avatarImage = userStore.user!.avatarImage
+      currentAvatar.val.avatarImage = userStore.last!.avatar
     }
   }
 )
 
 const form = reactive({
-  name: userStore.user!.name,
+  name: userStore.last!.name,
 })
 
 const rule = {
@@ -170,15 +170,15 @@ async function confirm() {
   //
   if (
     form.name === '' ||
-    (form.name === userStore.user!.name &&
-      currentAvatar.val.avatarImage === userStore.user?.avatarImage)
+    (form.name === userStore.last!.name &&
+      currentAvatar.val.avatarImage === userStore.last?.avatar)
   )
     return
   loading.value = true
 
   try {
     const paramsList: createBrfcChildNodeParams[] = []
-    if (currentAvatar.val!.avatarImage !== userStore.user?.avatarImage) {
+    if (currentAvatar.val!.avatarImage !== userStore.last?.avatar) {
       paramsList.push({
         nodeName: NodeName.NFTAvatar,
         data: JSON.stringify({
@@ -197,7 +197,7 @@ async function confirm() {
       })
     }
 
-    if (form.name !== userStore.user!.name) {
+    if (form.name !== userStore.last!.name) {
       paramsList.push({
         nodeName: NodeName.Name,
         data: form.name,
@@ -227,7 +227,7 @@ async function confirm() {
 
       // @ts-ignore
       userStore.updateUserInfo({
-        ...userStore.user,
+        ...userStore.last,
         name: form.name,
         avatarImage: currentAvatar.val.avatarImage,
         //metaName: currentMetaName.val.name,

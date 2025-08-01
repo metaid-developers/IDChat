@@ -78,7 +78,7 @@ export const useCredentialsStore =defineStore('credentials', {
     },
 
     async sign() {
-      debugger
+      
       const connectionStore = useConnectionStore()
       const connection = connectionStore.last
       if (!connection.address || connection.status === 'disconnected') {
@@ -126,7 +126,7 @@ export const useCredentialsStore =defineStore('credentials', {
 
     async login() {
       // 1. sync connection
-      debugger
+      
       const connectionStore = useConnectionStore()
       const synced = await connectionStore.sync()
       if (!synced) {
