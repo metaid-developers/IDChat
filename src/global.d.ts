@@ -1,3 +1,5 @@
+import { TxComposer } from "meta-contract"
+
 declare interface IDialog {
   outsideName: string
   insideName?: string
@@ -127,12 +129,12 @@ interface Window {
     ) => void
     pay:(
       transations:{
-          txComposer: string
+          txComposer: TxComposer
           message?: string
       },
       hasMetaid: boolean,
       feeb?: number
-    )=>string
+    )=>string[]
     removeListener: (
       eventName: string,
       handler: { mvcAddress: string; btcAddress: string } | any,
