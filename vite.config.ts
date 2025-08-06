@@ -5,11 +5,11 @@ import pkg from './package.json'
 import vueI18n from '@intlify/vite-plugin-vue-i18n'
 import svgLoader from 'vite-svg-loader'
 import VitePluginHtmlEnv from 'vite-plugin-html-env'
-import Icons from 'unplugin-icons/vite'
+  import Icons from 'unplugin-icons/vite'
 import AutoImport from 'unplugin-auto-import/vite'
-import IconsResolver from 'unplugin-icons/resolver'
+ import IconsResolver from 'unplugin-icons/resolver'
 import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 import inject from '@rollup/plugin-inject'
 import stdLibBrowser from 'node-stdlib-browser'
@@ -22,6 +22,7 @@ import type { ViteSentryPluginOptions } from 'vite-plugin-sentry'
 import viteSentry from 'vite-plugin-sentry'
 import VueDevTools from 'vite-plugin-vue-devtools'
 import { createHtmlPlugin } from 'vite-plugin-html'
+
 // import dns from 'dns'
 // dns.setDefaultResultOrder('verbatim')
 const pathSrc = path.resolve(__dirname, 'src')
@@ -50,6 +51,7 @@ export default ({ mode, command }) => {
   }
   // const isProduction = productionEnvs.includes(mode) && command === 'build' ? true : false
   const isProduction = command === 'build'
+  
   return defineConfig({
     //base: process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
@@ -129,24 +131,24 @@ export default ({ mode, command }) => {
       AutoImport({
         resolvers: [
           ElementPlusResolver(),
-          IconsResolver({
-            prefix: 'Icon',
-          }),
+          // IconsResolver({
+          //   prefix: 'Icon',
+          // }),
         ],
         dts: path.resolve(pathSrc, 'auto-imports.d.ts'),
       }),
       Components({
         resolvers: [
           ElementPlusResolver(),
-          IconsResolver({
-            enabledCollections: ['ep'],
-          }),
+          // IconsResolver({
+          //   enabledCollections: ['ep'],
+          // }),
         ],
         dts: path.resolve(pathSrc, 'components.d.ts'),
       }),
-      Icons({
-        autoInstall: true,
-      }),
+      // Icons({
+      //   autoInstall: true,
+      // }),
       // 多语言加载
       vueI18n({
         // if you want to use Vue I18n Legacy API, you need to set `compositionOnly: false`
@@ -259,7 +261,7 @@ export default ({ mode, command }) => {
     },
     optimizeDeps: {
       include: ['buffer', 'process'],
- 
+      // disabled: true
     },
     define: {
       _APP_VERSION: JSON.stringify(pkg.version),
@@ -303,6 +305,7 @@ export default ({ mode, command }) => {
       },
       commonjsOptions: {
         transformMixedEsModules: true,
+        
       },
     },
     sourcemap: isProduction ? false : 'inline',

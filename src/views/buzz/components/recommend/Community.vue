@@ -1,6 +1,6 @@
 <template>
-  <!-- 推荐社区 -->
-  <div class="recommend-section" v-if="communitys.length">
+  <!-- 推荐社区 communitys.length-->
+  <div class="recommend-section" v-if="false">
     <div class="title flex">
       <span>{{ $t('Buzz.Referral Community') }}</span>
       <!-- <div class="switch-wrap">
@@ -92,7 +92,7 @@ watch(
   () => userStore.isAuthorized,
   val => {
     if (val) {
-      getRecommendCommunitys()
+      //getRecommendCommunitys()
     }
   }
 )
@@ -172,7 +172,7 @@ function refreshDatas() {
     pagination.page = 1
     pagination.loading = false
     pagination.nothing = false
-    await getRecommendCommunitys()
+    //await getRecommendCommunitys()
     resolve()
   })
 }

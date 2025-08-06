@@ -36,13 +36,13 @@ export const router = createRouter({
       component: () => import('@/views/buzz/Layout.vue'),
       meta: { keepAlive: true },
       redirect: () => {
-       
-         return { name: 'talk' }
-        // if (userStore.isAuthorized) {
-        //   return { name: 'buzzIndex' }
-        // } else {
-        //   return { name: 'buzzRecommend' }
-        // }
+        const userStore=useUserStore()
+         
+        if (userStore.isAuthorized) {
+          return { name: 'talkAtMe' }
+        } else {
+          return { name: 'buzzRecommend' }
+        }
       },
       children: [
         // {

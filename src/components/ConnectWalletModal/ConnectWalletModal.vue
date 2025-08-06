@@ -1119,6 +1119,9 @@ async function connectMetalet() {
     await sleep(300)
 
     closeConnectionModal()
+    router.push({
+        name: 'talkAtMe',
+      })
   }
 
 

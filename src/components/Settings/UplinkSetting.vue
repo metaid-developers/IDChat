@@ -31,7 +31,7 @@
         </div>
       </div>
 
-      <div class="list">
+      <!-- <div class="list">
         <div class="item">
           <div class="cont flex flex-align-center">
             <div class="lable flex1">{{ $t('UplinkSetting.Uplink Payment Confirmation') }}</div>
@@ -63,7 +63,7 @@
             {{ $t('UplinkSetting.AlertValueIntro').replaceAll('ME', userStore.sdkPayment) }}
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
   </ElDrawer>
 </template>

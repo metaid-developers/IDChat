@@ -54,7 +54,7 @@ router.beforeEach(async (to, from, next) => {
 
   // 获取换算费率
   if (!rootStore.isGetedExchangeRate) {
-    rootStore.getExchangeRate()
+   // rootStore.getExchangeRate()
   }
 
   // if (!rootStore.isCertedMetaIds.length) {

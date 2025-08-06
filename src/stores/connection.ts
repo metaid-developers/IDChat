@@ -10,7 +10,7 @@ import {useCredentialsStore} from '@/stores/credentials'
 
 import { Network, useNetworkStore } from './network'
 import { useUserStore } from './user'
-
+import { useRouter } from 'vue-router'
 function getWalletAdapter(wallet: Wallet) {
   switch (wallet) {
     case 'metalet':
@@ -218,9 +218,13 @@ export const useConnectionStore = defineStore('connection', {
       this.last.pubKey = ''
 
       const userStore=useUserStore()
-      
+      const router = useRouter()
       await userStore.clearUserInfo()
-      
+    setTimeout(() => {
+     router.push({
+          name: 'buzzRecommend',
+        })
+    }, 2000);
 
     },
   },
