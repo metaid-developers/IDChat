@@ -519,12 +519,12 @@ const redEnvelopeMessage = computed(() => {
 })
 
 const isMyMessage = computed(() => {
-  return userStore.user?.metaId && userStore.user.metaId === props.message.from
+  return userStore.last?.metaid && userStore.last?.metaid === props.message.from
 })
 
 const messageAvatarImage = computed(() => {
-  if (props.message.from === userStore.user?.metaId) {
-    return userStore.user?.avatarImage
+  if (props.message.from === userStore.last?.metaid) {
+    return userStore.last?.avatar
   }
 
   return activeChannel.value?.avatarImage

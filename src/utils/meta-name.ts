@@ -4,8 +4,14 @@ import sha256 from 'crypto-js/sha256'
 
 const metaNameRegex = /[\s\S]+[.][a-zA-Z0-9_-]+/
 
+const publicChannelRegex=/public/
+
 export function isMetaName(name: string) {
   return metaNameRegex.test(name)
+}
+
+export function isPublicChannel(name: string){
+  return publicChannelRegex.test(name)
 }
 
 export async function getMetaNameAddress(metaNameNft: string): Promise<{ address: string }> {

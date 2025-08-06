@@ -3,11 +3,11 @@
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
     <div class="max-w-[50%] flex items-center">
-      <Icon
+      <!-- <Icon
         name="bars"
         class="w-6 h-6 text-dark-800 dark:text-gray-100 mx-2 shrink-0 lg:hidden"
         @click="layout.isShowLeftNav = true"
-      />
+      /> -->
 
       <div class="flex shrink-0 items-center">
         <div class=" hidden lg:block" v-if="talkStore.isActiveChannelReserved">
@@ -64,6 +64,8 @@
         <LoginedUserOperate />
       </div>
 
+     
+
       <div
         class="ml-1 hidden lg:flex lg:items-center group"
         v-if="!talkStore.isActiveChannelGeneral && talkStore.activeChannel?.id"
@@ -73,11 +75,22 @@
         >
           {{ shortenMetaId(talkStore.activeChannel.id) }}
         </div>
-        <Icon
+         <button
+          class=" w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
+        >
+          <Icon
           name="arrow_up_right"
-          class="w-3 h-3 p-1 box-content text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hidden group-hover:block cursor-pointer"
+          class="w-3 h-3 p-1 box-content text-gray-500  cursor-pointer"
           @click="goCheckTxId(talkStore.activeChannel?.txId)"
         />
+        </button>
+       
+        <button
+          class="mr-5 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
+          @click.stop="popInvite"
+        >
+          <Icon name="user_plus" class="w-4 h-4" />
+        </button>
       </div>
 
       <div
@@ -94,10 +107,13 @@
           class="w-3 h-3 p-1 box-content text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hidden group-hover:block cursor-pointer"
           @click="goCheckTxId(talkStore.activeCommunity?.txId)"
         />
+       
+        
       </div>
 
       <!-- 占位 -->
       <div v-else class="w-1"></div>
+      
       <!-- <div
         class="grow-0 pl-3 pr-2 truncate text-xs leading-tight overflow-x-hidden py-1 text-dark-800"
         @click="showDescModal = true"
@@ -155,6 +171,16 @@ const createCommunity = () => {
 const metaNameClass = computed(() => {
   return talkStore.activeCommunitySymbolInfo.suffix === 'eth' ? 'meta-name ens' : 'meta-name'
 })
+
+const popInvite = () => {
+  
+  talkStore.inviteLink = `${location.origin}/talk/channels/${talkStore.activeCommunitySymbol}/${talkStore.activeChannelId}`
+  talkStore.invitingChannel = {
+    community: talkStore.activeCommunity,
+    channel: talkStore.activeChannel,
+  }
+  layout.isShowInviteModal = true
+}
 
 const goCheckTxId = (txId: string) => {
   window.open(`https://mvcscan.com/tx/${txId}`, '_blank')

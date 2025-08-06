@@ -20,6 +20,7 @@
               v-for="session in talkStore.activeCommunityChannels"
               :key="session.timestamp"
               :session="session"
+             
             />
           </div>
         </div>
@@ -33,9 +34,16 @@ import { useLayoutStore } from '@/stores/layout'
 import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import { useTalkStore } from '@/stores/talk'
+import { computed} from 'vue'
 
 const layout = useLayoutStore()
 const talkStore = useTalkStore()
+
+const test=computed(()=>{
+ return talkStore.activeCommunityChannels
+})
+console.log("test",test.value)
+
 </script>
 
 <style lang="scss" scoped>

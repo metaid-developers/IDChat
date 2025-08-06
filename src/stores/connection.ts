@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { useLocalStorage, type RemovableRef } from '@vueuse/core'
 // import type { Psbt } from 'bitcoinjs-lib'
 import { ElMessage } from 'element-plus'
-
+import { TxComposer } from "meta-contract"
 // import * as unisatAdapter from '@/wallet-adapters/unisat'
 // import * as okxAdapter from '@/wallet-adapters/okx'
 import * as metaletAdapter from '@/wallet-adapters/metalet'
@@ -79,7 +79,18 @@ export const useConnectionStore = defineStore('connection', {
         // initPsbt: () => Psbt
         getMvcBalance: () => Promise<any>
         getMvcAddress: () => Promise<string>
-
+        pay:(toPayTransactions:{
+        transations:Array<{
+        txComposer: string
+        message?: string
+        }>,
+        hasMetaid: boolean,
+        feeb?: number
+        }
+     
+      )=>{
+        payedTransactions:string[]
+      }
         finishPsbt: (psbt: string) => string
         getAddress: () => Promise<string>
 
@@ -101,10 +112,16 @@ export const useConnectionStore = defineStore('connection', {
         signPsbts: (psbts: string[], options?: any) => Promise<string[]>
         pushPsbt: (psbt: string) => Promise<string>
         signMessage: (message: string) => Promise<string>
+        getPublicKey(): any
         getNetwork: () => Promise<Network>
-        switchNetwork: (
-          network: 'livenet' | 'testnet',
-        ) => Promise<'livenet' | 'testnet'>
+        switchNetwork: (network: 'livenet' | 'testnet') => Promise<{
+        address: string
+        network: 'mainnet' | 'testnet'
+        status: string
+        }>
+        // switchNetwork: (
+        //   network: 'livenet' | 'testnet',
+        // ) => Promise<'livenet' | 'testnet'>
       } = getWalletAdapter(state.last.wallet)
 
       return adapter
@@ -121,9 +138,9 @@ export const useConnectionStore = defineStore('connection', {
             address: '',
             pubKey: '',
           }
-
+          
       let connectRes = await getWalletAdapter(wallet).connect()
-
+          
       try {
         if (connectRes) {
           // check if network suits app's current environment;
@@ -132,6 +149,7 @@ export const useConnectionStore = defineStore('connection', {
           const appNetwork = networkStore.network
           switch (wallet) {
             case 'metalet':
+              
               const metaNetwork = await getWalletAdapter('metalet').getNetwork()
               if (metaNetwork !== appNetwork) {
                 await getWalletAdapter('metalet').switchNetwork(appNetwork)
@@ -168,7 +186,7 @@ export const useConnectionStore = defineStore('connection', {
 
       this.last.status = 'connected'
       this.last.address = await this.adapter.getAddress()
-      this.last.pubKey = await this.adapter.getPubKey()
+      this.last.pubKey = await this.adapter.getMvcPublickey()
 
       // check network synced;
       // if not, disconnect
@@ -182,6 +200,8 @@ export const useConnectionStore = defineStore('connection', {
             networkSynced = false
             this.disconnect()
           }
+          const userStore=useUserStore()
+          await userStore.setUserInfo(this.last.address)
           break
       }
 

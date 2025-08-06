@@ -286,7 +286,9 @@ import { Popover, PopoverButton, PopoverPanel, TransitionRoot } from '@headlessu
 
 import { sendMessage, validateTextMessage, isImage, isFileTooLarge } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
-import { FileToAttachmentItem, compressImage } from '@/utils/util'
+import { useConnectionStore } from '@/stores/connection'
+import { FileToAttachmentItem, compressImage,atobToHex } from '@/utils/util'
+import {useCredentialsStore} from '@/stores/credentials'
 import { encrypt, ecdhEncrypt } from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
 import { ChannelType, MessageType } from '@/enum'
@@ -296,6 +298,7 @@ import TalkImagePreview from './ImagePreview.vue'
 import StickerVue from '@/components/Sticker/Sticker.vue'
 import Decimal from 'decimal.js-light'
 import { router } from '@/router'
+
 
 interface Props {
   quote?: any
@@ -309,7 +312,7 @@ const showMoreCommandsBox = ref(false)
 const showStickersBox = ref(false)
 const spaceNotEnoughFlag = ref(false)
 const layout = useLayoutStore()
-
+const credentialsStore = useCredentialsStore()
 const hasInput = computed(() => chatInput.value.length > 0)
 
 /** 输入框样式 */
@@ -439,7 +442,7 @@ const trySendImage = async () => {
   const messageDto = {
     type: MessageType.Image,
     channelId: talk.activeChannel.id,
-    userName: userStore.user?.name!,
+    userName: userStore.last?.name!,
     attachments,
     content: '',
     originalFileUrl,
@@ -456,6 +459,8 @@ const trySendImage = async () => {
 /** 发送消息 */
 const chatInput = ref('')
 const userStore = useUserStore()
+
+const connectionStore=useConnectionStore()
 const isSending = ref(false)
 const theTextBox: Ref<HTMLTextAreaElement | null> = ref(null)
 
@@ -484,11 +489,8 @@ const rows = computed(() => {
 const checkSpaceBalance = () => {
   return new Promise<void>(async (resolve, reject) => {
     // 获取餘额
-    const res = await userStore
-      .showWallet!.wallet!.provider.getXpubBalance(
-        userStore.showWallet!.wallet!.rootAddress
-        // userStore.showWallet!.wallet!.wallet.xpubkey.toString()
-      )
+    
+    const res = await connectionStore.adapter.getMvcBalance()
       .catch(error => {
         ElMessage.error(error.message)
         resolve()
@@ -541,12 +543,16 @@ const trySendText = async (e: any) => {
   if (talk.activeChannelType === 'group') {
     content = encrypt(chatInput.value, talk.activeChannel.id.substring(0, 16))
   } else {
-    const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')!
-    const privateKeyStr = privateKey.toHex()
+    // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')!
+    // debugger
+    // const privateKeyStr = privateKey.toHex()
+    const credential=credentialsStore.getByAddress(connectionStore.last.address)
+    const sigStr=atobToHex(credential!.signature)
     const otherPublicKeyStr = talk.activeChannel.publicKeyStr
-    console.log(chatInput.value, privateKeyStr, otherPublicKeyStr)
+    console.log(chatInput.value, sigStr, otherPublicKeyStr)
 
-    content = ecdhEncrypt(chatInput.value, privateKeyStr, otherPublicKeyStr)
+    content = ecdhEncrypt(chatInput.value, sigStr, otherPublicKeyStr)
+    
   }
 
   chatInput.value = ''
@@ -555,7 +561,7 @@ const trySendText = async (e: any) => {
     content,
     type: MessageType.Text,
     channelId: talk.activeChannel.id,
-    userName: userStore.user?.name || '',
+    userName: userStore.last?.name || '',
     channelType: talk.activeChannelType as ChannelType,
     reply: props.quote,
   }

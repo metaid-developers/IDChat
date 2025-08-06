@@ -21,6 +21,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import type { ViteSentryPluginOptions } from 'vite-plugin-sentry'
 import viteSentry from 'vite-plugin-sentry'
 import VueDevTools from 'vite-plugin-vue-devtools'
+import { createHtmlPlugin } from 'vite-plugin-html'
 // import dns from 'dns'
 // dns.setDefaultResultOrder('verbatim')
 const pathSrc = path.resolve(__dirname, 'src')
@@ -50,7 +51,7 @@ export default ({ mode, command }) => {
   // const isProduction = productionEnvs.includes(mode) && command === 'build' ? true : false
   const isProduction = command === 'build'
   return defineConfig({
-    base: process.env.NODE_ENV === 'production' ? '/chat/' : '/',
+    //base: process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({
@@ -64,6 +65,57 @@ export default ({ mode, command }) => {
         }),
         enforce: 'post',
       },
+    //      createHtmlPlugin({
+    //   inject: {
+    //     data: {
+    //       basePath: '/chat/'
+    //     }
+    //   },
+    //   template: 'index.html'
+    // }),
+//          {
+//       name: 'force-base-path',
+//       transformIndexHtml(html) {
+//        return process.env.NODE_ENV === 'production' ?  html.replace(/(src|href)="\/assets\//g, '$1="/chat/assets/') : html
+    
+       
+//       },
+//    generateBundle(options, bundle) {
+//   if (process.env.NODE_ENV === 'production') {
+//     Object.keys(bundle).forEach(key => {
+//       const file = bundle[key]
+//       // 处理所有资源文件（JS/CSS/图片等）
+//       if (file.type === 'asset') {
+//         // 方案1：直接修改文件名（推荐）
+//         if (file.fileName.startsWith('assets/')) {
+//           file.fileName = `chat/assets/${file.fileName}`
+//         }
+
+//         if (file.fileName.startsWith('chat/chat/')) {
+//           file.fileName = file.fileName.replace('chat/chat/', 'chat/')
+//           }
+        
+//         // 方案2：修改文件内容中的路径引用（适用于CSS/HTML等）
+//         if (file.source) {
+//           file.source = file.source.toString()
+//             // 处理 url() 引用
+//             .replace(/(url\(['"]?)(\/?assets\/)/g, '$1/chat/$2')
+//             // 处理 src/href 引用
+//             .replace(/(src|href)=(['"])(\/?assets\/)/g, '$1=$2/chat/$3')
+//         }
+//       }
+      
+//       // 处理JS chunk文件
+//       if (file.type === 'chunk') {
+//         file.code = file.code.replace(
+//           /(from|import)\(?['"](\/?assets\/)/g, 
+//           '$1$2/chat/$3'
+//         )
+//       }
+//     })
+//   }
+// }
+//     },
       VueDevTools(),
       vue({
         template: {
@@ -228,9 +280,13 @@ export default ({ mode, command }) => {
     },
     esbuild: {
       drop: isProduction ? ['console', 'debugger'] : [],
+      
 
     },
     build: {
+      // outDir: 'dist',
+      // assetsDir: 'assets',
+      //  manifest: true,
       target: isProduction ? 'es2015' : 'modules',
       minify: isProduction,
       sourcemap: isProduction ? false : 'inline',
@@ -240,6 +296,9 @@ export default ({ mode, command }) => {
         plugins: [nodePolyfills()],
         output: {
           sourcemap: isProduction ? false : 'inline',
+        //    assetFileNames: 'chat/assets/[name].[hash].[ext]',
+        //    chunkFileNames: 'chat/assets/[name].[hash].js',
+        // entryFileNames: 'chat/assets/[name].[hash].js'
         },
       },
       commonjsOptions: {

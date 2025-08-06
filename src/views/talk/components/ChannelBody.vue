@@ -366,6 +366,7 @@ const tryInitChannel = async (status: string) => {
         // 获取餘额
         let balance
         if (user.isAuthorized) {
+          
           const { total } = await window.metaidwallet.getMvcBalance()
             .catch(error => {
               ElMessage.error(error.message)

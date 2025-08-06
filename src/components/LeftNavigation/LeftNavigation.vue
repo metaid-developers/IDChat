@@ -1,6 +1,6 @@
 <template>
   <!-- 社区列表 -->
-  <div
+  <!-- <div
     class="w-22.5 fullscreen bg-white dark:bg-gray-700 space-y-4.5 left-navigation z-50 py-4.5 overflow-y-auto lg:overflow-y-hidden lg:hover:overflow-y-auto  slimmer-scrollbar"
     :class="[layout.isShowLeftNav ? '' : 'hidden lg:block']"
   >
@@ -105,9 +105,8 @@
       </div>
     </div>
 
-    <!-- modals -->
     <CreateCommunityModal v-if="layout.isShowCreateCommunityModal" />
-  </div>
+  </div> -->
 </template>
 
 <script setup lang="ts">
@@ -137,6 +136,9 @@ const isInWhitelist = talk.selfMetaId && whiteList.includes(talk.selfMetaId)
 
 function getCommunityKey(community: Community) {
   // return community.id
+  
+
+  return 'public'
   if (!community.metaName) return community.id
 
   const originalMetaName = community.metaName

@@ -1104,6 +1104,7 @@ async function connectMetalet() {
   })
 
     if (connectionStore?.adapter?.metaletConnect) {
+      
     await connectionStore?.adapter.metaletConnect()!.catch((err) => {
       ElMessage.warning({
         message: err.message,

@@ -16,7 +16,7 @@ import { sleep } from '@/utils/util'
 import { useUserStore } from './user'
 import { GetUserInfo } from '@/api/aggregation'
 import { useWsStore } from './ws'
-import { getMetaNameAddress } from '@/utils/meta-name'
+import { getMetaNameAddress,isPublicChannel } from '@/utils/meta-name'
 
 export const useTalkStore = defineStore('talk', {
   state: () => {
@@ -80,18 +80,20 @@ export const useTalkStore = defineStore('talk', {
     },
 
     realCommunities(state) {
+      
       if (!state.communities) return []
       return state.communities.filter(community => community.id !== '@me')
     },
 
     atMeCommunity(state) {
+      
       if (!state.communities) return []
       return state.communities.find(community => community.id === '@me')
     },
 
     activeCommunity(state) {
       if (!state.communities) return null
-
+      
       return state.communities.find(community => community.id === state.activeCommunityId)
     },
 
@@ -101,13 +103,14 @@ export const useTalkStore = defineStore('talk', {
 
       let communitySymbol: string
       if (this.activeCommunity.metaName) {
-        const metaName = this.activeCommunity.metaName
-        // 如果不带后缀，就加上
-        if (!metaName.includes('.')) {
-          communitySymbol = metaName + '.metaid'
-        } else {
-          communitySymbol = metaName
-        }
+        communitySymbol='public'
+        // const metaName = this.activeCommunity.metaName
+        // // 如果不带后缀，就加上
+        // if (!metaName.includes('.')) {
+        //   communitySymbol = metaName + '.metaid'
+        // } else {
+        //   communitySymbol = metaName
+        // }
       } else {
         communitySymbol = this.activeCommunityId
       }
@@ -128,6 +131,7 @@ export const useTalkStore = defineStore('talk', {
     },
 
     activeChannel(state): any {
+      
       if (!this.activeCommunity) return null
 
       // 功能頻道
@@ -175,6 +179,7 @@ export const useTalkStore = defineStore('talk', {
     },
 
     activeCommunityChannels(): Channel[] {
+      
       if (!this.activeCommunity) return []
       return this.activeCommunity.channels || []
     },
@@ -204,8 +209,9 @@ export const useTalkStore = defineStore('talk', {
 
     hasUnreadMessagesOfChannel(): (channelId: string) => boolean {
       return (channelId: string) => {
+        
         if (channelId === this.activeChannelId) return false
-
+        
         // 如果頻道已读指针不存在，则说明没有未读消息
         if (!this.channelsReadPointers || !this.channelsReadPointers[channelId]) return false
 
@@ -264,6 +270,7 @@ export const useTalkStore = defineStore('talk', {
     activeChannelSymbol: state => (state.activeCommunityId === '@me' ? '@' : '#'),
 
     communityLastReadChannelId(): (communityId: string) => string {
+      
       const selfMetaId = this.selfMetaId
       return (communityId: string) => {
         const latestChannelsRecords =
@@ -281,23 +288,41 @@ export const useTalkStore = defineStore('talk', {
 
       const communities = await getCommunities({ metaId: this.selfMetaId })
       this.communities = [...communities, this.atMeCommunity]
+      console.log("this.communities",this.communities)
+      
     },
 
     async fetchChannels(communityId?: string, isGuest?: boolean) {
+      
       if (!communityId) communityId = this.activeCommunityId
       const isAtMe = communityId === '@me'
-      const channels = isAtMe
-        ? await getAtMeChannels({
+      
+      const atMeChannel=await getAtMeChannels({
             metaId: this.selfMetaId,
           })
-        : await getChannels({
-            communityId,
+      //const atMeChannel=[]
+     
+      const publicChannel=await getChannels({
+            communityId:"c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd",
           })
+
+      const channels=[...atMeChannel.slice(0,1),...publicChannel,...atMeChannel.slice(1)]
+      //[...publicChannel,...atMeChannel]
+
+      // const channels = isAtMe
+      //   ? await getAtMeChannels({
+      //       metaId: this.selfMetaId,
+      //     })
+      //   : await getChannels({
+      //       communityId,
+      //     })
 
       if (!this.activeCommunity?.channels) this.activeCommunity!.channels = []
       this.activeCommunity!.channels = channels
+      console.log('activeChannel',channels)
 
       if (!isGuest) {
+        
         // 写入存储
         this.initCommunityChannelIds()
         // 只保存頻道id
@@ -322,6 +347,10 @@ export const useTalkStore = defineStore('talk', {
 
     async checkCommunityMetaName(communityId: string) {
       // 检查metaname字段是否为空，以及metaname所属地址是否是自己
+      
+      if(isPublicChannel(communityId) || communityId == 'c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd'){
+        return true
+      }
 
       const community = await getOneCommunity(communityId)
       if (!community) return false
@@ -386,10 +415,12 @@ export const useTalkStore = defineStore('talk', {
     },
 
     async initCommunity(routeCommunityId: string) {
+      
       this.communityStatus = 'loading'
       const isAtMe = routeCommunityId === '@me'
       this.activeCommunityId = routeCommunityId
       if (!isAtMe) {
+        
         getCommunityMembers(routeCommunityId)
           .then((members: any) => {
             this.members = members
@@ -398,7 +429,7 @@ export const useTalkStore = defineStore('talk', {
             ElMessage.error('获取社区成员失败')
           })
       }
-
+      
       await this.fetchChannels(routeCommunityId)
       this.updateReadPointers()
       this.communityStatus = 'ready'
@@ -600,6 +631,7 @@ export const useTalkStore = defineStore('talk', {
 
     initCommunityChannelIds() {
       const selfMetaId = this.selfMetaId
+      
       if (this.communityChannelIds || !selfMetaId) return
 
       // 从本地存储中读取社区頻道id
@@ -688,7 +720,8 @@ export const useTalkStore = defineStore('talk', {
 
       // 最少1秒，防止闪烁
       const currentTimestamp = new Date().getTime()
-
+      console.log("this.activeChannelType",this.activeChannelType)
+      
       const messages = await getChannelMessages(
         this.activeChannelId,
         { metaId: selfMetaId },

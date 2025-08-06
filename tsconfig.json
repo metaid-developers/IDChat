@@ -7,11 +7,13 @@
     "jsx": "preserve",
     "sourceMap": false,
     "lib": ["esnext", "dom"],
+    "typeRoots": ["./node_modules/@types", "./src/types"], // 自定义类型路径
     "types": [
       "vite/client",
       "node",
       "@intlify/vite-plugin-vue-i18n/client",
-      "vite-plugin-pwa/client"
+      "vite-plugin-pwa/client",
+      "global"
     ],
     "plugins": [
       {
@@ -29,7 +31,8 @@
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.vue",
-    "node_modules/element-plus/global.d.ts"
+    "node_modules/element-plus/global.d.ts",
+    "global.d.ts"
   ],
   "exclude": ["node_modules", "dist", "public", "tests"]
 }

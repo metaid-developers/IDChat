@@ -14,7 +14,7 @@ import {
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import { SDK } from './sdk'
-import { FileToAttachmentItem, getTimestampInSeconds, realRandomString, sleep } from './util'
+import { FileToAttachmentItem, getTimestampInSeconds, realRandomString, sleep,atobToHex } from './util'
 import { Message, MessageDto } from '@/@types/talk'
 import { buildCryptoInfo, decrypt, ecdhDecrypt, encrypt, MD5Hash } from './crypto'
 import Decimal from 'decimal.js-light'
@@ -26,7 +26,9 @@ import { ElMessage } from 'element-plus'
 import { GetOneAnnouncement } from '@/api/aggregation'
 import { SHA256 } from 'crypto-js'
 import { toRaw } from 'vue'
-
+import {useCredentialsStore} from '@/stores/credentials'
+import { useConnectionStore } from '@/stores/connection'
+import {useBulidTx} from '@/hooks/use-build-tx'
 type CommunityData = {
   communityId: string
   name: string
@@ -331,17 +333,18 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
 export const createChannel = async (
   form: any,
   communityId: string,
-  sdk: SDK,
   subscribeId: string,
   selfMetaId?: string
 ) => {
+  const buildTx=useBulidTx()
   // communityId, groupName, groupNote, timestamp, groupType, status, type, codehash, genesis, limitAmount
   const { name: groupName } = form
 
-  const { groupType, status, type, codehash, genesis, limitAmount } = _getChannelTypeInfo(
+  const { groupType, status, type, limitAmount } = _getChannelTypeInfo(
     form,
     selfMetaId!
   )
+  
   // 发言设置，0：所有人，1：管理员
   const chatSettingType = form.adminOnly ? 1 : 0
 
@@ -356,32 +359,43 @@ export const createChannel = async (
     groupType,
     status,
     type,
-    codehash,
-    genesis,
+    tickId:'',
+    collectionId:'',
+    // codehash,
+    // genesis,
     limitAmount,
     chatSettingType,
+    deleteStatus:0,
     timestamp: getTimestampInSeconds(),
   }
   console.log({ dataCarrier })
 
   // 2. 构建节点参数
   const node = {
-    nodeName: NodeName.SimpleGroupCreate,
-    data: JSON.stringify(dataCarrier),
-    publickey: form.publicKey,
-    txId: form.txId,
+    protocol: NodeName.SimpleGroupCreate,
+    body: dataCarrier,
+    // publickey: form.publicKey,
+    // txId: form.txId,
   }
 
   // 3. 发送节点
   try {
-    const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const {protocol,body}=node
+   // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+   const res=await buildTx.createChannel({
+      protocol,
+      body,
+      isBroadcast:true
+    })
+    console.log("res",res)
+    
     console.log({ res })
-
+    
     if (res === null) {
       return { status: 'canceled' }
     }
 
-    return { status: 'success', subscribeId }
+    return { status: 'success', subscribeId,channelId:res.txids[0] }
   } catch (err) {
     console.log(err)
     ElMessage.error('创建群组失败')
@@ -554,7 +568,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
   const { content, channelId: groupID, userName: nickName, reply } = messageDto
-
+  
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
   const contentType = 'text/plain'
@@ -571,24 +585,54 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
 
   // 2. 构建节点参数
   const node = {
-    nodeName: NodeName.SimpleGroupChat,
-    data: JSON.stringify(dataCarrier),
+    protocol:NodeName.SimpleGroupChat,
+    body: dataCarrier,
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
   }
-
+  
   // 2.5. mock发送
   const mockId = realRandomString(12)
-  const mockMessage = {
+  // const mockMessage = {
+  //   mockId,
+  //   protocol: 'simpleGroupChat',
+  //   contentType: 'text/plain',
+  //   content,
+  //   avatarType: userStore.user?.avatarType || 'undefined',
+  //   avatarTxId: userStore.user?.avatarTxId || 'undefined',
+  //   avatarImage: userStore.user?.avatarImage || '',
+  //   metaId: userStore.user?.metaId || 'undefined',
+  //   nickName: userStore.user?.name || '',
+  //   userInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
+  //   timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
+  //   txId: '',
+  //   encryption,
+  //   isMock: true,
+  //   replyInfo: reply
+  //     ? {
+  //         chatType: reply.chatType,
+  //         content: reply.content,
+  //         contentType: reply.contentType,
+  //         encryption: reply.encryption,
+  //         metaId: reply.metaId,
+  //         nickName: reply.nickName,
+  //         protocol: reply.protocol,
+  //         timestamp: reply.timestamp,
+  //         txId: reply.txId,
+  //         userInfo: reply.userInfo,
+  //       }
+  //     : undefined,
+  // }
+   const mockMessage = {
     mockId,
     protocol: 'simpleGroupChat',
     contentType: 'text/plain',
     content,
-    avatarType: userStore.user?.avatarType || 'undefined',
-    avatarTxId: userStore.user?.avatarTxId || 'undefined',
-    avatarImage: userStore.user?.avatarImage || '',
-    metaId: userStore.user?.metaId || 'undefined',
-    nickName: userStore.user?.name || '',
-    userInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
+    avatarType: 'undefined',
+    avatarTxId: userStore.last?.avatarId || 'undefined',
+    avatarImage: userStore.last?.avatar || '',
+    metaId: userStore.last?.metaid || 'undefined',
+    nickName: userStore.last?.name || '',
+    userInfo: {},
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption,
@@ -611,25 +655,40 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
-  const sdk = userStore.showWallet
-  await tryCreateNode(node, sdk, mockId)
+  //const sdk = userStore.showWallet
+  await tryCreateNode(node, mockId)
 
   return '1'
 }
 
-export const tryCreateNode = async (node: any, sdk: SDK, mockId: string) => {
+export const tryCreateNode = async (node: {
+  protocol:string
+  body:any
+  timestamp:number
+}, mockId: string) => {
   const jobs = useJobsStore()
   const talk = useTalkStore()
+  const buildTx=useBulidTx()
+   const {protocol,body,timestamp:timeStamp}=node
   try {
-    const nodeRes = await sdk.createBrfcChildNode(node)
+    
+   
+    //const nodeRes = await sdk.createBrfcChildNode(node)
+    const nodeRes=await buildTx.createShowMsg({
+      protocol,
+      body,
+      isBroadcast:true
+    })
+    //console.log("nodeRes",nodeRes!.txids.length)
+    
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
     if (nodeRes === null) {
       talk.removeMessage(mockId)
     }
   } catch (error) {
-    const timestamp = node.timestamp
-    jobs.nodes.push({ node, timestamp })
+    const timestamp = timeStamp
+    jobs?.node && jobs?.nodes.push({ node, timestamp })
     const newMessages = talk.activeChannel.newMessages
     const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
     if (message) {
@@ -663,29 +722,55 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
 
   // 2. 构建节点参数
   const node = {
-    nodeName: NodeName.ShowMsg,
-    data: JSON.stringify(dataCarrier),
+    protocol:NodeName.ShowMsg,
+    body: dataCarrier,
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
   }
 
   // 2.5. mock发送
   const mockId = realRandomString(12)
-  const mockMessage = {
+  // const mockMessage = {
+  //   content,
+  //   mockId,
+  //   nodeName: NodeName.ShowMsg,
+  //   dataType: 'application/json',
+  //   data: dataCarrier,
+  //   avatarType: userStore.user?.avatarType || 'undefined',
+  //   avatarTxId: userStore.last?.avatarId || 'undefined',
+  //   avatarImage: userStore.last?.avatarImage || '',
+  //   fromAvatarImage: userStore.user?.avatarImage || '',
+  //   metaId: userStore.user?.metaId || 'undefined',
+  //   from: userStore.user?.metaId,
+  //   nickName: userStore.user?.name || '',
+  //   fromName: userStore.user?.name || '',
+  //   userInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
+  //   fromUserInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
+  //   timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
+  //   txId: '',
+  //   encryption: encrypt,
+  //   isMock: true,
+  //   to,
+  //   replyInfo: reply,
+  //   protocol: NodeName.ShowMsg,
+  // }
+
+  // 查找store中的位置
+    const mockMessage = {
     content,
     mockId,
     nodeName: NodeName.ShowMsg,
     dataType: 'application/json',
     data: dataCarrier,
-    avatarType: userStore.user?.avatarType || 'undefined',
-    avatarTxId: userStore.user?.avatarTxId || 'undefined',
-    avatarImage: userStore.user?.avatarImage || '',
-    fromAvatarImage: userStore.user?.avatarImage || '',
-    metaId: userStore.user?.metaId || 'undefined',
-    from: userStore.user?.metaId,
-    nickName: userStore.user?.name || '',
-    fromName: userStore.user?.name || '',
-    userInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
-    fromUserInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
+    avatarType:  'undefined',
+    avatarTxId: userStore.last?.avatarId || 'undefined',
+    avatarImage: userStore.last?.avatar || '',
+    fromAvatarImage: userStore.last?.avatar || '',
+    metaId: userStore.last?.metaid || 'undefined',
+    from: userStore.last?.metaid,
+    nickName: userStore.last?.name || '',
+    fromName: userStore.last?.name || '',
+    userInfo: userStore.last?.name || {},
+    fromUserInfo: userStore.last?.name || {},
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption: encrypt,
@@ -694,13 +779,11 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     replyInfo: reply,
     protocol: NodeName.ShowMsg,
   }
-
-  // 查找store中的位置
   talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
-  const sdk = userStore.showWallet
-  await tryCreateNode(node, sdk, mockId)
+  //const sdk = userStore.showWallet
+  await tryCreateNode(node, mockId)
 
   return '1'
 }
@@ -1044,12 +1127,15 @@ export function decryptedMessage(
 
   if (isSession) {
     if (!talk.activeChannel) return ''
-    const userStore = useUserStore()
-    const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
-    // @ts-ignore
-    const privateKeyStr = privateKey.toHex()
+      const credentialsStore = useCredentialsStore()
+      const connectionStore=useConnectionStore()
+     const credential=credentialsStore.getByAddress(connectionStore.last.address)
+    const sigStr=atobToHex(credential!.signature)
+    // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
+    // // @ts-ignore
+    // const privateKeyStr = privateKey.toHex()
     const otherPublicKeyStr = talk.activeChannel.publicKeyStr
-    return ecdhDecrypt(content, privateKeyStr, otherPublicKeyStr)
+    return ecdhDecrypt(content, sigStr, otherPublicKeyStr)
   } else {
     return decrypt(content, talk.activeChannelId.substring(0, 16))
   }

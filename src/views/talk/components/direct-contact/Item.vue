@@ -7,7 +7,7 @@
     <div class="rounded-3xl w-12 h-12 shrink-0 relative">
       <UserAvatar
         :image="session?.avatarImage"
-        :meta-id="session?.metaId"
+        :meta-id="session?.metaId || session?.createUserMetaId"
         :name="session?.name"
         :meta-name="session?.metaName"
         class="w-12 h-12 shrink-0 select-none"
@@ -15,7 +15,7 @@
       />
       <div
         class="absolute top-0 right-0 rounded-full w-2.5 h-2.5 bg-red-500"
-        v-if="talk.hasUnreadMessagesOfChannel(session.metaId)"
+        v-if="talk.hasUnreadMessagesOfChannel(session?.metaId || session?.createUserMetaId)"
       ></div>
     </div>
 
@@ -52,29 +52,38 @@ import { useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
 import { ecdhDecrypt } from '@/utils/crypto'
-
+import {useCredentialsStore} from '@/stores/credentials'
+import {useConnectionStore } from '@/stores/connection'
+import {atobToHex} from '@/utils/util'
 const i18n = useI18n()
 const userStore = useUserStore()
 const layout = useLayoutStore()
 const router = useRouter()
 const talk = useTalkStore()
+const credentialsStore = useCredentialsStore()
+const connectionStore=useConnectionStore()
 
 const props = defineProps(['session'])
 
+console.log('props.session',props.session)
+
 const contact = computed<any>(() => {
   let contactSide = 'from'
-
-  if (userStore.user) {
-    const selfMetaId = userStore.user.metaId
+  
+  if (userStore.last) {
+    const selfMetaId = userStore.last.metaid
     if (props.session.from === selfMetaId) {
       contactSide = 'to'
     }
+
+   
+    
   }
 
   return {
     name: props.session.name || props.session[`${contactSide}Name`],
     metaName: props.session[`${contactSide}UserInfo`]?.metaName || '',
-    metaId: props.session.id,
+    metaId: props.session.id || props.session.createUserMetaId,
     lastMessage: props.session.lastMessage,
     lastMessageTimestamp: props.session.lastMessageTimestamp,
   }
@@ -98,11 +107,13 @@ const decryptedMessage = computed(() => {
     return props.session.data.content
   }
 
-  const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
-  const privateKeyStr = privateKey.toHex()
+     const credential=credentialsStore.getByAddress(connectionStore.last.address)
+    const sigStr=atobToHex(credential!.signature)
+  // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
+  // const privateKeyStr = privateKey.toHex()
   const otherPublicKeyStr = props.session.publicKeyStr
 
-  return ecdhDecrypt(props.session.data.content, privateKeyStr, otherPublicKeyStr)
+  return ecdhDecrypt(props.session.data.content, sigStr, otherPublicKeyStr)
 })
 
 const parseTextMessage = (text: string) => {
@@ -143,8 +154,12 @@ const switchChannel = () => {
   })
 
   if (isActive.value) return
-
-  router.push(`/talk/channels/@me/${contact.value.metaId}`)
+  if(props.session?.groupId){
+     router.push(`/talk/channels/public/${props.session?.groupId}`)
+  }else{
+     router.push(`/talk/channels/@me/${contact.value.metaId}`)
+  }
+ 
 }
 </script>
 

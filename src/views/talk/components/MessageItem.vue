@@ -295,7 +295,7 @@ const redPacketMessage = computed(() => {
 })
 
 const isMyMessage = computed(() => {
-  return userStore.user?.metaId && userStore.user.metaId === props.message.metaId
+  return userStore.last?.metaid && userStore.last.metaid === props.message.metaId
 })
 
 const handleOpenRedPacket = async () => {

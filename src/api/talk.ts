@@ -177,7 +177,7 @@ export const getChannelMessages = async (
   const selfMetaId = params.metaId
   delete params.metaId
   const query = new URLSearchParams(params).toString()
-
+  
   if (type === 'session') {
     const {
       data: { data: messages },

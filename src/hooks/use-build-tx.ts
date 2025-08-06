@@ -6,6 +6,8 @@ import {createScriptForMvc} from '@/lib/pin'
 import { useNetworkStore } from '@/stores/network';
 import {broadcast} from '@/api/metalet'
 import { ElMessage } from 'element-plus'
+import { useConnectionStore } from '@/stores/connection';
+import {SERVICE_ADDRESS,SERVICE_FEE} from '@/data/constants'
 export enum MetaFlag{
  metaid='metaid',
   testid='testid'
@@ -22,8 +24,8 @@ export enum Operation{
 
 
 export enum Encryption{
-  nonEncrypt=0,
-  Encrypt=1
+  nonEncrypt="0",
+  Encrypt="1"
 }
 
 export type MetaIdData = {
@@ -40,6 +42,7 @@ export type MetaIdData = {
 export const useBulidTx = createGlobalState(() => {
     const userStore=useUserStore()
     const networkStore=useNetworkStore()
+    const connectionStore=useConnectionStore()
     const address = computed(()=>{
         return new mvc.Address(userStore.last?.address)
     })
@@ -47,8 +50,8 @@ export const useBulidTx = createGlobalState(() => {
         return userStore.last?.address
     }))
   // actions
-  const createPin = async(metaidData:MetaIdData,isBroadcast=true) => {
-   
+  const createPin = async(metaidData:MetaIdData,isBroadcast=true,needService:boolean=true) => {
+    
     try {
        const transactions=[] 
        const pinTxComposer = new TxComposer()
@@ -57,23 +60,41 @@ export const useBulidTx = createGlobalState(() => {
         satoshis: 1,
         })
         const pinScript = createScriptForMvc(metaidData)
+        
         pinTxComposer.appendOpReturnOutput(pinScript)
+
+        if(needService){
+        pinTxComposer.appendP2PKHOutput({
+        address: new mvc.Address(SERVICE_ADDRESS,import.meta.env.VITE_NET_WORK),
+        satoshis: SERVICE_FEE,
+        })
+        }
+        
         transactions.push({
-        txComposer: pinTxComposer,
+        txComposer: pinTxComposer.serialize(),
         message: 'Create Pin',
         })
+       
+        
+        const {payedTransactions}= await connectionStore.adapter.pay({
+          transactions:transactions,
+          hasMetaid:true
+        })
 
-        const payedTransactions= await window.metaidwallet.pay(transactions,true)
-
+        if(!payedTransactions){
+          return null
+        }
+        
         const txIDs=await txBroadcast(payedTransactions,isBroadcast)
         console.log("txIDs",txIDs)
-
-        debugger
+        
+        
         return txIDs
 
 
     } catch (error) {
-         throw new Error(error as any)
+      
+         throw new Error((error as any).message)
     }
   }
 
@@ -83,24 +104,53 @@ export const useBulidTx = createGlobalState(() => {
     isBroadcast:boolean
   })=>{
     const {body,protocol,isBroadcast}=params
-   
+    
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `${protocol}`,
+        path: `/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
         contentType: 'text/plain',
-        encryption: Encryption.nonEncrypt,
+        encryption: body.encryption || body.encrypt,
         encoding: 'utf-8',
       }
-
+      
       const pinRes= await createPin(metaidData,isBroadcast)
       return pinRes
 
     } catch (error) {
-       ElMessage.error(error as any)
+     
+      throw new Error(error as any)
+    }
+  }
+
+   const createChannel=async(params:{
+    body:any,
+    protocol:string,
+    isBroadcast:boolean
+  })=>{
+    const {body,protocol,isBroadcast}=params
+    
+    try {
+      const metaidData={
+        body:JSON.stringify(body),
+        path: `/protocols/${protocol}`,
+        flag: MetaFlag.metaid,
+        version: '1.0.0',
+        operation: Operation.create,
+        contentType: 'text/plain',
+        encryption: body.encryption || body.encrypt,
+        encoding: 'utf-8',
+      }
+      
+      const pinRes= await createPin(metaidData,isBroadcast)
+      return pinRes
+
+    } catch (error) {
+     
+      throw new Error(error as any)
     }
   }
 
@@ -140,6 +190,7 @@ export const useBulidTx = createGlobalState(() => {
   return {
     createPin,
     createShowMsg,
+    createChannel,
     txBroadcast
    
   }

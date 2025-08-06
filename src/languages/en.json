@@ -1319,5 +1319,8 @@
   "not allow_join_commutity": "Joining the community using the Metalet wallet is not supported at the moment",
   "stake": {
     "maintain": "Before staking, the account balance should be maintained at no less than 1.01 SPACE"
+  },
+  "account": {
+    "change": "Metalet account changed. Refreshing page..."
   }
 }

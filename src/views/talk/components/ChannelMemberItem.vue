@@ -8,14 +8,14 @@
       :type="member.avatarType"
       :meta-id="member.metaId"
       :image="member.avatarImage"
-      :meta-name="member?.userInfo?.metaName"
+      :meta-name="''"
       :image-class="'w-9 h-9'"
       class="shrink-0"
     />
     <div class="ml-2 flex flex-col gap-y-px">
       <UserName
         :name="member.name"
-        :meta-name="member?.userInfo?.metaName"
+        :meta-name="''"
         class="max-w-[160PX] text-sm"
       />
       <div class="text-xxs text-dark-300 dark:text-gray-400" v-if="member.metaId">

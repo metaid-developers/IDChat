@@ -33,14 +33,14 @@
   <SearchModal />
   <ConnectWalletModalVue />
   <!-- <UserCardFloater /> -->
-  <PWA />
+  <!-- <PWA /> -->
 
   <!-- 图片预览 -->
   <ImagePreviewVue />
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, nextTick, watch, provide } from 'vue'
+import { reactive, ref, onMounted, nextTick, watch, provide ,onBeforeUnmount,onUnmounted} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useRootStore } from '@/stores/root'
@@ -50,48 +50,135 @@ import ConnectWalletModalVue from './components/ConnectWalletModal/ConnectWallet
 import LeftNavigationVue from './components/LeftNavigation/LeftNavigation.vue'
 import DragonBall from './views/talk/components/DragonBall.vue'
 import SearchModal from './components/Search/Index.vue'
-import PWA from './components/PWA/PWA.vue'
+//import PWA from './components/PWA/PWA.vue'
 import UserCardFloater from './components/UserCard/Floater.vue'
 import PullDownVue from './layout/PullDown/PullDown.vue'
 import ImagePreviewVue from '@/components/ImagePreview/ImagePreview.vue'
-
+import { type Network, useNetworkStore } from '@/stores/network'
+import { useCredentialsStore } from '@/stores/credentials'
+import { useConnectionStore } from '@/stores/connection'
+import {completeReload} from '@/utils/util'
+import { useI18n } from 'vue-i18n'
+const MAX_RETRY_TIME = 5000 // 最大等待时间（毫秒）
+const RETRY_INTERVAL = 100  // 重试间隔（毫秒）
 const rootStore = useRootStore()
 const userStore = useUserStore()
 const route = useRoute()
 const blackRoute = reactive(['home'])
 const router = useRouter()
+const isNetworkChanging = ref(false)
+const i18n = useI18n()
 const routeKey = (route: any) => {
   if (route.params.communityId) return route.params.communityId
   return route.fullPath
 }
 
+const networkStore = useNetworkStore()
+const connectionStore = useConnectionStore()
+const credentialsStore = useCredentialsStore()
+
+function handleNetworkChanged(network: Network) {
+  isNetworkChanging.value = true
+
+  const appNetwork = networkStore.network
+  if (network !== appNetwork) {
+    connectionStore.disconnect()
+  }
+
+  isNetworkChanging.value = false
+}
+
+const metaletAccountsChangedHandler = () => {
+  
+  if (useConnectionStore().last.wallet !== 'metalet') return
+
+  // sync here to prevent chronological error
+  connectionStore.sync()
+
+  ElMessage.warning({
+    message:i18n.t('account.change'),
+    type: 'warning',
+    onClose: () => {
+      completeReload()
+    },
+  })
+}
+const metaletNetworkChangedHandler = (network: Network) => {
+  if (useConnectionStore().last.wallet !== 'metalet') return
+  handleNetworkChanged(network)
+}
+
+
+onMounted(async () => {
+  let retryCount = 0
+  let timeoutId: number
+
+  const checkMetalet = async () => {
+    if (window.metaidwallet) {
+     
+      try {
+        await window.metaidwallet.on('accountsChanged', metaletAccountsChangedHandler)
+        await window.metaidwallet.on('networkChanged', metaletNetworkChangedHandler)
+      } catch (err) {
+        console.error('Failed to setup Metalet listeners:', err)
+      }
+    } else if (retryCount * RETRY_INTERVAL < MAX_RETRY_TIME) {
+      retryCount++
+      timeoutId = setTimeout(checkMetalet, RETRY_INTERVAL)
+    } else {
+      console.warn('Metalet wallet not detected after timeout')
+    }
+  }
+
+  // 初始检查
+  checkMetalet()
+
+  onUnmounted(() => {
+    clearTimeout(timeoutId)
+  })
+})
+
+
+onBeforeUnmount(async() => {
+  // remove event listener
+  
+ await window.metaidwallet?.removeListener(
+    'accountsChanged',
+    metaletAccountsChangedHandler,
+  )
+ await window.metaidwallet.removeListener(
+    'networkChanged',
+    metaletNetworkChangedHandler,
+  )
+})
+
 // if (!localStorage.getItem('showDiffLang')) {
 //   localStorage.setItem('showDiffLang', String(1))
 // }
 
-onMounted(() => {
-  setTimeout(async () => {
-    if (userStore.metaletLogin) {
-      const res = await window.metaidwallet.getAddress()
-      if (res?.status == 'not-connected' || userStore.user?.address !== res) {
-        ElMessage.error('We detected changes to your account. Please log in again.')
-        await userStore.logout(route)
-        window.location.reload()
-      }
+// onMounted(() => {
+//   setTimeout(async () => {
+//     if (userStore.metaletLogin) {
+//       const res = await window.metaidwallet.getAddress()
+//       if (res?.status == 'not-connected' || userStore.user?.address !== res) {
+//         ElMessage.error('We detected changes to your account. Please log in again.')
+//         await userStore.logout(route)
+//         window.location.reload()
+//       }
 
-      window.metaidwallet.on(
-        'accountsChanged',
-        async (res: { mvcAddress: string; btcAddress: string }) => {
-          if (res.mvcAddress !== userStore.user?.address) {
-            ElMessage.error('We detected changes to your account. Please log in again.')
-            await userStore.logout(route)
-            window.location.reload()
-          }
-        }
-      )
-    }
-  }, 500)
-})
+//       window.metaidwallet.on(
+//         'accountsChanged',
+//         async (res: { mvcAddress: string; btcAddress: string }) => {
+//           if (res.mvcAddress !== userStore.user?.address) {
+//             ElMessage.error('We detected changes to your account. Please log in again.')
+//             await userStore.logout(route)
+//             window.location.reload()
+//           }
+//         }
+//       )
+//     }
+//   }, 500)
+// })
 </script>
 <style lang="css" src="@/assets/styles/tailwind.css"></style>
 <style lang="scss" scoped>

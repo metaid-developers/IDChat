@@ -27,3 +27,8 @@ interface ImportMetaEnv {
   VITE_AppName: string
   VITE_NET_WORK: Network
 }
+
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

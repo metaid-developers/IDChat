@@ -521,6 +521,29 @@ export async function downloadFile(url: string, name = 'file') {
   }
 }
 
+export function atobToHex(str:string){
+  const binaryString = atob(str)
+  let hexString = '';
+for (let i = 0; i < binaryString.length; i++) {
+    const hex = binaryString.charCodeAt(i).toString(16).padStart(2, '0');
+    hexString += hex;
+}
+
+return hexString
+}
+
+export function completeReload() {
+  // dump search params then reload
+  const url = new URL(window.location.href)
+
+  url.searchParams.delete('clear')
+  url.searchParams.delete('address')
+
+  window.location.href = url.href
+
+  return
+}
+
 export function openLoading(params?: {
   parent?: LoadingParentElement
   background?: string

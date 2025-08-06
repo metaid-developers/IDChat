@@ -763,6 +763,7 @@ export const GetMetaNameResolver = (params: {
     }
   }
 }> => {
+  
   return aggregation.get(`/v2/app/metaname/indexer/info?`, { params })
 }
 
@@ -841,6 +842,7 @@ export const GetMetaNameInfo = (
     ownerAddress: string
   }
 }> => {
+  
   return aggregation.get(`/v2/app/metaname/indexer/info`, { params: { name } })
 }
 

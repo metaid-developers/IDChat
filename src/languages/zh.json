@@ -1313,5 +1313,8 @@
   "not allow_join_commutity": "暂不支持使用Metalet钱包加入社区",
   "stake": {
     "maintain": "质押前应保持账户余额不低于1.01 SPACE"
+  },
+  "account": {
+    "change": "Metalet 账户已变更。正在刷新页面..."
   }
 }

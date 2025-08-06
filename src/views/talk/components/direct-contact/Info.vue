@@ -90,7 +90,7 @@ const talk = useTalkStore()
 const user = useUserStore()
 const layout = useLayoutStore()
 const i18n = useI18n()
-const activeChannel = computed(() => talk.activeChannel)
+const activeChannel =ref(false) //computed(() => talk.activeChannel)
 const rootStore = useRootStore()
 const shortId = computed(() => {
   if (!activeChannel.value) return ''

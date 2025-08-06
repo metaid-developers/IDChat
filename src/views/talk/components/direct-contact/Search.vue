@@ -14,15 +14,31 @@
         />
       </div>
 
-      <div class="">
-        <Icon name="user_bars" class="w-6 h-6 p-0.5 cursor-pointer" />
+         <div
+        class="border-dashed border-2 border-gray-200 dark:border-gray-600 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
+        v-if="userStore.isAuthorized"
+        @click="
+          layout.isShowCreatePublicChannelModal = true
+        "
+      >
+        <Icon name="plus" class="w-[20PX] h-[20PX]" />
       </div>
+
+      <!-- <div class="">
+         <Icon name="user_plus" class="w-6 h-6 p-0.5 cursor-pointer" />
+        
+      </div> -->
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { useUserStore } from '@/stores/user'
 import { ref, watch } from 'vue'
+import { useLayoutStore } from '@/stores/layout'
+
+const userStore=useUserStore()
+const layout = useLayoutStore()
 const keyword = ref('')
 const handleSearch = () => {
   console.log(keyword.value)

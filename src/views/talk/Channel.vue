@@ -1,6 +1,7 @@
 <template>
   <div class="relative lg:flex text-base fullscreen overscroll-y-none">
-    <CommunityInfo />
+    <DirectContactList />
+    <CommunityInfo v-if="!isPublicChannel(communityId)" /> 
 
     <div class="lg:grow fullscreen lg:!h-screen lg:relative lg:flex">
       <ChannelHeader />
@@ -32,6 +33,7 @@
     <CommunitySettingsModal v-if="layout.isShowCommunitySettingsModal" />
     <!-- <NoMetaNameModal v-if="layout.isShowNoMetaNameModal" /> -->
     <leaveCommunityModal v-if="layout.isShowLeaveCommunityModal" />
+     <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
   </div>
 </template>
 
@@ -41,7 +43,7 @@ import { useRoute } from 'vue-router'
 
 import { useTalkStore } from '@/stores/talk'
 import { useLayoutStore } from '@/stores/layout'
-import { isMetaName, resolveMetaName } from '@/utils/meta-name'
+import { isMetaName, resolveMetaName,isPublicChannel } from '@/utils/meta-name'
 
 import ChannelHeader from './components/ChannelHeader.vue'
 import CommunityInfo from './components/CommunityInfo.vue'
@@ -62,7 +64,8 @@ import ShareToBuzzModal from './components/modals/invite/ShareToBuzz.vue'
 import ShareSuccessModal from './components/modals/invite/ShareSuccess.vue'
 import NoMetaNameModal from './components/modals/community/NoMetaName.vue'
 import leaveCommunityModal from './components/modals/community/Leave.vue'
-
+import DirectContactList from './components/direct-contact/List.vue'
+import CreatePublicChannelModal from './components/modals/CreatePublicChannelModal.vue'
 import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
 
@@ -73,6 +76,7 @@ const layout = useLayoutStore()
 
 // 初始化頻道
 function init(communityId: string) {
+  
   
   // 先检查社区是否还佩戴有效的metaname
   talk.checkCommunityMetaName(communityId).then((isValid: boolean) => {
@@ -119,12 +123,20 @@ const { communityId } = route.params as { communityId: string }
 
 // 解析 communityId 为 metaName 的情况
 async function resolve(communityId: string) {
-  if (isMetaName(communityId)) {
+  //init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
+   if(isPublicChannel(communityId)){
+    init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
+    //init(communityId)
+   }else if(isMetaName(communityId)){
     const resolveRes = await resolveMetaName(communityId)
     init(resolveRes.communityId)
-  } else {
-    init(communityId)
-  }
+   }
+  // if (isMetaName(communityId)) {
+  //   const resolveRes = await resolveMetaName(communityId)
+  //   init(resolveRes.communityId)
+  // } else {
+  //   init(communityId)
+  // }
 }
 resolve(communityId)
 

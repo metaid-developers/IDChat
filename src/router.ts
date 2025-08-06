@@ -7,6 +7,7 @@ import { useRootStore } from './stores/root'
 import { useUserStore } from './stores/user'
 import { useTalkStore } from './stores/talk'
 import { GetBandProposalList } from '@/api/strapi'
+//import.meta.env.VITE_BASE_URL
 export const routerHistory = createWebHistory()
 export const router = createRouter({
   history: routerHistory,
@@ -36,7 +37,7 @@ export const router = createRouter({
       meta: { keepAlive: true },
       redirect: () => {
        
-         return { name: 'buzzRecommend' }
+         return { name: 'talk' }
         // if (userStore.isAuthorized) {
         //   return { name: 'buzzIndex' }
         // } else {

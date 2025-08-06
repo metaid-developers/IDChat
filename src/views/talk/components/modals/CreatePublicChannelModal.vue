@@ -31,7 +31,7 @@
             />
           </div>
 
-          <div class="mt-6">
+          <!-- <div class="mt-6">
             <SwitchGroup>
               <div class="flex items-center gap-x-3">
                 <Switch
@@ -51,7 +51,7 @@
                 </SwitchLabel>
               </div>
             </SwitchGroup>
-          </div>
+          </div> -->
         </div>
 
         <div class="flex items-end justify-end grow lg:mt-8">
@@ -86,8 +86,10 @@ import { realRandomString, sleep } from '@/utils/util'
 import { Channel } from '@/@types/talk'
 import { watch } from 'vue'
 import { fromBase64 } from 'js-base64'
-
+import { debug } from 'console'
+import { useRouter } from 'vue-router'
 const form = useChannelFormStore()
+const router = useRouter()
 form.type = GroupChannelType.PublicText
 
 const userStore = useUserStore()
@@ -100,10 +102,13 @@ const tryCreateChannel = async () => {
   layout.isShowCreatePublicChannelModal = false
   layout.isShowLoading = true
   const subscribeId = form.uuid || realRandomString(32)
-  const res = await createChannel(form, talk.activeCommunityId, userStore.showWallet, subscribeId)
-
+  
+  const res = await createChannel(form, talk.activeCommunityId == '@me' ? '' : talk.activeCommunityId, subscribeId)
+  console.log("res",res)
+  
   // 添加占位頻道
   if (res.status === 'success') {
+ 
     const newChannel = {
       id: 'placeholder_' + realRandomString(8),
       name: form.name,
@@ -114,9 +119,12 @@ const tryCreateChannel = async () => {
       chatSettingType: form.adminOnly ? 1 : 0,
       txId: form.txId,
     }
+    
     // 将占位頻道添加到頻道列表最前面
-    if (form.publicKey && form.txId) {
-      const index = talk.activeCommunityChannels.findIndex(item => item.txId === form.txId)
+    if (res.channelId) {
+      
+      const index = talk.activeCommunityChannels.findIndex(item => item.txId === form?.txId)
+      
       if (index !== -1) {
         talk.activeCommunityChannels[index] = newChannel
       }
@@ -129,7 +137,8 @@ const tryCreateChannel = async () => {
 
   sleep(2000).then(() => {
     // 跳转刷新
-    window.location.reload()
+     window.location.reload()
+     //router.push(`/talk/channels/public/${res.channelId}`)
     // talk.refetchChannels()
   })
 }

@@ -106,7 +106,7 @@ export const useCredentialsStore =defineStore('credentials', {
       try {
         switch (connection.wallet) {
           case 'metalet':
-            publicKey = await window.metaidwallet.getPublicKey()
+            publicKey = await connectionStore.adapter.getMvcPublickey()
             
             signature = await connectionStore.adapter.signMessage(message)
             
