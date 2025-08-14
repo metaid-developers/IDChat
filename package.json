@@ -152,6 +152,7 @@
     "wait-on": "~5.3"
   },
   "resolutions": {
-    "**/elliptic": "6.6.1"
+    "**/elliptic": "6.6.1",
+    "**/globals": "14.0.0"
   }
 }
