@@ -1,3 +1,5 @@
+import {UserInfo as newUserInfo} from '@/api/man'
+
 declare interface Pagination {
   page: number
   pageSize: number
@@ -884,7 +886,8 @@ declare interface ChatMessageItem {
   redMetaId: string
   timestamp: number
   txId: string
-  userInfo: DataUserInfo
+  replyTx:string
+  userInfo: newUserInfo
   isMock?: boolean
   replyInfo?: {
     chatType: number
@@ -896,28 +899,14 @@ declare interface ChatMessageItem {
     protocol: string
     timestamp: number
     txId: string
-    userInfo: {
-      address: string
-      avatarImage: string
-      avatarTxId: string
-      avatarType: string
-      coverPublicKey: string
-      coverType: string
-      coverUrl: string
-      metaId: string
-      metaIdTimestamp: number
-      metaName: string
-      name: string
-      nameType: string
-      nftNamePublicKey: string
-      publicKey: string
-    }
+    userInfo: newUserInfo
   }
 }
 
 declare interface ShareChatMessageData {
-  communityId: string
-  channelId: string
+  //communityId: string
+  //channelId: string
+  groupId:string
   userMetaId: string
   message: {
     content: string

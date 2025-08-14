@@ -19,7 +19,8 @@ import { useTalkStore } from '@/stores/talk'
 import { decryptedMessage } from '@/utils/talk'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
+import {containsString,fetchTranlateResult} from '@/utils/util'
+import { ShareChatMessageData } from '@/@types/common'
 const i18n = useI18n()
 
 const props = defineProps(['message', 'parsed', 'translateStatus', 'translatedContent'])
@@ -30,7 +31,7 @@ const emit = defineEmits<{
   (e: 'toBuzz', data: ShareChatMessageData): void
 }>()
 
-const isText = computed(() => ['ShowMsg', 'simpleGroupChat'].includes(props.message.protocol))
+const isText = computed(() => containsString(props.message.protocol,NodeName.ShowMsg) || containsString(props.message.protocol,NodeName.SimpleGroupChat))
 const talk = useTalkStore()
 
 const actions = computed(() => {
@@ -51,6 +52,7 @@ const actions = computed(() => {
   //   },
   // })
   if (isText.value) {
+    
     actions.push({
       name: 'Talk.MessageMenu.translate',
       icon: 'translate',
@@ -62,13 +64,17 @@ const actions = computed(() => {
             // 如果未请求过翻译，请求翻译
             const content = props.parsed
             const params = {
-              query: content,
-              to: i18n.locale.value,
+              sourceText: content,
+              // from:i18n.locale.value == 'en' ? 'zh' : 'en',
+              // to: i18n.locale.value,
             }
-            const translateRes = await Translate(params)
 
-            if (translateRes.code === 0) {
-              emit('update:translatedContent', translateRes.result.transResult)
+            const translateRes=await fetchTranlateResult(params)
+         
+            //const translateRes = await Translate(params)
+            
+            if (translateRes?.trans_result.length) {
+              emit('update:translatedContent', translateRes.trans_result[0].dst)
             }
             emit('update:translateStatus', 'showing')
           } else {
@@ -87,67 +93,83 @@ const actions = computed(() => {
         // 复制该消息内容到剪贴板
         const content = props.parsed
         navigator.clipboard.writeText(content)
+        ElMessage.success(i18n.t('Copy_success'))
       },
     })
   }
 
   // publish buzz
-  if (import.meta.env.MODE !== EnvMode.Mainnet) {
-    actions.push({
-      name: 'Talk.MessageMenu.toBuzz',
-      icon: 'share_arrow',
-      action: () => {
-        let data: ShareChatMessageData
-        if (props.message.protocol === NodeName.ShowMsg) {
-          const message: ChatSessionMessageItem = props.message
-          data = {
-            communityId: talk.activeCommunityId,
-            channelId: talk.activeChannelId,
-            userMetaId: message.fromUserInfo.metaId,
-            message: {
-              content: message.data.content,
-              contentType: message.data.contentType,
-              protocol: message.protocol,
-              txId: message.txId,
-              timestamp: message.data.timestamp,
-              metanetId: '',
-            },
-          }
-        } else {
-          const message: ChatMessageItem = props.message
-          data = {
-            communityId: talk.activeCommunityId,
-            channelId: talk.activeChannelId,
-            userMetaId: message.userInfo.metaId,
-            message: {
-              content: decryptedMessage(
-                message.content,
-                message.encryption,
-                message.protocol,
-                message.isMock
-              ),
-              contentType: message.contentType,
-              protocol: message.protocol,
-              txId: message.txId,
-              timestamp: message.timestamp,
-              metanetId: message.metanetId,
-            },
-          }
-        }
-        // 复制该消息内容到剪贴板
-        emit('toBuzz', data)
-      },
-    })
-  }
+  // if (import.meta.env.MODE !== EnvMode.Mainnet) {
+  //      const message: ChatSessionMessageItem = props.message
+  //          console.log("message132132",message)
+  //         debugger
+    
+  //   actions.push({
+  //     name: 'Talk.MessageMenu.toBuzz',
+  //     icon: 'share_arrow',
+  //     action: () => {
+  //       let data: ShareChatMessageData
+  //       debugger
+  //       if (containsString(props.message.protocol,NodeName.ShowMsg)) {
+         
+  //         const message: ChatSessionMessageItem = props.message
+  //          console.log("message132132",message)
+  //         debugger
+  //         debugger
+  //         data = {
+  //           //communityId: talk.activeCommunityId,
+  //           groupId: talk.activeChannelId,
+  //           userMetaId: message.fromUserInfo.metaId,
+  //           message: {
+  //             content: message.data.content,
+  //             contentType: message.data.contentType,
+  //             protocol: message.protocol,
+  //             txId: message.txId,
+  //             timestamp: message.data.timestamp,
+  //             metanetId: '',
+  //           },
+  //         }
+  //       } else {
+  //         const message: ChatMessageItem = props.message
+  //         debugger
+  //         data = {
+  //           // communityId: talk.activeCommunityId,
+  //           groupId: talk.activeChannelId,
+  //           userMetaId: message.userInfo.metaid,
+  //           message: {
+  //             content: decryptedMessage(
+  //               message.content,
+  //               message.encryption,
+  //               message.protocol,
+  //               message.isMock
+  //             ),
+  //             contentType: message.contentType,
+  //             protocol: message.protocol,
+  //             txId: message.txId,
+  //             timestamp: message.timestamp,
+  //             metanetId: message.metanetId,
+  //           },
+  //         }
+  //       }
+  //       // 复制该消息内容到剪贴板
+  //       emit('toBuzz', data)
+  //     },
+  //   })
+  // }
 
   // 回復
   const quoteProtocols = [
-    'SimpleFileGroupChat',
-    'simpleGroupChat',
+    NodeName.SimpleFileGroupChat,
+    NodeName.SimpleGroupChat,
     NodeName.ShowMsg,
     NodeName.SimpleFileMsg,
   ]
-  if (quoteProtocols.includes(props.message.protocol)) {
+
+  const hasQuoteProtocols=quoteProtocols.findIndex((item)=>{
+    return containsString(props.message.protocol,item)
+  })
+  //quoteProtocols.includes(props.message.protocol)
+  if (hasQuoteProtocols > -1) {
     actions.push({
       name: 'Talk.MessageMenu.quote',
       icon: 'quote',

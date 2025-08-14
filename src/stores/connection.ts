@@ -10,7 +10,8 @@ import {useCredentialsStore} from '@/stores/credentials'
 
 import { Network, useNetworkStore } from './network'
 import { useUserStore } from './user'
-import { useRouter } from 'vue-router'
+import { useRouter,Router } from 'vue-router'
+import { useApprovedStore } from './approved'
 function getWalletAdapter(wallet: Wallet) {
   switch (wallet) {
     case 'metalet':
@@ -84,6 +85,7 @@ export const useConnectionStore = defineStore('connection', {
         txComposer: string
         message?: string
         }>,
+        
         hasMetaid: boolean,
         feeb?: number
         }
@@ -91,6 +93,28 @@ export const useConnectionStore = defineStore('connection', {
       )=>{
         payedTransactions:string[]
       }
+      smallPay:(toPayTransactions:{
+        transations:Array<{
+        txComposer: string
+        message?: string
+        }>,
+        
+        hasMetaid: boolean,
+        feeb?: number
+        }
+     
+      )=>{
+        payedTransactions:string[]
+      }
+      autoPaymentStatus:()=>{
+        isEnabled:boolean,
+         isApproved:boolean,
+         autoPaymentAmount:number
+      }
+      autoPayment:()=>{
+        message:string
+      }
+
         finishPsbt: (psbt: string) => string
         getAddress: () => Promise<string>
 
@@ -191,6 +215,7 @@ export const useConnectionStore = defineStore('connection', {
       // check network synced;
       // if not, disconnect
       const networkStore = useNetworkStore()
+  
       const appNetwork = networkStore.network
       let networkSynced = true
       switch (this.last.wallet) {
@@ -210,21 +235,25 @@ export const useConnectionStore = defineStore('connection', {
       }
     },
 
-    async disconnect() {
+    async disconnect(router:Router) {
       if (!this.last) return
-  
+      
+       
       this.last.status = 'disconnected'
       this.last.address = ''
       this.last.pubKey = ''
 
       const userStore=useUserStore()
-      const router = useRouter()
+      const approvedStore= useApprovedStore()
+      console.log("router",router)
+      
       await userStore.clearUserInfo()
-    setTimeout(() => {
-     router.push({
-          name: 'buzzRecommend',
-        })
-    }, 2000);
+      //await approvedStore.clear()
+      setTimeout(() => {
+        router.push({
+        name:'buzzRecommend'
+      })
+      }, 1000);
 
     },
   },

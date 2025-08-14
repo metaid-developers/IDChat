@@ -98,14 +98,14 @@ const talk = useTalkStore()
 
 const tryCreateChannel = async () => {
   if (!form.isFinished) return
-
+  
   layout.isShowCreatePublicChannelModal = false
   layout.isShowLoading = true
   const subscribeId = form.uuid || realRandomString(32)
-  
-  const res = await createChannel(form, talk.activeCommunityId == '@me' ? '' : talk.activeCommunityId, subscribeId)
+  // talk.activeCommunityId == '@me' ? '' : talk.activeCommunityId
+  const res = await createChannel(form,'',subscribeId)
   console.log("res",res)
-  
+    
   // 添加占位頻道
   if (res.status === 'success') {
  
@@ -117,13 +117,13 @@ const tryCreateChannel = async () => {
       uuid: res.subscribeId,
       roomPublicKey: form.publicKey,
       chatSettingType: form.adminOnly ? 1 : 0,
-      txId: form.txId,
+      txId:`${res.channelId}i0`//form.txId,
     }
     
     // 将占位頻道添加到頻道列表最前面
     if (res.channelId) {
-      
-      const index = talk.activeCommunityChannels.findIndex(item => item.txId === form?.txId)
+      console.log("talk.activeCommunityChannels",talk.activeCommunityChannels)
+      const index = talk.activeCommunityChannels.findIndex(item => item.txId === `${res.channelId}i0`)
       
       if (index !== -1) {
         talk.activeCommunityChannels[index] = newChannel
@@ -137,9 +137,11 @@ const tryCreateChannel = async () => {
 
   sleep(2000).then(() => {
     // 跳转刷新
-     window.location.reload()
-     //router.push(`/talk/channels/public/${res.channelId}`)
-    // talk.refetchChannels()
+     //
+
+     router.push(`/talk/channels/public/${res.channelId}i0`)
+     talk.refetchChannels()
+     //window.location.reload()
   })
 }
 </script>

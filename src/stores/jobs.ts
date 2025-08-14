@@ -90,6 +90,7 @@ export const useJobsStore = defineStore('jobs', {
 
     // 处理WS消息，更新Job状态
     async handleWsMessage(message: any) {
+      
       // 在 waitingNotify 队列中找到该任务
       const job = this.waitingNotify.find(j => j.id === message.id)
       if (job) {

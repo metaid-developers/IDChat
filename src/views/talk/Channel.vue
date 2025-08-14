@@ -24,6 +24,8 @@
     <InviteModal v-if="layout.isShowInviteModal" />
     <CommunityCardModal v-if="layout.isShowCommunityCardModal" />
     <AcceptInviteModal v-if="layout.isShowAcceptInviteModal" />
+    <ChannelAcceptInviteModal v-if="layout.isShowChannelAcceptInviteModal" />
+    
     <LoadingCover v-if="layout.isShowLoading" />
     <RedPacketOpenModal v-if="layout.isShowRedPacketOpenModal" />
     <RedPacketCreateModal v-if="layout.isShowRedPacketModal" />
@@ -58,6 +60,7 @@ import RedPacketOpenModal from './components/modals/red-packet/Open.vue'
 import RedPacketResultModal from './components/modals/red-packet/Result.vue'
 import RedPacketCreateModal from './components/modals/red-packet/Create.vue'
 import AcceptInviteModal from './components/modals/invite/Accept.vue'
+import ChannelAcceptInviteModal from './components/modals/invite/ChannelAccept.vue'
 import InviteModal from './components/modals/invite/Invite.vue'
 import CommunityCardModal from './components/modals/invite/CommunityCard.vue'
 import ShareToBuzzModal from './components/modals/invite/ShareToBuzz.vue'
@@ -73,13 +76,14 @@ const talk = useTalkStore()
 const user = useUserStore()
 const route = useRoute()
 const layout = useLayoutStore()
-
+console.log("route",route)
 // 初始化頻道
-function init(communityId: string) {
+function init(communityId: string,channelId:string) {
   
-  
+    
   // 先检查社区是否还佩戴有效的metaname
   talk.checkCommunityMetaName(communityId).then((isValid: boolean) => {
+    
     layout.isShowNoMetaNameModal = false
 
     if (!isValid) {
@@ -91,16 +95,18 @@ function init(communityId: string) {
 
     // 如果是游客，则返回游客模式
     if (!user.isAuthorized) {
-      return initGuestMode(communityId)
+      return initChannelGuestMode(channelId)
+      //return initGuestMode(communityId)
     }
-
-    talk.checkMembership(communityId).then(async (isMember: boolean) => {
+    
+    talk.checkChannelMembership(communityId,channelId).then(async (isMember: boolean) => {
       if (!isMember) {
-        await talk.invite(communityId)
+        
+        await talk.inviteChannel(channelId)
         return
       }
 
-      talk.initCommunity(communityId)
+      talk.initCommunity(communityId,channelId)
     })
   })
 }
@@ -119,17 +125,40 @@ async function initGuestMode(communityId: string) {
   // 4. 接受邀请逻辑
 }
 
-const { communityId } = route.params as { communityId: string }
+// 初始化游客模式
+async function initChannelGuestMode(channelId:string) {
+  // 1. 将当前社区推入社区列表
+  //await talk.addTempCommunity(communityId)
+
+  // 2. 弹出邀请框
+  await talk.inviteChannel(channelId)
+  return
+
+  // 2. 弹出注册框
+
+  // 4. 接受邀请逻辑
+}
+
+const { communityId,channelId } = route.params as { communityId: string,channelId:string }
+
+
+watch(()=>route.params,(newVal,oldVal)=>{
+  if(newVal.channelId != oldVal.channelId ){
+    resolve(newVal.communityId as string,newVal.channelId as string)
+  }
+  
+})
 
 // 解析 communityId 为 metaName 的情况
-async function resolve(communityId: string) {
+async function resolve(communityId: string,channelId:string) {
   //init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
    if(isPublicChannel(communityId)){
-    init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
+    
+    init(communityId,channelId)
     //init(communityId)
    }else if(isMetaName(communityId)){
     const resolveRes = await resolveMetaName(communityId)
-    init(resolveRes.communityId)
+    init(resolveRes.communityId,channelId)
    }
   // if (isMetaName(communityId)) {
   //   const resolveRes = await resolveMetaName(communityId)
@@ -138,13 +167,13 @@ async function resolve(communityId: string) {
   //   init(communityId)
   // }
 }
-resolve(communityId)
+resolve(communityId,channelId)
 
 watch(
   () => talk.communityStatus,
   async (status: string) => {
     if (status === 'invited') {
-      return resolve(communityId)
+      return resolve(communityId,channelId)
     }
   },
   { immediate: true }
@@ -155,7 +184,7 @@ watch(
   ([status, isAuthorized]) => {
     if (status === 'auth processing' && isAuthorized) {
       talk.communityStatus = 'authed'
-      return resolve(communityId)
+      return resolve(communityId,channelId)
     }
   },
   { immediate: true }

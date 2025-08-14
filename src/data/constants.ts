@@ -5,3 +5,5 @@ export const SIGNING_MESSAGE = 'show.now'
 
 export const SERVICE_ADDRESS=import.meta.env.VITE_SERVICE_ADDRESS
 export const SERVICE_FEE=import.meta.env.VITE_SERVICE_FEE
+
+export const PREFIX_PROTOCOL='/protocols/'

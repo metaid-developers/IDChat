@@ -37,9 +37,12 @@ export const router = createRouter({
       meta: { keepAlive: true },
       redirect: () => {
         const userStore=useUserStore()
-         
+         const talk = useTalkStore()
         if (userStore.isAuthorized) {
-          return { name: 'talkAtMe' }
+            
+          
+          // talkAtMe
+          return { name: 'talkChannel',params:{communityId:'public',channelId:import.meta.env.VITE_CHAT_DEFAULT_CHANNEL} }
         } else {
           return { name: 'buzzRecommend' }
         }
@@ -129,24 +132,30 @@ export const router = createRouter({
     // },
 
     // ShowTalk
-    {
-      path: '/talk',
-      name: 'talk',
-      meta: { isAuth: true },
-      redirect: '/talk/channels/@me',
-    },
-    {
-      path: '/talk/channels/@me/index',
-      name: 'talkAtMeDefault',
-      component: () => import('@/views/talk/AtMeDefault.vue'),
-      meta: { isAuth: true },
-    },
-    {
-      path: '/talk/channels/@me/:channelId?',
-      name: 'talkAtMe',
-      component: () => import('@/views/talk/AtMe.vue'),
-      meta: { isAuth: true },
-    },
+    // {
+    //   path: '/talk',
+    //   name: 'talk',
+    //   meta: { isAuth: true },
+    //   redirect:'talk/channels/public'
+    //   //redirect: '/talk/channels/@me',
+    // },
+
+
+
+    // {
+    //   //path: '/talk/channels/@me/index',
+    //   path:'/talk/channels/public/index',
+    //   name: 'talkAtMeDefault',
+    //   component: () => import('@/views/talk/AtMeDefault.vue'),
+    //   meta: { isAuth: true },
+    // },
+    // {
+    //   path: '/talk/channels/public/:channelId?',
+    //   //path: '/talk/channels/@me/:channelId?',
+    //   name: 'talkAtMe',
+    //   component: () => import('@/views/talk/AtMe.vue'),
+    //   meta: { isAuth: true },
+    // },
 
     // .meta解析
     // {
@@ -163,12 +172,22 @@ export const router = createRouter({
     {
       path: '/talk/channels/:communityId',
       component: () => import('@/views/talk/Channel.vue'),
+     
       children: [
         {
           path: 'index',
           redirect: to => {
-            const { communityId } = to.params
-            return { name: 'talkChannel', params: { communityId, channelId: 'index' } }
+            
+            let { communityId,channelId } = to.params
+            if(!channelId){
+              channelId=import.meta.env.VITE_CHAT_DEFAULT_CHANNEL
+            }
+            if(!communityId){
+              communityId='public'
+            }
+            console.log("channelId",communityId)
+            
+            return { name: 'talkChannel', params: { communityId,channelId } }
           },
         },
         {

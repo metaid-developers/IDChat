@@ -37,6 +37,8 @@ const props = withDefaults(defineProps<Props>(), {
   type: 'metafile',
 })
 
+console.log("props11111",props.src)
+
 const Default = {
   metafile: props.defaultImage ? props.defaultImage : DefaultMetafile,
   metaId: props.defaultImage ? props.defaultImage : DefaultAvatar,

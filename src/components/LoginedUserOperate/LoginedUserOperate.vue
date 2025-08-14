@@ -153,12 +153,12 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SettingsModalVue from '@/components/Settings/SettingsModal.vue'
 import { useLayoutStore } from '@/stores/layout'
-import { useRoute } from 'vue-router'
+import { useRoute,useRouter } from 'vue-router'
 import MyWalletVue from './MyWallet.vue'
 import VersionVue from '../Version/Version.vue'
 import UserPersonaVue from '../UserPersona/UserPersona.vue'
 import UserCardVue from '../UserCard/UserCard.vue'
-import { router } from '@/router'
+
 import MetaNameLogo from '@/assets/svg/meta_name.svg?url'
 import MintLogo from '@/assets/svg/mint.svg?url'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
@@ -175,6 +175,7 @@ const rootStore = useRootStore()
 const userStore = useUserStore()
 const layout = useLayoutStore()
 const route = useRoute()
+const router = useRouter()
 const isProduction = import.meta.env.MODE === 'mainnet'
 
 const isShowUserMenu = ref(false)
@@ -227,7 +228,7 @@ const userOperates = computed(() => {
       name: i18n.t('UserOperate.logout'),
       icon: 'logout',
       func: async() => {
-       await connectionStore.disconnect()
+       await connectionStore.disconnect(router)
       },
     })
   }

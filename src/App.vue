@@ -82,7 +82,7 @@ function handleNetworkChanged(network: Network) {
 
   const appNetwork = networkStore.network
   if (network !== appNetwork) {
-    connectionStore.disconnect()
+    connectionStore.disconnect(router)
   }
 
   isNetworkChanging.value = false

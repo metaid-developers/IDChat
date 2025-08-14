@@ -138,6 +138,7 @@
       "copy": "复制",
       "copied": "已复制",
       "accept_invite": "接受邀请",
+      "channel_accept_invite": "接受邀请",
       "accept_invite_placeholder": "输入您的邀请码",
       "you_have_been_invited": "您已被邀请",
       "amount_needed": "所需数额",

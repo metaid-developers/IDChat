@@ -40,6 +40,7 @@
         encryption: message.replyInfo.encoding,
         timestamp: message.replyInfo.timestamp,
         isMock: message.isMock,
+        userInfo:message.replyInfo.userInfo
       }"
       :isSession="true"
       v-bind="$attrs"
@@ -398,6 +399,7 @@ const talkStore = useTalkStore()
 const activeChannel = computed(() => talkStore.activeChannel)
 const jobs = useJobsStore()
 
+
 /** 翻译 */
 type TranslateStatus = 'hidden' | 'showing' | 'processing'
 const translateStatus: Ref<TranslateStatus> = ref('hidden')
@@ -546,18 +548,18 @@ const nftPrice = computed(() => {
 })
 
 const isNftEmoji = computed(() => props.message.protocol === 'SimpleEmojiGroupChat')
-const isImage = computed(() => props.message.protocol === 'SimpleFileMsg')
-const isGiveawayRedEnvelope = computed(() => props.message.protocol === 'SimpleRedEnvelope')
-const isReceiveRedEnvelope = computed(() => props.message.protocol === 'OpenRedEnvelope')
-const isText = computed(() => props.message.protocol === 'ShowMsg')
-const isLike = computed(() => props.message.protocol === 'PayLike')
-const isFollow = computed(() => props.message.protocol === 'PayFollow')
-const isRepost = computed(() => props.message.protocol === 'SimpleRePost')
-const isRepostWithComment = computed(() => props.message.nodeName === 'SimpleMicroblog')
-const isComment = computed(() => props.message.protocol === 'PayComment')
-const isFtTransfer = computed(() => props.message.protocol === 'FtTransfer')
-const isNftTransfer = computed(() => props.message.protocol === 'NftTransfer')
-const isNftBuy = computed(() => props.message.protocol === 'nftBuy')
+const isImage = computed(() => props.message.protocol === NodeName.SimpleFileMsg )
+const isGiveawayRedEnvelope = computed(() => props.message.protocol === NodeName.SimpleRedEnvelope )
+const isReceiveRedEnvelope = computed(() => props.message.protocol === NodeName.OpenRedenvelope)
+const isText = computed(() => props.message.protocol === NodeName.ShowMsg)
+const isLike = computed(() => props.message.protocol === NodeName.PayLike )
+const isFollow = computed(() => props.message.protocol === NodeName.PayFollow)
+const isRepost = computed(() => props.message.protocol ===  NodeName.SimpleRePost)
+const isRepostWithComment = computed(() => props.message.nodeName === NodeName.SimpleMicroblog)
+const isComment = computed(() => props.message.protocol ===NodeName.PayComment )
+const isFtTransfer = computed(() => props.message.protocol ===NodeName.FtTransfer)
+const isNftTransfer = computed(() => props.message.protocol === NodeName.NftTransfer)
+const isNftBuy = computed(() => props.message.protocol === NodeName.nftBuy )
 </script>
 
 <style lang="scss" scoped>

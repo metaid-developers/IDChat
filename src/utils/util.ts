@@ -72,6 +72,8 @@ import { email } from './reg'
 import zlib from 'zlib'
 import { string } from 'yup'
 import { MetaletWallet } from './wallet/Metalet-wallet'
+
+import md5 from "md5";
 import mvc from 'mvc-lib'
 const emojiReg = /[\u{1F601}-\u{1F64F}\u{2702}-\u{27B0}\u{1F680}-\u{1F6C0}\u{1F170}-\u{1F251}\u{1F600}-\u{1F636}\u{1F681}-\u{1F6C5}\u{1F30D}-\u{1F567}]/gu
 const oricalUrl = [
@@ -81,10 +83,93 @@ const oricalUrl = [
   'https://api.metaid.io/block-oracle/',
   'https://witnessonchain.com/v1/chain-info/mvc',
 ]
+
+
+export type ResultArray = {
+  src: string;
+  dst: string;
+}[];
+
+type TransResult = {
+  from: string;
+  to: string;
+  trans_result: ResultArray;
+  error_code: number;
+};
+
+type TransQuery = {
+  q: string;
+  from: string;
+  to: string;
+  appid: string;
+  salt: string;
+  sign: string;
+};
+
+function isChinese(text:string) {
+    return /^[\u4e00-\u9fa5]+$/.test(text);
+}
+
+function isEnglish(text:string) {
+    return /^[a-zA-Z\s]+$/.test(text);
+}
+
+export async function fetchTranlateResult({
+  sourceText,
+  from,
+  to,
+}: {
+  sourceText: string;
+  from: "zh" | "en";
+  to: "zh" | "en";
+}): Promise<TransResult | undefined> {
+
+  if(isChinese(sourceText)){
+    from = 'zh'
+    to = 'en'
+  }else{
+    from = 'en'
+    to = 'zh'
+  }
+  
+
+  const salt = new Date().getTime().toString();
+  const queryParams: TransQuery = {
+    q: sourceText,
+    from,
+    to,
+    appid: "20191010000340428",
+    salt,
+    sign: md5("20191010000340428" + sourceText + salt + "08cmCzBLrp1l_fKQ9TL6"),
+  };
+  // const url = `https://fanyi-api.baidu.com/api/trans/vip/translate`;
+  const url = `https://api.metaid.io/baidufanyi/api/trans/vip/translate`;
+  // const url = `/api/trans/vip/translate`;
+
+  try {
+    const data = await axios
+      .get(url, { params: queryParams })  
+      .then((res) => res.data);
+    return data;
+  } catch (error) {
+    console.error(error);
+    return undefined;
+  }
+}
+
+
+
 export function randomString() {
   return Math.random()
     .toString()
     .replace('.', '')
+}
+
+export function containsString(str:string, search:string) {
+    // 创建一个正则表达式，匹配传入的字符串
+    // 使用 'RegExp' 构造函数，并转义特殊字符
+    const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    return regex.test(str);
 }
 
 export function getTimestampInSeconds() {
@@ -938,6 +1023,8 @@ export function FileToAttachmentItem(file: File, encrypt: IsEncrypt = IsEncrypt.
           hex += buffer.toString('hex') // 更新hex
           // 增量更新计算结果
           sha256Algo.update(wordArray) // 更新hash
+          //  const chunkArray = new Uint8Array(reader.result as ArrayBuffer);
+          // uint8Array.set(chunkArray, offset);
           resolve()
         }
         reader.readAsArrayBuffer(blob)
@@ -945,13 +1032,16 @@ export function FileToAttachmentItem(file: File, encrypt: IsEncrypt = IsEncrypt.
     }
     // 分块读取，防止内存溢出，这里设置为20MB,可以根据实际情况进行配置
     const chunkSize = 20 * 1024 * 1024
-
+    const uint8Array = new Uint8Array(file.size);
     let hex = '' // 二进制
     const sha256Algo = CryptoJs.algo.SHA256.create()
 
     for (let index = 0; index < file.size; index += chunkSize) {
       await readResult(file.slice(index, index + chunkSize))
     }
+
+  
+
     resolve({
       data: hex,
       fileName: file.name,
@@ -962,6 +1052,27 @@ export function FileToAttachmentItem(file: File, encrypt: IsEncrypt = IsEncrypt.
       size: file.size,
     })
   })
+}
+
+
+export function hexToUint8Array(hexString:string) {
+  // 移除可能存在的空格或前缀（如0x）
+  hexString = hexString.replace(/^0x|\s/g, '');
+
+  // 确保长度为偶数
+  if (hexString.length % 2 !== 0) {
+    throw new Error('Hex string must have an even length');
+  }
+
+  const length = hexString.length / 2;
+  const array = new Uint8Array(length);
+
+  for (let i = 0; i < length; i++) {
+    const byteHex = hexString.substr(i * 2, 2);
+    array[i] = parseInt(byteHex, 16);
+  }
+
+  return array;
 }
 
 // 降 AttachmentItem， 转为具有占位符 的 数组

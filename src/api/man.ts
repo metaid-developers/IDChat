@@ -49,3 +49,7 @@ unconfirmed:string
 export const getUserInfoByAddress = (address:string): Promise<UserInfo> => {
   return manApi.get(`/info/address/${address}`)
 }
+
+export const getUserInfoByMetaId = (metaid:string): Promise<UserInfo> => {
+  return manApi.get(`/info/metaid/${metaid}`)
+}

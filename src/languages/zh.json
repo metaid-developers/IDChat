@@ -140,6 +140,7 @@
       "accept_invite": "接受邀請",
       "accept_invite_placeholder": "輸入您的邀請碼",
       "you_have_been_invited": "您已被邀請",
+      "you_have_been_invited_channel": "您已被邀請",
       "amount_needed": "所需數額",
       "red_packet": "紅包",
       "receive": "接收",
@@ -213,7 +214,8 @@
       "leave_tip": "你確定要離開社區嗎？",
       "leave_confirm": "離開",
       "cancel": "取消",
-      "you_stake": "當前质押"
+      "you_stake": "當前质押",
+      "channel_accept_invite": "接受邀请"
     },
     "Channel": {
       "core_members": "核心成員",
@@ -1316,5 +1318,6 @@
   },
   "account": {
     "change": "Metalet 账户已变更。正在刷新页面..."
-  }
+  },
+  "Copy_success": "Content copied"
 }

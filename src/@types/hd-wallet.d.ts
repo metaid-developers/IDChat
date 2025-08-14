@@ -6,7 +6,7 @@ export interface PayToItem {
 export interface AttachmentItem {
   fileName: string
   fileType: string
-  data: string
+  data:string //Uint8Array<ArrayBuffer>//string
   encrypt: IsEncrypt
   sha256: string
   size: number

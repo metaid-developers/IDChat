@@ -118,6 +118,28 @@ interface Window {
       total: number
       unconfirmed: number
     }>
+     smallPay:(toPayTransactions:{
+        transations:Array<{
+        txComposer: string
+        message?: string
+        }>,
+        
+        hasMetaid: boolean,
+        feeb?: number
+        }
+     
+      )=>{
+        payedTransactions:string[]
+      }
+      autoPaymentStatus:()=>{
+        isEnabled:boolean,
+         isApproved:boolean,
+         autoPaymentAmount:number
+      }
+      autoPayment:()=>{
+        message:string
+      }
+
     switchNetwork: (network: 'livenet' | 'testnet') => Promise<{
       address: string
       network: 'mainnet' | 'testnet'

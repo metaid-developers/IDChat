@@ -23,10 +23,10 @@
     <!-- quote -->
     <MessageItemQuote
       v-if="message.replyInfo"
-      :quote="{ avatarImage: message.replyInfo.userInfo.avatarImage,
-    metaName: message.replyInfo.userInfo.metaName,
+      :quote="{ avatarImage: message.replyInfo.userInfo.avatar,
+    metaName: '',
     metaId: message.replyInfo.metaId,
-    nickName: message.replyInfo.nickName,
+    nickName: message.replyInfo.userInfo.name,
     protocol: message.replyInfo.protocol,
     content: message.replyInfo.content,
     encryption: message.replyInfo.encryption,
@@ -37,22 +37,22 @@
     <!-- 消息主体 -->
     <div class="flex">
       <UserAvatar
-        :image="props.message.avatarImage"
-        :name="props.message.nickName"
-        :meta-id="props.message.metaId"
-        :meta-name="props.message?.userInfo?.metaName"
+        :image="props.message.userInfo.avatar"
+        :name="props.message.userInfo.name"
+        :meta-id="props.message.userInfo.metaid"
+        :meta-name="''"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
       />
       <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
         <div class="flex items-baseline space-x-2">
           <!--message?.userInfo?.metaName-->
           <UserName
-            :name="message.nickName"
+            :name="message.userInfo.name"
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
           <div class="text-dark-300 dark:text-gray-400 text-xs shrink-0 whitespace-nowrap">
-            {{ formatTimestamp(message.timestamp, i18n) }}
+            {{ formatTimestamp(message.timestamp , i18n) }}
           </div>
         </div>
 
@@ -210,7 +210,8 @@ import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
 import { useImagePreview } from '@/stores/imagePreview'
 import MessageItemQuote from './MessageItemQuote.vue'
-
+import {NodeName} from '@/enum'
+import {containsString} from '@/utils/util'
 const i18n = useI18n()
 
 const modals = useModalsStore()
@@ -227,6 +228,9 @@ interface Props {
   isShare?: boolean
 }
 const props = withDefaults(defineProps<Props>(), {})
+
+
+
 
 const emit = defineEmits<{}>()
 
@@ -340,13 +344,13 @@ const tryResend = async () => {
   await jobs.resend(props.message.timestamp)
 }
 
-const isGroupJoinAction = computed(() => props.message.protocol === 'SimpleGroupJoin')
-const isGroupLeaveAction = computed(() => props.message.protocol === 'SimpleGroupLeave')
-const isNftEmoji = computed(() => props.message.protocol === 'SimpleEmojiGroupChat')
-const isImage = computed(() => props.message.protocol === 'SimpleFileGroupChat')
-const isGiveawayRedPacket = computed(() => props.message.protocol === 'SimpleRedEnvelope')
-const isReceiveRedPacket = computed(() => props.message.protocol === 'OpenRedEnvelope')
-const isText = computed(() => props.message.protocol === 'simpleGroupChat')
+const isGroupJoinAction = computed(() => containsString(props.message.protocol,NodeName.SimpleGroupJoin))
+const isGroupLeaveAction = computed(() => containsString(props.message.protocol,'SimpleGroupLeave'))
+const isNftEmoji = computed(() => containsString(props.message.protocol,"SimpleEmojiGroupChat"))
+const isImage = computed(() =>containsString(props.message.protocol,NodeName.SimpleFileGroupChat))
+const isGiveawayRedPacket = computed(() =>containsString(props.message.protocol,NodeName.SimpleRedEnvelope))
+const isReceiveRedPacket = computed(() =>containsString(props.message.protocol,NodeName.OpenRedenvelope))
+const isText = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupChat))
 </script>
 
 <style lang="scss" scoped src="./MessageItem.scss"></style>

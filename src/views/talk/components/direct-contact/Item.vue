@@ -9,7 +9,8 @@
         :image="session?.avatarImage"
         :meta-id="session?.metaId || session?.createUserMetaId"
         :name="session?.name"
-        :meta-name="session?.metaName"
+        :meta-name="''"
+        :is-custom="session?.groupId ? true : false"
         class="w-12 h-12 shrink-0 select-none"
         :disabled="true"
       />
@@ -55,6 +56,7 @@ import { ecdhDecrypt } from '@/utils/crypto'
 import {useCredentialsStore} from '@/stores/credentials'
 import {useConnectionStore } from '@/stores/connection'
 import {atobToHex} from '@/utils/util'
+import { NodeName } from '@/enum'
 const i18n = useI18n()
 const userStore = useUserStore()
 const layout = useLayoutStore()
@@ -103,7 +105,7 @@ const decryptedMessage = computed(() => {
   }
 
   // 处理mock的图片消息
-  if (props.session.isMock && props.session.protocol === 'SimpleFileGroupChat') {
+  if (props.session.isMock && props.session.protocol === NodeName.SimpleFileGroupChat ) {
     return props.session.data.content
   }
 

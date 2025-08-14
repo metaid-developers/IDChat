@@ -29,6 +29,8 @@ import { toRaw } from 'vue'
 import {useCredentialsStore} from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
 import {useBulidTx} from '@/hooks/use-build-tx'
+import { AttachmentItem } from '@/@types/hd-wallet'
+import { userInfo } from 'os'
 type CommunityData = {
   communityId: string
   name: string
@@ -368,8 +370,13 @@ export const createChannel = async (
     deleteStatus:0,
     timestamp: getTimestampInSeconds(),
   }
-  console.log({ dataCarrier })
 
+  if(!communityId){
+    
+    delete dataCarrier.groupId
+  }
+  console.log({ dataCarrier })
+  
   // 2. 构建节点参数
   const node = {
     protocol: NodeName.SimpleGroupCreate,
@@ -377,6 +384,7 @@ export const createChannel = async (
     // publickey: form.publicKey,
     // txId: form.txId,
   }
+  
 
   // 3. 发送节点
   try {
@@ -421,11 +429,12 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
   let codehash = null
   let genesis = null
   let limitAmount = null
-
+  
   switch (form.type) {
     case GroupChannelType.PublicText:
       groupType = '1'
       status = '1'
+      type = '0'
       break
 
     case GroupChannelType.Password:
@@ -489,22 +498,29 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
   return { groupType, status, type, codehash, genesis, limitAmount }
 }
 
-export const joinCommunity = async (communityId: string, sdk: SDK) => {
+export const joinChannel= async (groupId: string,referrer?:string) => {
+  const buildTx=useBulidTx()
   const dataCarrier = {
-    communityId,
+    groupId:groupId || '',
     state: CommunityJoinAction.Join,
+    referrer:referrer || '',
   }
+
+  
 
   // 2. 构建节点参数
   const node = {
-    nodeName: NodeName.SimpleCommunityJoin,
-    encrypt: IsEncrypt.No,
-    dataType: 'application/json',
-    data: JSON.stringify(dataCarrier),
+    protocol:NodeName.SimpleGroupJoin, //NodeName.SimpleCommunityJoin,
+    encrypt: String(IsEncrypt.No),
+    //dataType: 'application/json',
+    isBroadcast:true,
+    body: dataCarrier,
   }
 
+  
+
   // 3. 发送节点
-  const nodeRes = await sdk.createBrfcChildNode(node)
+  const nodeRes = await buildTx.joinGrop(node)
 
   if (nodeRes === null) {
     return {
@@ -512,23 +528,56 @@ export const joinCommunity = async (communityId: string, sdk: SDK) => {
     }
   }
 
-  return { communityId }
+  return { groupId }
 }
 
-export const leaveCommunity = async (communityId: string, sdk: SDK) => {
+export const joinCommunity= async (groupId: string,referrer?:string) => {
+  const buildTx=useBulidTx()
   const dataCarrier = {
-    communityId,
-    state: CommunityJoinAction.Leave,
+    groupId:groupId || '',
+    state: CommunityJoinAction.Join,
+    referrer:referrer || '',
   }
 
   // 2. 构建节点参数
   const node = {
-    nodeName: NodeName.SimpleCommunityJoin,
-    data: JSON.stringify(dataCarrier),
+    protocol:NodeName.SimpleGroupJoin, //NodeName.SimpleCommunityJoin,
+    encrypt: IsEncrypt.No,
+    //dataType: 'application/json',
+    isBroadcast:true,
+    body: dataCarrier,
   }
 
   // 3. 发送节点
-  const nodeRes = await sdk.createBrfcChildNode(node)
+  const nodeRes = await buildTx.joinGrop(node)
+
+  if (nodeRes === null) {
+    return {
+      status: 'failed',
+    }
+  }
+
+  return { groupId }
+}
+
+export const leaveCommunity = async (communityId: string ) => {
+   const buildTx=useBulidTx()
+  const dataCarrier = {
+    groupId:communityId || '',
+    state: CommunityJoinAction.Leave,
+    referrer:'',
+  }
+
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleCommunityJoin,
+    body: dataCarrier,
+    encrypt: IsEncrypt.No,
+    isBroadcast:true,
+  }
+
+  // 3. 发送节点
+  const nodeRes =await buildTx.joinGrop(node) //await sdk.createBrfcChildNode(node)
 
   if (nodeRes === null) {
     return {
@@ -571,16 +620,16 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
-  const contentType = 'text/plain'
+  const contentType = 'text'
   const encryption = 'aes'
   const dataCarrier = {
     groupID,
     timestamp,
-    // nickName,
+    nickName,
     content,
     contentType,
     encryption,
-    replyTx: reply ? reply.txId : '',
+    replyPin: reply ? `${reply.txId}i0` : '',
   }
 
   // 2. 构建节点参数
@@ -625,14 +674,14 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
    const mockMessage = {
     mockId,
     protocol: 'simpleGroupChat',
-    contentType: 'text/plain',
+    contentType: 'text',
     content,
     avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
     metaId: userStore.last?.metaid || 'undefined',
     nickName: userStore.last?.name || '',
-    userInfo: {},
+    userInfo:userStore.last,
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption,
@@ -644,7 +693,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
           contentType: reply.contentType,
           encryption: reply.encryption,
           metaId: reply.metaId,
-          nickName: reply.nickName,
+          nickName: reply.userInfo.name,
           protocol: reply.protocol,
           timestamp: reply.timestamp,
           txId: reply.txId,
@@ -665,11 +714,12 @@ export const tryCreateNode = async (node: {
   protocol:string
   body:any
   timestamp:number
+  attachments?:AttachmentItem[]
 }, mockId: string) => {
   const jobs = useJobsStore()
   const talk = useTalkStore()
   const buildTx=useBulidTx()
-   const {protocol,body,timestamp:timeStamp}=node
+   const {protocol,body,timestamp:timeStamp,attachments}=node
   try {
     
    
@@ -677,6 +727,7 @@ export const tryCreateNode = async (node: {
     const nodeRes=await buildTx.createShowMsg({
       protocol,
       body,
+      attachments,
       isBroadcast:true
     })
     //console.log("nodeRes",nodeRes!.txids.length)
@@ -717,7 +768,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     content,
     contentType,
     encrypt,
-    replyTx: reply ? reply.txId : '',
+    replyPin: reply ? `${reply.txId}i0` : '',
   }
 
   // 2. 构建节点参数
@@ -817,7 +868,7 @@ const _uploadImage = async (file: File, sdk: SDK) => {
 const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
-  const { channelId: groupId, userName: nickName, attachments, originalFileUrl, reply } = messageDto
+  const { channelId,groupId, userName: nickName, attachments, originalFileUrl, reply } = messageDto
 
   // 1. 构建协议数据
   // 1.1 groupId: done
@@ -829,31 +880,36 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const fileType = file.fileType.split('/')[1]
   // 1.5 encrypt
   const encrypt = '0'
-  const attachment = 'metafile://$[0]'
+  // const attachment =attachments//'metafile://$[0]'
+  
   let dataCarrier: any = {
     timestamp,
     encrypt,
     fileType,
-    attachment,
-    replyTx: reply ? reply.txId : '',
+    groupId:channelId,
+    nickName,
+    attachment:'',
+    replyPin: reply ? `${reply.txId}i0` : '',
   }
-  if (messageDto.channelType === ChannelType.Group) {
-    dataCarrier.groupId = groupId
-  } else {
-    dataCarrier.to = groupId
-  }
+
+  
+  if (messageDto.channelType !== ChannelType.Group) {
+     dataCarrier.to = channelId
+  } 
 
   const nodeName =
     messageDto.channelType === ChannelType.Group
       ? NodeName.SimpleFileGroupChat
       : NodeName.SimpleFileMsg
+  
   // 2. 构建节点参数
   const node = {
-    nodeName: nodeName,
-    dataType: 'application/json',
-    data: JSON.stringify(dataCarrier),
+    protocol: nodeName,
+    //dataType: 'application/json',
+    body: dataCarrier,
     attachments,
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
+    
   }
 
   // 2.5. mock发送
@@ -864,14 +920,14 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     nodeName,
     contentType: fileType,
     content: originalFileUrl,
-    avatarType: userStore.user?.avatarType || 'undefined',
-    avatarTxId: userStore.user?.avatarTxId || 'undefined',
-    avatarImage: userStore.user?.avatarImage || '',
-    fromAvatarImage: userStore.user?.avatarImage || '',
-    metaId: userStore.user?.metaId || 'undefined',
-    from: userStore.user?.metaId,
-    nickName: userStore.user?.name || '',
-    userInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
+    avatarType: userStore.last?.avatar || 'undefined',
+    avatarTxId: userStore.last?.avatarId || 'undefined',
+    avatarImage: userStore.last?.avatar || '',
+    fromAvatarImage: userStore.last?.avatar || '',
+    metaId: userStore.last?.metaid || 'undefined',
+    from: userStore.last?.metaid,
+    nickName: userStore.last?.name || '',
+    userInfo:userStore.last, //userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption: encrypt,
@@ -881,14 +937,24 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
-  const sdk = userStore.showWallet
-  await tryCreateNode(node, sdk, mockId)
+  //const sdk = userStore.showWallet
+  await tryCreateNode(node,mockId)
 
   return
 }
 
 export const formatTimestamp = (timestamp: number, i18n: any, showMinutesWhenOld = true) => {
+
+  if(String(timestamp).length < 13){
+    timestamp=timestamp * 1000
+  }
+
+  if(String(timestamp).length >= 16){
+    timestamp=timestamp / 1000
+  }
+  
   const day = dayjs(timestamp)
+  
   // 如果是今天，则显示为“今天 hour:minute”
   if (day.isSame(dayjs(), 'day')) {
     return `${day.format('HH:mm')}`

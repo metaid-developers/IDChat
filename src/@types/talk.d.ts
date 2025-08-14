@@ -122,43 +122,71 @@ declare interface CommunityAuth {
   signature: string
 }
 
+// declare interface Channel {
+//   // uuid: string // 用于key,不修改
+//   // id: string
+//   name: string
+//   chatSettingType: 0 | 1
+//   communityId: string
+//   createUserMetaId: string
+//   deleteStatus: number
+//   groupId: string
+//   //metanetId: string
+//   roomAvatarUrl: string
+//   roomCodeHash: string
+//   roomGenesis: string
+//   roomGenesisSeriesName: string
+//   roomJoinType: string
+//   roomLimitAmount: number
+//   roomName: string
+//   roomNewestContent: string
+//   roomNewestMetaId: string
+//   roomNewestProtocol: string
+//   roomNewestTimestamp: number
+//   roomNewestTxId: string
+//   roomNewestUserName: string
+//   roomNinePersonHash: string
+//   roomNote: string
+//   //roomPublicKey: string
+//   roomStatus: string
+//   roomType: import('@/enum').ChannelPublicityType
+//   timestamp: number
+//   txId: string
+//   pinId:string
+//   userCount: number
+// }
+
 declare interface Channel {
-  uuid: string // 用于key,不修改
-  id: string
-  name: string
-  chatSettingType: 0 | 1
-  communityId: string
-  createUserMetaId: string
-  deleteStatus: number
-  groupId: string
-  metanetId: string
-  roomAvatarUrl: string
-  roomCodeHash: string
-  roomGenesis: string
-  roomGenesisSeriesName: string
-  roomJoinType: string
-  roomLimitAmount: number
-  roomName: string
-  roomNewestContent: string
-  roomNewestMetaId: string
-  roomNewestProtocol: string
-  roomNewestTimestamp: number
-  roomNewestTxId: string
-  roomNewestUserName: string
-  roomNinePersonHash: string
-  roomNote: string
-  roomPublicKey: string
-  roomStatus: string
-  roomType: import('@/enum').ChannelPublicityType
-  timestamp: number
-  txId: string
-  userCount: number
+      communityId:string
+      groupId:string
+      txId:string
+      pinId:string
+      roomName:string
+      roomNote:string
+      roomType:import('@/enum').ChannelPublicityType
+      roomStatus: string
+      roomJoinType: string
+      roomAvatarUrl: string
+      roomNinePersonHash:string
+      roomNewestTxId:string
+      roomNewestPinId:string
+      roomNewestMetaId:string
+      roomNewestUserName:string
+      roomNewestProtocol:string
+      roomNewestProtocol:string
+      roomNewestTimestamp: number
+      createUserMetaId:string
+      userCount:number
+      chatSettingType: 0 | 1
+      deleteStatus: number
+      timestamp:number
 }
 
 declare interface MessageDto {
   type: MessageType
   content: string
   channelId: string
+  groupId?:string
   userName: string
   attachments?: AttachmentItem[]
   originalFileUrl?: any

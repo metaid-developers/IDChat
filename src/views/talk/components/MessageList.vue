@@ -98,7 +98,7 @@
 import { getChannelMessages } from '@/api/talk'
 import { useTalkStore } from '@/stores/talk'
 import { useLayoutStore } from '@/stores/layout'
-import { computed, nextTick, onBeforeUnmount, ref, watch, inject } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch, inject, onMounted } from 'vue'
 import LoadingItem from './LoadingItem.vue'
 import LoadingList from './LoadingList.vue'
 import MessageItem from './MessageItem.vue'
@@ -108,6 +108,10 @@ import { useUserStore } from '@/stores/user'
 import Publish from '@/views/buzz/components/Publish.vue'
 import { IsEncrypt, NodeName } from '@/enum'
 import { decrypt } from '@/utils/crypto'
+import { ShareChatMessageData } from '@/@types/common'
+import {useBulidTx} from '@/hooks/use-build-tx'
+import {GroupMessagePollingQueue} from '@/utils/taskQueue'
+
 
 const user = useUserStore()
 const talk = useTalkStore()
@@ -118,8 +122,42 @@ const isAtTop = ref(false)
 const isShowPublish = ref(false)
 const repostBuzzTxId = ref('')
 const PublishRef = ref()
-
+const buildTx=useBulidTx()
 const messagesScroll = ref<HTMLElement>()
+//const pollingQueue = new GroupMessagePollingQueue(5000);
+// const taskInterval=ref()
+
+// onMounted(()=>{
+
+// taskInterval.value= setInterval(()=>{
+//    if(talk.activeChannel?.pastMessages.length){
+    
+//     // const nextTimeStamp= talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length-1].timestamp
+//     // 
+
+//     pollingQueue.enqueue(talk.activeChannelId,talk.selfMetaId).then((messages)=>{
+//       console.log("messages",messages)
+//       if(messages.length){
+//            const currentTimeStamp=messages[0].timestamp
+//       const talkLastTimeStamp=talk.activeChannel?.pastMessages[0].timestamp
+//       if(currentTimeStamp == talkLastTimeStamp){
+       
+        
+//       }else{
+//          talk.updateChannelMessages(messages).then()
+//         // talk.activeChannel?.pastMessages.unshift(...messages)
+//       }
+//       }
+   
+//     })
+//   }
+//  },5000)
+
+// })
+
+// onBeforeUnmount(()=>{
+//   taskInterval.value=null
+// })
 
 const handleScroll = async () => {
   if (!user.isAuthorized) return
@@ -157,15 +195,16 @@ const popInvite = () => {
 
 const loadMore = async () => {
   if (!talk.activeChannelId || !talk.selfMetaId) return
-
+  
   const earliestMessage =
     talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
   const earliestMessageTimestamp = earliestMessage?.timestamp
   const earliestMessageElement = document.getElementById(earliestMessageTimestamp?.toString() || '')
+  
   const earliestMessagePosition = earliestMessageElement?.getBoundingClientRect().bottom
-
+  
   let params
-
+  
   if (earliestMessageTimestamp) {
     params = {
       timestamp: earliestMessageTimestamp,
@@ -178,15 +217,26 @@ const loadMore = async () => {
     }
   }
 
-  let items = await getChannelMessages(talk.activeChannelId, params, talk.activeChannelType)
+  let items = await getChannelMessages(
+    {
+          groupId:talk.activeChannelId,
+         metaId: talk.selfMetaId,
+         timestamp:params.timestamp ?? '0',
+
+    }
+  )
+
+  
 
   // 如果没有更多消息了，就不再加载
   if (items.length === 0) {
     isAtTop.value = true
+    
     return
   }
 
   for (const item of items) {
+    
     talk.activeChannel?.pastMessages.push(item)
   }
 
@@ -239,18 +289,30 @@ function scrollToTimeStamp(time: number) {
 
 async function onToBuzz(data: ShareChatMessageData) {
   const loading = openLoading()
-  const res = await user.showWallet
-    .createBrfcChildNode({
-      nodeName: NodeName.ShareChatMessage,
-      data: JSON.stringify(data),
-    })
-    .catch(error => {
+
+  console.log("data12313",data)
+
+    const metaidData={
+    body:JSON.stringify(data),
+    path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.ShareChatMessage}`,
+    flag: 'metaid',
+    version: '1.0.0',
+    operation: 'create',
+    contentType:'text/plain',
+    encryption: '0',
+    encoding: 'utf-8',
+    }
+      
+      
+ const res= await buildTx.createPin(metaidData,true).catch(error => {
       loading.close()
       ElMessage.error(error.message)
     })
+ 
+   
   if (res) {
     loading.close()
-    talk.shareToBuzzTxId = res.currentNode.txId
+    talk.shareToBuzzTxId = res.txids[0]
     layout.isShowShareSuccessModal = true
   } else if (res === null) {
     loading.close()

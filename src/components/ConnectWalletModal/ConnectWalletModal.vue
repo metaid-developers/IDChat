@@ -192,11 +192,19 @@ import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
+import {
+  getChannels,
+  getAllChannels
+} from '@/api/talk'
+import { useApprovedStore } from '@/stores/approved'
+
+
 const rootStore = useRootStore()
 
 const networkStore = useNetworkStore()
 const credentialsStore = useCredentialsStore()
 const connectionStore = useConnectionStore()
+const approvedStore=useApprovedStore()
 const { isConnectionModalOpen, closeConnectionModal, setMissingWallet } =
   useConnectionModal()
 
@@ -1112,16 +1120,40 @@ async function connectMetalet() {
       })
     })
   }
-
+  
     if (connection?.status === 'connected') {
     await credentialsStore.login()
-
+      
+    // await approvedStore.getPaymentStatus()
+    
+    // await approvedStore.getAutoPayment()
+      
     await sleep(300)
 
     closeConnectionModal()
+
+    let newChannelId
+    const myChannelList= await getChannels({
+      metaId:userStore.last.metaid
+    })
+    if(myChannelList.length){
+      newChannelId=myChannelList[0].groupId
+   
+    }else{
+    //    const allChannelList= await getAllChannels({
+    //   metaId:userStore.last.metaid
+    // })
+    
+      newChannelId=import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
+    }
     router.push({
-        name: 'talkAtMe',
+        name: 'talkChannel',
+        params:{
+          communityId:'public',
+          channelId:newChannelId
+        }
       })
+   
   }
 
 

@@ -81,7 +81,7 @@ const tryCreateCommunity = async () => {
   try {
     const { communityId } = await createCommunity(form, userStore, userStore.showWallet)
     await sleep(2000)
-    await fetchCommunities()
+    //await fetchCommunities()
     layout.isShowLoading = false
     form.reset()
 

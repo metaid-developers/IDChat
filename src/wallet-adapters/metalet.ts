@@ -4,6 +4,7 @@ import { Buffer } from 'buffer'
 
 import { useConnectionStore } from "@/stores/connection";
 import { TxComposer } from 'meta-contract';
+import { useApprovedStore } from '@/stores/approved';
 // import { useNetworkStore } from '@/stores/network'
 
 // Add into life circle
@@ -206,4 +207,46 @@ export const pay=async (toPayTransactions:{
 })=>{
    checkMetalet()
     return await window.metaidwallet.pay(toPayTransactions)
+}
+
+
+export const smallPay=async (toPayTransactions:{
+  transactions:Array<{
+  txComposer: string,
+  message: string,
+}>,hasMetaid:boolean
+})=>{
+   checkMetalet()
+   
+    const approvedStore=useApprovedStore()
+    if(approvedStore.canUse){
+      try {
+        
+         const res= await window.metaidwallet.smallPay(toPayTransactions).catch((e)=>{
+        console.log("e")
+       })
+
+       console.log("res",res)
+       
+      } catch (error) {
+          console.log("error",error)
+       
+        
+      }
+    }else{
+      return await window.metaidwallet.pay(toPayTransactions)
+    }
+   
+}
+
+
+export const autoPaymentStatus=async()=>{
+  checkMetalet()
+   return await window.metaidwallet.autoPaymentStatus()
+}
+
+export const autoPayment=async()=>{
+  checkMetalet()
+  
+   return await window.metaidwallet.autoPayment()
 }

@@ -171,7 +171,7 @@ const apps = reactive([
 ])
 
 if (userStore.isAuthorized) {
-  talk.fetchCommunities()
+  //talk.fetchCommunities()
   talk.initCommunityChannelIds()
   talk.initReceivedRedPacketIds()
   talk.initReadPointers()
@@ -182,7 +182,7 @@ watch(
   () => userStore.isAuthorized,
   isAuthorized => {
     if (isAuthorized) {
-      talk.fetchCommunities()
+      //talk.fetchCommunities()
       talk.initCommunityChannelIds()
       talk.initReceivedRedPacketIds()
       talk.initReadPointers()

@@ -8,6 +8,9 @@ import {broadcast} from '@/api/metalet'
 import { ElMessage } from 'element-plus'
 import { useConnectionStore } from '@/stores/connection';
 import {SERVICE_ADDRESS,SERVICE_FEE} from '@/data/constants'
+import { AttachmentItem } from '@/@types/hd-wallet'
+import { NodeName,IsEncrypt } from '@/enum'
+import {hexToUint8Array} from '@/utils/util'
 export enum MetaFlag{
  metaid='metaid',
   testid='testid'
@@ -70,17 +73,21 @@ export const useBulidTx = createGlobalState(() => {
         })
         }
         
+
+
         transactions.push({
         txComposer: pinTxComposer.serialize(),
         message: 'Create Pin',
         })
+
+       
        
         
         const {payedTransactions}= await connectionStore.adapter.pay({
           transactions:transactions,
           hasMetaid:true
         })
-
+        
         if(!payedTransactions){
           return null
         }
@@ -101,18 +108,37 @@ export const useBulidTx = createGlobalState(() => {
   const createShowMsg=async(params:{
     body:any,
     protocol:string,
-    isBroadcast:boolean
+    isBroadcast:boolean,
+    attachments?:AttachmentItem[]
   })=>{
-    const {body,protocol,isBroadcast}=params
+    const {body,protocol,isBroadcast,attachments}=params
     
     try {
+      if(attachments && attachments.length){
+       const fileTxId= await createMvcFile({
+          body:hexToUint8Array(attachments[0].data),
+          mime:attachments[0].fileType,
+          encryption:body.encryption || body.encrypt,
+          isBroadcast:isBroadcast
+       })
+       
+       if(fileTxId){
+        body.attachment=`metafile://${fileTxId}i0`
+       }else{
+        ElMessage.error(`Upload attachment fail`)
+        return null
+       }
+
+      }
+
+
       const metaidData={
         body:JSON.stringify(body),
-        path: `/protocols/${protocol}`,
+        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
-        contentType: 'text/plain',
+        contentType: body.contentType || 'text/plain',
         encryption: body.encryption || body.encrypt,
         encoding: 'utf-8',
       }
@@ -136,7 +162,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `/protocols/${protocol}`,
+        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
@@ -151,6 +177,66 @@ export const useBulidTx = createGlobalState(() => {
     } catch (error) {
      
       throw new Error(error as any)
+    }
+  }
+
+  const createMvcFile=async(params:{
+    body:any,
+    mime:string,
+    encryption:any,
+    isBroadcast:boolean
+  })=>{
+    const {body,mime,encryption,isBroadcast,}=params
+    
+    try {
+      const metaidData={
+        body:body,
+        path:`${import.meta.env.VITE_ADDRESS_HOST}:/${NodeName.File}` ,
+        flag: MetaFlag.metaid,
+        operation: Operation.create,
+        contentType:`${mime};binary`, //`image/${mime};binary`,
+        encryption: encryption,
+        encoding: 'binary',
+      }
+      
+      const pinRes= await createPin(metaidData,isBroadcast)
+      
+      if(pinRes?.txids.length){
+        return pinRes?.txids[0]
+      }else{
+        return null
+      }
+   
+
+    } catch (error) {
+     
+      throw new Error(error as any)
+    }
+  }
+
+  const joinGrop=async(params:{
+    body:any,
+    protocol:string,
+    encrypt:string,
+    isBroadcast:boolean,
+  })=>{
+    const {body,protocol,isBroadcast,encrypt}=params
+    try {
+         const metaidData={
+        body:JSON.stringify(body),
+        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        flag: MetaFlag.metaid,
+        version: '1.0.0',
+        operation: Operation.create,
+        contentType: 'text/plain',
+        encryption: encrypt,
+        encoding: 'utf-8',
+      }
+      
+      const pinRes= await createPin(metaidData,isBroadcast)
+      return pinRes
+    } catch (error) {
+       throw new Error(error as any)
     }
   }
 
@@ -191,6 +277,8 @@ export const useBulidTx = createGlobalState(() => {
     createPin,
     createShowMsg,
     createChannel,
+    createMvcFile,
+    joinGrop,
     txBroadcast
    
   }

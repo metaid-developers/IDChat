@@ -59,38 +59,43 @@ import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { useRootStore } from '@/stores/root'
 import { sleep } from '@/utils/util'
-
+import { useConnectionModal } from '@/hooks/use-connection-modal'
 const layout = useLayoutStore()
 const root = useRootStore()
 const talk = useTalkStore()
 const user = useUserStore()
 const router = useRouter()
+const { openConnectionModal, closeConnectionModal, setMissingWallet } =
+  useConnectionModal()
 
 const loginFirst = () => {
   talk.communityStatus = 'auth processing'
   layout[ShowControl.isShowAcceptInviteModal] = false
-  root.isShowLogin = true
+  openConnectionModal()
+  //root.isShowLogin = true
 }
 
 const tryJoinCommunity = async () => {
   // 游客
-  if (!user.isAuthorized) {
-    return loginFirst()
-  }
+  // if (!user.isAuthorized) {
+  //   return loginFirst()
+  // }
 
   layout[ShowControl.isShowAcceptInviteModal] = false
   layout.isShowLoading = true
-  const joinRes = await joinCommunity(talk.invitedCommunity.communityId, user.showWallet)
+  console.log("talk.invitedCommunity.communityId",talk.invitedCommunity.communityId)
+  
+  const joinRes = await joinCommunity(talk.invitedCommunity.communityId)
 
   layout.isShowLoading = false
 
   // 如果没有成功加入，则跳转回buzz页面
   if (joinRes.status === 'failed') {
     talk.invitedCommunity = null
-    router.push('/buzz/index')
+    router.push('/')
     return
   }
-
+  // talk.
   const find = talk.communities.find(
     community => community.communityId === talk.invitedCommunity.communityId
   )

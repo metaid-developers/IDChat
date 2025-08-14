@@ -5,7 +5,7 @@
   >
     <div class="w-full h-full flex">
       <!-- 占位 -->
-      <div class="shrink-0 bg-white dark:bg-gray-700 w-22.5 lg:hidden"></div>
+      <!-- <div class="shrink-0 bg-white dark:bg-gray-700 w-22.5 lg:hidden"></div> -->
 
       <div
         class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-60 flex flex-col justify-between items-stretch"

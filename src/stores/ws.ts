@@ -14,7 +14,7 @@ export const useWsStore = defineStore('ws', {
   getters: {
     selfMetaId(): string {
       const userStore = useUserStore()
-      return userStore.user?.metaId || ''
+      return userStore.last?.metaid || ''
     },
 
     activeChannelId(): string {
@@ -27,12 +27,13 @@ export const useWsStore = defineStore('ws', {
     async init() {
       const selfMetaId = this.selfMetaId
       if (!selfMetaId) return
-      const wsUri = `${import.meta.env.VITE_BASEAPI.replace(
+      const wsUri = `${import.meta.env.VITE_SHOW_NOW_HOST.replace(
         // 将.space换成.io
         '.space',
         '.io'
       ).replace('https://', 'wss://')}/ws-service?metaId=${selfMetaId}`
       this.ws = new WebSocket(wsUri)
+      
       this.wsHeartBeatTimer = this._createHeartBeatTimer(wsUri)
 
       this.ws.addEventListener('message', this._handleReceivedMessage)
@@ -48,20 +49,24 @@ export const useWsStore = defineStore('ws', {
     },
 
     async _handleReceivedMessage(event: MessageEvent) {
+      
       const talk = useTalkStore()
       const jobsStore = useJobsStore()
 
       const messageWrapper = JSON.parse(event.data)
       switch (messageWrapper.M) {
         case 'WS_SERVER_NOTIFY_ROOM':
+          
           await talk.handleNewGroupMessage(messageWrapper.D)
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_CHAT':
+          
           await talk.handleNewSessionMessage(messageWrapper.D)
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_TX_TASK':
+          
           await jobsStore.handleWsMessage(messageWrapper.D)
           return
       }

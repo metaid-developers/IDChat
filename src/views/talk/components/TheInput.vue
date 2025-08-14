@@ -14,7 +14,7 @@
         <a @click="emit('toQuote')" class="user"
           ><UserName
             :name="quote.userInfo ? quote.userInfo.name : quote.fromUserInfo.name"
-            :meta-name="quote.userInfo ? quote.userInfo.metaName : quote.fromUserInfo.metaName"
+            :meta-name="''"
             :no-tag="true"
         /></a>
       </div>
@@ -146,7 +146,7 @@
         </div>
       </button> -->
 
-      <div class="self-stretch lg:ml-2 py-2 flex items-center grow">
+      <div class="self-stretch lg:ml-2 py-2 pl-3 flex items-center grow">
         <textarea
           class=" w-full !outline-none placeholder:text-dark-250 placeholder:dark:text-gray-400 placeholder:text-sm placeholder:truncate text-dark-800 dark:text-gray-100 text-base caret-gray-600 dark:caret-gray-400 resize-none !h-fit text-base rounded-md transition-all duration-150 delay-100"
           :class="rows > 1 ? 'bg-gray-100 dark:bg-gray-800 p-1 -m-1' : 'bg-inherit'"
@@ -435,6 +435,8 @@ const trySendImage = async () => {
   const hexedFiles = await FileToAttachmentItem(image)
   const attachments = [hexedFiles]
 
+  
+
   // clone，用于填充mock信息
   const originalFileUrl = imagePreviewUrl.value
   deleteImage()
@@ -442,6 +444,7 @@ const trySendImage = async () => {
   const messageDto = {
     type: MessageType.Image,
     channelId: talk.activeChannel.id,
+    groupId:talk?.activeCommunity?.id || '',
     userName: userStore.last?.name!,
     attachments,
     content: '',
@@ -449,6 +452,8 @@ const trySendImage = async () => {
     channelType: talk.activeChannelType as ChannelType,
     reply: props.quote,
   }
+  console.log("props.quote",props.quote)
+  
   emit('update:quote', undefined)
   await sendMessage(messageDto)
 
@@ -539,12 +544,17 @@ const trySendText = async (e: any) => {
   if (spaceNotEnoughFlag.value) {
     return
   }
-
-  if (talk.activeChannelType === 'group') {
-    content = encrypt(chatInput.value, talk.activeChannel.id.substring(0, 16))
-  } else {
+  console.log("activeChannelType",talk.activeChannelType)
+  
+  // if (talk.activeChannelType === 'group') {
+   
+  // } 
+  if(talk.activeChannel.groupId){
+    
+     content = encrypt(chatInput.value, talk.activeChannel.id.substring(0, 16))
+  }else {
     // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')!
-    // debugger
+    // 
     // const privateKeyStr = privateKey.toHex()
     const credential=credentialsStore.getByAddress(connectionStore.last.address)
     const sigStr=atobToHex(credential!.signature)
@@ -565,6 +575,8 @@ const trySendText = async (e: any) => {
     channelType: talk.activeChannelType as ChannelType,
     reply: props.quote,
   }
+  console.log("props.quote",props.quote)
+  
   emit('update:quote', undefined)
   await sendMessage(messageDto)
   isSending.value = false
@@ -581,7 +593,7 @@ const trySendText = async (e: any) => {
   .user {
     margin-left: 5px;
     cursor: pointer;
-    color: var(--color-primary);
+    color: #fc457b;
     font-weight: bold;
   }
 

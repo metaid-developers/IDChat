@@ -104,8 +104,10 @@
       "copy": "Copy",
       "copied": "Copied",
       "accept_invite": "Join a Club",
+      "channel_accept_invite": "Join a Group",
       "accept_invite_placeholder": "Enter your invite code",
       "you_have_been_invited": "Welcome to the Club!",
+      "you_have_been_invited_channel": "Welcome to the Group!",
       "amount_needed": "minimum holding",
       "red_packet": "Candy Bag",
       "receive": "Open",
@@ -1322,5 +1324,6 @@
   },
   "account": {
     "change": "Metalet account changed. Refreshing page..."
-  }
+  },
+  "Copy_success": "内容已复制"
 }

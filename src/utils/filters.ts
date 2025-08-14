@@ -147,13 +147,15 @@ export function metafile(metafile: string, width = 235, type: 'metafile' | 'meta
     if(metafile.indexOf('/content/') < 0){
       path='/content/'
     }
+   
+    
     //  普通txId
     //path = '/metafile/'
     //path='content'
   }
   //const fileUrl = `${import.meta.env.VITE_AppImgApi}${path}${metafile.replace('ipfs://', '')}`
   const fileUrl = `${import.meta.env.VITE_MAN_API}${path}${metafile}`
-  
+   
   // 文件后缀
   const fileSuffix = metafile.split('.')[metafile.split('.').length - 1]
   // 非图片格式返回源文件

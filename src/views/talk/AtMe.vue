@@ -21,6 +21,7 @@
       <DirectContactInfo />
     </div>
     <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
+    <InviteModal v-if="layout.isShowInviteModal" />
   </div>
 </template>
 
@@ -35,6 +36,7 @@ import TheInput from './components/TheInput.vue'
 import TheErrorBox from './components/TheErrorBox.vue'
 import { useLayoutStore } from '@/stores/layout'
 import CreatePublicChannelModal from './components/modals/CreatePublicChannelModal.vue'
+import InviteModal from './components/modals/invite/Invite.vue'
 const MessageList = defineAsyncComponent({
   loader: () => import('./components/MessageList.vue'),
 })
@@ -58,16 +60,16 @@ provide('Reply', quote)
 onMounted(async () => {
   layout.isShowUserInfo = false
   
-  await talk.initCommunity('@me')
+  await talk.initCommunity('public')
   //await talk.initCommunity('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
 
   // 如果是私聊且没有会话，则跳转至虚空页
   if (talk.activeCommunityChannels.length === 0) {
-    router.push('/talk/channels/@me/index')
+    router.push('/talk/channels/public/index')
     return
   }
 
-  await talk.initChannel('@me', channelId as string)
+  await talk.initChannel('public', channelId as string)
   await talk.initChannelMessages(talk.selfMetaId)
 })
 

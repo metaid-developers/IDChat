@@ -34,7 +34,7 @@ const talk = useTalkStore()
 const goCheckOutBuzz = () => {
   if (!talk.shareToBuzzTxId) return
 
-  const url = `${location.origin}/buzz/tx/${talk.shareToBuzzTxId}`
+  const url = `${import.meta.env.VITE_SHOW_NOW_HOST}/buzz/${talk.shareToBuzzTxId}i0`
   window.open(url, '_blank')
 
   talk.shareToBuzzTxId = ''

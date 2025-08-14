@@ -1,7 +1,7 @@
 <template>
   <header class="flex flex-align-center" v-if="!isHideHeader">
     <div class="flex1">
-      <PhoneMenuBtnVue>
+      <!-- <PhoneMenuBtnVue>
         <div class="buzz-menu flex flex-align-center">
           <router-link
             :to="item.path"
@@ -17,13 +17,18 @@
             <span class="name">{{ item.name }}</span>
           </router-link>
         </div>
-      </PhoneMenuBtnVue>
+      </PhoneMenuBtnVue> -->
     </div>
     <LoginedUserOperateVue />
   </header>
   <div class="buzz-warp" ref="BuuzWarpRef" id="buzz-warp">
     <div class="buzz-container" id="buzz-container" ref="BuzzContainerRef">
-      <slot></slot>
+      <div class="mt-20 flex text-center  items-center justify-center flex-col">
+        <div class="text-3xl break-all font-black">Metaso Chat</div>
+        <div class="text-lg text-zinc-500 mt-3 break-all">A Messaging Service Built on Bitcoin and its Sidechains</div>
+        <div class="text-xl mt-5 text-zinc-600 break-all ">Fully Decentraliized,Immutable,Uncensorable,and Unhackable</div>
+      </div>
+      <!-- <slot></slot> -->
     </div>
 
     <!--   -->

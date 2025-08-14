@@ -164,7 +164,7 @@ function exchange() {
   if (pagination.totalPages === 1) return ElMessage.error(i18n.t('None More'))
   if (pagination.page < pagination.totalPages) pagination.page++
   else pagination.page = 1
-  getRecommendCommunitys()
+  //getRecommendCommunitys()
 }
 
 function refreshDatas() {
@@ -181,7 +181,7 @@ defineExpose({
   refreshDatas,
 })
 
-getRecommendCommunitys()
+//getRecommendCommunitys()
 </script>
 
 <style lang="scss" scoped src="./Community.scss"></style>
