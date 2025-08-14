@@ -23,13 +23,13 @@
     <!-- quote -->
     <MessageItemQuote
       v-if="message.replyInfo"
-      :quote="{ avatarImage: message.replyInfo.userInfo.avatar,
+      :quote="{ avatarImage: message.replyInfo?.userInfo?.avatar,
     metaName: '',
-    metaId: message.replyInfo.metaId,
-    nickName: message.replyInfo.userInfo.name,
-    protocol: message.replyInfo.protocol,
-    content: message.replyInfo.content,
-    encryption: message.replyInfo.encryption,
+    metaId: message.replyInfo?.metaId,
+    nickName: message.replyInfo?.userInfo?.name,
+    protocol: message.replyInfo?.protocol,
+    content: message.replyInfo?.content,
+    encryption: message.replyInfo?.encryption,
     timestamp: message.replyInfo!.timestamp}"
       v-bind="$attrs"
     />
@@ -37,9 +37,9 @@
     <!-- 消息主体 -->
     <div class="flex">
       <UserAvatar
-        :image="props.message.userInfo.avatar"
-        :name="props.message.userInfo.name"
-        :meta-id="props.message.userInfo.metaid"
+        :image="props.message.userInfo?.avatar"
+        :name="props.message.userInfo?.name"
+        :meta-id="props.message.userInfo?.metaid"
         :meta-name="''"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
       />
@@ -47,7 +47,7 @@
         <div class="flex items-baseline space-x-2">
           <!--message?.userInfo?.metaName-->
           <UserName
-            :name="message.userInfo.name"
+            :name="message.userInfo?.name"
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />

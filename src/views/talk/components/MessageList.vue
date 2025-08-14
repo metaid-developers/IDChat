@@ -280,6 +280,7 @@ const scrollToMessagesBottom = async (retryCount = 0) => {
 }
 
 function scrollToTimeStamp(time: number) {
+  
   const target = document.getElementById(time.toString())
   if (target) {
     const top = target.offsetTop - target.clientHeight
@@ -348,7 +349,7 @@ watch(
       const lastMessage =
         talk.activeChannel?.newMessages[talk.activeChannel?.newMessages.length - 1]
       const isMyMessage = lastMessage?.metaId === talk.selfMetaId
-
+      
       if (disFromBottom > mse.clientHeight && !isMyMessage) {
         return
       }
