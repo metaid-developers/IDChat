@@ -54,6 +54,7 @@
     "elliptic": "6.6.1",
     "eth-ens-namehash": "^2.0.8",
     "ethers": "^5.7.2",
+    "globals": "14.0.0",
     "html2canvas": "^1.4.1",
     "idna-uts46-hx": "^4.1.2",
     "js-base64": "^3.7.2",
