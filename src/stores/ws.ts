@@ -58,6 +58,7 @@ export const useWsStore = defineStore('ws', {
         case 'WS_SERVER_NOTIFY_ROOM':
           
           await talk.handleNewGroupMessage(messageWrapper.D)
+          
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_CHAT':
@@ -79,6 +80,11 @@ export const useWsStore = defineStore('ws', {
         }
 
         if (this.ws?.readyState === WebSocket.CLOSING || this.ws?.readyState === WebSocket.CLOSED) {
+          this.ws = new WebSocket(wsUri)
+        }
+
+        if(!this.ws){
+          
           this.ws = new WebSocket(wsUri)
         }
 

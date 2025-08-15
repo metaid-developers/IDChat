@@ -53,7 +53,7 @@ export const useBulidTx = createGlobalState(() => {
         return userStore.last?.address
     }))
   // actions
-  const createPin = async(metaidData:MetaIdData,isBroadcast=true,needService:boolean=true) => {
+  const createPin = async(metaidData:MetaIdData,isBroadcast=true,needService:boolean=true,payTo:any[]=[]) => {
     
     try {
        const transactions=[] 
@@ -65,6 +65,16 @@ export const useBulidTx = createGlobalState(() => {
         const pinScript = createScriptForMvc(metaidData)
         
         pinTxComposer.appendOpReturnOutput(pinScript)
+
+        if(payTo.length){
+          for(let item of payTo){
+                pinTxComposer.appendP2PKHOutput({
+                address:new mvc.Address(item.address,import.meta.env.VITE_NET_WORK),
+                satoshis: item.amount,
+                })
+          }
+        }
+
 
         if(needService){
         pinTxComposer.appendP2PKHOutput({
@@ -83,10 +93,59 @@ export const useBulidTx = createGlobalState(() => {
        
        
         
+        const {payedTransactions}= await connectionStore.adapter.smallPay({
+          transactions:transactions,
+          hasMetaid:true
+        })
+
+        
+        
+        if(!payedTransactions){
+          return null
+        }
+        
+        const txIDs=await txBroadcast(payedTransactions,isBroadcast)
+        console.log("txIDs",txIDs)
+        
+        
+        return txIDs
+
+
+    } catch (error) {
+      
+         throw new Error((error as any).message)
+    }
+  }
+
+  const transfer=async(receviers:Array<{
+      amount: number,
+      address:string,
+  }>,isBroadcast=true)=>{
+       try {
+       const transactions=[] 
+       const pinTxComposer = new TxComposer()
+        
+       for(let item of receviers){
+          pinTxComposer.appendP2PKHOutput({
+          address:new mvc.Address(item.address),
+          satoshis: item.amount,
+          })
+       }
+
+        transactions.push({
+        txComposer: pinTxComposer.serialize(),
+        message: 'Send Money',
+        })
+
+       
+       
+        
         const {payedTransactions}= await connectionStore.adapter.pay({
           transactions:transactions,
           hasMetaid:true
         })
+
+        
         
         if(!payedTransactions){
           return null
@@ -138,7 +197,7 @@ export const useBulidTx = createGlobalState(() => {
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
-        contentType: body.contentType || 'text/plain',
+        contentType: body.contentType || 'application/json',
         encryption: body.encryption || body.encrypt,
         encoding: 'utf-8',
       }
@@ -166,12 +225,52 @@ export const useBulidTx = createGlobalState(() => {
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
-        contentType: 'text/plain',
+        contentType: 'application/json',
         encryption: body.encryption || body.encrypt,
         encoding: 'utf-8',
       }
       
       const pinRes= await createPin(metaidData,isBroadcast)
+      return pinRes
+
+    } catch (error) {
+     
+      throw new Error(error as any)
+    }
+  }
+
+
+    const createRedPacket=async(params:{
+    body:any,
+    protocol:string,
+    payTo:Array<{
+      amount: number,
+      address:string,
+      index: number,
+    }>
+    isBroadcast:boolean
+  })=>{
+    const {body,protocol,payTo,isBroadcast}=params
+    
+    try {
+      const metaidData={
+        body:JSON.stringify(body),
+        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        flag: MetaFlag.metaid,
+        version: '1.0.0',
+        operation: Operation.create,
+        contentType: 'application/json',
+        encryption: '0',
+        encoding: 'utf-8',
+      }
+
+      if(!payTo.length){
+         
+         throw new Error(``)
+      }
+      
+      const pinRes= await createPin(metaidData,isBroadcast,true,payTo)
+      
       return pinRes
 
     } catch (error) {
@@ -228,7 +327,7 @@ export const useBulidTx = createGlobalState(() => {
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
-        contentType: 'text/plain',
+        contentType: 'application/json',
         encryption: encrypt,
         encoding: 'utf-8',
       }
@@ -247,7 +346,7 @@ export const useBulidTx = createGlobalState(() => {
          let hexS=[]
         for(let txComposer of txComposers){
              const txComposerObj=TxComposer.deserialize(txComposer)
-  
+          
             const txHex = txComposerObj.getTx().toString()
                if(isBroadcast){
               let res=await broadcast(txHex,'mvc',network)
@@ -279,6 +378,8 @@ export const useBulidTx = createGlobalState(() => {
     createChannel,
     createMvcFile,
     joinGrop,
+    transfer,
+    createRedPacket,
     txBroadcast
    
   }

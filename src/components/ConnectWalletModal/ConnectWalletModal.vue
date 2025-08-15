@@ -1124,9 +1124,8 @@ async function connectMetalet() {
     if (connection?.status === 'connected') {
     await credentialsStore.login()
       
-    // await approvedStore.getPaymentStatus()
     
-    // await approvedStore.getAutoPayment()
+
       
     await sleep(300)
 

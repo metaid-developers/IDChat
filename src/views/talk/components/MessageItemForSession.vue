@@ -549,7 +549,7 @@ const nftPrice = computed(() => {
 
 const isNftEmoji = computed(() => props.message.protocol === 'SimpleEmojiGroupChat')
 const isImage = computed(() => props.message.protocol === NodeName.SimpleFileMsg )
-const isGiveawayRedEnvelope = computed(() => props.message.protocol === NodeName.SimpleRedEnvelope )
+const isGiveawayRedEnvelope = computed(() => props.message.protocol === NodeName.SimpleGroupLuckyBag )
 const isReceiveRedEnvelope = computed(() => props.message.protocol === NodeName.OpenRedenvelope)
 const isText = computed(() => props.message.protocol === NodeName.ShowMsg)
 const isLike = computed(() => props.message.protocol === NodeName.PayLike )

@@ -250,6 +250,7 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   const redPackets = []
   let remainsAmount = amount
   let remainsCount = quantity
+  let initIndex=2
   for (let i = 0; i < quantity - 1; i++) {
     let avgAmount = Math.round(remainsAmount / remainsCount)
     const randomFactor = Math.random() * (maxFactor - minFactor) + minFactor
@@ -257,7 +258,7 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
     redPackets.push({
       amount: randomAmount,
       address,
-      index: i,
+      index: i + initIndex,
     })
     remainsAmount -= randomAmount
     remainsCount -= 1
@@ -265,14 +266,16 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   redPackets.push({
     amount: Math.max(Math.floor(remainsAmount), minSats),
     address,
-    index: quantity - 1,
+    index: quantity + initIndex - 1,
   }) // 最后一个红包，使用剩餘金额
-
+  console.log("redPackets",redPackets)
+  
   return redPackets
 }
 
-export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string, sdk: SDK) => {
+export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string) => {
   // 1.1 构建红包地址
+  const buildTx=useBulidTx()
   const code = realRandomString(6)
   const subId = channelId.substring(0, 12)
   const createTime = Date.now()
@@ -290,6 +293,9 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   // 2. 构建数据载体
   const dataCarrier: any = {
     createTime,
+    groupId:channelId,
+    img:'',
+    imgType:'',
     subId,
     content: form.message,
     code,
@@ -297,7 +303,13 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     count: form.quantity,
     metaid: selfMetaId,
     payList: redPackets,
+    type:'space',
+    requireType:'',
+    requireTickId:'',
+    requireCollectionId:"",
+    limitAmount:0
   }
+  
 
   // 2.1 nft红包处理
   if (form.nft && form.chain) {
@@ -314,14 +326,16 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
 
   // 3. 构建节点参数
   const node = {
-    nodeName: NodeName.SimpleRedEnvelope,
-    data: JSON.stringify(dataCarrier),
+    protocol: NodeName.SimpleGroupLuckyBag,
+    body: dataCarrier,
     payTo: redPackets,
+    isBroadcast:true,
   }
 
   // 3. 发送节点
   try {
-    const res = await sdk.createBrfcChildNode(node, { payType: SdkPayType.SPACE })
+    const res = await buildTx.createRedPacket(node)
+    
     console.log({ res })
   } catch (err) {
     console.log(err)
@@ -607,6 +621,26 @@ export const sendMessage = async (messageDto: MessageDto) => {
   }
 }
 
+export const reSendMessage = async (messageDto: MessageDto) => {
+  try {
+    
+    switch (messageDto.type) {
+      case MessageType.Text:
+        if (messageDto.channelType === ChannelType.Session) {
+          //return _sendTextMessageForSession(messageDto)
+        }
+        //return _sendTextMessage(messageDto)
+      case MessageType.Image:
+        if (messageDto.channelType === ChannelType.Session) {
+          // return _sendImageMessageForSession(messageDto)
+        }
+       // return _sendImageMessage(messageDto)
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 export const validateTextMessage = (message: string) => {
   message = message.trim()
 
@@ -620,7 +654,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
-  const contentType = 'text'
+  const contentType = 'application/json'
   const encryption = 'aes'
   const dataCarrier = {
     groupID,
@@ -673,8 +707,8 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   // }
    const mockMessage = {
     mockId,
-    protocol: 'simpleGroupChat',
-    contentType: 'text',
+    protocol: NodeName.SimpleGroupChat,
+    contentType: 'application/json',
     content,
     avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
@@ -759,7 +793,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const timestamp = Date.now()
   // 1.3 content: done
   // 1.4 contentType
-  const contentType = 'text/plain'
+  const contentType = 'application/json'
   // 1.5 encrypt
   const encrypt = '1'
   const dataCarrier = {

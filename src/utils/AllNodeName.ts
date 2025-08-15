@@ -133,6 +133,7 @@ const AllNodeName: {
     path: '/Protocols/SimpleRedEnvelope',
     version: '1.0.2',
   },
+ 
   [NodeName.SimplePublicShare]: {
     brfcId: 'ba9478837e9a',
     path: '/Protocols/SimplePublicShare',

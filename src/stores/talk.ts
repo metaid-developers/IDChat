@@ -28,7 +28,7 @@ export const useTalkStore = defineStore('talk', {
     return {
       communities: [{ id: 'public' }] as Community[],
       members: [] as any,
-
+      
       activeCommunityId: '' as string,
       activeChannelId: '' as string,
 
@@ -605,7 +605,8 @@ export const useTalkStore = defineStore('talk', {
             item.isMock === true &&
             item.content === message.content &&
             item.metaId === message.metaId &&
-            item.protocol === message.protocol
+            containsString(message.protocol,item?.protocol!)
+          
         )
       } else if (containsString(message.protocol,NodeName.SimpleFileGroupChat)) {
         mockMessage = this.activeChannel.newMessages.find(
@@ -613,7 +614,7 @@ export const useTalkStore = defineStore('talk', {
             item.txId === '' &&
             item.isMock === true &&
             item.metaId === message.metaId &&
-            item.protocol === message.protocol
+             containsString(message.protocol,item?.protocol!)
         )
       }
 
@@ -638,9 +639,17 @@ export const useTalkStore = defineStore('talk', {
 
         return
       }
+    
+      if(message){
+         getUserInfoByAddress(message.address).then((userInfo)=>{
+          message.userInfo=userInfo
+           // 如果没有替代mock数据，就直接添加到新消息队列首
+          this.activeChannel.newMessages.push(message)
+        })
+        
+      }
 
-      // 如果没有替代mock数据，就直接添加到新消息队列首
-      this.activeChannel.newMessages.push(message)
+     
     },
 
     async handleNewSessionMessage(message: any) {
@@ -662,7 +671,8 @@ export const useTalkStore = defineStore('talk', {
 
       // 更新当前頻道的已读指针
       this._updateCurrentChannelReadPointers(message.timestamp)
-
+     
+      
       // 优先查找替代mock数据
       const mockMessage = this.activeChannel.newMessages.find(
         (item: Message) =>
@@ -691,8 +701,17 @@ export const useTalkStore = defineStore('talk', {
         return
       }
 
+      if(message){
+         getUserInfoByAddress(message.address).then((userInfo)=>{
+          message.userInfo=userInfo
+           // 如果没有替代mock数据，就直接添加到新消息队列首
+          this.activeChannel.newMessages.push(message)
+        })
+        
+      }
+
       // 如果没有替代mock数据，就直接添加到新消息队列首
-      this.activeChannel.newMessages.push(message)
+      //this.activeChannel.newMessages.push(message)
     },
 
     initCommunityChannelIds() {

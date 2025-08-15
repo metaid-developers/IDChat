@@ -103,6 +103,7 @@
               customClass="rounded-xl py-0.5 object-scale-down"
             />
           </div>
+          <!--message.error-->
           <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
             <Icon
               name="arrow_path"
@@ -305,18 +306,18 @@ const isMyMessage = computed(() => {
 const handleOpenRedPacket = async () => {
   // 如果用户已经领取过红包，则显示红包领取信息
   const params: any = {
-    channelId: talk.activeChannelId,
-    redPacketId: props.message?.txId,
+    groupId: talk.activeChannelId,
+    pinId: `${props.message?.txId}i0`,
   }
   const redPacketType = props.message?.data?.requireType
   console.log({ redPacketType })
   if (redPacketType === '2') {
     params.address = talk.selfAddress
   } else if (redPacketType === '2001' || redPacketType === '2002') {
-    params.address = userStore.user?.evmAddress
+    // params.address = userStore.user?.evmAddress
   }
   const redPacketInfo = await getOneRedPacket(params)
-  const hasReceived = redPacketInfo.payList.some((item: any) => item.metaid === talk.selfMetaId)
+  const hasReceived = redPacketInfo.payList.some((item: any) => item.userInfo?.metaid === talk.selfMetaId)
 
   if (hasReceived) {
     modals.redPacketResult = redPacketInfo
@@ -336,19 +337,22 @@ const handleOpenRedPacket = async () => {
 }
 
 const hasRedPacketReceived = computed(() => {
+  console.log("talk.receivedRedPacketIds",talk.receivedRedPacketIds)
   return talk.receivedRedPacketIds.includes(props.message?.txId)
 })
 
 const tryResend = async () => {
   props.message.error = false
-  await jobs.resend(props.message.timestamp)
+  console.log("props.message",props.message)
+  
+  //await jobs.resend(props.message.timestamp)
 }
 
 const isGroupJoinAction = computed(() => containsString(props.message.protocol,NodeName.SimpleGroupJoin))
 const isGroupLeaveAction = computed(() => containsString(props.message.protocol,'SimpleGroupLeave'))
 const isNftEmoji = computed(() => containsString(props.message.protocol,"SimpleEmojiGroupChat"))
 const isImage = computed(() =>containsString(props.message.protocol,NodeName.SimpleFileGroupChat))
-const isGiveawayRedPacket = computed(() =>containsString(props.message.protocol,NodeName.SimpleRedEnvelope))
+const isGiveawayRedPacket = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupLuckyBag))
 const isReceiveRedPacket = computed(() =>containsString(props.message.protocol,NodeName.OpenRedenvelope))
 const isText = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupChat))
 </script>

@@ -7,11 +7,11 @@
         {{ $t('Talk.Channel.core_members') }}
       </div>
       <div class="text-sm text-dark-300 dark:text-gray-400">
-        {{ talkStore.activeCommunity?.memberTotal || 0 }}
+        {{ talkStore.members.length || 0 }}
       </div>
     </div>
 
-    <div class="w-full overflow-y-auto grow" ref="membersContainer">
+    <div class="w-full overflow-y-auto grow" ref="membersContainer" @scroll="handleScroll">
       <div
         class="w-full relative"
         :style="{ height: vir.getTotalSize() + 'PX' }"
@@ -34,15 +34,95 @@ import { ref, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 
 import { useTalkStore } from '@/stores/talk'
-
+import { debounce } from '@/utils/util'
 import ChannelMemberItem from './ChannelMemberItem.vue'
 
-const talkStore = useTalkStore()
+import {
+  getChannelMembers
+} from '@/api/talk'
 
+const talkStore = useTalkStore()
+const isLoading = ref(false)
+const hasMore = ref(true)
+const cursor = ref(20)
+const pageSize = 20
 // 虚拟列表
 const membersContainer = ref(null)
 
 let vir: any
+
+
+// 处理滚动事件
+const handleScroll = () => {
+  if (!membersContainer.value || isLoading.value || !hasMore.value) return
+  
+  const { scrollTop, scrollHeight, clientHeight } = membersContainer.value
+  
+  // 检测是否滚动到顶部 (添加5px的容差)
+  const isAtTop = scrollTop <= 5
+  if (isAtTop) {
+    console.log('滚动到顶部')
+    // 这里可以添加加载更多数据的逻辑
+  }
+  
+  // 检测是否滚动到底部 (添加5px的容差)
+  const isAtBottom = scrollHeight - (scrollTop + clientHeight) <= 5
+  if (isAtBottom) {
+    console.log('滚动到底部')
+    debounce(getMoreMember(),2000)
+    // 这里可以添加加载更多数据的逻辑
+  }
+}
+
+
+// 获取更多成员
+async function getMoreMember() {
+  isLoading.value = true
+  
+  try {
+    const members = await getChannelMembers({
+      groupId: talkStore.activeChannelId,
+      cursor: String(cursor.value),
+    
+    })
+    
+    if (members.length) {
+      talkStore.members.push(...members)
+      cursor.value += pageSize
+      
+      // 更新虚拟列表尺寸
+      vir.value?.measure()
+      
+      // 检查是否还有更多数据
+      if (members.length < pageSize) {
+        hasMore.value = false
+      }
+    } else {
+      hasMore.value = false
+    }
+  } catch (error) {
+    ElMessage.error('获取群组成员失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+
+// async function getMoreMember(){
+//       const lastTimeStamp=talkStore.members[0].timestamp
+//       debugger
+//     getChannelMembers({groupId:talkStore.activeChannelId,timestamp:lastTimeStamp})
+//       .then((members: any) => {
+//        if(members.length){
+//         debugger
+//          talkStore.members.push(...members)
+//        }
+//       })
+//       .catch(() => {
+//         ElMessage.error('获取群组成员失败')
+//       })
+// } 
+
 
 watch(
   () => talkStore.members.length,
@@ -53,7 +133,9 @@ watch(
         getScrollElement: () => membersContainer.value,
         estimateSize: () => 52,
         overscan: 6,
+  
       })
+      console.log('wir',vir)
     }
   },
   { immediate: true }

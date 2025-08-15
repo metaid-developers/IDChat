@@ -41,9 +41,9 @@
                       class="w-full lg:w-114 h-60 bg-gradient-to-tr from-[#CBFDE4] to-[#FCEDCE] rounded-t-3xl shadow-md flex flex-col items-center justify-start overflow-x-hidden group-hover:-skew-x-3 group-hover:shadow-xl duration-300 origin-top"
                     >
                       <UserAvatar
-                        :meta-id="message.metaId"
-                        :image="message.avatarImage"
-                        :meta-name="message.metaName"
+                        :meta-id="message.userInfo?.metaid"
+                        :image="message.userInfo?.avatar"
+                        :meta-name="''"
                         class="w-15 h-15 rounded-2xl bg-amber-200 mt-7.5"
                         :disabled="true"
                       />
@@ -73,9 +73,9 @@
                     ></div>
 
                     <UserAvatar
-                      :meta-id="message.metaId"
-                      :image="message.avatarImage"
-                      :meta-name="message.metaName"
+                      :meta-id="message.userInfo?.metaid"
+                      :image="message.userInfo?.avatar"
+                      :meta-name="''"
                       class="w-15 h-15 rounded-2xl bg-amber-200 mt-7.5"
                       :disabled="true"
                     />
@@ -94,7 +94,7 @@
                     >
                       {{ $t('Talk.Modals.red_packet_all_claimed') }}
                     </div>
-                    <template v-else>
+                    <!-- <template v-else>
                       <div class="mt-10 text-sm text-dark-300">
                         {{ $t('Talk.Modals.red_packet_no_token') }}
                       </div>
@@ -111,7 +111,7 @@
                           </div>
                         </div>
                       </div>
-                    </template>
+                    </template> -->
 
                     <div
                       class="mt-4 text-sm text-link flex space-x-px items-center cursor-pointer hover:underline"
@@ -157,6 +157,7 @@ const user = useUserStore()
 const remains = ref([])
 const requireNft = ref()
 
+console.log('message',message)
 const redPacket = computed(() => {
   return modals.openRedPacket.redPacketInfo
 })
@@ -166,11 +167,13 @@ const distributeType = computed(() => {
 })
 
 const canOpen = computed(() => {
+  
   if (distributeType.value === RedPacketDistributeType.Random) {
     return remains.value.length > 0
   }
 
-  return redPacket.value?.tokenCount > 0
+  //return redPacket.value?.tokenCount > 0
+  return +redPacket.value?.usedCount < +redPacket.value?.count
 })
 
 const rejectReason = computed(() => {
@@ -178,12 +181,12 @@ const rejectReason = computed(() => {
     return { reason: 'all claimed' }
   }
 
-  if (redPacket.value?.tokenCount === 0) {
-    //
-    return {
-      reason: 'no token',
-    }
-  }
+  // if (redPacket.value?.tokenCount === 0) {
+  //   //
+  //   return {
+  //     reason: 'no token',
+  //   }
+  // }
 
   return {
     reason: '',
@@ -197,15 +200,16 @@ const note = computed(() => {
 const tryOpenRedPacket = async () => {
   layout.isShowLoading = true
   const params: any = {
-    channelId: talk.activeChannelId,
-    redPacketId: message?.txId,
-    selfMetaId: talk.selfMetaId,
+    groupId: talk.activeChannelId,
+    pinId: `${message?.txId}i0`,
+    metaId: talk.selfMetaId,
+    address:talk.selfAddress
   }
   const redPacketType = redPacket.value?.requireType
   if (redPacketType === '2') {
-    params.address = talk.selfAddress
+    // params.address = talk.selfAddress
   } else if (redPacketType === '2001' || redPacketType === '2002') {
-    params.address = user.user?.evmAddress
+    //params.address = user.user?.evmAddress
   }
 
   await grabRedPacket(params)
@@ -218,10 +222,12 @@ const viewDetails = async () => {
   talk.addReceivedRedPacketId(message?.txId)
 
   const redPacketInfo = await getOneRedPacket({
-    channelId: talk.activeChannelId,
-    redPacketId: message?.txId,
+    groupId: talk.activeChannelId,
+    pinId: `${message?.txId}i0`,
   })
+  
   modals.redPacketResult = redPacketInfo
+  
   modals.openRedPacket = null
   layout.isShowRedPacketOpenModal = false
   layout.isShowRedPacketResultModal = true
@@ -233,19 +239,20 @@ const closeModal = () => {
 }
 
 onMounted(async () => {
-  const channelId = talk.activeChannelId
-  const redPacketId = message?.txId
+  const groupId = talk.activeChannelId
+  const pinId = `${message?.txId}i0`
   const params: any = {
-    channelId,
-    redPacketId,
+    groupId,
+    pinId,
   }
   const redPacketType = redPacket.value?.requireType
   if (redPacketType === '2') {
     params.address = talk.selfAddress
   } else if (redPacketType === '2001' || redPacketType === '2002') {
-    params.address = user.user?.evmAddress
+   // params.address = user.user?.evmAddress
   }
   getRedPacketRemains(params).then(res => {
+    
     remains.value = res.unused
     console.log('remains', remains.value)
   })
@@ -254,9 +261,9 @@ onMounted(async () => {
   if (redPacketType === '2001' || redPacketType === '2' || redPacketType === '2002') {
     let chain
     if (redPacketType === '2001') {
-      chain = import.meta.env.VITE_ETH_CHAIN
+      //chain = import.meta.env.VITE_ETH_CHAIN
     } else if (redPacketType === '2002') {
-      chain = import.meta.env.VITE_POLYGON_CHAIN
+      //chain = import.meta.env.VITE_POLYGON_CHAIN
     } else {
       chain = 'mvc'
     }

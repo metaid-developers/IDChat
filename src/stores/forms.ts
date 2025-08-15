@@ -450,7 +450,6 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
         },
         talk.activeChannelId,
         talk.selfMetaId,
-        user.showWallet
       )
       layout.isShowLoading = false
       this.reset()

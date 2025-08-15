@@ -46,8 +46,8 @@
                     </button>
                   </div>
                   <UserAvatar
-                    :meta-id="redPacketResult?.metaId"
-                    :image="redPacketResult?.avatarImage"
+                    :meta-id="redPacketResult?.userInfo?.metaid"
+                    :image="redPacketResult?.userInfo?.avatar"
                     :meta-name="''"
                     class="w-15 h-15 rounded-2xl mt-4.5"
                     :disabled="true"
@@ -86,9 +86,9 @@
                     <div class="flex items-center justify-between py-3" v-for="draw in sortedDraws">
                       <div class="flex space-x-3 items-center">
                         <UserAvatar
-                          :meta-id="draw.metaId"
-                          :image="draw.avatarImage"
-                          :meta-name="draw.metaName"
+                          :meta-id="draw.userInfo?.metaid"
+                          :image="draw.userInfo?.avatar"
+                          :meta-name="''"
                           class="w-12 h-12"
                         />
                         <div class="flex flex-col space-y-0.5 items-start">
@@ -181,14 +181,16 @@ const closeModal = () => {
 }
 
 const redPacketResult = modals.redPacketResult
+
+console.log("redPacketResult",redPacketResult)
 const note = computed(() => {
   return redPacketResult?.content || i18n.t('Talk.Channel.default_red_envelope_message')
 })
 const draws = computed(() => {
-  return (redPacketResult?.payList || []).filter((item: any) => item.used === 'true')
+  return (redPacketResult?.payList || []).filter((item: any) => item.used === true || item.isWithdraw === true)
 })
 const myDraw = computed(() => {
-  return draws.value.find((item: any) => item.metaid === talk.selfMetaId)
+  return draws.value.find((item: any) => item.gradMetaId === talk.selfMetaId)
 })
 const sortedDraws = computed(() => {
   return draws.value.sort((a: any, b: any) => b.timestamp - a.timestamp)

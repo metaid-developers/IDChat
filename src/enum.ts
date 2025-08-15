@@ -317,6 +317,7 @@ export enum NodeName {
   FtTransfer = 'FtTransfer',
   FtMerge = 'merge',
   SimpleRedEnvelope = 'Simpleredenvelope',
+  SimpleGroupLuckyBag='simplegroupluckybag',
   OpenRedenvelope = 'openredenvelope',
   SimplePublicShare = 'SimplePublicShare',
   LegalSellNft = 'sell_nft',

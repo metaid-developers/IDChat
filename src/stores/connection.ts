@@ -248,7 +248,9 @@ export const useConnectionStore = defineStore('connection', {
       console.log("router",router)
       
       await userStore.clearUserInfo()
-      //await approvedStore.clear()
+      if(window.metaidwallet?.smallPay){
+         await approvedStore.clear()
+      }
       setTimeout(() => {
         router.push({
         name:'buzzRecommend'

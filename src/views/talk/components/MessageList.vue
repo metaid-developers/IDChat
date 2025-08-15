@@ -111,7 +111,7 @@ import { decrypt } from '@/utils/crypto'
 import { ShareChatMessageData } from '@/@types/common'
 import {useBulidTx} from '@/hooks/use-build-tx'
 import {GroupMessagePollingQueue} from '@/utils/taskQueue'
-
+import { getUserInfoByAddress } from "@/api/man";
 
 const user = useUserStore()
 const talk = useTalkStore()
@@ -236,8 +236,24 @@ const loadMore = async () => {
   }
 
   for (const item of items) {
+
+        
+     getUserInfoByAddress(item.address).then((userInfo)=>{
+        item.userInfo=userInfo
+           if(item.replyInfo){
+          getUserInfoByAddress(item.replyInfo.address).then((replyUserInfo)=>{
+        item.replyInfo.userInfo=replyUserInfo
+            talk.activeChannel?.pastMessages.push(item)
+      }) 
+    }else{
+          talk.activeChannel?.pastMessages.push(item)
+    }
+    })
     
-    talk.activeChannel?.pastMessages.push(item)
+
+
+    
+    // talk.activeChannel?.pastMessages.push(item)
   }
 
   // 滚动到原来的位置

@@ -3,9 +3,10 @@
     class="flex items-center py-1 lg:py-2 group cursor-pointer hover:bg-dark-200 hover:dark:bg-gray-900 px-4"
     @click="messageThisGuy"
   >
+  <!--member.avatarType-->
     <UserAvatar
       :name="member.userInfo.name"
-      :type="member.avatarType"
+      :type="'metaId'"
       :meta-id="member.userInfo.metaid"
       :image="member.userInfo.avatar"
       :meta-name="''"
@@ -44,6 +45,7 @@ const popMemberMenu = () => {
 }
 
 const messageThisGuy = () => {
+  return
   // 如果是自己，就不要发消息了
   if (isYou.value) return
 

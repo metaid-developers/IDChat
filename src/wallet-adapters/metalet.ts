@@ -217,25 +217,37 @@ export const smallPay=async (toPayTransactions:{
 }>,hasMetaid:boolean
 })=>{
    checkMetalet()
-   
-    const approvedStore=useApprovedStore()
+
+  if(window.metaidwallet?.smallPay){
+    
+      const approvedStore=useApprovedStore()
+       await approvedStore.getPaymentStatus()
+      await approvedStore.getAutoPayment()
+      
     if(approvedStore.canUse){
       try {
-        
-         const res= await window.metaidwallet.smallPay(toPayTransactions).catch((e)=>{
-        console.log("e")
-       })
+         const res= await window.metaidwallet.smallPay(toPayTransactions)
+          console.log("res",res)
+          if(res.status === 'error' && res.message.includes('The fee is too high')){
+             return await window.metaidwallet.pay(toPayTransactions)
+          }
+          
+         return res
 
-       console.log("res",res)
+      
        
       } catch (error) {
           console.log("error",error)
-       
-        
       }
     }else{
       return await window.metaidwallet.pay(toPayTransactions)
     }
+  }else{
+    return await window.metaidwallet.pay(toPayTransactions)
+  }
+
+
+  
    
 }
 

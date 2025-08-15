@@ -1,7 +1,8 @@
 import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth } from '@/@types/talk'
 import { sleep } from '@/utils/util'
-import { getUserInfoByAddress } from "@/api/man";
+import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
+import axios from 'axios';
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
   header: {
     'Content-Type': 'application/json',
@@ -368,35 +369,68 @@ export const getCommunityMembers = (communityId: string): Promise<any> => {
 
 export const getOneRedPacket = async (params: any): Promise<any> => {
   params = params || {}
-  const channelId = params.channelId
-  const redPacketId = params.redPacketId
-  const query = params.address ? new URLSearchParams({ address: params.address }).toString() : ''
+  // const groupId = params.groupId
+  // const pinId = params.pinId
+  //const query = params.address ? new URLSearchParams({ address: params.address }).toString() : ''
+  const query=new URLSearchParams(params).toString()
+  return TalkApi.get(`/lucky-bag-info?${query}`).then(async(res) => {
+  
+    if(res.data.payList.length){
+      for(let user of res.data.payList){
+        
+        if(user?.gradAddress){
+           const userInfo=await getUserInfoByAddress(user?.gradAddress)
+        user.userInfo=userInfo
+        }
+       
+      }
+    }
+   const userInfo=await getUserInfoByAddress(res.data?.address)
+    res.data.userInfo=userInfo
+    return res.data
 
-  return TalkApi.get(`/room/${channelId}/redenvelope/${redPacketId}?${query}`).then(res => {
+   
+  })
+}
+
+export const getRedPacketRemains = async (params:{
+  groupId:string
+  pinId:string
+}): Promise<any> => {
+
+ 
+  const query =new URLSearchParams(params).toString() 
+  // return axios.get(`http://47.83.198.218:7568/group-chat/lucky-bag-unused-info?${query}`).then((res)=>{
+  //   console.log("res",res)
+  //   debugger
+  //   return res.data.data
+  // })
+  return TalkApi.get(`/lucky-bag-unused-info?${query}`).then(res => {
     return res.data
   })
 }
 
-export const getRedPacketRemains = async (params: any): Promise<any> => {
+export const grabRedPacket = async (params: {
+  groupId:string
+  pinId:string
+  metaId:string
+  address:string
+}): Promise<any> => {
   params = params || {}
-  const channelId = params.channelId
-  const redPacketId = params.redPacketId
-  const query = params.address ? new URLSearchParams({ address: params.address }).toString() : ''
+ 
+  //const query = new URLSearchParams(params).toString()
 
-  return TalkApi.get(`/room/${channelId}/redenvelope/${redPacketId}/unused?${query}`).then(res => {
+  //   return axios.post(`http://47.83.198.218:7568/group-chat/grab-lucky-bag`,params).then((res)=>{
+  //   console.log("res",res)
+  //   debugger
+  //   return res.data.data
+  // })
+  return TalkApi.post(`/grab-lucky-bag`,params).then(res => {
+     
     return res.data
   })
-}
 
-export const grabRedPacket = async (params: any): Promise<any> => {
-  params = params || {}
-  const channelId = params.channelId
-  const redPacketId = params.redPacketId
-  const metaId = params.selfMetaId
-  const address = params.address
-  const query = new URLSearchParams({ metaId, address }).toString()
-
-  return TalkApi.get(`/room/${channelId}/gift/${redPacketId}?${query}`).then(res => {})
+  
 }
 
 // 获取某个頻道的引用公告列表

@@ -131,6 +131,7 @@ export const useJobsStore = defineStore('jobs', {
     },
 
     playNotice() {
+      
       if (this.isPlayingNotice) return
       this.isPlayingNotice = true
       const audio = new Audio()

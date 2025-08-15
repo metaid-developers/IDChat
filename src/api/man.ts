@@ -46,10 +46,27 @@ unconfirmed:string
 }
 
 
-export const getUserInfoByAddress = (address:string): Promise<UserInfo> => {
-  return manApi.get(`/info/address/${address}`)
+export const getUserInfoByAddress =async(address:string): Promise<UserInfo> => {
+const res=await manApi.get(`/info/address/${address}`)
+
+     
+if(res && !res?.name){
+  res.name = res.metaid.slice(0,6)
 }
 
-export const getUserInfoByMetaId = (metaid:string): Promise<UserInfo> => {
-  return manApi.get(`/info/metaid/${metaid}`)
+return res
+
+
+}
+
+export const getUserInfoByMetaId = async(metaid:string): Promise<UserInfo> => {
+  const res=await manApi.get(`/info/metaid/${metaid}`)
+
+     
+if(res && !res?.name){
+  res.name = res.metaid.slice(0,6)
+}
+
+return res
+   
 }
