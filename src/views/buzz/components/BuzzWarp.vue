@@ -21,12 +21,15 @@
     </div>
     <LoginedUserOperateVue />
   </header>
+ 
+  
+
   <div class="buzz-warp" ref="BuuzWarpRef" id="buzz-warp">
     <div class="buzz-container" id="buzz-container" ref="BuzzContainerRef">
       <div class="mt-20 flex text-center  items-center justify-center flex-col">
-        <div class="text-3xl break-all font-black">Metaso Chat</div>
+        <div class="text-3xl break-all font-black">MetaSo Chat</div>
         <div class="text-lg text-zinc-500 mt-3 break-all">A Messaging Service Built on Bitcoin and its Sidechains</div>
-        <div class="text-xl mt-5 text-zinc-600 break-all ">Fully Decentraliized,Immutable,Uncensorable,and Unhackable</div>
+        <div class="text-xl mt-5 text-zinc-600 break-all ">Fully Decentralized,Immutable,Uncensorable,and Unhackable</div>
       </div>
       <!-- <slot></slot> -->
     </div>
@@ -64,6 +67,7 @@ import {
   onUnmounted,
   reactive,
 } from 'vue'
+
 import Header from './components/Header/Header.vue'
 import Footer from './components/Footer/Footer.vue'
 import CollapseItem from '@/components/Collapse/collapse-item.vue'

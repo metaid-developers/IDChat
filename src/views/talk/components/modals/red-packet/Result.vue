@@ -88,9 +88,17 @@
                         <UserAvatar
                           :meta-id="draw.userInfo?.metaid"
                           :image="draw.userInfo?.avatar"
+                          
                           :meta-name="''"
                           class="w-12 h-12"
                         />
+
+                      <UserName
+                      :name="draw.userInfo?.name"
+                      :meta-name="''"
+                      :no-tag="true"
+                      />
+
                         <div class="flex flex-col space-y-0.5 items-start">
                           <span :class="['text-sm text-dark-800 font-medium']">{{
                             draw.name

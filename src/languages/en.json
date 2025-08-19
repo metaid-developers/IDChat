@@ -185,6 +185,7 @@
     },
     "Channel": {
       "core_members": "core members",
+      "team_members": "Group members",
       "join_channel": "joined the channel.",
       "leave_channel": "left the channel.",
       "come_get_red_envelope": "Grab a Candy Bag!",
@@ -1325,5 +1326,6 @@
   "account": {
     "change": "Metalet account changed. Refreshing page..."
   },
-  "Copy_success": "内容已复制"
+  "Copy_success": "内容已复制",
+  "retry_msg_error": "The retry message ID cannot be found. Please edit the content to be sent again."
 }

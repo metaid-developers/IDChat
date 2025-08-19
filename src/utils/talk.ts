@@ -283,6 +283,9 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   const net = import.meta.env.VITE_NET_WORK || 'mainnet'
   const { addressStr: address } = buildCryptoInfo(key, net)
 
+
+  console.log("subId",subId,code,createTime)
+  
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000
   const amountInSat = form.amount // 现在直接使用sat为单位
@@ -621,25 +624,25 @@ export const sendMessage = async (messageDto: MessageDto) => {
   }
 }
 
-export const reSendMessage = async (messageDto: MessageDto) => {
-  try {
+// export const reSendMessage = async (messageDto: MessageDto) => {
+//   try {
     
-    switch (messageDto.type) {
-      case MessageType.Text:
-        if (messageDto.channelType === ChannelType.Session) {
-          //return _sendTextMessageForSession(messageDto)
-        }
-        //return _sendTextMessage(messageDto)
-      case MessageType.Image:
-        if (messageDto.channelType === ChannelType.Session) {
-          // return _sendImageMessageForSession(messageDto)
-        }
-       // return _sendImageMessage(messageDto)
-    }
-  } catch (error) {
-    console.error(error)
-  }
-}
+//     switch (messageDto.type) {
+//       case MessageType.Text:
+//         if (messageDto.channelType === ChannelType.Session) {
+//           //return _sendTextMessageForSession(messageDto)
+//         }
+//         //return _sendTextMessage(messageDto)
+//       case MessageType.Image:
+//         if (messageDto.channelType === ChannelType.Session) {
+//           // return _sendImageMessageForSession(messageDto)
+//         }
+//        // return _sendImageMessage(messageDto)
+//     }
+//   } catch (error) {
+//     console.error(error)
+//   }
+// }
 
 export const validateTextMessage = (message: string) => {
   message = message.trim()
@@ -739,9 +742,21 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
 
   // 3. 发送节点
   //const sdk = userStore.showWallet
-  await tryCreateNode(node, mockId)
+  try {
+   const tryRes= await tryCreateNode(node, mockId)
+   if(!tryRes){
+    debugger
+    talkStore.addRetryList({...messageDto,mockId})
+   
+   }else{
+    talkStore.removeRetryList(mockId)
+     return '1'
+   }
 
-  return '1'
+   
+  } catch (error) {
+    talkStore.addRetryList({...messageDto,mockId})
+  }
 }
 
 export const tryCreateNode = async (node: {
@@ -764,20 +779,26 @@ export const tryCreateNode = async (node: {
       attachments,
       isBroadcast:true
     })
-    //console.log("nodeRes",nodeRes!.txids.length)
-    
+   
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
     if (nodeRes === null) {
       talk.removeMessage(mockId)
     }
+    
   } catch (error) {
+    
     const timestamp = timeStamp
     jobs?.node && jobs?.nodes.push({ node, timestamp })
     const newMessages = talk.activeChannel.newMessages
     const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
     if (message) {
+      console.log("message",message)
+      
+      
       message.error = true
+      message.reason=`${(error as any).toString()}`
+      return false
     }
   }
 }
@@ -903,7 +924,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
   const { channelId,groupId, userName: nickName, attachments, originalFileUrl, reply } = messageDto
-
+  
   // 1. 构建协议数据
   // 1.1 groupId: done
   // 1.2 timestamp
@@ -972,9 +993,25 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
 
   // 3. 发送节点
   //const sdk = userStore.showWallet
-  await tryCreateNode(node,mockId)
+  try {
+   const tryRes= await tryCreateNode(node, mockId)
+   if(!tryRes){
+    talkStore.addRetryList({...messageDto,mockId})
+  
+   }else{
+    talkStore.removeRetryList(mockId)
+     return
+   }
 
-  return
+   
+  } catch (error) {
+    talkStore.addRetryList({...messageDto,mockId})
+  }
+
+
+  // await tryCreateNode(node,mockId)
+
+  // return
 }
 
 export const formatTimestamp = (timestamp: number, i18n: any, showMinutesWhenOld = true) => {

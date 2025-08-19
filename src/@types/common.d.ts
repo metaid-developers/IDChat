@@ -904,16 +904,19 @@ declare interface ChatMessageItem {
 }
 
 declare interface ShareChatMessageData {
+  content:string
+  attachments:string[]
+  contentType:string
   //communityId: string
   //channelId: string
-  groupId:string
-  userMetaId: string
-  message: {
-    content: string
-    contentType: string
-    metanetId: string
-    protocol: string
-    timestamp: number
-    txId: string
-  }
+  // groupId:string
+  // userMetaId: string
+  // message: {
+  //   content: string
+  //   contentType: string
+  //   metanetId: string
+  //   protocol: string
+  //   timestamp: number
+  //   txId: string
+  // }
 }

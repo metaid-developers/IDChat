@@ -219,6 +219,7 @@
     },
     "Channel": {
       "core_members": "核心成員",
+      "team_members": "群组成员",
       "join_channel": "加入了頻道",
       "leave_channel": "離開了頻道",
       "come_get_red_envelope": "領取紅包",
@@ -1319,5 +1320,6 @@
   "account": {
     "change": "Metalet 账户已变更。正在刷新页面..."
   },
-  "Copy_success": "Content copied"
+  "Copy_success": "Content copied",
+  "retry_msg_error": "找不到重试的消息ID,请重新编辑要发送的内容"
 }

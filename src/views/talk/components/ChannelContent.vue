@@ -3,7 +3,7 @@
     <MessageList @quote="val => (quote.val = val)" ref="MessageListRef" />
   </div>
 
-  <div class="fixed bottom-0 left-0 right-0 px-4 lg:absolute">
+  <div class="fixed bottom-0 left-0 right-0 px-4 lg:absolute" v-if="!talk.isShowWelcome">
     <TheInput v-model:quote="quote.val" @to-quote="toQuote" />
     <TheErrorBox />
   </div>
@@ -13,7 +13,8 @@
 import { defineAsyncComponent, provide, reactive, ref } from 'vue'
 import TheInput from './TheInput.vue'
 import TheErrorBox from './TheErrorBox.vue'
-
+import { useTalkStore } from '@/stores/talk'
+const talk = useTalkStore()
 const quote: { val: any } = reactive({ val: undefined })
 const MessageList = defineAsyncComponent({
   loader: () => import('./MessageList.vue'),

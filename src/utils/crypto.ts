@@ -88,7 +88,8 @@ export function buildCryptoInfo(key: string, net: string): CryptoInfo {
   const script = Script.fromAddress(address)
   const scriptStr = script.toHex()
   const xpub = hdPrivateKey.xpubkey.toString()
-
+  console.log("address",address.toString(),privateKey.toString())
+  
   return {
     hdPrivateKey,
     privateKey,

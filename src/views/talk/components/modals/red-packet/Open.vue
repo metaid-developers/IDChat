@@ -212,7 +212,11 @@ const tryOpenRedPacket = async () => {
     //params.address = user.user?.evmAddress
   }
 
-  await grabRedPacket(params)
+  await grabRedPacket(params).catch((e)=>{
+   
+    layout.isShowLoading = false
+    return  ElMessage.error(e)
+  })
   await sleep(1000)
   layout.isShowLoading = false
   await viewDetails()

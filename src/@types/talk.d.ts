@@ -1,8 +1,7 @@
 import { ChannelType, MessageType } from '@/enum'
 import { Address, HDPrivateKey, PrivateKey, PublicKey, Script } from 'meta-contract/dist/mvc'
 import { AttachmentItem } from './hd-wallet'
-
-declare interface Message {
+ declare interface Message {
   protocol?: string
   nodeName?: string
   data?: any
@@ -192,6 +191,8 @@ declare interface MessageDto {
   originalFileUrl?: any
   channelType?: ChannelType
   reply?: ChatMessageItem
+  mockId?:string
+  reason?:string
 }
 
 declare interface CryptoInfo {

@@ -4,7 +4,7 @@
   >
     <div class="flex items-baseline justify-between mb-2 px-4">
       <div class="text-sm text-dark-800 dark:text-gray-100 uppercase font-medium">
-        {{ $t('Talk.Channel.core_members') }}
+        {{ $t('Talk.Channel.team_members') }}
       </div>
       <div class="text-sm text-dark-300 dark:text-gray-400">
         {{ talkStore.members.length || 0 }}

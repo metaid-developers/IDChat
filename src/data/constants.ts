@@ -7,3 +7,5 @@ export const SERVICE_ADDRESS=import.meta.env.VITE_SERVICE_ADDRESS
 export const SERVICE_FEE=import.meta.env.VITE_SERVICE_FEE
 
 export const PREFIX_PROTOCOL='/protocols/'
+
+export const ChannelMsg_Size=30

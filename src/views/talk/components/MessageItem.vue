@@ -151,6 +151,7 @@
           </div>
         </div>
 
+
         <div class="my-1.5 max-w-full flex" v-else>
           <div
             class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
@@ -184,7 +185,9 @@
               )
             "
           ></div>
-          <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
+          <!--message.error-->
+          <button v-if="true" class="ml-3 max-w-28 break-words flex items-center w justify-center" :title="resendTitle" @click="tryResend">
+            <span v-if="message?.reason" class="text-[#fc457b] font-medium mr-2">[{{ message?.reason }}]</span>
             <Icon
               name="arrow_path"
               class="w-4 h-4 text-dark-400 dark:text-gray-200 hover:animate-spin-once"
@@ -201,7 +204,7 @@ import NftLabel from './NftLabel.vue'
 import MessageMenu from './MessageMenu.vue'
 import { computed, inject, ref, Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatTimestamp, decryptedMessage } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage,sendMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import giftImage from '@/assets/images/gift.svg?url'
@@ -213,6 +216,8 @@ import { useImagePreview } from '@/stores/imagePreview'
 import MessageItemQuote from './MessageItemQuote.vue'
 import {NodeName} from '@/enum'
 import {containsString} from '@/utils/util'
+import { getUserInfoByAddress, } from "@/api/man";
+
 const i18n = useI18n()
 
 const modals = useModalsStore()
@@ -279,16 +284,20 @@ const parseTextMessage = (text: string) => {
 
 const redPacketReceiveInfo = computed(() => {
   const content: string = props.message.content
-
-  if (props.message.metaId === props.message.data?.redEnvelopeMetaId) {
+  
+  if (props.message.metaId === props.message.redMetaId) {
     return i18n.t('Talk.Channel.receive_own_red_envelope')
   }
 
-  const [_receiver, sender] = content.split('|-|')
+  // const [_receiver, sender] = content.split('|-|')
+  let sender=props.message?.replyInfo?.userInfo
+ 
 
   return i18n.t('Talk.Channel.receive_red_envelope', {
-    sender,
+    sender:sender?.name || sender.metaid.slice(0,6),
   })
+
+
 })
 
 const redPacketMessage = computed(() => {
@@ -343,8 +352,18 @@ const hasRedPacketReceived = computed(() => {
 
 const tryResend = async () => {
   props.message.error = false
-  console.log("props.message",props.message)
-  
+   const messageDto=talk.getRetryById(props.message.mockId) 
+   
+   if(messageDto){
+    
+    await sendMessage(messageDto)
+
+   
+   }else{
+    return ElMessage.error(`${i18n.t(`retry_msg_error`)}`)
+   }
+  //   
+
   //await jobs.resend(props.message.timestamp)
 }
 
@@ -353,7 +372,7 @@ const isGroupLeaveAction = computed(() => containsString(props.message.protocol,
 const isNftEmoji = computed(() => containsString(props.message.protocol,"SimpleEmojiGroupChat"))
 const isImage = computed(() =>containsString(props.message.protocol,NodeName.SimpleFileGroupChat))
 const isGiveawayRedPacket = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupLuckyBag))
-const isReceiveRedPacket = computed(() =>containsString(props.message.protocol,NodeName.OpenRedenvelope))
+const isReceiveRedPacket = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupOpenLuckybag))
 const isText = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupChat))
 </script>
 

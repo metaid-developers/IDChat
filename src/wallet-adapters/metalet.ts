@@ -214,7 +214,8 @@ export const smallPay=async (toPayTransactions:{
   transactions:Array<{
   txComposer: string,
   message: string,
-}>,hasMetaid:boolean
+}>,hasMetaid:boolean,
+
 })=>{
    checkMetalet()
 
@@ -225,11 +226,25 @@ export const smallPay=async (toPayTransactions:{
       await approvedStore.getAutoPayment()
       
     if(approvedStore.canUse){
+     
       try {
+
+        console.log('toPayTransactions',toPayTransactions,JSON.stringify(toPayTransactions))
          const res= await window.metaidwallet.smallPay(toPayTransactions)
-          console.log("res",res)
+         debugger
+         
           if(res.status === 'error' && res.message.includes('The fee is too high')){
              return await window.metaidwallet.pay(toPayTransactions)
+          }else if(res.status === 'error' && res.message == "Not enough balance"){
+            throw new Error(res.message.toString())
+
+          }else if(res.status === 'error' && res.message.includes('Auto payment limit reached for the last 24 hours')){
+            
+             throw new Error(res.message.toString())
+
+          }else if(res.status === 'error' && !res.message.includes('The fee is too high')){
+             throw new Error(res.message.toString())
+               
           }
           
          return res
@@ -237,7 +252,19 @@ export const smallPay=async (toPayTransactions:{
       
        
       } catch (error) {
-          console.log("error",error)
+          
+        if(error.message == 'Not enough balance'){
+          
+         return ElMessage.error(error.message)
+          
+        }else if(error.message.includes('Auto payment limit reached for the last 24 hours')){
+          
+           return ElMessage.error(error.message)
+        } else {
+           ElMessage.error(error.message)
+           return await window.metaidwallet.pay(toPayTransactions)
+        }
+      
       }
     }else{
       return await window.metaidwallet.pay(toPayTransactions)
@@ -246,9 +273,6 @@ export const smallPay=async (toPayTransactions:{
     return await window.metaidwallet.pay(toPayTransactions)
   }
 
-
-  
-   
 }
 
 

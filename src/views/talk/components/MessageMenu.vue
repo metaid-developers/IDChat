@@ -98,64 +98,77 @@ const actions = computed(() => {
     })
   }
 
+  const ShareProtocols = [
+    NodeName.SimpleFileGroupChat,
+    NodeName.SimpleGroupChat,
+    NodeName.ShowMsg,
+    NodeName.SimpleFileMsg,
+  ]
+
+  const hasShareProtocols=ShareProtocols.findIndex((item)=>{
+    return containsString(props.message.protocol,item)
+  })
+
   // publish buzz
-  // if (import.meta.env.MODE !== EnvMode.Mainnet) {
-  //      const message: ChatSessionMessageItem = props.message
-  //          console.log("message132132",message)
-  //         debugger
-    
-  //   actions.push({
-  //     name: 'Talk.MessageMenu.toBuzz',
-  //     icon: 'share_arrow',
-  //     action: () => {
-  //       let data: ShareChatMessageData
-  //       debugger
-  //       if (containsString(props.message.protocol,NodeName.ShowMsg)) {
-         
-  //         const message: ChatSessionMessageItem = props.message
-  //          console.log("message132132",message)
-  //         debugger
-  //         debugger
-  //         data = {
-  //           //communityId: talk.activeCommunityId,
-  //           groupId: talk.activeChannelId,
-  //           userMetaId: message.fromUserInfo.metaId,
-  //           message: {
-  //             content: message.data.content,
-  //             contentType: message.data.contentType,
-  //             protocol: message.protocol,
-  //             txId: message.txId,
-  //             timestamp: message.data.timestamp,
-  //             metanetId: '',
-  //           },
-  //         }
-  //       } else {
-  //         const message: ChatMessageItem = props.message
-  //         debugger
-  //         data = {
-  //           // communityId: talk.activeCommunityId,
-  //           groupId: talk.activeChannelId,
-  //           userMetaId: message.userInfo.metaid,
-  //           message: {
-  //             content: decryptedMessage(
-  //               message.content,
-  //               message.encryption,
-  //               message.protocol,
-  //               message.isMock
-  //             ),
-  //             contentType: message.contentType,
-  //             protocol: message.protocol,
-  //             txId: message.txId,
-  //             timestamp: message.timestamp,
-  //             metanetId: message.metanetId,
-  //           },
-  //         }
-  //       }
-  //       // 复制该消息内容到剪贴板
-  //       emit('toBuzz', data)
-  //     },
-  //   })
-  // }
+  if (hasShareProtocols > -1) {
+    actions.push({
+      name: 'Talk.MessageMenu.toBuzz',
+      icon: 'share_arrow',
+      action: () => {
+        let data: ShareChatMessageData
+        
+        if (containsString(props.message.protocol,NodeName.ShowMsg)) {
+          
+          const message: ChatSessionMessageItem = props.message
+           console.log("message132132",message)
+          
+          
+          data = {
+            content:message.content,
+            attachments:[],
+            contentType:'text/plain'
+            // //communityId: talk.activeCommunityId,
+            // groupId: talk.activeChannelId,
+            // userMetaId: message.fromUserInfo.metaId,
+            // message: {
+            //   content: message.data.content,
+            //   contentType: message.data.contentType,
+            //   protocol: message.protocol,
+            //   txId: message.txId,
+            //   timestamp: message.data.timestamp,
+            //   metanetId: '',
+            // },
+          }
+        } else {
+          const message: ChatMessageItem = props.message
+          debugger
+          data = {
+            content:message.content,
+            attachments:[],
+            contentType:'text/plain'
+            // // communityId: talk.activeCommunityId,
+            // groupId: talk.activeChannelId,
+            // userMetaId: message.userInfo.metaid,
+            // message: {
+            //   content: decryptedMessage(
+            //     message.content,
+            //     message.encryption,
+            //     message.protocol,
+            //     message.isMock
+            //   ),
+            //   contentType: message.contentType,
+            //   protocol: message.protocol,
+            //   txId: message.txId,
+            //   timestamp: message.timestamp,
+            //   metanetId: message.metanetId,
+            // },
+          }
+        }
+        // 复制该消息内容到剪贴板
+        emit('toBuzz', data)
+      },
+    })
+  }
 
   // 回復
   const quoteProtocols = [
@@ -163,6 +176,8 @@ const actions = computed(() => {
     NodeName.SimpleGroupChat,
     NodeName.ShowMsg,
     NodeName.SimpleFileMsg,
+   
+   
   ]
 
   const hasQuoteProtocols=quoteProtocols.findIndex((item)=>{
@@ -180,7 +195,11 @@ const actions = computed(() => {
   }
 
   if (props.message.txId) {
-    actions.push({
+    
+    
+    if(!containsString(props.message?.protocol,NodeName.SimpleGroupOpenLuckybag)){
+      
+      actions.push({
       name: 'Talk.MessageMenu.tx',
       icon: 'tx',
       action: () => {
@@ -188,6 +207,22 @@ const actions = computed(() => {
         window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
       },
     })
+    }else{
+      if(props.message.txId.length == 64){
+    
+      
+      actions.push({
+      name: 'Talk.MessageMenu.tx',
+      icon: 'tx',
+      action: () => {
+        // 跳转到该消息对应的交易
+        window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
+      },
+    })
+      }
+ 
+    }
+  
   }
 
   return actions

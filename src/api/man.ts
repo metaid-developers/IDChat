@@ -47,14 +47,25 @@ unconfirmed:string
 
 
 export const getUserInfoByAddress =async(address:string): Promise<UserInfo> => {
-const res=await manApi.get(`/info/address/${address}`)
+// const res=await manApi.get(`/info/address/${address}`)
 
      
-if(res && !res?.name){
+// if(res && !res?.name){
+//   res.name = res.metaid.slice(0,6)
+// }
+
+// return res
+
+return manApi.get(`/info/address/${address}`).then((res)=>{
+  if(res && !res?.name){
   res.name = res.metaid.slice(0,6)
 }
 
 return res
+})
+
+     
+
 
 
 }

@@ -1,4 +1,7 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
+
+
+
 export enum CollectionSortType {
   Price = 1,
   TokenIndex = 2,
@@ -319,6 +322,7 @@ export enum NodeName {
   SimpleRedEnvelope = 'Simpleredenvelope',
   SimpleGroupLuckyBag='simplegroupluckybag',
   OpenRedenvelope = 'openredenvelope',
+  SimpleGroupOpenLuckybag='simplegroupopenLuckybag',
   SimplePublicShare = 'SimplePublicShare',
   LegalSellNft = 'sell_nft',
   Name = 'name',

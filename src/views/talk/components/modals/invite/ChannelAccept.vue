@@ -77,6 +77,7 @@ const loginFirst = () => {
 
 const tryJoinChannel = async () => {
   // 游客
+  
   if (!user.isAuthorized) {
     return loginFirst()
   }
@@ -86,6 +87,7 @@ const tryJoinChannel = async () => {
   
   
   const joinRes = await joinChannel(talk.invitingChannel.groupId)
+  
     console.log("joinRes",joinRes)
 
   

@@ -3,6 +3,7 @@ import { Channel, Community, CommunityAuth } from '@/@types/talk'
 import { sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
+import {ChannelMsg_Size} from '@/data/constants'
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
   header: {
     'Content-Type': 'application/json',
@@ -105,13 +106,18 @@ export const getOneCommunity = async (communityId: string): Promise<Community> =
 
 export const getOneChannel = async (groupId: string): Promise<Community> => {
   
-  return TalkApi.get(`group-info?groupId=${groupId}`).then(res => {
+  if(groupId == 'welcome'){
+    return null
+  }else{
+      return TalkApi.get(`group-info?groupId=${groupId}`).then(res => {
     const channel = res.data
     channel.id = channel.groupId
       channel.name = channel.roomName
       channel.uuid = channel.txId // 用于key,不修改
     return channel
   })
+  }
+
 }
 
 export const getCommunityAuth = async (communityId: string): Promise<CommunityAuth> => {
@@ -152,12 +158,12 @@ export const getChannelMembers = async ({
    }).toString()
   return TalkApi.get(`/group-member-list?${query}`).then(async(res) => {
     const members=res.data.list
-    if(members){
-      for(let i of members){
-        const userInfo= await getUserInfoByAddress(i.address)
-        i.userInfo=userInfo
-      }
-    }
+    // if(members){
+    //   for(let i of members){
+    //     const userInfo= await getUserInfoByAddress(i.address)
+    //     i.userInfo=userInfo
+    //   }
+    // }
 
 
     return members || []
@@ -271,7 +277,7 @@ export const getChannelMessages = async (
    groupId,
   metaId='',
   cursor='1',
-  size='30',
+  size=String(ChannelMsg_Size),
   timestamp='0'
  }:{
    groupId:string,
@@ -375,18 +381,18 @@ export const getOneRedPacket = async (params: any): Promise<any> => {
   const query=new URLSearchParams(params).toString()
   return TalkApi.get(`/lucky-bag-info?${query}`).then(async(res) => {
   
-    if(res.data.payList.length){
-      for(let user of res.data.payList){
+  //   if(res.data.payList.length){
+  //     for(let user of res.data.payList){
         
-        if(user?.gradAddress){
-           const userInfo=await getUserInfoByAddress(user?.gradAddress)
-        user.userInfo=userInfo
-        }
+  //       if(user?.gradAddress){
+  //          const userInfo=await getUserInfoByAddress(user?.gradAddress)
+  //       user.userInfo=userInfo
+  //       }
        
-      }
-    }
-   const userInfo=await getUserInfoByAddress(res.data?.address)
-    res.data.userInfo=userInfo
+  //     }
+  //   }
+  //  const userInfo=await getUserInfoByAddress(res.data?.address)
+  //   res.data.userInfo=userInfo
     return res.data
 
    

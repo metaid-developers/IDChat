@@ -1136,6 +1136,7 @@ async function connectMetalet() {
       metaId:userStore.last.metaid
     })
     if(myChannelList.length){
+    
       newChannelId=myChannelList[0].groupId
    
     }else{
@@ -1143,7 +1144,7 @@ async function connectMetalet() {
     //   metaId:userStore.last.metaid
     // })
     
-      newChannelId=import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
+      newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
     }
     router.push({
         name: 'talkChannel',

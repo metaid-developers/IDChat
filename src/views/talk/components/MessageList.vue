@@ -9,7 +9,14 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
-    <div class="">
+  <div v-if="_welComePage">
+       <div class="mt-20 flex text-center  items-center justify-center flex-col">
+        <div class="text-3xl break-all font-black">MetaSo Chat</div>
+        <div class="text-lg text-zinc-500 mt-3 break-all">A Messaging Service Built on Bitcoin and its Sidechains</div>
+        <div class="text-xl mt-5 text-zinc-600 break-all ">Fully Decentralized,Immutable,Uncensorable,and Unhackable</div>
+      </div>
+  </div>
+    <div class="" v-else>
       <div class="flex flex-col-reverse space-y-2 space-y-reverse">
         <!-- 群聊 -->
         <template v-if="talk.activeChannelType === 'group'">
@@ -112,7 +119,7 @@ import { ShareChatMessageData } from '@/@types/common'
 import {useBulidTx} from '@/hooks/use-build-tx'
 import {GroupMessagePollingQueue} from '@/utils/taskQueue'
 import { getUserInfoByAddress } from "@/api/man";
-
+import { debounce } from '@/utils/util'
 const user = useUserStore()
 const talk = useTalkStore()
 const layout = useLayoutStore()
@@ -124,6 +131,10 @@ const repostBuzzTxId = ref('')
 const PublishRef = ref()
 const buildTx=useBulidTx()
 const messagesScroll = ref<HTMLElement>()
+const preTime=ref(0)
+const _welComePage=computed(()=>{
+  return talk.showWelcome
+})
 //const pollingQueue = new GroupMessagePollingQueue(5000);
 // const taskInterval=ref()
 
@@ -159,16 +170,33 @@ const messagesScroll = ref<HTMLElement>()
 //   taskInterval.value=null
 // })
 
+
 const handleScroll = async () => {
   if (!user.isAuthorized) return
-
+    // if(isLoadingMore.value === true){
+    // return
+    // }
   const topAnchor = document.getElementById('topAnchor')
   if (topAnchor) {
     const topAnchorRect = topAnchor.getBoundingClientRect()
     if (topAnchorRect.bottom > -100 && !loadingMore.value && !layout.isShowMessagesLoading) {
+      //isLoadingMore.value=true
       loadingMore.value = true
-      await loadMore()
+      const getMoreRes= await loadMore(preTime.value)
+      preTime.value=getMoreRes
       loadingMore.value = false
+      // const preTimestamp=talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
+      //     console.log("getMoreRes",getMoreRes,preTimestamp)
+      //     debugger
+      // if(getMoreRes == preTimestamp.timestamp){
+      //     isLoadingMore.value=false
+      //     loadingMore.value = false
+      //     debugger
+      // }
+    //debugger
+      
+     
+     
     }
   }
 }
@@ -193,7 +221,7 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-const loadMore = async () => {
+const loadMore = async (preTimestamp:number=0) => {
   if (!talk.activeChannelId || !talk.selfMetaId) return
   
   const earliestMessage =
@@ -216,7 +244,10 @@ const loadMore = async () => {
       metaId: talk.selfMetaId,
     }
   }
-
+  console.log("earliestMessageTimestamp",earliestMessageTimestamp,preTimestamp)
+  if(earliestMessageTimestamp == preTimestamp){
+    return earliestMessageTimestamp
+  }
   let items = await getChannelMessages(
     {
           groupId:talk.activeChannelId,
@@ -232,28 +263,38 @@ const loadMore = async () => {
   if (items.length === 0) {
     isAtTop.value = true
     
-    return
+    return earliestMessageTimestamp
   }
 
+
+
+
   for (const item of items) {
+    console.log("talk.activeChannel.pastMessages",item.txId)
+      // const isDuplicate= talk.activeChannel.pastMessages?.find((item: Message) => item.txId === item.txId)
 
+      // debugger
+      // if(isDuplicate){
+      //   continue
+      // }
         
-     getUserInfoByAddress(item.address).then((userInfo)=>{
-        item.userInfo=userInfo
-           if(item.replyInfo){
-          getUserInfoByAddress(item.replyInfo.address).then((replyUserInfo)=>{
-        item.replyInfo.userInfo=replyUserInfo
-            talk.activeChannel?.pastMessages.push(item)
-      }) 
-    }else{
-          talk.activeChannel?.pastMessages.push(item)
-    }
-    })
+    //  getUserInfoByAddress(item.address).then((userInfo)=>{
+    //     item.userInfo=userInfo
+    //        if(item.replyInfo){
+    //       getUserInfoByAddress(item.replyInfo.address).then((replyUserInfo)=>{
+    //         item.replyInfo.userInfo=replyUserInfo
+          
+    //         talk.activeChannel?.pastMessages.push(item)
+    //   }) 
+    // }else{
+    //       talk.activeChannel?.pastMessages.push(item)
+    // }
+    // })
     
 
 
     
-    // talk.activeChannel?.pastMessages.push(item)
+     talk.activeChannel?.pastMessages.push(item)
   }
 
   // 滚动到原来的位置
@@ -266,6 +307,7 @@ const loadMore = async () => {
       messagesScroll.value?.scrollBy(0, newEarliestMessagePosition - earliestMessagePosition)
     }
   }
+  return earliestMessageTimestamp
 }
 
 const hasTooFewMessages = computed(() => {

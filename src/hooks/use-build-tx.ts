@@ -53,7 +53,7 @@ export const useBulidTx = createGlobalState(() => {
         return userStore.last?.address
     }))
   // actions
-  const createPin = async(metaidData:MetaIdData,isBroadcast=true,needService:boolean=true,payTo:any[]=[]) => {
+  const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[]) => {
     
     try {
        const transactions=[] 
@@ -65,7 +65,7 @@ export const useBulidTx = createGlobalState(() => {
         const pinScript = createScriptForMvc(metaidData)
         
         pinTxComposer.appendOpReturnOutput(pinScript)
-
+        debugger
         if(payTo.length){
           for(let item of payTo){
                 pinTxComposer.appendP2PKHOutput({
@@ -76,12 +76,12 @@ export const useBulidTx = createGlobalState(() => {
         }
 
 
-        if(needService){
-        pinTxComposer.appendP2PKHOutput({
-        address: new mvc.Address(SERVICE_ADDRESS,import.meta.env.VITE_NET_WORK),
-        satoshis: SERVICE_FEE,
-        })
-        }
+        // if(needService){
+        // pinTxComposer.appendP2PKHOutput({
+        // address: new mvc.Address(SERVICE_ADDRESS,import.meta.env.VITE_NET_WORK),
+        // satoshis: SERVICE_FEE,
+        // })
+        // }
         
 
 
@@ -90,13 +90,26 @@ export const useBulidTx = createGlobalState(() => {
         message: 'Create Pin',
         })
 
-       
-       
-        
-        const {payedTransactions}= await connectionStore.adapter.smallPay({
+       let payedTransactions
+       if(needSmallpay){
+          const {payedTransactions:payTx}= await connectionStore.adapter.smallPay({
           transactions:transactions,
-          hasMetaid:true
+          hasMetaid:true,
+          
         })
+        payedTransactions=payTx
+
+       }else{
+          const {payedTransactions:payTx}= await connectionStore.adapter.pay({
+          transactions:transactions,
+          hasMetaid:true,
+          
+        })
+
+         payedTransactions=payTx
+       }
+        
+      
 
         
         
@@ -112,8 +125,8 @@ export const useBulidTx = createGlobalState(() => {
 
 
     } catch (error) {
-      
-         throw new Error((error as any).message)
+      ElMessage.error((error as any).message)
+      throw new Error((error as any).message)
     }
   }
 
@@ -269,7 +282,7 @@ export const useBulidTx = createGlobalState(() => {
          throw new Error(``)
       }
       
-      const pinRes= await createPin(metaidData,isBroadcast,true,payTo)
+      const pinRes= await createPin(metaidData,isBroadcast,false,payTo)
       
       return pinRes
 
@@ -321,6 +334,7 @@ export const useBulidTx = createGlobalState(() => {
   })=>{
     const {body,protocol,isBroadcast,encrypt}=params
     try {
+      
          const metaidData={
         body:JSON.stringify(body),
         path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
@@ -333,6 +347,7 @@ export const useBulidTx = createGlobalState(() => {
       }
       
       const pinRes= await createPin(metaidData,isBroadcast)
+      
       return pinRes
     } catch (error) {
        throw new Error(error as any)

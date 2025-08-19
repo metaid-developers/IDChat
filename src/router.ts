@@ -1,4 +1,8 @@
 import { createRouter, createWebHistory, RouterView } from 'vue-router'
+import {
+  getChannels,
+  getAllChannels
+} from '@/api/talk'
 const NotFoundPage = () => import('@/views/404.vue')
 //
 import { ElMessage } from 'element-plus'
@@ -35,18 +39,33 @@ export const router = createRouter({
       name: 'buzz',
       component: () => import('@/views/buzz/Layout.vue'),
       meta: { keepAlive: true },
-      redirect: () => {
-        const userStore=useUserStore()
-         const talk = useTalkStore()
-        if (userStore.isAuthorized) {
-            
-          
-          // talkAtMe
-          return { name: 'talkChannel',params:{communityId:'public',channelId:import.meta.env.VITE_CHAT_DEFAULT_CHANNEL} }
-        } else {
-          return { name: 'buzzRecommend' }
-        }
-      },
+      // redirect: async() => {
+      //   const userStore=useUserStore()
+      //    const talk = useTalkStore()
+      //   if (userStore.isAuthorized) {
+      //         let channelId
+      //        const myChannelList=await getChannels({
+      //         metaId:userStore.last.metaid
+      //         })
+      //         debugger
+
+      //          if(myChannelList.length){
+
+      //             channelId=myChannelList[0].groupId
+
+      //             }else{
+      //               channelId='welcome'
+      //             }
+      //              return { name: 'talkChannel',params:{communityId:'public',channelId:channelId} }
+           
+
+      //     // talkAtMe
+         
+      //   } else {
+      //     return { name: 'talkChannel',params:{communityId:'public',channelId:'welcome'} }
+      //     //return { name: 'buzzRecommend' }
+      //   }
+      // },
       children: [
         // {
         //   path: 'index',
@@ -180,7 +199,7 @@ export const router = createRouter({
             
             let { communityId,channelId } = to.params
             if(!channelId){
-              channelId=import.meta.env.VITE_CHAT_DEFAULT_CHANNEL
+              channelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL
             }
             if(!communityId){
               communityId='public'
@@ -508,10 +527,45 @@ export function go(delta: number) {
 // @ts-expect-error
 window._go = go
 
-router.beforeEach((to, from, next) => {
-  if (to.query.to) next(to.query.to as string)
-  else next()
-})
+// router.beforeEach((to, from, next) => {
+//   if (to.query.to) next(to.query.to as string)
+
+  
+
+
+//   else next()
+// })
+router.beforeEach(async (to, from, next) => {
+  if (to.path === '/') {
+    const userStore = useUserStore();
+    const talk = useTalkStore();
+
+    if (userStore.isAuthorized) {
+      const myChannelList = await getChannels({
+        metaId: userStore.last.metaid
+      });
+
+      let channelId;
+      if (myChannelList.length) {
+        channelId = myChannelList[0].groupId;
+      } else {
+        channelId = 'welcome';
+      }
+
+      next({
+        name: 'talkChannel',
+        params: { communityId: 'public', channelId }
+      });
+    } else {
+      next({
+        name: 'talkChannel',
+        params: { communityId: 'public', channelId: 'welcome' }
+      });
+    }
+  } else {
+    next();
+  }
+});
 
 const dirLog = {
   '': '？',

@@ -31,24 +31,24 @@ const productionEnvs = ['mainnet']
 export default ({ mode, command }) => {
   // 加载环境配置文件
   const env = loadEnv(mode, process.cwd())
-  const sentryConfig: ViteSentryPluginOptions = {
-    url: env.VITE_SENTRY_URL,
-    authToken: env.VITE_SENTRY_AUTH_TOKEN,
-    org: env.VITE_SENTRY_ORG,
-    project: env.VITE_SENTRY_PROJECT,
-    release: env.VITE_COMMIT_ID,
-    deploy: {
-      env: 'production'
-    },
-    setCommits: {
-      auto: true
-    },
-    sourceMaps: {
-      include: ['./dist/assets'],
-      ignore: ['node_modules'],
-      urlPrefix: '~/assets'
-    }
-  }
+  // const sentryConfig: ViteSentryPluginOptions = {
+  //   url: env.VITE_SENTRY_URL,
+  //   authToken: env.VITE_SENTRY_AUTH_TOKEN,
+  //   org: env.VITE_SENTRY_ORG,
+  //   project: env.VITE_SENTRY_PROJECT,
+  //   release: env.VITE_COMMIT_ID,
+  //   deploy: {
+  //     env: 'production'
+  //   },
+  //   setCommits: {
+  //     auto: true
+  //   },
+  //   sourceMaps: {
+  //     include: ['./dist/assets'],
+  //     ignore: ['node_modules'],
+  //     urlPrefix: '~/assets'
+  //   }
+  // }
   // const isProduction = productionEnvs.includes(mode) && command === 'build' ? true : false
   const isProduction = command === 'build'
   
@@ -251,7 +251,7 @@ export default ({ mode, command }) => {
       //   project: env.VITE_SENTRY_PROJECT,
       //   authToken: env.VITE_SENTRY_AUTH_TOKEN,
       // }),
-      viteSentry(sentryConfig)
+      //viteSentry(sentryConfig)
     ],
     resolve: {
       alias: {
