@@ -744,8 +744,9 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   //const sdk = userStore.showWallet
   try {
    const tryRes= await tryCreateNode(node, mockId)
-   if(!tryRes){
-    debugger
+  
+   if(tryRes === false){
+    
     talkStore.addRetryList({...messageDto,mockId})
    
    }else{
@@ -779,6 +780,8 @@ export const tryCreateNode = async (node: {
       attachments,
       isBroadcast:true
     })
+
+  
    
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
@@ -794,7 +797,6 @@ export const tryCreateNode = async (node: {
     const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
     if (message) {
       console.log("message",message)
-      
       
       message.error = true
       message.reason=`${(error as any).toString()}`

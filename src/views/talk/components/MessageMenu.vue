@@ -116,17 +116,20 @@ const actions = computed(() => {
       icon: 'share_arrow',
       action: () => {
         let data: ShareChatMessageData
-        
+        const message: ChatSessionMessageItem = props.message
         if (containsString(props.message.protocol,NodeName.ShowMsg)) {
           
-          const message: ChatSessionMessageItem = props.message
+        
            console.log("message132132",message)
           
           
           data = {
             content:message.content,
             attachments:[],
-            contentType:'text/plain'
+            contentType:'text/plain',
+            createTime:Date.now(),
+            quotePin:""
+
             // //communityId: talk.activeCommunityId,
             // groupId: talk.activeChannelId,
             // userMetaId: message.fromUserInfo.metaId,
@@ -139,13 +142,24 @@ const actions = computed(() => {
             //   metanetId: '',
             // },
           }
+        }else if(containsString(props.message.protocol,NodeName.SimpleFileGroupChat)){
+          data = {
+            content:'',
+            attachments:[message.content],
+            contentType:'text/plain',
+            createTime:Date.now(),
+             quotePin:""
+          }
+          
         } else {
-          const message: ChatMessageItem = props.message
-          debugger
+          
+          
           data = {
             content:message.content,
             attachments:[],
-            contentType:'text/plain'
+            contentType:'text/plain',
+            createTime:Date.now(),
+             quotePin:""
             // // communityId: talk.activeCommunityId,
             // groupId: talk.activeChannelId,
             // userMetaId: message.userInfo.metaid,

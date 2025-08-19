@@ -353,7 +353,7 @@ async function onToBuzz(data: ShareChatMessageData) {
 
     const metaidData={
     body:JSON.stringify(data),
-    path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.ShareChatMessage}`,
+    path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.Simplebuzz}`,
     flag: 'metaid',
     version: '1.0.0',
     operation: 'create',

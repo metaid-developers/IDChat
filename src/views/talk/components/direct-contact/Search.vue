@@ -16,7 +16,7 @@
 
          <div
         class="border-dashed border-2 border-gray-200 dark:border-gray-600 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
-        v-if="userStore.isAuthorized"
+        v-if="userStore.isAuthorized && whiteList"
         @click="
           layout.isShowCreatePublicChannelModal = true
         "
@@ -34,9 +34,10 @@
 
 <script lang="ts" setup>
 import { useUserStore } from '@/stores/user'
-import { ref, watch } from 'vue'
+import { ref, watch,computed } from 'vue'
 import { useLayoutStore } from '@/stores/layout'
 
+const groupWhiteList=['16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo']
 const userStore=useUserStore()
 const layout = useLayoutStore()
 const keyword = ref('')
@@ -45,4 +46,8 @@ const handleSearch = () => {
 
   // 先进行名字搜索
 }
+
+const whiteList=computed(()=>{
+  return groupWhiteList.includes( userStore.last?.address)
+})
 </script>

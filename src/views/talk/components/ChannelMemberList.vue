@@ -7,7 +7,7 @@
         {{ $t('Talk.Channel.team_members') }}
       </div>
       <div class="text-sm text-dark-300 dark:text-gray-400">
-        {{ talkStore.members.length || 0 }}
+        {{ currentChannelInfo?.userCount || 0 }}
       </div>
     </div>
 
@@ -30,13 +30,13 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import { ref, watch,computed } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 
 import { useTalkStore } from '@/stores/talk'
 import { debounce } from '@/utils/util'
 import ChannelMemberItem from './ChannelMemberItem.vue'
-
+import { useRoute } from 'vue-router'
 import {
   getChannelMembers
 } from '@/api/talk'
@@ -46,10 +46,17 @@ const isLoading = ref(false)
 const hasMore = ref(true)
 const cursor = ref(20)
 const pageSize = 20
+const route = useRoute()
 // 虚拟列表
 const membersContainer = ref(null)
 
 let vir: any
+
+
+const currentChannelInfo=computed(()=>{
+  return talkStore?.activeCommunity?.channels?.find((item)=>item.pinId == route.params.channelId)
+})
+
 
 
 // 处理滚动事件

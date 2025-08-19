@@ -140,14 +140,18 @@ export const getChannelMembership = async (groupId: string, metaId: string): Pro
 
 export const getChannelMembers = async ({
   groupId,
-  cursor='1',
+  cursor='0',
   size='20',
-  timestamp='0'
+  timestamp='0',
+  orderBy='timestamp',
+  orderType='asc'
 }:{
   groupId:string
   cursor?:string
   size?:string
   timestamp?:string
+  orderBy?:string
+  orderType?:'asc' | 'desc'
 
 }): Promise<any> => {
   const query = new URLSearchParams({ 
@@ -155,6 +159,8 @@ export const getChannelMembers = async ({
       cursor,
       size,
       timestamp,
+      orderBy,
+      orderType
    }).toString()
   return TalkApi.get(`/group-member-list?${query}`).then(async(res) => {
     const members=res.data.list
@@ -310,7 +316,7 @@ const data:{
     nextTimestamp:number,
     list: ChatMessageItem[] | null
   }
-} = await TalkApi.get(`/group-chat-list?${query}`)
+} = await TalkApi.get(`/group-chat-list-v2?${query}`)
 
   return data.data.list ?? []
 }

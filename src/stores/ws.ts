@@ -3,6 +3,7 @@ import { useJobsStore } from './jobs'
 import { useTalkStore } from './talk'
 import { useUserStore } from './user'
 
+
 export const useWsStore = defineStore('ws', {
   state: () => {
     return {
@@ -27,6 +28,21 @@ export const useWsStore = defineStore('ws', {
     async init() {
       const selfMetaId = this.selfMetaId
       if (!selfMetaId) return
+    //   debugger
+    //   const wsUri=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
+    //         query:{
+    //           "metaid":selfMetaId,
+             
+    //         },
+    //       path:'/socket-test/socket.io',
+    //       // reconnection: true,
+    //       // reconnectionAttempts: Infinity,
+    //       // reconnectionDelay: 1000,
+    //       // reconnectionDelayMax: 5000,
+    //       // randomizationFactor: 0.5,
+    //       // timeout: 20000,
+    //       // transports: ['websocket', 'polling'],
+    //   }) 
       const wsUri = `${import.meta.env.VITE_SHOW_NOW_HOST.replace(
         // 将.space换成.io
         '.space',
@@ -35,8 +51,14 @@ export const useWsStore = defineStore('ws', {
       this.ws = new WebSocket(wsUri)
       
       this.wsHeartBeatTimer = this._createHeartBeatTimer(wsUri)
-
-      this.ws.addEventListener('message', this._handleReceivedMessage)
+       this.ws.addEventListener('message', this._handleReceivedMessage)
+      // this.ws?.on('connect', () => {
+      // console.log('Socket.io connected successfully');
+      // });
+      // this.ws?.on('connect_error', (error) => {
+      // console.error('Socket.io connection error:', error);
+      // });
+        // this.ws?.on('message', this._handleReceivedMessage)
     },
 
     close() {
@@ -72,20 +94,72 @@ export const useWsStore = defineStore('ws', {
           return
       }
     },
-
-    _createHeartBeatTimer(wsUri: string) {
+    //wsUri: string
+    _createHeartBeatTimer(wsUri) {
       return setInterval(() => {
+    
         if (this.ws?.readyState === WebSocket.CONNECTING) {
           return
         }
-
+        // if(this.ws?.connected){
+        //   return
+        // }
+            
+    //     if (this.ws?.connected === false) {
+    //       // this.ws = new WebSocket(wsUri)
+    //        const selfMetaId = this.selfMetaId
+    //     if (!selfMetaId) return
+    //       this.ws=io(`${import.meta.env.VITE_SHOW_NOW_WS}/`,{
+    //       query:{
+    //           "metaid":selfMetaId,
+             
+    //         },
+    //       path:'/socket-test/socket.io',
+    //       // reconnection: true,
+    //       // reconnectionAttempts: Infinity,
+    //       // reconnectionDelay: 1000,
+    //       // reconnectionDelayMax: 5000,
+    //       // randomizationFactor: 0.5,
+    //       // timeout: 20000,
+    //       // transports: ['websocket', 'polling'],
+    //   }) 
+    //     }
+      //   debugger
         if (this.ws?.readyState === WebSocket.CLOSING || this.ws?.readyState === WebSocket.CLOSED) {
-          this.ws = new WebSocket(wsUri)
+          // this.ws = new WebSocket(wsUri)
+           const selfMetaId = this.selfMetaId
+        if (!selfMetaId) return
+        this.ws = new WebSocket(wsUri)
+    //       this.ws=io(`${import.meta.env.VITE_SHOW_NOW_WS}?metaid=${selfMetaId}`,{
+    //       reconnection: true,
+    //       reconnectionAttempts: Infinity,
+    //       reconnectionDelay: 1000,
+    //       reconnectionDelayMax: 5000,
+    //       randomizationFactor: 0.5,
+    //       timeout: 20000,
+    //       transports: ['websocket', 'polling'],
+    //   }) 
         }
 
         if(!this.ws){
           
           this.ws = new WebSocket(wsUri)
+    //         const selfMetaId = this.selfMetaId
+    //     if (!selfMetaId) return
+    //       this.ws=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
+    //         query:{
+    //           metaid:selfMetaId,
+             
+    //         },
+    //       path:'/socket-test/socket.io',
+    //       reconnection: true,
+    //       reconnectionAttempts: Infinity,
+    //       reconnectionDelay: 1000,
+    //       reconnectionDelayMax: 5000,
+    //       randomizationFactor: 0.5,
+    //       timeout: 20000,
+    //       transports: ['websocket', 'polling'],
+    //   }) 
         }
 
         const heartBeat = {

@@ -223,7 +223,7 @@ const userOperates = computed(() => {
     //   },
     // },
   ]
-  if (userStore.isAuthorized) {
+  if (userStore.isAuthorized || connectionStore.connected) {
     result.push({
       name: i18n.t('UserOperate.logout'),
       icon: 'logout',

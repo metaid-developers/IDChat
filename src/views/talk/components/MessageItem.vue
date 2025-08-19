@@ -186,7 +186,7 @@
             "
           ></div>
           <!--message.error-->
-          <button v-if="true" class="ml-3 max-w-28 break-words flex items-center w justify-center" :title="resendTitle" @click="tryResend">
+          <button v-if="message.error" class="ml-3 max-w-28 break-words flex items-center w justify-center" :title="resendTitle" @click="tryResend">
             <span v-if="message?.reason" class="text-[#fc457b] font-medium mr-2">[{{ message?.reason }}]</span>
             <Icon
               name="arrow_path"
@@ -354,14 +354,21 @@ const tryResend = async () => {
   props.message.error = false
    const messageDto=talk.getRetryById(props.message.mockId) 
    
+  try {
+    
    if(messageDto){
     
-    await sendMessage(messageDto)
-
+     await sendMessage(messageDto)
+     
+    talk.removeMessage(props.message.mockId)
    
    }else{
     return ElMessage.error(`${i18n.t(`retry_msg_error`)}`)
    }
+  } catch (error) {
+    return ElMessage.error((error as any).toString())
+  }
+
   //   
 
   //await jobs.resend(props.message.timestamp)

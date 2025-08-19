@@ -294,6 +294,7 @@ export enum CurrentSupportChain {
 }
 
 export enum NodeName {
+  Simplebuzz='simplebuzz',
   ETHBinding = 'EVMBinding',
   MetaFile = 'metafile',
   File = 'file',

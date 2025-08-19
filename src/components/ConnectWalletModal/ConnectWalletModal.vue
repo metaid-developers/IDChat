@@ -1111,15 +1111,15 @@ async function connectMetalet() {
     })
   })
 
-    if (connectionStore?.adapter?.metaletConnect) {
+  //   if (connectionStore?.adapter?.metaletConnect) {
       
-    await connectionStore?.adapter.metaletConnect()!.catch((err) => {
-      ElMessage.warning({
-        message: err.message,
-        type: 'warning',
-      })
-    })
-  }
+  //   await connectionStore?.adapter.metaletConnect()!.catch((err) => {
+  //     ElMessage.warning({
+  //       message: err.message,
+  //       type: 'warning',
+  //     })
+  //   })
+  // }
   
     if (connection?.status === 'connected') {
     await credentialsStore.login()
@@ -1130,11 +1130,28 @@ async function connectMetalet() {
     await sleep(300)
 
     closeConnectionModal()
+     
+    const channelId=route.params.channelId
+    const communityId=route.params.communityId
+    
 
-    let newChannelId
+    if(channelId && channelId !== 'welcome'){
+         router.push({
+        name: 'talkChannel',
+        params:{
+          communityId:communityId,
+          channelId:channelId
+        }
+      })
+     setTimeout(() => {
+       window.location.reload()
+     }, 2000);
+    }else{
+        let newChannelId
     const myChannelList= await getChannels({
       metaId:userStore.last.metaid
     })
+    
     if(myChannelList.length){
     
       newChannelId=myChannelList[0].groupId
@@ -1153,6 +1170,8 @@ async function connectMetalet() {
           channelId:newChannelId
         }
       })
+    }
+  
    
   }
 

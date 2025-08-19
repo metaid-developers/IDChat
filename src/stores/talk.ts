@@ -23,6 +23,7 @@ import { useWsStore } from './ws'
 import { getMetaNameAddress,isPublicChannel } from '@/utils/meta-name'
 import {getUserInfoByAddress} from '@/api/man'
 import {ChannelMsg_Size} from '@/data/constants'
+import { useConnectionModal } from '@/hooks/use-connection-modal'
 
 
 export const useTalkStore = defineStore('talk', {
@@ -461,18 +462,27 @@ export const useTalkStore = defineStore('talk', {
     },
 
      async inviteChannel(routeChannelId: string) {
-
-      const layout = useLayoutStore()
       
+      const { openConnectionModal } =useConnectionModal()
+      const layout = useLayoutStore()
+     
+      const userStore= useUserStore()
       this.invitingChannel = await getOneChannel(routeChannelId)
       if(routeChannelId == 'welcome'){
         return
       }
+
+      if(!userStore.isAuthorized){
+        openConnectionModal()
+        return
+      }
+      
       layout.isShowChannelAcceptInviteModal = true
       //this.communityStatus ='inviting' //'inviting'
         
       getChannelMembers({groupId:routeChannelId})
         .then((members: any) => {
+          
           this.members = members
         })
         .catch(() => {

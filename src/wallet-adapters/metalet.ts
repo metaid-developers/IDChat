@@ -231,7 +231,7 @@ export const smallPay=async (toPayTransactions:{
 
         console.log('toPayTransactions',toPayTransactions,JSON.stringify(toPayTransactions))
          const res= await window.metaidwallet.smallPay(toPayTransactions)
-         debugger
+         
          
           if(res.status === 'error' && res.message.includes('The fee is too high')){
              return await window.metaidwallet.pay(toPayTransactions)

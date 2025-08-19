@@ -65,7 +65,7 @@ export const useBulidTx = createGlobalState(() => {
         const pinScript = createScriptForMvc(metaidData)
         
         pinTxComposer.appendOpReturnOutput(pinScript)
-        debugger
+        
         if(payTo.length){
           for(let item of payTo){
                 pinTxComposer.appendP2PKHOutput({

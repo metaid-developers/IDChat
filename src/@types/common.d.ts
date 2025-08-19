@@ -907,6 +907,8 @@ declare interface ShareChatMessageData {
   content:string
   attachments:string[]
   contentType:string
+  createTime:number
+  quotePin:string
   //communityId: string
   //channelId: string
   // groupId:string
