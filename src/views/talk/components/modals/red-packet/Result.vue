@@ -94,7 +94,7 @@
                         />
 
                       <UserName
-                      :name="draw.userInfo?.name"
+                      :name="draw.userInfo?.name || draw.userInfo?.metaid?.slice(0,6)"
                       :meta-name="''"
                       :no-tag="true"
                       />

@@ -900,7 +900,8 @@ declare interface ChatMessageItem {
     timestamp: number
     txId: string
     userInfo: newUserInfo
-  }
+  },
+  claimOver?:boolean
 }
 
 declare interface ShareChatMessageData {

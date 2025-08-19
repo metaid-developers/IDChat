@@ -1,9 +1,10 @@
 import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth } from '@/@types/talk'
-import { sleep } from '@/utils/util'
+import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
+import {  NodeName } from '@/enum'
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
   header: {
     'Content-Type': 'application/json',
@@ -317,6 +318,24 @@ const data:{
     list: ChatMessageItem[] | null
   }
 } = await TalkApi.get(`/group-chat-list-v2?${query}`)
+
+  if(data.data.list?.length){
+    for(let item of data.data.list){
+      if(containsString(item.protocol,NodeName.SimpleGroupLuckyBag)){
+       const redpackInfo=await getOneRedPacket({
+           groupId: item.groupId,
+          pinId: item.pinId,
+        })
+        
+        if(Number(redpackInfo.count) == Number(redpackInfo.usedCount)){
+          item.claimOver=true
+        }
+        
+      } 
+     
+  }
+  }
+
 
   return data.data.list ?? []
 }

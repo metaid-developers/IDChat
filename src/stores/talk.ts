@@ -306,7 +306,7 @@ export const useTalkStore = defineStore('talk', {
   
     getRetryById():(mockId: string) => MessageDto {
       return (mockId: string) => {
-        return this.retryMsgList.find((item:MessageDto)=>item.mockId == mockId)
+        return this.retryMsgList?.find((item:MessageDto)=>item.mockId == mockId)
       }
     },
     

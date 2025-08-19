@@ -112,17 +112,17 @@
           </button>
         </div>
 
-        <div
+         <div
           class="text-xs text-dark-400 dark:text-gray-200 my-0.5 capitalize"
           v-else-if="isReceiveRedPacket"
         >
           {{ redPacketReceiveInfo }}
-        </div>
+        </div> 
 
         <div class="w-full py-0.5" v-else-if="isGiveawayRedPacket">
           <div
             class="max-w-full sm:max-w-[300PX] shadow rounded-xl cursor-pointer origin-center hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-700 group"
-            :class="[hasRedPacketReceived ? 'opacity-50' : 'hover:animate-wiggle-subtle']"
+            :class="[hasRedPacketReceived || redPackClaimOver ? 'opacity-50' : 'hover:animate-wiggle-subtle']"
             @click="handleOpenRedPacket"
           >
             <div
@@ -236,8 +236,6 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {})
 
 
-
-
 const emit = defineEmits<{}>()
 
 /** 翻译 */
@@ -254,6 +252,10 @@ const previewImage = (image: string) => {
 
 const resendTitle = computed(() => {
   return i18n.t('Talk.Messages.resend')
+})
+
+const redPackClaimOver=computed(()=>{
+  return props.message?.claimOver
 })
 
 const parseTextMessage = (text: string) => {
@@ -349,6 +351,12 @@ const hasRedPacketReceived = computed(() => {
   console.log("talk.receivedRedPacketIds",talk.receivedRedPacketIds)
   return talk.receivedRedPacketIds.includes(props.message?.txId)
 })
+
+const redPacketCliamOver=computed(()=>{
+
+})
+
+
 
 const tryResend = async () => {
   props.message.error = false

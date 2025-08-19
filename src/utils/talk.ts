@@ -228,8 +228,55 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
   return { txId }
 }
 
+// const _putIntoRedPackets = (form: any, address: string): any[] => {
+//   const { amount, quantity, each, type } = form
+//   debugger
+//   // NFT🧧：将NFT分成指定数量个红包，平均分配
+//   if (type === RedPacketDistributeType.Nft) {
+//     const redPackets = []
+//     for (let i = 0; i < quantity; i++) {
+//       redPackets.push({
+//         address,
+//         amount: each,
+//         index: i,
+//       })
+//     }
+//     return redPackets
+//   }
+
+//   // 构建🧧数量：随机将红包金额分成指定数量个小红包；指定最小系数为平均值的0.2倍，最大系数为平均值的1.8倍
+//   const minFactor = 0.2
+//   const maxFactor = 1.8
+//   const minSats = 1000 // 最小红包金额为1000sats
+//   const redPackets = []
+//   let remainsAmount = amount
+//   let remainsCount = quantity
+//   let initIndex=2
+//   for (let i = 0; i < quantity - 1; i++) {
+//     let avgAmount = Math.round(remainsAmount / remainsCount)
+//     const randomFactor = Math.random() * (maxFactor - minFactor) + minFactor
+//     const randomAmount = Math.max(Math.round(avgAmount * randomFactor), minSats)
+//     redPackets.push({
+//       amount: randomAmount,
+//       address,
+//       index: i + initIndex,
+//     })
+//     remainsAmount -= randomAmount
+//     remainsCount -= 1
+//   }
+//   redPackets.push({
+//     amount: Math.max(Math.floor(remainsAmount), minSats),
+//     address,
+//     index: quantity + initIndex - 1,
+//   }) // 最后一个红包，使用剩餘金额
+//   console.log("redPackets",redPackets)
+//   debugger
+//   return redPackets
+// }
+
 const _putIntoRedPackets = (form: any, address: string): any[] => {
   const { amount, quantity, each, type } = form
+  
   // NFT🧧：将NFT分成指定数量个红包，平均分配
   if (type === RedPacketDistributeType.Nft) {
     const redPackets = []
@@ -244,33 +291,69 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   }
 
   // 构建🧧数量：随机将红包金额分成指定数量个小红包；指定最小系数为平均值的0.2倍，最大系数为平均值的1.8倍
-  const minFactor = 0.2
-  const maxFactor = 1.8
+  // const minFactor = 0.2
+  // const maxFactor = 1.8
   const minSats = 1000 // 最小红包金额为1000sats
   const redPackets = []
   let remainsAmount = amount
-  let remainsCount = quantity
+  //let remainsCount = quantity
   let initIndex=2
+
+    // 确保最小金额合理
+  if (amount < minSats * quantity) {
+    throw new Error(`总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${minSats} sats）`);
+  }
+
   for (let i = 0; i < quantity - 1; i++) {
-    let avgAmount = Math.round(remainsAmount / remainsCount)
-    const randomFactor = Math.random() * (maxFactor - minFactor) + minFactor
-    const randomAmount = Math.max(Math.round(avgAmount * randomFactor), minSats)
+    // 计算当前红包的最大可能金额（确保后面每个红包至少有minSats）
+    const maxPossible = remainsAmount - minSats * (quantity - i - 1);
+    const minPossible = minSats;
+    
+    // 在合理范围内随机分配
+    const randomAmount = Math.floor(Math.random() * (maxPossible - minPossible)) + minPossible;
+    
     redPackets.push({
       amount: randomAmount,
       address,
       index: i + initIndex,
-    })
-    remainsAmount -= randomAmount
-    remainsCount -= 1
+    });
+    
+    remainsAmount -= randomAmount;
   }
+
   redPackets.push({
-    amount: Math.max(Math.floor(remainsAmount), minSats),
+    amount: Math.max(remainsAmount, minSats),
     address,
     index: quantity + initIndex - 1,
-  }) // 最后一个红包，使用剩餘金额
-  console.log("redPackets",redPackets)
+  });
+
+
+  return redPackets;
+
+
   
-  return redPackets
+
+
+  // for (let i = 0; i < quantity - 1; i++) {
+  //   let avgAmount = Math.round(remainsAmount / remainsCount)
+  //   const randomFactor = Math.random() * (maxFactor - minFactor) + minFactor
+  //   const randomAmount = Math.max(Math.round(avgAmount * randomFactor), minSats)
+  //   redPackets.push({
+  //     amount: randomAmount,
+  //     address,
+  //     index: i + initIndex,
+  //   })
+  //   remainsAmount -= randomAmount
+  //   remainsCount -= 1
+  // }
+  // redPackets.push({
+  //   amount: Math.max(Math.floor(remainsAmount), minSats),
+  //   address,
+  //   index: quantity + initIndex - 1,
+  // }) // 最后一个红包，使用剩餘金额
+  // console.log("redPackets",redPackets)
+  // debugger
+  // return redPackets
 }
 
 export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string) => {
