@@ -215,7 +215,7 @@ const tryOpenRedPacket = async () => {
   await grabRedPacket(params).catch((e)=>{
    
     layout.isShowLoading = false
-    return  ElMessage.error(e)
+    return  ElMessage.error(e.toString())
   })
   await sleep(1000)
   layout.isShowLoading = false

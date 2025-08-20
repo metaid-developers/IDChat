@@ -30,7 +30,7 @@ import {useCredentialsStore} from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
 import {useBulidTx} from '@/hooks/use-build-tx'
 import { AttachmentItem } from '@/@types/hd-wallet'
-import { userInfo } from 'os'
+import {Red_Packet_Min,Red_Packet_Max} from '@/data/constants'
 type CommunityData = {
   communityId: string
   name: string
@@ -274,8 +274,17 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 //   return redPackets
 // }
 
+
+const nicerAmount=(amount:number,unit:string)=>{
+    if(unit == 'Space'){
+      return new Decimal(amount).mul(10 ** 8).toNumber()
+    }else{
+      return amount
+    }
+}
+
 const _putIntoRedPackets = (form: any, address: string): any[] => {
-  const { amount, quantity, each, type } = form
+  const { amount, quantity, each, type,unit } = form
   
   // NFT🧧：将NFT分成指定数量个红包，平均分配
   if (type === RedPacketDistributeType.Nft) {
@@ -293,15 +302,19 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   // 构建🧧数量：随机将红包金额分成指定数量个小红包；指定最小系数为平均值的0.2倍，最大系数为平均值的1.8倍
   // const minFactor = 0.2
   // const maxFactor = 1.8
-  const minSats = 1000 // 最小红包金额为1000sats
+  const minSats = Red_Packet_Min // 最小红包金额为1000sats
   const redPackets = []
-  let remainsAmount = amount
+  let remainsAmount =nicerAmount(amount,unit) 
   //let remainsCount = quantity
   let initIndex=2
 
+  const currentAmountSats=nicerAmount(amount,unit)
+  const currentMinSats=unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats
+  
+
     // 确保最小金额合理
-  if (amount < minSats * quantity) {
-    throw new Error(`总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${minSats} sats）`);
+  if (currentAmountSats < minSats * quantity) {
+    throw new Error(`总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${currentMinSats} ${unit}）`);
   }
 
   for (let i = 0; i < quantity - 1; i++) {
@@ -371,8 +384,11 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000
-  const amountInSat = form.amount // 现在直接使用sat为单位
+  const amountInSat =nicerAmount(form.amount,form.unit) // 现在直接使用sat为单位
+  
+  
   const redPackets = _putIntoRedPackets(form, address)
+  
   console.table(redPackets)
   console.log({ form })
 
@@ -740,7 +756,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
-  const contentType = 'application/json'
+  const contentType = 'text/plain'
   const encryption = 'aes'
   const dataCarrier = {
     groupID,
@@ -794,7 +810,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
    const mockMessage = {
     mockId,
     protocol: NodeName.SimpleGroupChat,
-    contentType: 'application/json',
+    contentType: 'text/plain',
     content,
     avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',

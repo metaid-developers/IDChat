@@ -124,6 +124,21 @@
                           >
                             {{ $t('Talk.Modals.lucky') }}
                           </span>
+                          
+                          <span class="py-0.5 px-1 text-xs text-white rounded-md" :class="grayState(draw.gradState)?.color">
+                            {{ grayState(draw.gradState)?.state }}
+                          </span>
+                          <button
+                          v-if="draw.gradState == GrabStatus.broadCastSuccess "
+                           @click="toMvcScan(draw.gradTxId)"
+                          class=" w-5 h-5 flex items-center justify-center rounded-md text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-amber-400  transition-all duration-300"
+                          >
+                          <Icon
+                          name="link"
+                          class="w-3 h-3 p-1 box-content text-gray-500 hover:text-white  cursor-pointer"
+                         
+                          />
+                          </button>
                         </div>
                         <!-- <div class="text-xs text-dark-250 font-sans">≈ 723.00 CNY</div> -->
                       </div>
@@ -176,7 +191,9 @@ import { formatTimestamp } from '@/utils/talk'
 import { useTalkStore } from '@/stores/talk'
 import { GetNFT } from '@/api/aggregation'
 import { nftSeries } from '@/utils/series'
-
+import Decimal from 'decimal.js-light'
+import {toMvcScan} from '@/utils/util'
+import {GrabStatus} from '@/enum'
 const layout = useLayoutStore()
 const modals = useModalsStore()
 const talk = useTalkStore()
@@ -207,6 +224,40 @@ const luckiestAmount = computed(() => {
   const amount = Math.max(...draws.value.map((item: any) => Number(item.amount)))
   return amount
 })
+
+
+function grayState(state:GrabStatus){
+  switch (state) {
+    case GrabStatus.grabSuccess:
+      
+      return {
+        state:'Pending',
+        color:'bg-amber-300'
+      };
+      case GrabStatus.grabSuccessAndBroadcastPending:
+      
+      return {
+        state:'Pending',
+        color:'bg-amber-300'
+      };
+        case GrabStatus.broadCastSuccess:
+      
+      return {
+        state:'Success',
+        color:'bg-lime-400'
+      };
+        case GrabStatus.grabSuccessAndBroadcastFail:
+      
+      return {
+        state:'Fail',
+        color:'bg-rose-600'
+      };
+  
+    default:
+      break;
+  }
+}
+
 const nicerAmountWithUnit = (amount: string) => {
   if (!amount) {
     return {
@@ -214,20 +265,22 @@ const nicerAmountWithUnit = (amount: string) => {
       unit: '',
     }
   }
-
-  const amountNumber = Number(amount)
-  if (amountNumber >= 100_000_000) {
-    return {
-      amount: `${(amountNumber / 100_000_000).toFixed(2)}`,
-      unit: 'Space',
-    }
-  }
+  
+  const amountNumber = new Decimal(amount).div(10 ** 8).toNumber()
+  // if (amountNumber >= 100_000_000) {
+  //   return {
+  //     amount: `${(amountNumber / 100_000_000).toFixed(2)}`,
+  //     unit: 'Space',
+  //   }
+  // }
 
   return {
-    amount,
-    unit: 'Sats',
+    amount:amountNumber,
+    unit: 'Space',
   }
 }
+
+
 
 onMounted(async () => {
   const requireType = redPacketResult?.requireType

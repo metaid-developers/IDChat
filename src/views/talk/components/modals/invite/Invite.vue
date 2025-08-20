@@ -39,7 +39,7 @@
           </button>
         </div> -->
 
-        <div class="pt-4">
+        <!-- <div class="pt-4">
           <p class="text-base mb-3">
             {{ $t('Talk.Modals.share_card_tip') }}
           </p>
@@ -50,7 +50,7 @@
             <Icon name="photo_4" class="w-6 h-6" />
             <span class="text-base">{{ $t('Talk.Modals.card') }}</span>
           </button>
-        </div>
+        </div> -->
       </div>
     </template>
   </BaseModal>

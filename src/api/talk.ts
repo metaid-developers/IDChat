@@ -457,8 +457,14 @@ export const grabRedPacket = async (params: {
   //   return res.data.data
   // })
   return TalkApi.post(`/grab-lucky-bag`,params).then(res => {
-     
-    return res.data
+     if(res?.code == 0){
+       return res.data
+     }else if(res?.code == 1){
+      throw new Error(res?.message)
+     }
+   
+  }).catch((e)=>{
+    throw new Error(e.message.toString())
   })
 
   

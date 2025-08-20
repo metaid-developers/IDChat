@@ -210,7 +210,7 @@ export const useBulidTx = createGlobalState(() => {
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
-        contentType: body.contentType || 'application/json',
+        contentType:protocol == NodeName.SimpleGroupChat ? 'application/json' : body.contentType || 'application/json',
         encryption: body.encryption || body.encrypt,
         encoding: 'utf-8',
       }

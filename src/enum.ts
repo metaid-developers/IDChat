@@ -1,6 +1,11 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
-
+export enum GrabStatus{
+  grabSuccess=0,
+  grabSuccessAndBroadcastPending=1,
+  broadCastSuccess=2,
+  grabSuccessAndBroadcastFail=3
+}
 
 export enum CollectionSortType {
   Price = 1,

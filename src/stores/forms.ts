@@ -18,8 +18,8 @@ import { GetFT, GetGenesis } from '@/api/aggregation'
 import { SHA256 } from 'crypto-es/lib/sha256.js'
 import Decimal from 'decimal.js-light'
 
-const MIN=1000
-const MAX=200_000_000
+const MIN=new Decimal(0.0001).mul(10 ** 8).toNumber()
+const MAX=new Decimal(10).mul(10 ** 8).toNumber()
 
 
 export const useCommunityFormStore = defineStore('communityForm', {
@@ -312,9 +312,9 @@ export const usePasswordFormStore = defineStore('passwordForm', {
 export const useRedPacketFormStore = defineStore('redPacketForm', {
   state: () => {
     return {
-      amount: 1000 as number | '',
-      each: 1000 as number,
-      unit:'Sats' as 'Sats' | 'Space',
+      amount: 0.001 as number | '',
+      each: 0.001 as number,
+      unit:'Space' as 'Sats' | 'Space',
       quantity: 1,
       message: '',
       type: RedPacketDistributeType.Random,
@@ -373,6 +373,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       // 每个人最少 1000 sat（0.00001 Space）
       const min = MIN
       const max= MAX
+      
       if(this.unit == 'Sats'){
       const minAmount = min * this.quantity
       const maxAmount = max // 2 Space = 200_000_000 sat
@@ -435,7 +436,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       const user = useUserStore()
       const layout = useLayoutStore()
       if (!this.isFinished) return
-
+      
       layout.isShowRedPacketModal = false
       layout.isShowLoading = true
       await giveRedPacket(
@@ -447,6 +448,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           chain: this.chain,
           nft: this.nft,
           type: this.type,
+          unit:this.unit
         },
         talk.activeChannelId,
         talk.selfMetaId,

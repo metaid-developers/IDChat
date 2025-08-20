@@ -484,7 +484,7 @@ const layout = useLayoutStore()
 const userStore = useUserStore()
 const isShowSelectTokenModal=ref(false)
 
-const currentUnit=ref('Sats')
+const currentUnit=ref('Space')
 
 const activeTab = ref('redPacket')
 const changeTab = (tab: string) => {

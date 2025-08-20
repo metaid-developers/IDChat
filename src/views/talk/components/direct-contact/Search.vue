@@ -37,7 +37,7 @@ import { useUserStore } from '@/stores/user'
 import { ref, watch,computed } from 'vue'
 import { useLayoutStore } from '@/stores/layout'
 
-const groupWhiteList=['16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo']
+const groupWhiteList=['16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo','12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ']
 const userStore=useUserStore()
 const layout = useLayoutStore()
 const keyword = ref('')
