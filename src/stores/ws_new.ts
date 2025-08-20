@@ -49,19 +49,17 @@ export const useWsStore = defineStore('ws', {
         const client=new SocketIOClient(config);
         this.ws=client
          client.connect();
+         
            setTimeout(() => {
           if (client.isConnected()) {
+            
           client.sendMessage('Hello from TypeScript client!');
           }
           }, 2000);
 
 
-        const socket=client.getSocket()
-        socket?.on('message', (data: MessageData) => {
-      console.log('📨 收到消息:', data);
-      
-     this._handleReceivedMessage(data)
-    });
+        // const socket=client.getSocket()
+    
         
 
       // debugger
@@ -106,20 +104,20 @@ export const useWsStore = defineStore('ws', {
     //   this.ws = null
     // },
     //MessageEvent
-    async _handleReceivedMessage(data:MessageData ) {
-      
+    async _handleReceivedMessage(data:MessageData) {
+      debugger
       const talk = useTalkStore()
       const jobsStore = useJobsStore()
       // event.data
       const messageWrapper = JSON.parse(data)
       switch (messageWrapper.M) {
-        case 'WS_SERVER_NOTIFY_ROOM':
+        case 'WS_SERVER_NOTIFY_GROUP_CHAT':
           
           await talk.handleNewGroupMessage(messageWrapper.D)
           
           jobsStore.playNotice()
           return
-        case 'WS_SERVER_NOTIFY_CHAT':
+        case 'WS_SERVER_NOTIFY_PRIVATE_CHAT':
           
           await talk.handleNewSessionMessage(messageWrapper.D)
           jobsStore.playNotice()

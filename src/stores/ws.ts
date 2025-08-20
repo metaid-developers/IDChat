@@ -28,7 +28,7 @@ export const useWsStore = defineStore('ws', {
     async init() {
       const selfMetaId = this.selfMetaId
       if (!selfMetaId) return
-    //   debugger
+    //   
     //   const wsUri=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
     //         query:{
     //           "metaid":selfMetaId,
@@ -74,8 +74,9 @@ export const useWsStore = defineStore('ws', {
       
       const talk = useTalkStore()
       const jobsStore = useJobsStore()
-
+      
       const messageWrapper = JSON.parse(event.data)
+      
       switch (messageWrapper.M) {
         case 'WS_SERVER_NOTIFY_ROOM':
           
@@ -124,7 +125,7 @@ export const useWsStore = defineStore('ws', {
     //       // transports: ['websocket', 'polling'],
     //   }) 
     //     }
-      //   debugger
+      //   
         if (this.ws?.readyState === WebSocket.CLOSING || this.ws?.readyState === WebSocket.CLOSED) {
           // this.ws = new WebSocket(wsUri)
            const selfMetaId = this.selfMetaId

@@ -118,7 +118,7 @@ import CreateCommunityModal from '@/views/talk/components/modals/community/Creat
 import { onBeforeUnmount, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useWsStore } from '@/stores/ws'
+import { useWsStore } from '@/stores/ws_new'
 import { Community } from '@/@types/talk'
 const layout = useLayoutStore()
 const talk = useTalkStore()

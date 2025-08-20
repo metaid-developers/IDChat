@@ -19,7 +19,7 @@ import { Channel, Community, Message, MessageDto, TalkError } from '@/@types/tal
 import { containsString, sleep } from '@/utils/util'
 import { useUserStore } from './user'
 import { GetUserInfo } from '@/api/aggregation'
-import { useWsStore } from './ws'
+import { useWsStore } from './ws_new'
 import { getMetaNameAddress,isPublicChannel } from '@/utils/meta-name'
 import {getUserInfoByAddress} from '@/api/man'
 import {ChannelMsg_Size} from '@/data/constants'

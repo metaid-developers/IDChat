@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import {useWsStore} from '@/stores/ws'
+import {useWsStore} from '@/stores/ws_new'
 interface SocketConfig {
   url: string;
   path: string;
@@ -64,15 +64,15 @@ class SocketIOClient {
       console.error('🔴 连接错误:', error);
       this.logMessage(`连接错误: ${error.message}`);
     });
-
+   
     // 接收消息事件
-    // this.socket.on('message', async(data: MessageData) => {
-    //     debugger
-    // //   console.log('📨 收到消息:', data);
-    // const ws=useWsStore()
-    //   ws._handleReceivedMessage
-    // //   this.logMessage(`收到消息: ${JSON.stringify(data)}`);
-    // });
+    this.socket.on('message',(data: MessageData) => {
+        
+    //   console.log('📨 收到消息:', data);
+      const ws=useWsStore()
+      ws._handleReceivedMessage(data)
+    //   this.logMessage(`收到消息: ${JSON.stringify(data)}`);
+    });
 
     // 重新连接事件
     this.socket.on('reconnect', (attemptNumber: number) => {

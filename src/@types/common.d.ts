@@ -923,3 +923,20 @@ declare interface ShareChatMessageData {
   //   txId: string
   // }
 }
+
+
+//  interface ShareChatMessageData {
+ 
+//   communityId: string
+//   channelId: string
+//   groupId:string
+//   userMetaId: string
+//   message: {
+//     content: string
+//     contentType: string
+//     metanetId: string
+//     protocol: string
+//     timestamp: number
+//     txId: string
+//   }
+//  }
