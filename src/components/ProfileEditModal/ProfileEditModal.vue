@@ -29,6 +29,7 @@
             >
               <img class="avatar-preview" :src="currentAvatar" v-if="!imageUrl" />
               <img v-if="imageUrl" :src="imageUrl" class="avatar-preview " alt="Avatar Preview" />
+              <el-button class="upload-button" :icon="Camera" circle />
             </el-upload>
           </div>
         </div>
@@ -85,12 +86,13 @@ import { DB } from '@/utils/db'
 import { image2Attach, compressImage } from '@/lib/file'
 import { createOrUpdateUserInfo, getMVCRewards } from '@/utils/userInfo'
 import { useRouter } from 'vue-router'
+import { Camera } from '@element-plus/icons-vue'
 const props = defineProps<{
   modelValue: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
-const router=useRouter()
+const router = useRouter()
 const userStore = useUserStore()
 const avatarPreview = ref<string>('')
 const username = ref<string>('')
@@ -225,15 +227,15 @@ const save = async () => {
     console.log('Saving profile changes:', values)
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
-   setTimeout(() => {
+    setTimeout(() => {
       router.push({
         name: 'talkChannel',
-        params:{
-          communityId:'public',
-          channelId:'396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0'
-        }
+        params: {
+          communityId: 'public',
+          channelId: '396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
+        },
       })
-   }, 1000);
+    }, 1000)
   } catch (error) {
     console.error('Failed to save profile changes:', error)
     ElMessage.error('Failed to save profile changes.')
@@ -245,10 +247,6 @@ const save = async () => {
 
 <style lang="scss" scoped>
 .profile-edit-modal {
-  .avatar-preview {
-    min-width: 64px;
-    min-height: 64px;
-  }
   .close {
     position: absolute;
     left: 50%;
@@ -313,7 +311,28 @@ const save = async () => {
       height: 110px;
       border-radius: 33%;
       object-fit: cover;
-      box-shadow: 2px 5px 0px 1px rgba(0, 0, 0, 1);
+      // box-shadow: 2px 5px 0px 1px rgba(0, 0, 0, 1);
+      border: 2px solid rgba(0, 0, 0, 1);
+    }
+    .avatar-uploader {
+      position: relative;
+      .upload-button {
+        position: absolute;
+        bottom: 0px;
+        right: -10px;
+        width: 30px;
+        height: 30px;
+        color: var(--themeTextColor);
+        &::after {
+          content: 'Optional';
+          position: absolute;
+          top: 5px;
+          left: 40px;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+        }
+      }
     }
   }
 
@@ -326,7 +345,7 @@ const save = async () => {
       width: 20px;
       height: 20px;
       border: 2px solid #f3f3f3;
-      border-top: 2px solid #3498db;
+      border-top: 2px solid var(--themeTextColor);
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
