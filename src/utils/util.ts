@@ -123,8 +123,9 @@ export async function fetchTranlateResult({
   from: "zh" | "en";
   to: "zh" | "en";
 }): Promise<TransResult | undefined> {
+  const lang=i18n.global.locale.value
 
-  if(isChinese(sourceText)){
+  if(lang == 'en'){
     from = 'zh'
     to = 'en'
   }else{
@@ -132,7 +133,7 @@ export async function fetchTranlateResult({
     to = 'zh'
   }
   
-
+  
   const salt = new Date().getTime().toString();
   const queryParams: TransQuery = {
     q: sourceText,

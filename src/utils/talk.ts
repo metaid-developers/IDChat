@@ -283,91 +283,217 @@ const nicerAmount=(amount:number,unit:string)=>{
     }
 }
 
+// const _putIntoRedPackets = (form: any, address: string): any[] => {
+//   const { amount, quantity, each, type,unit } = form
+  
+//   // NFT🧧：将NFT分成指定数量个红包，平均分配
+//   if (type === RedPacketDistributeType.Nft) {
+//     const redPackets = []
+//     for (let i = 0; i < quantity; i++) {
+//       redPackets.push({
+//         address,
+//         amount: each,
+//         index: i,
+//       })
+//     }
+//     return redPackets
+//   }
+
+//   // 构建🧧数量：随机将红包金额分成指定数量个小红包；指定最小系数为平均值的0.2倍，最大系数为平均值的1.8倍
+//   // const minFactor = 0.2
+//   // const maxFactor = 1.8
+//   const minSats = Red_Packet_Min // 最小红包金额为1000sats
+//   const redPackets = []
+//   let remainsAmount =nicerAmount(amount,unit) 
+//   //let remainsCount = quantity
+//   let initIndex=2
+
+//   const currentAmountSats=nicerAmount(amount,unit)
+//   const currentMinSats=unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats
+  
+
+//     // 确保最小金额合理
+//   if (currentAmountSats < minSats * quantity) {
+//     throw new Error(`总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${currentMinSats} ${unit}）`);
+//   }
+
+//   for (let i = 0; i < quantity - 1; i++) {
+//     // 计算当前红包的最大可能金额（确保后面每个红包至少有minSats）
+//     const maxPossible = remainsAmount - minSats * (quantity - i - 1);
+//     const minPossible = minSats;
+    
+//     // 在合理范围内随机分配
+//     const randomAmount = Math.floor(Math.random() * (maxPossible - minPossible)) + minPossible;
+    
+//     redPackets.push({
+//       amount: randomAmount,
+//       address,
+//       index: i + initIndex,
+//     });
+    
+//     remainsAmount -= randomAmount;
+//   }
+
+//   redPackets.push({
+//     amount: Math.max(remainsAmount, minSats),
+//     address,
+//     index: quantity + initIndex - 1,
+//   });
+
+
+//   return redPackets;
+
+
+  
+
+
+//   // for (let i = 0; i < quantity - 1; i++) {
+//   //   let avgAmount = Math.round(remainsAmount / remainsCount)
+//   //   const randomFactor = Math.random() * (maxFactor - minFactor) + minFactor
+//   //   const randomAmount = Math.max(Math.round(avgAmount * randomFactor), minSats)
+//   //   redPackets.push({
+//   //     amount: randomAmount,
+//   //     address,
+//   //     index: i + initIndex,
+//   //   })
+//   //   remainsAmount -= randomAmount
+//   //   remainsCount -= 1
+//   // }
+//   // redPackets.push({
+//   //   amount: Math.max(Math.floor(remainsAmount), minSats),
+//   //   address,
+//   //   index: quantity + initIndex - 1,
+//   // }) // 最后一个红包，使用剩餘金额
+//   // console.log("redPackets",redPackets)
+//   // debugger
+//   // return redPackets
+// }
+
 const _putIntoRedPackets = (form: any, address: string): any[] => {
-  const { amount, quantity, each, type,unit } = form
+  const { amount, quantity, each, type, unit } = form;
   
-  // NFT🧧：将NFT分成指定数量个红包，平均分配
-  if (type === RedPacketDistributeType.Nft) {
-    const redPackets = []
-    for (let i = 0; i < quantity; i++) {
-      redPackets.push({
-        address,
-        amount: each,
-        index: i,
-      })
-    }
-    return redPackets
-  }
+  // // NFT🧧：将NFT分成指定数量个红包，平均分配
+  // if (type === RedPacketDistributeType.Nft) {
+  //   const redPackets = [];
+  //   for (let i = 0; i < quantity; i++) {
+  //     redPackets.push({
+  //       address,
+  //       amount: each,
+  //       index: i,
+  //     });
+  //   }
+  //   return redPackets;
+  // }
 
-  // 构建🧧数量：随机将红包金额分成指定数量个小红包；指定最小系数为平均值的0.2倍，最大系数为平均值的1.8倍
-  // const minFactor = 0.2
-  // const maxFactor = 1.8
-  const minSats = Red_Packet_Min // 最小红包金额为1000sats
-  const redPackets = []
-  let remainsAmount =nicerAmount(amount,unit) 
-  //let remainsCount = quantity
-  let initIndex=2
-
-  const currentAmountSats=nicerAmount(amount,unit)
-  const currentMinSats=unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats
+  // 货币🧧：使用正态分布算法分配
+  const minSats = Red_Packet_Min; // 最小红包金额
+  const totalAmount = nicerAmount(amount, unit);
   
-
-    // 确保最小金额合理
-  if (currentAmountSats < minSats * quantity) {
+  // 确保最小金额合理
+  if (totalAmount < minSats * quantity) {
+    const currentMinSats = unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats;
     throw new Error(`总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${currentMinSats} ${unit}）`);
   }
 
+  const redPackets = [];
+  const initIndex = 2;
+  
+  // 正态分布算法参数
+  const mean = totalAmount / quantity; // 平均值
+  const stdDev = mean * 0.3; // 标准差，控制分布的集中程度（0.3表示相对集中）
+  
+  // 生成符合正态分布的红包金额
+  let remainingAmount = totalAmount;
+  const amounts = [];
+  
+  // 首先生成 quantity-1 个红包金额
   for (let i = 0; i < quantity - 1; i++) {
-    // 计算当前红包的最大可能金额（确保后面每个红包至少有minSats）
-    const maxPossible = remainsAmount - minSats * (quantity - i - 1);
-    const minPossible = minSats;
+    let randomAmount;
+    let attempts = 0;
+    const maxAttempts = 100; // 防止无限循环
     
-    // 在合理范围内随机分配
-    const randomAmount = Math.floor(Math.random() * (maxPossible - minPossible)) + minPossible;
+    do {
+      // 使用Box-Muller变换生成正态分布随机数
+      const u1 = Math.random();
+      const u2 = Math.random();
+      const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+      
+      // 转换为指定均值和标准差的正态分布
+      randomAmount = Math.round(z0 * stdDev + mean);
+      
+      // 确保金额在合理范围内
+      randomAmount = Math.max(minSats, randomAmount);
+      randomAmount = Math.min(
+        randomAmount,
+        remainingAmount - minSats * (quantity - i - 1)
+      );
+      
+      attempts++;
+    } while ((randomAmount > remainingAmount - minSats * (quantity - i - 1) || 
+             randomAmount < minSats) && attempts < maxAttempts);
     
+    // 如果尝试多次仍然无法生成有效金额，使用安全值
+    if (attempts >= maxAttempts) {
+      randomAmount = Math.max(
+        minSats,
+        Math.min(
+          Math.round(mean),
+          remainingAmount - minSats * (quantity - i - 1)
+        )
+      );
+    }
+    
+    amounts.push(randomAmount);
+    
+    remainingAmount -= randomAmount;
+  }
+  
+  // 最后一个红包使用剩余金额，但要确保不小于最小值
+  amounts.push(Math.max(remainingAmount, minSats));
+  
+  // 如果最后一个红包过大，重新调整分配（可选的安全检查）
+  if (amounts[amounts.length - 1] > mean * 2) {
+    return _redistributeEvenly(amounts, totalAmount, minSats);
+  }
+  
+  // 构建红包对象
+  for (let i = 0; i < amounts.length; i++) {
     redPackets.push({
-      amount: randomAmount,
+      amount: amounts[i],
       address,
       index: i + initIndex,
     });
-    
-    remainsAmount -= randomAmount;
   }
-
-  redPackets.push({
-    amount: Math.max(remainsAmount, minSats),
-    address,
-    index: quantity + initIndex - 1,
-  });
-
-
+  console.log("redPackets",redPackets)
   return redPackets;
+};
 
-
+// 辅助函数：如果分配不均，进行重新分配
+const _redistributeEvenly = (amounts: number[], totalAmount: number, minSats: number): any[] => {
+  const quantity = amounts.length;
+  const mean = Math.round(totalAmount / quantity);
+  const adjustedAmounts = [];
   
+  let remainingAmount = totalAmount;
+  
+  for (let i = 0; i < quantity - 1; i++) {
+    // 在平均值附近小范围波动 (±20%)
+    const variation = Math.random() * 0.4 - 0.2; // -20% 到 +20%
+    let amount = Math.round(mean * (1 + variation));
+    
+    amount = Math.max(minSats, amount);
+    amount = Math.min(amount, remainingAmount - minSats * (quantity - i - 1));
+    
+    adjustedAmounts.push(amount);
+    remainingAmount -= amount;
+  }
+  
+  adjustedAmounts.push(Math.max(remainingAmount, minSats));
+  
+  return adjustedAmounts;
+};
 
 
-  // for (let i = 0; i < quantity - 1; i++) {
-  //   let avgAmount = Math.round(remainsAmount / remainsCount)
-  //   const randomFactor = Math.random() * (maxFactor - minFactor) + minFactor
-  //   const randomAmount = Math.max(Math.round(avgAmount * randomFactor), minSats)
-  //   redPackets.push({
-  //     amount: randomAmount,
-  //     address,
-  //     index: i + initIndex,
-  //   })
-  //   remainsAmount -= randomAmount
-  //   remainsCount -= 1
-  // }
-  // redPackets.push({
-  //   amount: Math.max(Math.floor(remainsAmount), minSats),
-  //   address,
-  //   index: quantity + initIndex - 1,
-  // }) // 最后一个红包，使用剩餘金额
-  // console.log("redPackets",redPackets)
-  // debugger
-  // return redPackets
-}
 
 export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string) => {
   // 1.1 构建红包地址

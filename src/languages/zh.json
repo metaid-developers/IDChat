@@ -1340,5 +1340,13 @@
     "removeAvatar": "移除头像",
     "cancel": "取消",
     "save": "保存"
+  },
+  "link": {
+    "metaid": {
+      "group": "点击下方按钮进入测试群聊"
+    }
+  },
+  "MetaID": {
+    "official_group": "MetaID 链上官方群"
   }
 }

@@ -19,7 +19,7 @@ import { Channel, Community, Message, MessageDto, TalkError } from '@/@types/tal
 import { containsString, sleep } from '@/utils/util'
 import { useUserStore } from './user'
 import { GetUserInfo } from '@/api/aggregation'
-import { useWsStore } from './ws'
+import { useWsStore } from './ws_new'
 import { getMetaNameAddress,isPublicChannel } from '@/utils/meta-name'
 import {getUserInfoByAddress} from '@/api/man'
 import {ChannelMsg_Size} from '@/data/constants'
@@ -633,6 +633,7 @@ export const useTalkStore = defineStore('talk', {
       let mockMessage: any
       
       if (containsString(message.protocol,NodeName.SimpleGroupChat)) {
+
         mockMessage = this.activeChannel.newMessages.find(
           (item: Message) =>
             item.txId === '' &&
@@ -642,6 +643,7 @@ export const useTalkStore = defineStore('talk', {
             containsString(message.protocol,item?.protocol!)
           
         )
+        
       } else if (containsString(message.protocol,NodeName.SimpleFileGroupChat)) {
         mockMessage = this.activeChannel.newMessages.find(
           (item: Message) =>
@@ -1062,7 +1064,8 @@ export const useTalkStore = defineStore('talk', {
     reset() {
       console.log('resetting')
       const ws = useWsStore()
-      ws.close()
+  
+      ws.disconnect()
       this.closeReadPointerTimer()
       this.communities = [{ id: 'public' }]
       this.members = []

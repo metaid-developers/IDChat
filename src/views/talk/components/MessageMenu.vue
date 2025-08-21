@@ -1,8 +1,10 @@
 <template>
   <div
-    class="absolute bg-white dark:bg-gray-700 right-0 -top-[5PX] -translate-x-4 px-1.5 py-0.5 rounded-xl shadow hidden lg:group-hover:flex hover:shadow-md transition-all duration-200 z-10"
+    class="absolute bg-white dark:bg-gray-700 right-0 -top-[5PX] -translate-x-4 px-1.5 py-0.5 rounded-xl shadow hidden  lg:group-hover:flex  hover:shadow-md transition-all duration-200 z-10"
+  
     v-if="actions.length > 0"
-  >
+   
+    >
     <button v-for="action in actions" :key="action.name" class="p-1.5" @click="action.action">
       <Icon
         :name="action.icon"
@@ -21,9 +23,11 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {containsString,fetchTranlateResult} from '@/utils/util'
 import { ShareChatMessageData } from '@/@types/common'
+
 const i18n = useI18n()
 
 const props = defineProps(['message', 'parsed', 'translateStatus', 'translatedContent'])
+
 const emit = defineEmits<{
   (e: 'update:translateStatus', status: string): void
   (e: 'update:translatedContent', content: string): void
@@ -33,6 +37,9 @@ const emit = defineEmits<{
 
 const isText = computed(() => containsString(props.message.protocol,NodeName.ShowMsg) || containsString(props.message.protocol,NodeName.SimpleGroupChat))
 const talk = useTalkStore()
+
+
+
 
 const actions = computed(() => {
   const actions = []
@@ -117,65 +124,57 @@ const actions = computed(() => {
       action: () => {
         let data: ShareChatMessageData
         const message: ChatSessionMessageItem = props.message
+        debugger
+        const decryptedMessageContent=decryptedMessage(message.content,message.encryption,message.protocol)
+       
         if (containsString(props.message.protocol,NodeName.ShowMsg)) {
-          
-        
-           console.log("message132132",message)
-          
-          
           data = {
-            content:message.content,
-            attachments:[],
-            contentType:'text/plain',
-            createTime:Date.now(),
-            quotePin:""
-
-            // //communityId: talk.activeCommunityId,
-            // groupId: talk.activeChannelId,
-            // userMetaId: message.fromUserInfo.metaId,
-            // message: {
-            //   content: message.data.content,
-            //   contentType: message.data.contentType,
-            //   protocol: message.protocol,
-            //   txId: message.txId,
-            //   timestamp: message.data.timestamp,
-            //   metanetId: '',
-            // },
+            communityId:'', //talk.activeCommunityId,
+            groupId: talk.activeChannelId,
+            userMetaId: message.userInfo.metaid,
+            message: {
+              content: decryptedMessageContent,
+              contentType: message.contentType,
+              protocol: message.protocol,
+              txId: message.txId,
+              pinId:message.pinId,
+              timestamp: message.timestamp,
+              metanetId:message.metanetId,
+            },
           }
         }else if(containsString(props.message.protocol,NodeName.SimpleFileGroupChat)){
+            
           data = {
-            content:'',
-            attachments:[message.content],
-            contentType:'text/plain',
-            createTime:Date.now(),
-             quotePin:""
+            communityId:'', //talk.activeCommunityId,
+            groupId: talk.activeChannelId,
+            userMetaId: message.userInfo.metaid,
+            message: {
+              content: decryptedMessageContent,
+              contentType: message.contentType,
+              protocol: message.protocol,
+              txId: message.txId,
+              pinId:message.pinId,
+              timestamp: message.timestamp,
+              metanetId:message.metanetId,
+            },
           }
           
         } else {
           
-          
-          data = {
-            content:message.content,
-            attachments:[],
-            contentType:'text/plain',
-            createTime:Date.now(),
-             quotePin:""
-            // // communityId: talk.activeCommunityId,
-            // groupId: talk.activeChannelId,
-            // userMetaId: message.userInfo.metaid,
-            // message: {
-            //   content: decryptedMessage(
-            //     message.content,
-            //     message.encryption,
-            //     message.protocol,
-            //     message.isMock
-            //   ),
-            //   contentType: message.contentType,
-            //   protocol: message.protocol,
-            //   txId: message.txId,
-            //   timestamp: message.timestamp,
-            //   metanetId: message.metanetId,
-            // },
+            
+           data = {
+            communityId:'', //talk.activeCommunityId,
+            groupId: talk.activeChannelId,
+            userMetaId: message.userInfo.metaid,
+            message: {
+              content: decryptedMessageContent,
+              contentType: message.contentType,
+              protocol: message.protocol,
+              txId: message.txId,
+              pinId:message.pinId,
+              timestamp: message.timestamp,
+              metanetId:message.metanetId,
+            },
           }
         }
         // 复制该消息内容到剪贴板
