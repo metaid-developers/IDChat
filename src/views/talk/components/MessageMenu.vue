@@ -124,7 +124,7 @@ const actions = computed(() => {
       action: () => {
         let data: ShareChatMessageData
         const message: ChatSessionMessageItem = props.message
-        debugger
+        
         const decryptedMessageContent=decryptedMessage(message.content,message.encryption,message.protocol)
        
         if (containsString(props.message.protocol,NodeName.ShowMsg)) {
