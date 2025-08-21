@@ -417,6 +417,7 @@
     "aboutShow": "關於Show",
     "help": "幫助",
     "logout": "退出",
+    "editProfile": "編輯個人資料",
     "About MetaSo": "關於 MetaSo",
     "wallet": "錢包",
     "metaName": "MetaName"
@@ -1321,5 +1322,23 @@
     "change": "Metalet 账户已变更。正在刷新页面..."
   },
   "Copy_success": "Content copied",
-  "retry_msg_error": "找不到重试的消息ID,请重新编辑要发送的内容"
+  "retry_msg_error": "找不到重试的消息ID,请重新编辑要发送的内容",
+  "Wallet Installation Required": "需要安装钱包",
+  "Go to Metalet Website": "前往Metalet官网",
+  "We are a decentralized Web3 application that requires a wallet for signing, authorization, and more.": "我們是一個去中心化的Web3應用程序，需要錢包進行簽名、授權等操作。",
+  "You haven't installed the corresponding wallet yet. Click the button, and we will guide you to the Metalet wallet official website for installation (we recommend the browser extension version).": "您尚未安裝相應的錢包，點擊按鈕，我們將引導您前往Metalet錢包官方網站進行安裝（我們推薦瀏覽器擴展版本）。",
+  "ProfileEditModal": {
+    "title": "设置您的个人资料",
+    "subtitle": "让您的账户脱颖而出 — 添加独特的头像和显示名称！",
+    "avatar": "头像",
+    "username": "用户名",
+    "optional": "可选",
+    "usernamePlaceholder": "请输入用户名",
+    "profile": "个人简介",
+    "profilePlaceholder": "请输入个人简介(可选)",
+    "uploadAvatar": "上传头像",
+    "removeAvatar": "移除头像",
+    "cancel": "取消",
+    "save": "保存"
+  }
 }

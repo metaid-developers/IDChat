@@ -9,10 +9,7 @@
     @close="closeConnectionModal"
   >
     <div class="login-warp flex">
-      <a
-        class="close flex flex-align-center flex-pack-center"
-        @click="closeConnectionModal"
-      >
+      <a class="close flex flex-align-center flex-pack-center" @click="closeConnectionModal">
         <Icon name="x_mark" />
       </a>
 
@@ -21,9 +18,13 @@
       </div> -->
       <div class="flex1">
         <!-- 选择钱包 -->
-         <!--v-if="status === ConnectWalletStatus.Watting"-->
-        <div class="connect-wallet flex  flex-v" >
-          <div class="connect-wallet-section  justify-center " v-for="(item, index) in wallets" :key="index">
+        <!--v-if="status === ConnectWalletStatus.Watting"-->
+        <div class="connect-wallet flex  flex-v">
+          <div
+            class="connect-wallet-section  justify-center "
+            v-for="(item, index) in wallets"
+            :key="index"
+          >
             <div class="title ">{{ item.title() }}</div>
             <div class="btn-list  flex  flex-v">
               <div
@@ -667,7 +668,7 @@ async function onSetBaseInfoSuccessType(params: { name: string; nft: NFTAvatarIt
 async function onSetBaseInfoSuccessForMetalet(params: { name: string; nft: NFTAvatarItem }) {
   loading.value = true
   try {
-    
+
     const wallet = userStore.showWallet!.wallet
 
     if (userStore.isAuthorized) {
@@ -686,9 +687,9 @@ async function onSetBaseInfoSuccessForMetalet(params: { name: string; nft: NFTAv
         addressIndex:1,
       })
     }
-      infoAddress = wallet!.infoAddress 
+      infoAddress = wallet!.infoAddress
       protocolAddress =  wallet!.protocolAddress
-      
+
       const broadcasts: Array<{
         hex: string
         transation: mvc.Transaction
@@ -1100,6 +1101,7 @@ async function connectMetalet() {
 
    if (!window.metaidwallet) {
     setMissingWallet('metalet')
+    //TODO: 这里需要提示用户安装metalet钱包
     return
   }
 
@@ -1112,7 +1114,7 @@ async function connectMetalet() {
   })
 
   //   if (connectionStore?.adapter?.metaletConnect) {
-      
+
   //   await connectionStore?.adapter.metaletConnect()!.catch((err) => {
   //     ElMessage.warning({
   //       message: err.message,
@@ -1120,20 +1122,20 @@ async function connectMetalet() {
   //     })
   //   })
   // }
-  
+
     if (connection?.status === 'connected') {
     await credentialsStore.login()
-      
-    
 
-      
+
+
+
     await sleep(300)
 
     closeConnectionModal()
-     
+
     const channelId=route.params.channelId
     const communityId=route.params.communityId
-    
+
 
     if(channelId && channelId !== 'welcome'){
          router.push({
@@ -1151,16 +1153,16 @@ async function connectMetalet() {
     const myChannelList= await getChannels({
       metaId:userStore.last.metaid
     })
-    
+
     if(myChannelList.length){
-    
+
       newChannelId=myChannelList[0].groupId
-   
+
     }else{
     //    const allChannelList= await getAllChannels({
     //   metaId:userStore.last.metaid
     // })
-    
+
       newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
     }
     router.push({
@@ -1171,12 +1173,12 @@ async function connectMetalet() {
         }
       })
     }
-  
-   
+
+
   }
 
 
-  
+
   // const loading = ElLoading.service({
   //   text: 'Loading...',
   //   lock: true,
@@ -1192,10 +1194,10 @@ async function connectMetalet() {
   //     return ElMessage.error(`${i18n.t('wallet_addres_empty')}`)
   //   }
   //   let metaIdInfo
-    
+
   //   const { network } = await window.metaidwallet.getNetwork()
   //   const xpub = await window.metaidwallet.getXPublicKey()
-    
+
   //   const metaidWallet = new MetaletWallet({
   //     xpub,
   //     address: address,
@@ -1207,14 +1209,14 @@ async function connectMetalet() {
   //   metaIdInfo = await metaidWallet.getMetaIdInfo(address).catch(error => {
   //     throw new Error(error)
   //   })
-    
+
   //   if (!metaIdInfo.metaId && !metaIdInfo.infoTxId && !metaIdInfo.protocolTxId) {
-      
+
   //     metaIdInfo = await metaidWallet.initMetaIdNode().catch(e => {
-        
+
   //       throw new Error(e.toString())
   //     })
-      
+
   //   }
 
   //   console.log('metaletWallet', metaIdInfo)

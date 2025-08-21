@@ -378,9 +378,24 @@
     "aboutShow": "About Show",
     "help": "Help",
     "logout": "Logout",
+    "editProfile": "Edit Profile",
     "About MetaSo": "About MetaSo",
     "wallet": "Wallet",
     "metaName": "MetaName"
+  },
+  "ProfileEditModal": {
+    "title": "Set Up Your Profile",
+    "subtitle": "Make your account stand out — add a unique avatar and display name!",
+    "avatar": "Avatar",
+    "username": "Username",
+    "optional": "optional",
+    "usernamePlaceholder": "What's Your Web3 User Name?",
+    "profile": "Profile",
+    "profilePlaceholder": "Profile (Optional)",
+    "uploadAvatar": "Upload Avatar",
+    "removeAvatar": "Remove Avatar",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "Comming Soon": "Coming Soon",
   "Use MetaId Wallet": "Use MetaID Wallet",
@@ -1327,5 +1342,9 @@
     "change": "Metalet account changed. Refreshing page..."
   },
   "Copy_success": "内容已复制",
-  "retry_msg_error": "The retry message ID cannot be found. Please edit the content to be sent again."
+  "retry_msg_error": "The retry message ID cannot be found. Please edit the content to be sent again.",
+  "Wallet Installation Required": "Wallet Installation Required",
+  "Go to Metalet Website": "Go to Metalet Website",
+  "We are a decentralized Web3 application that requires a wallet for signing, authorization, and more.": "We are a decentralized Web3 application that requires a wallet for signing, authorization, and more.",
+  "You haven't installed the corresponding wallet yet. Click the button, and we will guide you to the Metalet wallet official website for installation (we recommend the browser extension version).": "You haven't installed the corresponding wallet yet. Click the button, and we will guide you to the Metalet wallet official website for installation (we recommend the browser extension version)."
 }

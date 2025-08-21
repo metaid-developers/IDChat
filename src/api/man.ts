@@ -1,11 +1,9 @@
 import HttpRequest from '@/utils/request'
 
 const manApi = new HttpRequest(`${import.meta.env.VITE_MAN_API}/api`, {
-
   responseHandel: response => {
     return new Promise((resolve, reject) => {
       if (response?.data && typeof response.data?.code === 'number') {
-        
         if (response.data.code === 1) {
           resolve(response.data.data)
         } else {
@@ -21,63 +19,54 @@ const manApi = new HttpRequest(`${import.meta.env.VITE_MAN_API}/api`, {
   },
 }).request
 
-export interface UserInfo{
-address:string
-avatar:string
-avatarId:string
-background:string
-bio:string
-bioId:string
-blocked:boolean
-chainName:string
-fdv:number
-followCount:number
-isInit:boolean
-metaid:string
-name:string
-nameId:string
-nftAvatar:string
-nftAvatarId:string
-number:number
-pdv:number
-pinId:string
-soulbondToken:string
-unconfirmed:string
+export interface UserInfo {
+  address: string
+  avatar: string
+  avatarId: string
+  background: string
+  bio: string
+  bioId: string
+  blocked: boolean
+  chainName: string
+  fdv: number
+  followCount: number
+  isInit: boolean
+  metaid: string
+  name: string
+  nameId: string
+  nftAvatar: string
+  nftAvatarId: string
+  number: number
+  pdv: number
+  pinId: string
+  soulbondToken: string
+  unconfirmed: string
 }
 
+export const getUserInfoByAddress = async (address: string): Promise<UserInfo> => {
+  // const res=await manApi.get(`/info/address/${address}`)
 
-export const getUserInfoByAddress =async(address:string): Promise<UserInfo> => {
-// const res=await manApi.get(`/info/address/${address}`)
+  // if(res && !res?.name){
+  //   res.name = res.metaid.slice(0,6)
+  // }
 
-     
-// if(res && !res?.name){
-//   res.name = res.metaid.slice(0,6)
-// }
+  // return res
 
-// return res
+  return manApi.get(`/info/address/${address}`).then(res => {
+    if (res && !res?.name) {
+      // res.name = res.metaid.slice(0,6)
+    }
 
-return manApi.get(`/info/address/${address}`).then((res)=>{
-  if(res && !res?.name){
-  res.name = res.metaid.slice(0,6)
+    return res
+  })
 }
 
-return res
-})
+export const getUserInfoByMetaId = async (metaid: string): Promise<UserInfo> => {
+  const res = await manApi.get(`/info/metaid/${metaid}`)
 
-     
+  if (res && !res?.name) {
+    // res.name = res.metaid.slice(0, 6)
+  }
 
-
-
-}
-
-export const getUserInfoByMetaId = async(metaid:string): Promise<UserInfo> => {
-  const res=await manApi.get(`/info/metaid/${metaid}`)
-
-     
-if(res && !res?.name){
-  res.name = res.metaid.slice(0,6)
-}
-
-return res
-   
+  return res
 }

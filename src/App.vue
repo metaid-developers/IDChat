@@ -32,6 +32,7 @@
   <DragonBall />
   <SearchModal />
   <ConnectWalletModalVue />
+  <WalletMissingModal />
   <!-- <UserCardFloater /> -->
   <!-- <PWA /> -->
 
@@ -59,6 +60,7 @@ import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
 import {completeReload} from '@/utils/util'
 import { useI18n } from 'vue-i18n'
+import WalletMissingModal from './components/ConnectWalletModal/WalletMissingModal.vue'
 const MAX_RETRY_TIME = 5000 // 最大等待时间（毫秒）
 const RETRY_INTERVAL = 100  // 重试间隔（毫秒）
 const rootStore = useRootStore()
@@ -89,7 +91,7 @@ function handleNetworkChanged(network: Network) {
 }
 
 const metaletAccountsChangedHandler = () => {
-  
+
   if (useConnectionStore().last.wallet !== 'metalet') return
 
   // sync here to prevent chronological error
@@ -115,7 +117,7 @@ onMounted(async () => {
 
   const checkMetalet = async () => {
     if (window.metaidwallet) {
-     
+
       try {
         await window.metaidwallet.on('accountsChanged', metaletAccountsChangedHandler)
         await window.metaidwallet.on('networkChanged', metaletNetworkChangedHandler)
@@ -141,7 +143,7 @@ onMounted(async () => {
 
 onBeforeUnmount(async() => {
   // remove event listener
-  
+
  await window.metaidwallet?.removeListener(
     'accountsChanged',
     metaletAccountsChangedHandler,

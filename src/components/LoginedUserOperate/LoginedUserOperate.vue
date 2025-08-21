@@ -10,21 +10,16 @@
     <img class="metanameLogo" :src="MetaNameLogo" alt="" />
   </a> -->
 
-    <template  v-if="!connectionStore.connected">
-    <a
-      class="main-border primary connect-wallet"
-      @click="openConnectionModal"
-      >{{ $t('Login.connectWallet') }}</a
-    >
+  <template v-if="!connectionStore.connected">
+    <a class="main-border primary connect-wallet" @click="openConnectionModal">{{
+      $t('Login.connectWallet')
+    }}</a>
   </template>
 
-
-   <template v-else-if="!credentialsStore.get">
-    <a
-      class="main-border primary connect-wallet"
-      @click="credentialsStore.login()"
-      >{{ $t('Login.authorize') }}</a
-    >
+  <template v-else-if="!credentialsStore.get">
+    <a class="main-border primary connect-wallet" @click="credentialsStore.login()">{{
+      $t('Login.authorize')
+    }}</a>
   </template>
 
   <template v-else>
@@ -38,8 +33,8 @@
           <img class="metanameLogo" :src="MetaNameLogo" alt="" />
         </a> -->
 
-          <!-- MintCollect -->
-          <!-- <el-tooltip
+        <!-- MintCollect -->
+        <!-- <el-tooltip
         class="box-item"
         effect="dark"
         content="Mint Collection"
@@ -73,14 +68,14 @@
       </a> -->
 
       <!-- 👤 头像 -->
-         <UserAvatar
-            :image="userStore.last!.avatar"
-            :meta-id="userStore.last!.metaid"
-            :name="userStore.last.name"
-            class="user-warp-item overflow-hidden"
-            :meta-name="''"
-            :disabled="true"
-          />
+      <UserAvatar
+        :image="userStore.last!.avatar"
+        :meta-id="userStore.last!.metaid"
+        :name="userStore.last.name"
+        class="user-warp-item overflow-hidden"
+        :meta-name="''"
+        :disabled="true"
+      />
       <!-- <el-popover placement="bottom" :width="'auto'" trigger="hover">
         <template #reference>
           <UserAvatar
@@ -97,15 +92,11 @@
           :meta-id="userStore.user!.metaId"
           :meta-name="userStore.user!.metaName"
           :model-value="true"
-        /> 
-    
+        />
+
       </el-popover> -->
     </div>
   </template>
-
-  
-
-
 
   <!-- 更多操作 -->
   <ElDropdown trigger="click" @visible-change="val => (isShowUserMenu = val)">
@@ -117,14 +108,14 @@
     </a>
     <template #dropdown>
       <ElDropdownMenu>
-        <!-- <template v-if="isMobile">
+        <template v-if="isMobile">
           <ElDropdownItem @click="layout.$patch({ isShowSearchModal: true })">
             <div class="flex flex-align-center user-operate-item">
               <Icon name="search" />
               <span class="name">{{ $t('UserOperate.search') }}</span>
             </div>
           </ElDropdownItem>
-        </template> -->
+        </template>
 
         <ElDropdownItem v-for="(item, index) in userOperates" :key="index" @click="item.func()">
           <div class="flex flex-align-center user-operate-item">
@@ -143,6 +134,11 @@
 
   <!-- wallet -->
   <MyWalletVue v-model="layout.isShowWallet" />
+
+  <!-- Profile Edit Modal -->
+  <Teleport to="body">
+    <ProfileEditModal v-model="layout.isShowProfileEditModal" />
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -153,19 +149,19 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SettingsModalVue from '@/components/Settings/SettingsModal.vue'
 import { useLayoutStore } from '@/stores/layout'
-import { useRoute,useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import MyWalletVue from './MyWallet.vue'
 import VersionVue from '../Version/Version.vue'
 import UserPersonaVue from '../UserPersona/UserPersona.vue'
 import UserCardVue from '../UserCard/UserCard.vue'
+import ProfileEditModal from '@/components/ProfileEditModal/ProfileEditModal.vue'
 
 import MetaNameLogo from '@/assets/svg/meta_name.svg?url'
 import MintLogo from '@/assets/svg/mint.svg?url'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useConnectionStore } from '@/stores/connection'
 import { useCredentialsStore } from '@/stores/credentials'
-const { openConnectionModal } =
-  useConnectionModal()
+const { openConnectionModal } = useConnectionModal()
 
 const connectionStore = useConnectionStore()
 const credentialsStore = useCredentialsStore()
@@ -225,10 +221,17 @@ const userOperates = computed(() => {
   ]
   if (userStore.isAuthorized || connectionStore.connected) {
     result.push({
+      name: i18n.t('UserOperate.editProfile'),
+      icon: 'user_bars',
+      func: async () => {
+        layout.isShowProfileEditModal = true
+      },
+    })
+    result.push({
       name: i18n.t('UserOperate.logout'),
       icon: 'logout',
-      func: async() => {
-       await connectionStore.disconnect(router)
+      func: async () => {
+        await connectionStore.disconnect(router)
       },
     })
   }
@@ -236,8 +239,8 @@ const userOperates = computed(() => {
   return result
 })
 
-const isNftPage=computed(()=>{
- return route.path.indexOf("/nft") > -1
+const isNftPage = computed(() => {
+  return route.path.indexOf('/nft') > -1
 })
 
 const toMetaName = () => {

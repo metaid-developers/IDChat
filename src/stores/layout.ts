@@ -19,6 +19,7 @@ export const useLayoutStore = defineStore('layout', {
       isShowLeaveCommunityModal: false,
 
       isShowSettingsModal: false,
+      isShowProfileEditModal: false,
       isShowChooseTokenModal: false,
       isShowChooseMetaNameModal: false,
       isShowChooseMetaNameModal2: false,
@@ -26,7 +27,7 @@ export const useLayoutStore = defineStore('layout', {
       isShowRedPacketOpenModal: false,
       isShowRedPacketResultModal: false,
       isShowInviteModal: false,
-      isShowChannelInviteModal:false,
+      isShowChannelInviteModal: false,
       isShowShareToBuzzModal: false,
       isShowShareSuccessModal: false,
       isShowAcceptInviteModal: false,

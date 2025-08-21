@@ -2,15 +2,15 @@ import { defineStore } from 'pinia'
 import { useLocalStorage, type RemovableRef } from '@vueuse/core'
 // import type { Psbt } from 'bitcoinjs-lib'
 import { ElMessage } from 'element-plus'
-import { TxComposer } from "meta-contract"
+import { TxComposer } from 'meta-contract'
 // import * as unisatAdapter from '@/wallet-adapters/unisat'
 // import * as okxAdapter from '@/wallet-adapters/okx'
 import * as metaletAdapter from '@/wallet-adapters/metalet'
-import {useCredentialsStore} from '@/stores/credentials'
+import { useCredentialsStore } from '@/stores/credentials'
 
 import { Network, useNetworkStore } from './network'
 import { useUserStore } from './user'
-import { useRouter,Router } from 'vue-router'
+import { useRouter, Router } from 'vue-router'
 import { useApprovedStore } from './approved'
 import { useTalkStore } from './talk'
 function getWalletAdapter(wallet: Wallet) {
@@ -86,11 +86,11 @@ export const useConnectionStore = defineStore('connection', {
         txComposer: string
         message?: string
         }>,
-        
+
         hasMetaid: boolean,
         feeb?: number
         }
-     
+
       )=>{
         payedTransactions:string[]
       }
@@ -99,11 +99,11 @@ export const useConnectionStore = defineStore('connection', {
         txComposer: string
         message?: string
         }>,
-        
+
         hasMetaid: boolean,
         feeb?: number
         }
-     
+
       )=>{
         payedTransactions:string[]
       }
@@ -163,9 +163,9 @@ export const useConnectionStore = defineStore('connection', {
             address: '',
             pubKey: '',
           }
-          
+
       let connectRes = await getWalletAdapter(wallet).connect()
-          
+
       try {
         if (connectRes) {
           // check if network suits app's current environment;
@@ -174,7 +174,7 @@ export const useConnectionStore = defineStore('connection', {
           const appNetwork = networkStore.network
           switch (wallet) {
             case 'metalet':
-              
+
               const metaNetwork = await getWalletAdapter('metalet').getNetwork()
               if (metaNetwork !== appNetwork) {
                 await getWalletAdapter('metalet').switchNetwork(appNetwork)
@@ -216,7 +216,7 @@ export const useConnectionStore = defineStore('connection', {
       // check network synced;
       // if not, disconnect
       const networkStore = useNetworkStore()
-  
+
       const appNetwork = networkStore.network
       let networkSynced = true
       switch (this.last.wallet) {
@@ -226,7 +226,7 @@ export const useConnectionStore = defineStore('connection', {
             networkSynced = false
             this.disconnect()
           }
-          const userStore=useUserStore()
+          const userStore = useUserStore()
           await userStore.setUserInfo(this.last.address)
           break
       }
@@ -238,31 +238,29 @@ export const useConnectionStore = defineStore('connection', {
 
     async disconnect(router:Router) {
       if (!this.last) return
-      
-       
+
       this.last.status = 'disconnected'
       this.last.address = ''
       this.last.pubKey = ''
 
-      const userStore=useUserStore()
-       const talkStore=useTalkStore()
-      const approvedStore= useApprovedStore()
-      console.log("router",router)
-      
+      const userStore = useUserStore()
+      const talkStore = useTalkStore()
+      const approvedStore = useApprovedStore()
+      console.log('router', router)
+
       await userStore.clearUserInfo()
-      if(window.metaidwallet?.smallPay){
-         await approvedStore.clear()
+      if (window.metaidwallet?.smallPay) {
+        await approvedStore.clear()
       }
       setTimeout(() => {
         talkStore.$patch({ isShowWelcome: false })
-    
-        router.push({
-        name:'talkChannel',
-        params:{communityId:'public',channelId:'welcome'}
-        //'buzzRecommend'
-      })
-      }, 1000);
 
+        router.push({
+          name: 'talkChannel',
+          params: { communityId: 'public', channelId: 'welcome' }
+        // 'buzzRecommend'
+        })
+      }, 1000)
     },
   },
 })
