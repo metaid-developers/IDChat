@@ -123,6 +123,7 @@ import { Community } from '@/@types/talk'
 const layout = useLayoutStore()
 const talk = useTalkStore()
 const ws = useWsStore()
+
 const userStore = useUserStore()
 const route = useRoute()
 const rootStore = useRootStore()
@@ -176,6 +177,7 @@ if (userStore.isAuthorized) {
   talk.initReceivedRedPacketIds()
   talk.initReadPointers()
   ws.init()
+  
 }
 
 watch(
@@ -189,7 +191,7 @@ watch(
       ws.init()
     } else {
       talk.reset()
-      ws.close()
+      ws.disconnect()
       talk.saveReadPointers()
       talk.closeReadPointerTimer()
     }
@@ -197,7 +199,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  ws.close()
+  ws.disconnect()
+ 
   talk.saveReadPointers()
   talk.closeReadPointerTimer()
 })

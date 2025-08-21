@@ -61,6 +61,18 @@
     </div>
     <div class="flex flex-row-reverse items-center justify-between grow">
       <div class="shrink-0 flex items-center">
+
+             <div class="indicator-container mr-3" v-if="hasWS">
+                    <div class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-lime-500 animate-pulse-glow">
+                        <span class="w-1 h-1 rounded-full bg-lime-600 animate-pulse-glow" style="animation-delay: 0.2s"></span>
+                    </div>
+                </div>
+
+                   <div class="indicator-container mr-3" v-else>
+                    <div class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-rose-500 animate-pulse-glow-2">
+                        <span class="w-1 h-1 rounded-full bg-rose-600 animate-pulse-glow-2" style="animation-delay: 0.2s"></span>
+                    </div>
+                </div>
         <LoginedUserOperate />
       </div>
 
@@ -156,9 +168,16 @@ import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
 
 import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
+import { useWsStore } from '@/stores/ws_new'
 
 const talkStore = useTalkStore()
 const layout = useLayoutStore()
+const WS=useWsStore()
+
+const hasWS=computed(()=>{
+  
+  return WS?.ws ? true : false
+})
 
 const shortenMetaId = (id: string) => {
   return id.substring(0, 6) + '...' + id.substring(id.length - 6)
@@ -189,4 +208,39 @@ const goCheckTxId = (txId: string) => {
 const doNothing = () => {}
 </script>
 
-<style lang=""></style>
+<style lang="scss" scoped>
+      @keyframes pulse-glow {
+            0%, 100% { 
+                opacity: 1;
+                box-shadow: 0 0 5px theme('colors.lime.500'), 0 0 10px theme('colors.lime.600');
+            }
+            50% { 
+                opacity: 0.6;
+                box-shadow: 0 0 10px theme('colors.lime.500'), 0 0 20px theme('colors.lime.600');
+            }
+        }
+
+         @keyframes pulse-glow-2 {
+            0%, 100% { 
+                opacity: 1;
+                box-shadow: 0 0 5px theme('colors.rose.500'), 0 0 10px theme('colors.rose.600');
+            }
+            50% { 
+                opacity: 0.6;
+                box-shadow: 0 0 10px theme('colors.rose.500'), 0 0 20px theme('colors.rose.600');
+            }
+        }
+        
+        .animate-pulse-glow {
+            animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+
+         .animate-pulse-glow-2 {
+            animation: pulse-glow-2 1.5s ease-in-out infinite;
+        }
+        
+        /* 添加悬停暂停效果 */
+        .indicator-container:hover .animate-pulse-glow {
+            animation-play-state: paused;
+        }
+</style>

@@ -633,6 +633,7 @@ export const useTalkStore = defineStore('talk', {
       let mockMessage: any
       
       if (containsString(message.protocol,NodeName.SimpleGroupChat)) {
+
         mockMessage = this.activeChannel.newMessages.find(
           (item: Message) =>
             item.txId === '' &&
@@ -642,6 +643,7 @@ export const useTalkStore = defineStore('talk', {
             containsString(message.protocol,item?.protocol!)
           
         )
+        
       } else if (containsString(message.protocol,NodeName.SimpleFileGroupChat)) {
         mockMessage = this.activeChannel.newMessages.find(
           (item: Message) =>
@@ -1062,7 +1064,8 @@ export const useTalkStore = defineStore('talk', {
     reset() {
       console.log('resetting')
       const ws = useWsStore()
-      ws.close()
+  
+      ws.disconnect()
       this.closeReadPointerTimer()
       this.communities = [{ id: 'public' }]
       this.members = []

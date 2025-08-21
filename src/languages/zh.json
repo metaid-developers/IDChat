@@ -1321,5 +1321,13 @@
     "change": "Metalet 账户已变更。正在刷新页面..."
   },
   "Copy_success": "Content copied",
-  "retry_msg_error": "找不到重试的消息ID,请重新编辑要发送的内容"
+  "retry_msg_error": "找不到重试的消息ID,请重新编辑要发送的内容",
+  "link": {
+    "metaid": {
+      "group": "点击下方按钮进入测试群聊"
+    }
+  },
+  "MetaID": {
+    "official_group": "MetaID 链上官方群"
+  }
 }

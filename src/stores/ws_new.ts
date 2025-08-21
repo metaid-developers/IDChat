@@ -3,6 +3,7 @@ import { useJobsStore } from './jobs'
 import { useTalkStore } from './talk'
 import { useUserStore } from './user'
 import {SocketIOClient} from '@/lib/socket'
+import { disconnect } from 'process'
 interface MessageData {
   message: string;
   timestamp: number;
@@ -52,8 +53,8 @@ export const useWsStore = defineStore('ws', {
          
            setTimeout(() => {
           if (client.isConnected()) {
-            
-          client.sendMessage('Hello from TypeScript client!');
+            console.log("Hello from TypeScript client!")
+          //client.sendMessage('Hello from TypeScript client!');
           }
           }, 2000);
 
@@ -95,6 +96,10 @@ export const useWsStore = defineStore('ws', {
       // socket.on('message', this._handleReceivedMessage)
     },
 
+    disconnect(){
+      this.ws?.disconnect()
+    },
+
     // close() {
     //   if (this.wsHeartBeatTimer) {
     //     clearInterval(this.wsHeartBeatTimer)
@@ -105,7 +110,7 @@ export const useWsStore = defineStore('ws', {
     // },
     //MessageEvent
     async _handleReceivedMessage(data:MessageData) {
-      debugger
+      
       const talk = useTalkStore()
       const jobsStore = useJobsStore()
       // event.data
@@ -126,6 +131,9 @@ export const useWsStore = defineStore('ws', {
           
           await jobsStore.handleWsMessage(messageWrapper.D)
           return
+          default:
+          break
+          
       }
     },
     //wsUri: string

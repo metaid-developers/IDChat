@@ -14,6 +14,15 @@
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
         <div class="text-lg text-zinc-500 mt-3 break-all">A Messaging Service Built on Bitcoin and its Sidechains</div>
         <div class="text-xl mt-5 text-zinc-600 break-all ">Fully Decentralized,Immutable,Uncensorable,and Unhackable</div>
+        <div class="flex flex-col mt-5"> 
+          <div class="font-medium flex flex-row items-center text-lg" :href="MetaIdUrl"><span>{{ $t('link.metaid.group') }}</span><el-icon><CaretBottom /></el-icon></div>
+            <a
+      class="main-border mt-5 text-lg primary p-3"
+      :href="MetaIdUrl"
+      >{{ $t('MetaID.official_group') }}</a
+    >
+
+        </div>
       </div>
   </div>
     <div class="" v-else>
@@ -25,8 +34,10 @@
             :message="message"
             :id="message.timestamp"
             v-bind="$attrs"
+           
             @toBuzz="onToBuzz"
             @to-time-stamp="time => scrollToTimeStamp(time)"
+          
           />
           <div
             class="border-b border-solid border-gray-300 dark:border-gray-600 mb-6 pb-6 pt-2 mx-4"
@@ -120,12 +131,14 @@ import {useBulidTx} from '@/hooks/use-build-tx'
 import {GroupMessagePollingQueue} from '@/utils/taskQueue'
 import { getUserInfoByAddress } from "@/api/man";
 import { debounce } from '@/utils/util'
+import { CaretBottom } from '@element-plus/icons-vue'
 const user = useUserStore()
 const talk = useTalkStore()
 const layout = useLayoutStore()
-
+const MetaIdUrl=`${location.origin}/talk/channels/public/396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0`
 const loadingMore = ref(false)
 const isAtTop = ref(false)
+
 const isShowPublish = ref(false)
 const repostBuzzTxId = ref('')
 const PublishRef = ref()
@@ -357,7 +370,7 @@ async function onToBuzz(data: ShareChatMessageData) {
     flag: 'metaid',
     version: '1.0.0',
     operation: 'create',
-    contentType:'text/plain',
+    contentType:'application/json',
     encryption: '0',
     encoding: 'utf-8',
     }

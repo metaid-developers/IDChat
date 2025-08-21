@@ -6,6 +6,7 @@
     <!-- 消息菜单 -->
     <template v-if="!isShare">
       <MessageMenu
+       
         :message="props.message"
         :parsed="
           parseTextMessage(
@@ -15,6 +16,8 @@
         v-model:translateStatus="translateStatus"
         v-model:translatedContent="translatedContent"
         v-bind="$attrs"
+         
+        
         v-if="isText"
       />
       <MessageMenu :message="props.message" v-bind="$attrs" v-else />
@@ -35,10 +38,10 @@
     />
 
     <!-- 消息主体 -->
-    <div class="flex">
+    <div class="flex"  >
       <UserAvatar
         :image="props.message.userInfo?.avatar"
-        :name="props.message.userInfo?.name"
+        :name="props.message.userInfo?.name ? props.message.userInfo?.name : props.message.userInfo?.metaid.slice(0,6)"
         :meta-id="props.message.userInfo?.metaid"
         :meta-name="''"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
@@ -47,7 +50,7 @@
         <div class="flex items-baseline space-x-2">
           <!--message?.userInfo?.metaName-->
           <UserName
-            :name="message.userInfo?.name"
+            :name="message.userInfo?.name ? message.userInfo?.name : message.userInfo?.metaid.slice(0,6)"
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
@@ -152,9 +155,9 @@
         </div>
 
 
-        <div class="my-1.5 max-w-full flex" v-else>
+        <div class="my-1.5 max-w-full flex " v-else>
           <div
-            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+            class="text-sm  text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
               isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
@@ -168,7 +171,7 @@
           </div>
 
           <div
-            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+            class="text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
               isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
@@ -185,12 +188,12 @@
               )
             "
           ></div>
-          <!--message.error-->
-          <button v-if="message.error" class="ml-3 max-w-28 break-words flex items-center w justify-center" :title="resendTitle" @click="tryResend">
-            <span v-if="message?.reason" class="text-[#fc457b] font-medium mr-2">[{{ message?.reason }}]</span>
+          <!--message.error message?.reason {{ message?.reason }}-->
+          <button v-if="message.error" class="ml-3   break-words flex items-center  justify-center" :title="resendTitle" @click="tryResend">
+            <span v-if="message?.reason" class="text-[#fc457b] flex-1 font-medium mr-2">{{ message?.reason }}</span>
             <Icon
               name="arrow_path"
-              class="w-4 h-4 text-dark-400 dark:text-gray-200 hover:animate-spin-once"
+              class="w-4 h-4 flex-1  text-dark-400 dark:text-gray-200 hover:animate-spin-once"
             />
           </button>
         </div>
@@ -202,7 +205,7 @@
 <script setup lang="ts">
 import NftLabel from './NftLabel.vue'
 import MessageMenu from './MessageMenu.vue'
-import { computed, inject, ref, Ref } from 'vue'
+import { computed, inject, ref, Ref,onMounted,nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatTimestamp, decryptedMessage,sendMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
@@ -228,12 +231,14 @@ const jobs = useJobsStore()
 const reply: any = inject('Reply')
 
 const imagePreview = useImagePreview()
-
+const visiableMenu=ref(false)
 interface Props {
   message: ChatMessageItem
   isShare?: boolean
 }
 const props = withDefaults(defineProps<Props>(), {})
+
+
 
 
 const emit = defineEmits<{}>()
