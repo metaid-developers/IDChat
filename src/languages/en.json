@@ -1354,5 +1354,11 @@
   },
   "MetaID": {
     "official_group": "MetaID Official On-Chain Group"
+  },
+  "chat": {
+    "home": {
+      "tip1": "A Messaging Service Built on Bitcoin and its Sidechains",
+      "tip2": "Fully Decentralized,Immutable,Uncensorable,and Unhackable"
+    }
   }
 }

@@ -95,7 +95,9 @@ const metaletAccountsChangedHandler = () => {
   if (useConnectionStore().last.wallet !== 'metalet') return
 
   // sync here to prevent chronological error
-  connectionStore.sync()
+  //connectionStore.sync()
+
+  connectionStore.disconnect(router)
 
   ElMessage.warning({
     message:i18n.t('account.change'),

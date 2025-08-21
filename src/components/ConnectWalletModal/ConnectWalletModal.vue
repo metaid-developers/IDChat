@@ -1125,8 +1125,13 @@ async function connectMetalet() {
 
     if (connection?.status === 'connected') {
     await credentialsStore.login()
-
-
+    
+    if(!userStore.last.name){
+       closeConnectionModal()
+      return
+    }
+    
+    
 
 
     await sleep(300)

@@ -132,6 +132,7 @@ const actions = computed(() => {
             communityId:'', //talk.activeCommunityId,
             groupId: talk.activeChannelId,
             userMetaId: message.userInfo.metaid,
+            comment:'',
             message: {
               content: decryptedMessageContent,
               contentType: message.contentType,
@@ -148,6 +149,7 @@ const actions = computed(() => {
             communityId:'', //talk.activeCommunityId,
             groupId: talk.activeChannelId,
             userMetaId: message.userInfo.metaid,
+            comment:'',
             message: {
               content: decryptedMessageContent,
               contentType: message.contentType,
@@ -156,6 +158,7 @@ const actions = computed(() => {
               pinId:message.pinId,
               timestamp: message.timestamp,
               metanetId:message.metanetId,
+              
             },
           }
           
@@ -166,6 +169,7 @@ const actions = computed(() => {
             communityId:'', //talk.activeCommunityId,
             groupId: talk.activeChannelId,
             userMetaId: message.userInfo.metaid,
+            comment:'',
             message: {
               content: decryptedMessageContent,
               contentType: message.contentType,

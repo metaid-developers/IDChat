@@ -109,8 +109,9 @@ const tryJoinChannel = async () => {
   talk.invitingChannel = null
 
   // 等待3秒后改变状态（防止后端还未同步）
-  await sleep(3000)
+  await sleep(1000)
 
   talk.communityStatus = 'invited'
+  window.location.reload()
 }
 </script>

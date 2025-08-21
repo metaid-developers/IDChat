@@ -28,8 +28,8 @@
     <div class="buzz-container" id="buzz-container" ref="BuzzContainerRef">
       <div class="mt-20 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
-        <div class="text-lg text-zinc-500 mt-3 break-all">A Messaging Service Built on Bitcoin and its Sidechains</div>
-        <div class="text-xl mt-5 text-zinc-600 break-all ">Fully Decentralized,Immutable,Uncensorable,and Unhackable</div>
+        <div class="text-lg text-zinc-500 mt-3 break-all">{{ $t('chat.home.tip1') }}</div>
+        <div class="text-xl mt-5 text-zinc-600 break-all ">{{$t('chat.home.tip2')}}</div>
       </div>
       <!-- <slot></slot> -->
     </div>

@@ -1,7 +1,7 @@
 <template>
-  <ChannelWelcome v-if="talk.isActiveChannelTheVoid" />
-  <ChannelSettings v-else-if="talk.isActiveChannelTheVoid" />
-  <ChannelContent v-else />
+  <!-- <ChannelWelcome v-if="talk.isActiveChannelTheVoid" />
+  <ChannelSettings v-else-if="talk.isActiveChannelTheVoid" /> -->
+  <ChannelContent  />
 </template>
 
 <script lang="ts" setup>

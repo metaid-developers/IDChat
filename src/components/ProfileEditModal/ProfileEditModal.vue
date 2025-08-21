@@ -84,12 +84,13 @@ import DefaultAvatar from '@/assets/images/default_user.png'
 import { DB } from '@/utils/db'
 import { image2Attach, compressImage } from '@/lib/file'
 import { createOrUpdateUserInfo, getMVCRewards } from '@/utils/userInfo'
+import { useRouter } from 'vue-router'
 const props = defineProps<{
   modelValue: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
-
+const router=useRouter()
 const userStore = useUserStore()
 const avatarPreview = ref<string>('')
 const username = ref<string>('')
@@ -224,6 +225,15 @@ const save = async () => {
     console.log('Saving profile changes:', values)
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
+   setTimeout(() => {
+      router.push({
+        name: 'talkChannel',
+        params:{
+          communityId:'public',
+          channelId:'396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0'
+        }
+      })
+   }, 1000);
   } catch (error) {
     console.error('Failed to save profile changes:', error)
     ElMessage.error('Failed to save profile changes.')

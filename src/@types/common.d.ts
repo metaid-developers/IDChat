@@ -914,6 +914,7 @@ declare interface ShareChatMessageData {
   //channelId: string
   groupId:string
   userMetaId: string
+  comment:string
   message: {
     content: string
     contentType: string
