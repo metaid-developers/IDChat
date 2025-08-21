@@ -124,15 +124,10 @@ const actions = computed(() => {
       action: () => {
         let data: ShareChatMessageData
         const message: ChatSessionMessageItem = props.message
-
+        debugger
         const decryptedMessageContent=decryptedMessage(message.content,message.encryption,message.protocol)
        
         if (containsString(props.message.protocol,NodeName.ShowMsg)) {
-          
-        
-          
-          
-          
           data = {
             communityId:'', //talk.activeCommunityId,
             groupId: talk.activeChannelId,
@@ -142,6 +137,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+              pinId:message.pinId,
               timestamp: message.timestamp,
               metanetId:message.metanetId,
             },
@@ -157,6 +153,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+              pinId:message.pinId,
               timestamp: message.timestamp,
               metanetId:message.metanetId,
             },
@@ -174,6 +171,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+              pinId:message.pinId,
               timestamp: message.timestamp,
               metanetId:message.metanetId,
             },
