@@ -522,6 +522,8 @@ export const useTalkStore = defineStore('talk', {
         //   .catch(() => {
         //     ElMessage.error('获取社区成员失败')
         //   })
+      }else{
+        
       }
       
        await this.fetchChannels(routeCommunityId)

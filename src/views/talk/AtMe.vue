@@ -59,13 +59,13 @@ function toQuote() {
 provide('Reply', quote)
 onMounted(async () => {
   layout.isShowUserInfo = false
-  
+  debugger
   await talk.initCommunity('public')
   //await talk.initCommunity('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
 
   // 如果是私聊且没有会话，则跳转至虚空页
   if (talk.activeCommunityChannels.length === 0) {
-    router.push('/talk/channels/public/index')
+    router.push('/talk/channels/public/welcome')
     return
   }
 

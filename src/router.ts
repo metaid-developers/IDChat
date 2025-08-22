@@ -168,13 +168,13 @@ export const router = createRouter({
     //   component: () => import('@/views/talk/AtMeDefault.vue'),
     //   meta: { isAuth: true },
     // },
-    // {
-    //   path: '/talk/channels/public/:channelId?',
-    //   //path: '/talk/channels/@me/:channelId?',
-    //   name: 'talkAtMe',
-    //   component: () => import('@/views/talk/AtMe.vue'),
-    //   meta: { isAuth: true },
-    // },
+    {
+      //path: '/talk/channels/public/:channelId?',
+      path: '/talk/@me/:metaid?',
+      name: 'talkAtMe',
+      component: () => import('@/views/talk/AtMe.vue'),
+      meta: { isAuth: true },
+    },
 
     // .meta解析
     // {

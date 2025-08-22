@@ -44,6 +44,7 @@
         :name="props.message.userInfo?.name ? props.message.userInfo?.name : props.message.userInfo?.metaid.slice(0,6)"
         :meta-id="props.message.userInfo?.metaid"
         :meta-name="''"
+        @click="toPrivateChat(props.message.userInfo?.metaid)"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
       />
       <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
@@ -220,6 +221,7 @@ import MessageItemQuote from './MessageItemQuote.vue'
 import {NodeName} from '@/enum'
 import {containsString} from '@/utils/util'
 import { getUserInfoByAddress, } from "@/api/man";
+import { useRouter } from 'vue-router'
 
 const i18n = useI18n()
 
@@ -229,7 +231,7 @@ const talk = useTalkStore()
 const layout = useLayoutStore()
 const jobs = useJobsStore()
 const reply: any = inject('Reply')
-
+const router=useRouter()
 const imagePreview = useImagePreview()
 const visiableMenu=ref(false)
 interface Props {
@@ -248,6 +250,16 @@ type TranslateStatus = 'hidden' | 'showing' | 'processing'
 const translateStatus: Ref<TranslateStatus> = ref('hidden')
 const translatedContent = ref('')
 /** 翻译 end */
+
+
+function toPrivateChat(metaid:string){
+ router.push({
+  name:'talkAtMe',
+  params:{
+    metaid,
+  }
+ })
+}
 
 const previewImage = (image: string) => {
   imagePreview.images = [image]
