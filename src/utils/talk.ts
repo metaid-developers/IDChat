@@ -506,7 +506,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   const { addressStr: address } = buildCryptoInfo(key, net)
 
 
-  console.log("subId",subId,code,createTime)
+ 
   
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000

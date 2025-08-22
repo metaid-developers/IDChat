@@ -385,7 +385,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       }
       }else{
       const minAmount = new Decimal(min).div(10 ** 8).mul(this.quantity).toNumber()
-      const maxAmount = new Decimal(max).div(10 ** 8).toNumber() // 2 Space = 200_000_000 sat
+      const maxAmount = new Decimal(max).div(10 ** 8).mul(this.quantity).toNumber() // 2 Space = 200_000_000 sat
       if (+this.amount < minAmount) {
         this.amount = minAmount
       }
