@@ -1,54 +1,82 @@
 <template>
-  <div class="flex items-baseline justify-between mb-2 px-4 py-4">
-    <div class="text-sm text-dark-800 dark:text-gray-100 uppercase font-medium">
-      {{ $t('Talk.Channel.team_members') }}
-    </div>
-    <div class="text-sm text-dark-300 dark:text-gray-400">
-      {{ currentChannelInfo?.userCount || 0 }}
-    </div>
-  </div>
-  <div class="infinite-list-wrapper" style="overflow: auto" ref="scrollContainer">
-    <ul
-      v-infinite-scroll="load"
-      class="list"
-      :infinite-scroll-disabled="disabled"
-      infinite-scroll-distance="100"
-    >
-      <li v-for="member in list" :key="member.id" class="w-full relative list-item">
-        <ChannelMemberItem
-          class="absolute top-0 left-0 w-full z-0"
-          :id="member.index"
-          :style="{ transform: `translateY(${member.start}px)` }"
-          :member="member"
-          :key="member.index"
-        />
-      </li>
-    </ul>
-    <div
-      style="
+  <ElDrawer
+    :model-value="modelValue"
+    :show-close="false"
+    :with-header="false"
+    :size="'360px'"
+    :append-to-body="true"
+    :lock-scroll="true"
+    :close-on-click-modal="false"
+    custom-class="none-padding"
+  >
+    <div class="flex flex-col h-full">
+      <DrawerRightHeaderVue
+        :title="currentChannelInfo?.roomName || ''"
+        @back="emit('update:modelValue', false)"
+      />
+
+      <div class="flex flex-col flex-1 bg-dark-100 dark:bg-gray-800 overflow-hidden">
+        <div class="flex items-baseline justify-between mb-2 px-4 py-4">
+          <div class="text-sm text-dark-800 dark:text-gray-100 uppercase font-medium">
+            {{ $t('Talk.Channel.team_members') }}
+          </div>
+          <div class="text-sm text-dark-300 dark:text-gray-400">
+            {{ currentChannelInfo?.userCount || 0 }}
+          </div>
+        </div>
+        <div class="infinite-list-wrapper" style="overflow: auto" ref="scrollContainer">
+          <ul
+            v-infinite-scroll="load"
+            class="list"
+            :infinite-scroll-disabled="disabled"
+            infinite-scroll-distance="100"
+          >
+            <li v-for="member in list" :key="member.id" class="w-full relative list-item">
+              <ChannelMemberItem
+                class="absolute top-0 left-0 w-full z-0"
+                :id="member.index"
+                :style="{ transform: `translateY(${member.start}px)` }"
+                :member="member"
+                :key="member.index"
+              />
+            </li>
+          </ul>
+          <div
+            style="
             display: flex;
             align-items: center;
             justify-items: space-between;
           "
-      v-if="loading && !list.length"
-    >
-      <el-skeleton-item variant="text" style="margin-right: 16px" />
-      <el-skeleton-item variant="text" style="width: 30%" />
+            v-if="loading && !list.length"
+          >
+            <el-skeleton-item variant="text" style="margin-right: 16px" />
+            <el-skeleton-item variant="text" style="width: 30%" />
+          </div>
+          <p v-if="loading" class="text-center">Loading...</p>
+          <p v-if="noMore" class="text-center">No more</p>
+        </div>
+      </div>
     </div>
-    <p v-if="loading" class="text-center">Loading...</p>
-    <p v-if="noMore" class="text-center">No more</p>
-  </div>
+  </ElDrawer>
 </template>
-<script lang="ts" setup>
-import { ref, watch, computed, nextTick } from 'vue'
+
+<script setup lang="ts">
+import DrawerRightHeaderVue from '@/components/DrawerRightHeader/DrawerRightHeader.vue'
+import ChannelMemberList from './ChannelMemberList.vue'
+import { ref, watch, computed } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
-import { ElMessage } from 'element-plus'
 
 import { useTalkStore } from '@/stores/talk'
 import { debounce } from '@/utils/util'
 import ChannelMemberItem from './ChannelMemberItem.vue'
 import { useRoute } from 'vue-router'
 import { getChannelMembers } from '@/api/talk'
+import { ElMessage } from 'element-plus'
+interface Props {
+  modelValue: boolean
+}
+const props = withDefaults(defineProps<Props>(), {})
+const emit = defineEmits(['update:modelValue'])
 
 const talkStore = useTalkStore()
 const cursor = ref(0)

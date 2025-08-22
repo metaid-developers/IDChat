@@ -1,7 +1,7 @@
 <template>
   <div class="relative lg:flex text-base fullscreen overscroll-y-none">
     <DirectContactList />
-    <CommunityInfo v-if="!isPublicChannel(communityId)" /> 
+    <CommunityInfo v-if="!isPublicChannel(communityId)" />
 
     <div class="lg:grow fullscreen lg:!h-screen lg:relative lg:flex">
       <ChannelHeader />
@@ -11,9 +11,11 @@
       </div>
 
       <Transition name="slide">
-        <ChannelMemberList v-show="layout.isShowMemberList" />
+        <ChannelMemberListWrap v-show="layout.isShowMemberList" />
       </Transition>
     </div>
+
+    <ChannelMemberListDrawer v-model="layout.isShowMemberListDrawer" />
 
     <!-- modals -->
     <PasswordModal v-if="layout.isShowPasswordModal" />
@@ -25,7 +27,7 @@
     <CommunityCardModal v-if="layout.isShowCommunityCardModal" />
     <AcceptInviteModal v-if="layout.isShowAcceptInviteModal" />
     <ChannelAcceptInviteModal v-if="layout.isShowChannelAcceptInviteModal" />
-    
+
     <LoadingCover v-if="layout.isShowLoading" />
     <RedPacketOpenModal v-if="layout.isShowRedPacketOpenModal" />
     <RedPacketCreateModal v-if="layout.isShowRedPacketModal" />
@@ -35,7 +37,7 @@
     <CommunitySettingsModal v-if="layout.isShowCommunitySettingsModal" />
     <!-- <NoMetaNameModal v-if="layout.isShowNoMetaNameModal" /> -->
     <leaveCommunityModal v-if="layout.isShowLeaveCommunityModal" />
-     <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
+    <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
   </div>
 </template>
 
@@ -45,11 +47,12 @@ import { useRoute } from 'vue-router'
 
 import { useTalkStore } from '@/stores/talk'
 import { useLayoutStore } from '@/stores/layout'
-import { isMetaName, resolveMetaName,isPublicChannel } from '@/utils/meta-name'
+import { isMetaName, resolveMetaName, isPublicChannel } from '@/utils/meta-name'
 
 import ChannelHeader from './components/ChannelHeader.vue'
 import CommunityInfo from './components/CommunityInfo.vue'
-import ChannelMemberList from './components/ChannelMemberList.vue'
+import ChannelMemberListWrap from './components/ChannelMemberListWrap.vue'
+import ChannelMemberListDrawer from './components/ChannelMemberListDrawer.vue'
 import PasswordModal from './components/modals/consensus/Password.vue'
 import CommunitySettingsModal from './components/modals/community/settings/Index.vue'
 import RequireNftModal from './components/modals/consensus/RequireNft.vue'
@@ -76,37 +79,33 @@ const talk = useTalkStore()
 const user = useUserStore()
 const route = useRoute()
 const layout = useLayoutStore()
-console.log("route",route)
+console.log('route', route)
 // 初始化頻道
-function init(communityId: string,channelId:string) {
-  
-    
+function init(communityId: string, channelId: string) {
   // 先检查社区是否还佩戴有效的metaname
   talk.checkCommunityMetaName(communityId).then((isValid: boolean) => {
-    
     layout.isShowNoMetaNameModal = false
 
     if (!isValid) {
       // 显示社区没有metaname modal
       talk.activeCommunityId = communityId
-      //layout.isShowNoMetaNameModal = true
+      // layout.isShowNoMetaNameModal = true
       return
     }
 
     // 如果是游客，则返回游客模式
     if (!user.isAuthorized) {
       return initChannelGuestMode(channelId)
-      //return initGuestMode(communityId)
+      // return initGuestMode(communityId)
     }
-    
-    talk.checkChannelMembership(communityId,channelId).then(async (isMember: boolean) => {
+
+    talk.checkChannelMembership(communityId, channelId).then(async (isMember: boolean) => {
       if (!isMember) {
-        
         await talk.inviteChannel(channelId)
         return
       }
 
-      talk.initCommunity(communityId,channelId)
+      talk.initCommunity(communityId, channelId)
     })
   })
 }
@@ -118,7 +117,6 @@ async function initGuestMode(communityId: string) {
 
   // 2. 弹出邀请框
   await talk.invite(communityId)
-  return
 
   // 2. 弹出注册框
 
@@ -126,40 +124,39 @@ async function initGuestMode(communityId: string) {
 }
 
 // 初始化游客模式
-async function initChannelGuestMode(channelId:string) {
+async function initChannelGuestMode(channelId: string) {
   // 1. 将当前社区推入社区列表
-  //await talk.addTempCommunity(communityId)
+  // await talk.addTempCommunity(communityId)
 
   // 2. 弹出邀请框
   await talk.inviteChannel(channelId)
-  return
 
   // 2. 弹出注册框
 
   // 4. 接受邀请逻辑
 }
 
-const { communityId,channelId } = route.params as { communityId: string,channelId:string }
+const { communityId, channelId } = route.params as { communityId: string; channelId: string }
 
-
-watch(()=>route.params,(newVal,oldVal)=>{
-  if(newVal.channelId != oldVal.channelId ){
-    resolve(newVal.communityId as string,newVal.channelId as string)
+watch(
+  () => route.params,
+  (newVal, oldVal) => {
+    if (newVal.channelId != oldVal.channelId) {
+      resolve(newVal.communityId as string, newVal.channelId as string)
+    }
   }
-  
-})
+)
 
 // 解析 communityId 为 metaName 的情况
-async function resolve(communityId: string,channelId:string) {
-  //init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
-   if(isPublicChannel(communityId)){
-    
-    init(communityId,channelId)
-    //init(communityId)
-   }else if(isMetaName(communityId)){
+async function resolve(communityId: string, channelId: string) {
+  // init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
+  if (isPublicChannel(communityId)) {
+    init(communityId, channelId)
+    // init(communityId)
+  } else if (isMetaName(communityId)) {
     const resolveRes = await resolveMetaName(communityId)
-    init(resolveRes.communityId,channelId)
-   }
+    init(resolveRes.communityId, channelId)
+  }
   // if (isMetaName(communityId)) {
   //   const resolveRes = await resolveMetaName(communityId)
   //   init(resolveRes.communityId)
@@ -167,13 +164,13 @@ async function resolve(communityId: string,channelId:string) {
   //   init(communityId)
   // }
 }
-resolve(communityId,channelId)
+resolve(communityId, channelId)
 
 watch(
   () => talk.communityStatus,
   async (status: string) => {
     if (status === 'invited') {
-      return resolve(communityId,channelId)
+      return resolve(communityId, channelId)
     }
   },
   { immediate: true }
@@ -184,7 +181,7 @@ watch(
   ([status, isAuthorized]) => {
     if (status === 'auth processing' && isAuthorized) {
       talk.communityStatus = 'authed'
-      return resolve(communityId,channelId)
+      return resolve(communityId, channelId)
     }
   },
   { immediate: true }

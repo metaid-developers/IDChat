@@ -2,11 +2,13 @@
   <div
     class="relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group"
     :class="{ replying: reply.val?.timestamp === message.timestamp }"
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd"
+    @touchcancel="handleTouchEnd"
   >
     <!-- 消息菜单 -->
     <template v-if="!isShare">
       <MessageMenu
-       
         :message="props.message"
         :parsed="
           parseTextMessage(
@@ -16,8 +18,6 @@
         v-model:translateStatus="translateStatus"
         v-model:translatedContent="translatedContent"
         v-bind="$attrs"
-         
-        
         v-if="isText"
       />
       <MessageMenu :message="props.message" v-bind="$attrs" v-else />
@@ -38,10 +38,14 @@
     />
 
     <!-- 消息主体 -->
-    <div class="flex"  >
+    <div class="flex">
       <UserAvatar
         :image="props.message.userInfo?.avatar"
-        :name="props.message.userInfo?.name ? props.message.userInfo?.name : props.message.userInfo?.metaid.slice(0,6)"
+        :name="
+          props.message.userInfo?.name
+            ? props.message.userInfo?.name
+            : props.message.userInfo?.metaid.slice(0, 6)
+        "
         :meta-id="props.message.userInfo?.metaid"
         :meta-name="''"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
@@ -50,12 +54,14 @@
         <div class="flex items-baseline space-x-2">
           <!--message?.userInfo?.metaName-->
           <UserName
-            :name="message.userInfo?.name ? message.userInfo?.name : message.userInfo?.metaid.slice(0,6)"
+            :name="
+              message.userInfo?.name ? message.userInfo?.name : message.userInfo?.metaid.slice(0, 6)
+            "
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
           <div class="text-dark-300 dark:text-gray-400 text-xs shrink-0 whitespace-nowrap">
-            {{ formatTimestamp(message.timestamp , i18n) }}
+            {{ formatTimestamp(message.timestamp, i18n) }}
           </div>
         </div>
 
@@ -115,17 +121,21 @@
           </button>
         </div>
 
-         <div
+        <div
           class="text-xs text-dark-400 dark:text-gray-200 my-0.5 capitalize"
           v-else-if="isReceiveRedPacket"
         >
           {{ redPacketReceiveInfo }}
-        </div> 
+        </div>
 
         <div class="w-full py-0.5" v-else-if="isGiveawayRedPacket">
           <div
             class="max-w-full sm:max-w-[300PX] shadow rounded-xl cursor-pointer origin-center hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-700 group"
-            :class="[hasRedPacketReceived || redPackClaimOver ? 'opacity-50' : 'hover:animate-wiggle-subtle']"
+            :class="[
+              hasRedPacketReceived || redPackClaimOver
+                ? 'opacity-50'
+                : 'hover:animate-wiggle-subtle',
+            ]"
             @click="handleOpenRedPacket"
           >
             <div
@@ -153,7 +163,6 @@
             </div>
           </div>
         </div>
-
 
         <div class="my-1.5 max-w-full flex " v-else>
           <div
@@ -189,8 +198,15 @@
             "
           ></div>
           <!--message.error message?.reason {{ message?.reason }}-->
-          <button v-if="message.error" class="ml-3   break-words flex items-center  justify-center" :title="resendTitle" @click="tryResend">
-            <span v-if="message?.reason" class="text-[#fc457b] flex-1 font-medium mr-2">{{ message?.reason }}</span>
+          <button
+            v-if="message.error"
+            class="ml-3   break-words flex items-center  justify-center"
+            :title="resendTitle"
+            @click="tryResend"
+          >
+            <span v-if="message?.reason" class="text-[#fc457b] flex-1 font-medium mr-2">{{
+              message?.reason
+            }}</span>
             <Icon
               name="arrow_path"
               class="w-4 h-4 flex-1  text-dark-400 dark:text-gray-200 hover:animate-spin-once"
@@ -205,9 +221,20 @@
 <script setup lang="ts">
 import NftLabel from './NftLabel.vue'
 import MessageMenu from './MessageMenu.vue'
-import { computed, inject, ref, Ref,onMounted,nextTick } from 'vue'
+import {
+  computed,
+  inject,
+  ref,
+  Ref,
+  onMounted,
+  nextTick,
+  provide,
+  defineProps,
+  withDefaults,
+  defineEmits,
+} from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatTimestamp, decryptedMessage,sendMessage } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage, sendMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import giftImage from '@/assets/images/gift.svg?url'
@@ -217,9 +244,12 @@ import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
 import { useImagePreview } from '@/stores/imagePreview'
 import MessageItemQuote from './MessageItemQuote.vue'
-import {NodeName} from '@/enum'
-import {containsString} from '@/utils/util'
-import { getUserInfoByAddress, } from "@/api/man";
+import { NodeName } from '@/enum'
+import { containsString } from '@/utils/util'
+import { getUserInfoByAddress } from '@/api/man'
+import { ElMessage } from 'element-plus'
+import type { ChatMessageItem } from '@/@types/common'
+import { isMobile } from '@/stores/root'
 
 const i18n = useI18n()
 
@@ -231,15 +261,27 @@ const jobs = useJobsStore()
 const reply: any = inject('Reply')
 
 const imagePreview = useImagePreview()
-const visiableMenu=ref(false)
+const visiableMenu = ref(false)
+
+// 创建 ref 来存储 MessageMenu 的长按处理函数
+const longPressHandlers = ref({
+  start: () => {},
+  end: () => {}
+})
+
+// 提供设置长按处理函数的接口给子组件
+const setLongPressHandlers = (handlers: { start: () => void; end: () => void }) => {
+  longPressHandlers.value = handlers
+}
+
+// 提供设置函数给子组件
+provide('setLongPressHandlers', setLongPressHandlers)
+
 interface Props {
   message: ChatMessageItem
   isShare?: boolean
 }
 const props = withDefaults(defineProps<Props>(), {})
-
-
-
 
 const emit = defineEmits<{}>()
 
@@ -259,12 +301,12 @@ const resendTitle = computed(() => {
   return i18n.t('Talk.Messages.resend')
 })
 
-const redPackClaimOver=computed(()=>{
+const redPackClaimOver = computed(() => {
   return props.message?.claimOver
 })
 
 const parseTextMessage = (text: string) => {
-  if (typeof text == 'undefined') {
+  if (typeof text === 'undefined') {
     return ''
   }
 
@@ -291,20 +333,17 @@ const parseTextMessage = (text: string) => {
 
 const redPacketReceiveInfo = computed(() => {
   const content: string = props.message.content
-  
+
   if (props.message.metaId === props.message.redMetaId) {
     return i18n.t('Talk.Channel.receive_own_red_envelope')
   }
 
   // const [_receiver, sender] = content.split('|-|')
-  let sender=props.message?.replyInfo?.userInfo
- 
+  const sender = props.message?.replyInfo?.userInfo
 
   return i18n.t('Talk.Channel.receive_red_envelope', {
-    sender:sender?.name || sender.metaid.slice(0,6),
+    sender: sender?.name || sender?.metaid?.slice(0, 6) || '',
   })
-
-
 })
 
 const redPacketMessage = computed(() => {
@@ -319,7 +358,7 @@ const isMyMessage = computed(() => {
   return userStore.last?.metaid && userStore.last.metaid === props.message.metaId
 })
 
-const handleOpenRedPacket = async () => {
+const handleOpenRedPacket = async() => {
   // 如果用户已经领取过红包，则显示红包领取信息
   const params: any = {
     groupId: talk.activeChannelId,
@@ -333,7 +372,9 @@ const handleOpenRedPacket = async () => {
     // params.address = userStore.user?.evmAddress
   }
   const redPacketInfo = await getOneRedPacket(params)
-  const hasReceived = redPacketInfo.payList.some((item: any) => item.userInfo?.metaid === talk.selfMetaId)
+  const hasReceived = redPacketInfo.payList.some(
+    (item: any) => item.userInfo?.metaid === talk.selfMetaId
+  )
 
   if (hasReceived) {
     modals.redPacketResult = redPacketInfo
@@ -353,47 +394,62 @@ const handleOpenRedPacket = async () => {
 }
 
 const hasRedPacketReceived = computed(() => {
-  console.log("talk.receivedRedPacketIds",talk.receivedRedPacketIds)
+  console.log('talk.receivedRedPacketIds', talk.receivedRedPacketIds)
   return talk.receivedRedPacketIds.includes(props.message?.txId)
 })
 
-const redPacketCliamOver=computed(()=>{
+const redPacketCliamOver = computed(() => {})
 
-})
-
-
-
-const tryResend = async () => {
+const tryResend = async() => {
   props.message.error = false
-   const messageDto=talk.getRetryById(props.message.mockId) 
-   
+  const messageDto = talk.getRetryById(props.message.mockId)
+
   try {
-    
-   if(messageDto){
-    
-     await sendMessage(messageDto)
-     
-    talk.removeMessage(props.message.mockId)
-   
-   }else{
-    return ElMessage.error(`${i18n.t(`retry_msg_error`)}`)
-   }
+    if (messageDto) {
+      await sendMessage(messageDto)
+
+      talk.removeMessage(props.message.mockId)
+    } else {
+      return ElMessage.error(`${i18n.t('retry_msg_error')}`)
+    }
   } catch (error) {
     return ElMessage.error((error as any).toString())
   }
 
-  //   
+  //
 
-  //await jobs.resend(props.message.timestamp)
+  // await jobs.resend(props.message.timestamp)
 }
 
-const isGroupJoinAction = computed(() => containsString(props.message.protocol,NodeName.SimpleGroupJoin))
-const isGroupLeaveAction = computed(() => containsString(props.message.protocol,'SimpleGroupLeave'))
-const isNftEmoji = computed(() => containsString(props.message.protocol,"SimpleEmojiGroupChat"))
-const isImage = computed(() =>containsString(props.message.protocol,NodeName.SimpleFileGroupChat))
-const isGiveawayRedPacket = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupLuckyBag))
-const isReceiveRedPacket = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupOpenLuckybag))
-const isText = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupChat))
+const isGroupJoinAction = computed(() =>
+  containsString(props.message.protocol, NodeName.SimpleGroupJoin)
+)
+const isGroupLeaveAction = computed(() =>
+  containsString(props.message.protocol, 'SimpleGroupLeave')
+)
+const isNftEmoji = computed(() => containsString(props.message.protocol, 'SimpleEmojiGroupChat'))
+const isImage = computed(() => containsString(props.message.protocol, NodeName.SimpleFileGroupChat))
+const isGiveawayRedPacket = computed(() =>
+  containsString(props.message.protocol, NodeName.SimpleGroupLuckyBag)
+)
+const isReceiveRedPacket = computed(() =>
+  containsString(props.message.protocol, NodeName.SimpleGroupOpenLuckybag)
+)
+const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
+
+// 触摸开始处理
+const handleTouchStart = () => {
+  if (isMobile) {
+    longPressHandlers.value.start()
+  }
+}
+
+// 触摸结束处理
+const handleTouchEnd = () => {
+  if (isMobile) {
+    longPressHandlers.value.end()
+  }
+}
 </script>
 
 <style lang="scss" scoped src="./MessageItem.scss"></style>

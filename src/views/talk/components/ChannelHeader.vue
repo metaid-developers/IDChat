@@ -33,7 +33,9 @@
             :class="[
               talkStore.isActiveChannelReserved ? metaNameClass : 'text-dark-800 dark:text-white',
               'text-base leading-tight no-wrap grow whitespace-nowrap truncate mr-2 max-w-[40vw] lg:max-w-[600PX]',
+              isMobile ? 'cursor-pointer' : '',
             ]"
+            @click="handleChannelNameClick"
           >
             {{
               talkStore.isActiveChannelReserved
@@ -61,22 +63,29 @@
     </div>
     <div class="flex flex-row-reverse items-center justify-between grow">
       <div class="shrink-0 flex items-center">
+        <div class="indicator-container mr-3" v-if="hasWS">
+          <div
+            class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-lime-500 animate-pulse-glow"
+          >
+            <span
+              class="w-1 h-1 rounded-full bg-lime-600 animate-pulse-glow"
+              style="animation-delay: 0.2s"
+            ></span>
+          </div>
+        </div>
 
-             <div class="indicator-container mr-3" v-if="hasWS">
-                    <div class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-lime-500 animate-pulse-glow">
-                        <span class="w-1 h-1 rounded-full bg-lime-600 animate-pulse-glow" style="animation-delay: 0.2s"></span>
-                    </div>
-                </div>
-
-                   <div class="indicator-container mr-3" v-else>
-                    <div class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-rose-500 animate-pulse-glow-2">
-                        <span class="w-1 h-1 rounded-full bg-rose-600 animate-pulse-glow-2" style="animation-delay: 0.2s"></span>
-                    </div>
-                </div>
+        <div class="indicator-container mr-3" v-else>
+          <div
+            class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-rose-500 animate-pulse-glow-2"
+          >
+            <span
+              class="w-1 h-1 rounded-full bg-rose-600 animate-pulse-glow-2"
+              style="animation-delay: 0.2s"
+            ></span>
+          </div>
+        </div>
         <LoginedUserOperate />
       </div>
-
-     
 
       <div
         class="ml-1 hidden lg:flex lg:items-center group"
@@ -87,16 +96,16 @@
         >
           {{ shortenMetaId(talkStore.activeChannel.id) }}
         </div>
-         <button
+        <button
           class=" w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
         >
           <Icon
-          name="arrow_up_right"
-          class="w-3 h-3 p-1 box-content text-gray-500  cursor-pointer"
-          @click="goCheckTxId(talkStore.activeChannel?.txId)"
-        />
+            name="arrow_up_right"
+            class="w-3 h-3 p-1 box-content text-gray-500  cursor-pointer"
+            @click="goCheckTxId(talkStore.activeChannel?.txId)"
+          />
         </button>
-       
+
         <button
           class="mr-5 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
           @click.stop="popInvite"
@@ -119,13 +128,11 @@
           class="w-3 h-3 p-1 box-content text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hidden group-hover:block cursor-pointer"
           @click="goCheckTxId(talkStore.activeCommunity?.txId)"
         />
-       
-        
       </div>
 
       <!-- 占位 -->
       <div v-else class="w-1"></div>
-      
+
       <!-- <div
         class="grow-0 pl-3 pr-2 truncate text-xs leading-tight overflow-x-hidden py-1 text-dark-800"
         @click="showDescModal = true"
@@ -166,17 +173,17 @@ import { ref, computed } from 'vue'
 
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
+import { isMobile } from '@/stores/root'
 
 import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
 import { useWsStore } from '@/stores/ws_new'
 
 const talkStore = useTalkStore()
 const layout = useLayoutStore()
-const WS=useWsStore()
+const WS = useWsStore()
 
-const hasWS=computed(()=>{
-  
-  return WS?.ws ? true : false
+const hasWS = computed(() => {
+  return !!WS?.ws
 })
 
 const shortenMetaId = (id: string) => {
@@ -192,7 +199,6 @@ const metaNameClass = computed(() => {
 })
 
 const popInvite = () => {
-  
   talkStore.inviteLink = `${location.origin}/talk/channels/${talkStore.activeCommunitySymbol}/${talkStore.activeChannelId}`
   talkStore.invitingChannel = {
     community: talkStore.activeCommunity,
@@ -206,41 +212,49 @@ const goCheckTxId = (txId: string) => {
 }
 
 const doNothing = () => {}
+
+const handleChannelNameClick = () => {
+  if (isMobile) {
+    layout.isShowMemberListDrawer = true
+  }
+}
 </script>
 
 <style lang="scss" scoped>
-      @keyframes pulse-glow {
-            0%, 100% { 
-                opacity: 1;
-                box-shadow: 0 0 5px theme('colors.lime.500'), 0 0 10px theme('colors.lime.600');
-            }
-            50% { 
-                opacity: 0.6;
-                box-shadow: 0 0 10px theme('colors.lime.500'), 0 0 20px theme('colors.lime.600');
-            }
-        }
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 5px theme('colors.lime.500'), 0 0 10px theme('colors.lime.600');
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 10px theme('colors.lime.500'), 0 0 20px theme('colors.lime.600');
+  }
+}
 
-         @keyframes pulse-glow-2 {
-            0%, 100% { 
-                opacity: 1;
-                box-shadow: 0 0 5px theme('colors.rose.500'), 0 0 10px theme('colors.rose.600');
-            }
-            50% { 
-                opacity: 0.6;
-                box-shadow: 0 0 10px theme('colors.rose.500'), 0 0 20px theme('colors.rose.600');
-            }
-        }
-        
-        .animate-pulse-glow {
-            animation: pulse-glow 1.5s ease-in-out infinite;
-        }
+@keyframes pulse-glow-2 {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 5px theme('colors.rose.500'), 0 0 10px theme('colors.rose.600');
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 10px theme('colors.rose.500'), 0 0 20px theme('colors.rose.600');
+  }
+}
 
-         .animate-pulse-glow-2 {
-            animation: pulse-glow-2 1.5s ease-in-out infinite;
-        }
-        
-        /* 添加悬停暂停效果 */
-        .indicator-container:hover .animate-pulse-glow {
-            animation-play-state: paused;
-        }
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-glow-2 {
+  animation: pulse-glow-2 1.5s ease-in-out infinite;
+}
+
+/* 添加悬停暂停效果 */
+.indicator-container:hover .animate-pulse-glow {
+  animation-play-state: paused;
+}
 </style>
