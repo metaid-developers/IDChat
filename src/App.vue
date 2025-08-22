@@ -79,6 +79,10 @@ const networkStore = useNetworkStore()
 const connectionStore = useConnectionStore()
 const credentialsStore = useCredentialsStore()
 
+
+
+
+
 function handleNetworkChanged(network: Network) {
   isNetworkChanging.value = true
 
@@ -91,7 +95,7 @@ function handleNetworkChanged(network: Network) {
 }
 
 const metaletAccountsChangedHandler = () => {
-
+  
   if (useConnectionStore().last.wallet !== 'metalet') return
 
   // sync here to prevent chronological error
@@ -121,8 +125,8 @@ onMounted(async () => {
     if (window.metaidwallet) {
 
       try {
-        await window.metaidwallet.on('accountsChanged', metaletAccountsChangedHandler)
-        await window.metaidwallet.on('networkChanged', metaletNetworkChangedHandler)
+         window.metaidwallet.on('accountsChanged', metaletAccountsChangedHandler)
+         window.metaidwallet.on('networkChanged', metaletNetworkChangedHandler)
       } catch (err) {
         console.error('Failed to setup Metalet listeners:', err)
       }
@@ -146,11 +150,11 @@ onMounted(async () => {
 onBeforeUnmount(async() => {
   // remove event listener
 
- await window.metaidwallet?.removeListener(
+  window.metaidwallet?.removeListener(
     'accountsChanged',
     metaletAccountsChangedHandler,
   )
- await window.metaidwallet.removeListener(
+  window.metaidwallet.removeListener(
     'networkChanged',
     metaletNetworkChangedHandler,
   )

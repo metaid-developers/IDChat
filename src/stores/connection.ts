@@ -242,6 +242,7 @@ export const useConnectionStore = defineStore('connection', {
       this.last.status = 'disconnected'
       this.last.address = ''
       this.last.pubKey = ''
+      this.last.wallet= 'metalet'
 
       const userStore = useUserStore()
       const talkStore = useTalkStore()
