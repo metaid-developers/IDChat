@@ -48,6 +48,7 @@ const layout = useLayoutStore()
 const MessageListRef = ref()
 
 const { channelId } = route.params
+debugger
 const quote: { val: any } = reactive({ val: undefined })
 
 function toQuote() {
@@ -60,17 +61,19 @@ provide('Reply', quote)
 onMounted(async () => {
   layout.isShowUserInfo = false
   debugger
-  await talk.initCommunity('public')
+  await talk.initCommunity('@me')
+  debugger
   //await talk.initCommunity('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
 
   // 如果是私聊且没有会话，则跳转至虚空页
-  if (talk.activeCommunityChannels.length === 0) {
-    router.push('/talk/channels/public/welcome')
-    return
-  }
-
-  await talk.initChannel('public', channelId as string)
-  await talk.initChannelMessages(talk.selfMetaId)
+  // if (talk.activeCommunityChannels.length === 0) {
+  //   router.push('/talk/channels/public/welcome')
+  //   return
+  // }
+debugger
+  await talk.initChannel('@me', channelId as string)
+  debugger
+  //await talk.initChannelMessages(talk.selfMetaId)
 })
 
 onBeforeUnmount(() => {

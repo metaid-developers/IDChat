@@ -218,7 +218,8 @@ export const getAtMeChannels = async (params?: any): Promise<any> => {
 export const getChannels = async ({
   metaId,
   cursor="1",
-  size="20"
+  size="20",
+  timestamp=''
 }:{
   metaId:string
   cursor?:string
@@ -231,15 +232,17 @@ export const getChannels = async ({
  const params=new URLSearchParams({
   metaId,
   cursor,
-  size
+  size,
+  timestamp
  })
-  return TalkApi.get(`/user/latest-group-list?${params}`).then(
+  return TalkApi.get(`/user/latest-chat-info-list?${params}`).then(
     res => {
+      debugger
      if(res.data.list){
        return res.data.list.map((channel: any) => {
         channel.id = channel.groupId
         channel.name = channel.roomName
-        channel.uuid = channel.txId // 用于key,不修改
+        channel.uuid = channel.id // 用于key,不修改
         return channel
       })
      }else{

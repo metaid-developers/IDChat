@@ -9,7 +9,7 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
-  <div v-if="_welComePage">
+  <!-- <div v-if="_welComePage">
        <div class="mt-20 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
         <div class="text-lg text-zinc-500 mt-3 break-all">A Messaging Service Built on Bitcoin and its Sidechains</div>
@@ -24,8 +24,8 @@
 
         </div>
       </div>
-  </div>
-    <div class="" v-else>
+  </div> -->
+    <div class="" >
       <div class="flex flex-col-reverse space-y-2 space-y-reverse">
         <!-- 群聊 -->
         <template v-if="talk.activeChannelType === 'group'">
@@ -151,6 +151,9 @@ const { openConnectionModal } = useConnectionModal()
 const _welComePage=computed(()=>{
   return talk.showWelcome
 })
+
+console.log("talk.activeChannelType",talk.activeChannelType)
+debugger
 //const pollingQueue = new GroupMessagePollingQueue(5000);
 // const taskInterval=ref()
 

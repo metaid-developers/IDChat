@@ -289,7 +289,7 @@ import { useUserStore } from '@/stores/user'
 import { useConnectionStore } from '@/stores/connection'
 import { FileToAttachmentItem, compressImage,atobToHex } from '@/utils/util'
 import {useCredentialsStore} from '@/stores/credentials'
-import { encrypt, ecdhEncrypt } from '@/utils/crypto'
+import { encrypt, ecdhEncrypt,ecdhDecrypt } from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
 import { ChannelType, MessageType } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
@@ -522,14 +522,14 @@ const checkSpaceBalance = () => {
 
 const trySendText = async (e: any) => {
   isSending.value = true
-
+  debugger
   // 去除首尾空格
   chatInput.value = chatInput.value.trim()
   if (!validateTextMessage(chatInput.value)) return
 
   // 私聊会话和頻道群聊的加密方式不同
   let content = ''
-  if (talk.activeChannel.roomLimitAmount > 0) {
+  if (talk.activeChannel?.roomLimitAmount > 0) {
     checkSpaceBalance()
       .then(() => {
         spaceNotEnoughFlag.value = false
@@ -558,11 +558,13 @@ const trySendText = async (e: any) => {
     // const privateKeyStr = privateKey.toHex()
     const credential=credentialsStore.getByAddress(connectionStore.last.address)
     const sigStr=atobToHex(credential!.signature)
-    const otherPublicKeyStr = talk.activeChannel.publicKeyStr
+    const otherPublicKeyStr =credential!.publicKey //talk.activeChannel.publicKeyStr
     console.log(chatInput.value, sigStr, otherPublicKeyStr)
 
     content = ecdhEncrypt(chatInput.value, sigStr, otherPublicKeyStr)
     
+    console.log("ecdhDecrypt",ecdhDecrypt(content,sigStr,otherPublicKeyStr))
+    debugger
   }
 
   chatInput.value = ''

@@ -21,7 +21,7 @@ import { useUserStore } from './user'
 import { GetUserInfo } from '@/api/aggregation'
 import { useWsStore } from './ws_new'
 import { getMetaNameAddress,isPublicChannel } from '@/utils/meta-name'
-import {getUserInfoByAddress} from '@/api/man'
+import {getUserInfoByAddress,getUserInfoByMetaId} from '@/api/man'
 import {ChannelMsg_Size} from '@/data/constants'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 
@@ -29,7 +29,7 @@ import { useConnectionModal } from '@/hooks/use-connection-modal'
 export const useTalkStore = defineStore('talk', {
   state: () => {
     return {
-      communities: [{ id: 'public' }] as Community[],
+      communities: [{ id: 'public' },{id:'@me'}] as Community[],
       members: [] as any,
 
       activeCommunityId: '' as string,
@@ -92,17 +92,17 @@ export const useTalkStore = defineStore('talk', {
     realCommunities(state) {
       
       if (!state.communities) return []
-      return state.communities.filter(community => community.id !== 'public')
+      return state.communities.filter(community => community.id === 'public')
     },
 
     atMeCommunity(state) {
       
       if (!state.communities) return []
-      return state.communities.find(community => community.id === 'public')
+      return state.communities.find(community => community.id === '@me')
     },
 
     activeCommunity(state) {
-      
+      debugger
       if (!state.communities) return null
       
       return state.communities.find(community => community.id === state.activeCommunityId)
@@ -111,7 +111,7 @@ export const useTalkStore = defineStore('talk', {
     // 当前社区的标志：优先使用metaName，如果没有就使用id
     activeCommunitySymbol(): string {
       if (!this.activeCommunity) return ''
-      
+      debugger
       let communitySymbol: string
       if (this.activeCommunity.metaName) {
         communitySymbol='public'
@@ -142,6 +142,8 @@ export const useTalkStore = defineStore('talk', {
     },
 
     showWelcome(state):any{
+      console.log("this.activeChannel",this.activeChannel)
+      debugger
       if(!this.activeChannel?.pastMessages){
         return state.isShowWelcome =true
       }else {
@@ -327,8 +329,18 @@ export const useTalkStore = defineStore('talk', {
       
       if (!communityId) communityId = this.activeCommunityId
        console.log("this.activeCommunityId",this.activeCommunityId)
-       
+       debugger
       const isAtMe = communityId === '@me'
+
+      // if(isAtMe){
+      //   debugger
+        
+      //   console.log("this.activeCommunity",this.activeCommunity)
+      //   return
+      //   // if(this.activeCommunity!.channels.length){
+      //   //   return
+      //   // }
+      // }
       // 
       // const atMeChannel=await getAtMeChannels({
       //       metaId: this.selfMetaId,
@@ -353,6 +365,7 @@ export const useTalkStore = defineStore('talk', {
 
       if (!this.activeCommunity?.channels) this.activeCommunity!.channels = []
       this.activeCommunity!.channels = channels
+      debugger
       console.log('activeChannel',channels)
          console.log('communityId',communityId)
           
@@ -368,8 +381,10 @@ export const useTalkStore = defineStore('talk', {
           'communityChannels-' + this.selfMetaId,
           JSON.stringify(this.communityChannelIds)
         )
-      }
 
+        debugger
+      }
+      debugger
       return channels 
     },
 
@@ -496,9 +511,10 @@ export const useTalkStore = defineStore('talk', {
       return
     },
 
-    async initCommunity(routeCommunityId: string,routeChannelId:string) {
+    async initCommunity(routeCommunityId: string,routeChannelId?:string) {
       
       this.communityStatus = 'loading'
+      debugger
       const isAtMe = routeCommunityId === '@me'
       const isPublic = routeCommunityId == 'public'
       this.activeCommunityId = routeCommunityId
@@ -525,9 +541,9 @@ export const useTalkStore = defineStore('talk', {
       }else{
         
       }
-      
+      debugger
        await this.fetchChannels(routeCommunityId)
-    
+    debugger
 
       this.updateReadPointers()
       this.communityStatus = 'ready'
@@ -535,7 +551,7 @@ export const useTalkStore = defineStore('talk', {
       return
     },
 
-    async initChannel(routeCommunityId: string, routeChannelId: string) {
+    async initChannel(routeCommunityId: string, routeChannelId?: string) {
       
       // 如果是私聊，而且路由中的頻道 ID 不存在，则新建会话
       if (
@@ -543,11 +559,17 @@ export const useTalkStore = defineStore('talk', {
         routeChannelId &&
         !this.activeCommunityChannels.some((channel: any) => channel.id === routeChannelId)
       ) {
-        const { data } = await GetUserInfo(routeChannelId)
+        
+        const metaidInfo = await getUserInfoByMetaId(routeChannelId)
+        const userInfo= await getUserInfoByAddress(metaidInfo?.address)
+        
         const newSession = {
           id: routeChannelId,
-          name: data.name,
-          publicKeyStr: data.pubKey,
+          name: userInfo.name,
+          address:userInfo.address,
+          //publicKeyStr: data.pubKey,
+          avatarImage:userInfo.avatar,
+          metaId:userInfo.metaid,
           lastMessage: '',
           lastMessageTimestamp: null,
           pastMessages: [],

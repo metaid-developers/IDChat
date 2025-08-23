@@ -997,7 +997,7 @@ export const tryCreateNode = async (node: {
    const {protocol,body,timestamp:timeStamp,attachments}=node
   try {
     
-   
+   debugger
     //const nodeRes = await sdk.createBrfcChildNode(node)
     const nodeRes=await buildTx.createShowMsg({
       protocol,
@@ -1041,7 +1041,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const timestamp = Date.now()
   // 1.3 content: done
   // 1.4 contentType
-  const contentType = 'application/json'
+  const contentType = 'text/plain'
   // 1.5 encrypt
   const encrypt = '1'
   const dataCarrier = {
@@ -1055,7 +1055,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
 
   // 2. 构建节点参数
   const node = {
-    protocol:NodeName.ShowMsg,
+    protocol:`${NodeName.ShowMsg}`,
     body: dataCarrier,
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
   }
@@ -1092,7 +1092,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     content,
     mockId,
     nodeName: NodeName.ShowMsg,
-    dataType: 'application/json',
+    dataType: 'text/plain',
     data: dataCarrier,
     avatarType:  'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
@@ -1113,7 +1113,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     protocol: NodeName.ShowMsg,
   }
   talkStore.addMessage(mockMessage)
-
+  debugger
   // 3. 发送节点
   //const sdk = userStore.showWallet
   await tryCreateNode(node, mockId)

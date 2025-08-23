@@ -68,7 +68,7 @@ const connectionStore=useConnectionStore()
 const props = defineProps(['session'])
 
 console.log('props.session',props.session)
-
+debugger
 const contact = computed<any>(() => {
   let contactSide = 'from'
   

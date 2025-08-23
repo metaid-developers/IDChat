@@ -41,8 +41,8 @@ export const useUserStore = defineStore('user', {
     }
   },
 
-  actions: {
-    async setUserInfo(address: string) {
+   actions: {
+      async setUserInfo(address: string) {
       const user: UserInfo = this.last
         ? (JSON.parse(JSON.stringify(this.last)) as UserInfo)
         : {
@@ -119,8 +119,19 @@ export const useUserStore = defineStore('user', {
         unconfirmed: '',
       }
     },
+   
+    
+   
   },
+
+
+  
+
+  
 })
+
+
+
 
 // import { encode, decode } from 'js-base64'
 // import { SDK } from '@/utils/sdk'

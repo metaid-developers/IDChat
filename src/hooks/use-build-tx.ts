@@ -56,6 +56,7 @@ export const useBulidTx = createGlobalState(() => {
   const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[]) => {
     
     try {
+      debugger
        const transactions=[] 
        const pinTxComposer = new TxComposer()
         pinTxComposer.appendP2PKHOutput({
@@ -63,7 +64,7 @@ export const useBulidTx = createGlobalState(() => {
         satoshis: 1,
         })
         const pinScript = createScriptForMvc(metaidData)
-        
+        debugger
         pinTxComposer.appendOpReturnOutput(pinScript)
         
         if(payTo.length){
@@ -89,7 +90,7 @@ export const useBulidTx = createGlobalState(() => {
         txComposer: pinTxComposer.serialize(),
         message: 'Create Pin',
         })
-
+        
        let payedTransactions
        if(needSmallpay){
           const {payedTransactions:payTx}= await connectionStore.adapter.smallPay({
@@ -184,7 +185,7 @@ export const useBulidTx = createGlobalState(() => {
     attachments?:AttachmentItem[]
   })=>{
     const {body,protocol,isBroadcast,attachments}=params
-    
+    debugger
     try {
       if(attachments && attachments.length){
        const fileTxId= await createMvcFile({

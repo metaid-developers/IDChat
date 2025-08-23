@@ -170,7 +170,7 @@ export const router = createRouter({
     // },
     {
       //path: '/talk/channels/public/:channelId?',
-      path: '/talk/@me/:metaid?',
+      path: '/talk/@me/:channelId?',
       name: 'talkAtMe',
       component: () => import('@/views/talk/AtMe.vue'),
       meta: { isAuth: true },
