@@ -2,7 +2,8 @@ import { TxComposer, mvc } from 'meta-contract'
 import { sleep } from './util'
 import { isNil } from 'lodash'
 import axios from 'axios'
-import { useUtxosStore } from "@/stores/useable-utxo";
+import { useUtxosStore } from '@/stores/useable-utxo'
+import { InscriptionRequest } from './pin'
 export type Transaction = {
   txComposer: TxComposer
   message: string
@@ -16,6 +17,16 @@ declare global {
       getUtxos: () => Promise<any[]>
       unlockP2PKHInput: (params: any) => Promise<any>
       // add other methods/properties as needed
+      btc: {
+        getAddress: () => Promise<string>
+        inscribe({
+          data,
+          options,
+        }: {
+          data: InscriptionRequest
+          options?: { noBroadcast: boolean }
+        }): Promise<any>
+      }
     }
   }
 }
@@ -119,7 +130,7 @@ export const createPinWithAsset = async (
   }
 }> => {
   const address = await window.metaidwallet.getAddress()
- 
+
   let utxo = options?.utxo
   if (!utxo) {
     const utxos: any[] = await window.metaidwallet.getUtxos()
@@ -506,7 +517,7 @@ export const createOrUpdateUserInfo = async ({
   [key: string]: { txid: string | undefined } | undefined
 }> => {
   const metaDatas: MetaidData[] = []
-   const utxoStore=useUtxosStore()
+  const utxoStore = useUtxosStore()
   if (userData.name) {
     metaDatas.push({
       operation: oldUserData.nameId ? 'modify' : 'create',
@@ -573,8 +584,8 @@ export const createOrUpdateUserInfo = async ({
       }
       const { txid, utxo: _utxo } = await createPinWithAsset(metaData, _options)
       utxo = _utxo
-      utxoStore.insert(utxo,utxo.address)
-    
+      utxoStore.insert(utxo, utxo.address)
+
       if (txid) {
         _txids.push(txid)
       }
