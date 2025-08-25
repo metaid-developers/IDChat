@@ -6,10 +6,27 @@ import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
 import {  NodeName } from '@/enum'
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
-  header: {
-    'Content-Type': 'application/json',
+  responseHandel: response => {
+    return new Promise((resolve, reject) => {
+      if (response?.data && typeof response.data?.code === 'number') {
+        if (response.data.code === 0) {
+          
+          resolve(response.data)
+        } else {
+          reject({
+            code: response.data.code,
+            message: response.data.message,
+          })
+        }
+      } else {
+        resolve(response.data)
+      }
+    })
   },
 }).request
+
+
+
 
 const seedFakeMetaName = (item: any) => {
   // 以50%的几率随机塞进metaName
@@ -457,6 +474,7 @@ export const grabRedPacket = async (params: {
   //   return res.data.data
   // })
   return TalkApi.post(`/grab-lucky-bag`,params).then(res => {
+    
      if(res?.code == 0){
        return res.data
      }else if(res?.code == 1){
@@ -464,7 +482,8 @@ export const grabRedPacket = async (params: {
      }
    
   }).catch((e)=>{
-    throw new Error(e.message.toString())
+    
+    throw new Error(e.message)
   })
 
   

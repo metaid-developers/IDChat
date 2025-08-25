@@ -2,6 +2,7 @@ import { TxComposer, mvc } from 'meta-contract'
 import { sleep } from './util'
 import { isNil } from 'lodash'
 import axios from 'axios'
+import { useUtxosStore } from "@/stores/useable-utxo";
 export type Transaction = {
   txComposer: TxComposer
   message: string
@@ -85,7 +86,7 @@ export function buildOpReturnV2(
   return [...res1, ...res2] as OpReturnV2
 }
 
-const createPinWithAsset = async (
+export const createPinWithAsset = async (
   metaidData: Omit<MetaidData, 'revealAddr'>,
   options: {
     assistDomain: string
@@ -118,6 +119,7 @@ const createPinWithAsset = async (
   }
 }> => {
   const address = await window.metaidwallet.getAddress()
+ 
   let utxo = options?.utxo
   if (!utxo) {
     const utxos: any[] = await window.metaidwallet.getUtxos()
@@ -504,7 +506,7 @@ export const createOrUpdateUserInfo = async ({
   [key: string]: { txid: string | undefined } | undefined
 }> => {
   const metaDatas: MetaidData[] = []
-
+   const utxoStore=useUtxosStore()
   if (userData.name) {
     metaDatas.push({
       operation: oldUserData.nameId ? 'modify' : 'create',
@@ -571,6 +573,8 @@ export const createOrUpdateUserInfo = async ({
       }
       const { txid, utxo: _utxo } = await createPinWithAsset(metaData, _options)
       utxo = _utxo
+      utxoStore.insert(utxo,utxo.address)
+    
       if (txid) {
         _txids.push(txid)
       }

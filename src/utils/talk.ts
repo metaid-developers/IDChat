@@ -763,7 +763,7 @@ export const joinChannel= async (groupId: string,referrer?:string) => {
 
   // 3. 发送节点
   const nodeRes = await buildTx.joinGrop(node)
-
+  
   if (nodeRes === null) {
     return {
       status: 'failed',

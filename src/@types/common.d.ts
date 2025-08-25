@@ -1,5 +1,23 @@
 import {UserInfo as newUserInfo} from '@/api/man'
 
+
+
+export type SA_utxo = {
+    txId: string;
+    outputIndex: number;
+    satoshis: number;
+    address: string;
+    height: number;
+    flag: string;
+}
+
+
+export type UTXO = {
+    txid: string;
+    outIndex: number;
+    value: number;
+    address: string;
+};
 declare interface Pagination {
   page: number
   pageSize: number

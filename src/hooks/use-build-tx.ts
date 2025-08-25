@@ -11,6 +11,10 @@ import {SERVICE_ADDRESS,SERVICE_FEE} from '@/data/constants'
 import { AttachmentItem } from '@/@types/hd-wallet'
 import { NodeName,IsEncrypt } from '@/enum'
 import {hexToUint8Array} from '@/utils/util'
+import { getInitUtxo } from "@/api/metaso";
+import {useUtxosStore} from '@/stores/useable-utxo'
+import {createPinWithAsset} from '@/utils/userInfo'
+
 export enum MetaFlag{
  metaid='metaid',
   testid='testid'
@@ -46,6 +50,7 @@ export const useBulidTx = createGlobalState(() => {
     const userStore=useUserStore()
     const networkStore=useNetworkStore()
     const connectionStore=useConnectionStore()
+    const utxoStore=useUtxosStore()
     const address = computed(()=>{
         return new mvc.Address(userStore.last?.address)
     })
@@ -129,6 +134,8 @@ export const useBulidTx = createGlobalState(() => {
       throw new Error((error as any).message)
     }
   }
+
+
 
   const transfer=async(receviers:Array<{
       amount: number,
@@ -334,7 +341,7 @@ export const useBulidTx = createGlobalState(() => {
   })=>{
     const {body,protocol,isBroadcast,encrypt}=params
     try {
-      
+        
          const metaidData={
         body:JSON.stringify(body),
         path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
@@ -345,10 +352,30 @@ export const useBulidTx = createGlobalState(() => {
         encryption: encrypt,
         encoding: 'utf-8',
       }
+
+      const utxo=utxoStore.getUtxo(rootAddress.value)
+      let pinRes
       
-      const pinRes= await createPin(metaidData,isBroadcast)
+      if(utxo){
+        const _options: any = {
+        network: import.meta.env.VITE_NET_WORK ?? 'testnet',
+        signMessage: 'Join Group',
+        serialAction: 'finish',
+        assistDomain: 'https://www.metaso.network/assist-open-api',
+        utxo:utxo
+      }
+      pinRes= await createPinWithAsset(metaidData,_options)
+      
+      if(pinRes){
+        utxoStore.remove(rootAddress.value)
+      }
       
       return pinRes
+      }else{
+         pinRes= await createPin(metaidData,isBroadcast)
+         return pinRes
+      }
+
     } catch (error) {
        throw new Error(error as any)
     }
