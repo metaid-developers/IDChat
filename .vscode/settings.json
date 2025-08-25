@@ -7,9 +7,11 @@
   "prettier.semi": false,
   "prettier.trailingComma": "none",
   "i18n-ally.displayLanguage": "zh",
-  "i18n-ally.localesPaths": ["src/languages"],
+  "i18n-ally.localesPaths": [
+    "src/languages"
+  ],
   "[scss]": {
-    "editor.defaultFormatter": "michelemelluso.code-beautifier"
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

@@ -99,7 +99,7 @@
   </template>
 
   <!-- 更多操作 -->
-  <ElDropdown trigger="click" @visible-change="val => (isShowUserMenu = val)">
+  <ElDropdown trigger="click" @visible-change="handleVisibleChange">
     <a
       class="more flex flex-align-center flex-pack-center user-warp-item"
       :class="{ active: isShowUserMenu }"
@@ -108,6 +108,24 @@
     </a>
     <template #dropdown>
       <ElDropdownMenu>
+        <!-- Fee Settings Item -->
+
+        <div
+          class="fee-select flex align-center  rounded-full bg-[#f5f7fa] px-3 py-1 dark:bg-[#2d3748]"
+          @click.stop="handleFeeClick"
+        >
+          <img
+            :src="currentChainIcon"
+            :alt="chainStore.state.currentChain.toUpperCase()"
+            class="chain-icon-menu w-[24px] h-[24px]"
+          />
+          <div class="fee-info">
+            <span class="fee-rate-menu">{{ currentFeeRate }}</span>
+            <span class="fee-unit-menu">sats</span>
+          </div>
+          <el-icon><CaretRight class="arrow-icon-menu"/></el-icon>
+        </div>
+
         <template v-if="isMobile">
           <ElDropdownItem @click="layout.$patch({ isShowSearchModal: true })">
             <div class="flex flex-align-center user-operate-item">
@@ -132,6 +150,11 @@
     <SettingsModalVue v-model="layout.isShowSettingsModal" />
   </Teleport>
 
+  <!-- Fee Modal -->
+  <Teleport to="body">
+    <FeeModal v-model="showFeeModal" @confirm="handleFeeConfirm" />
+  </Teleport>
+
   <!-- wallet -->
   <MyWalletVue v-model="layout.isShowWallet" />
 
@@ -142,39 +165,74 @@
 </template>
 
 <script setup lang="ts">
-import { useRootStore, isMobile } from '@/stores/root'
+import { isMobile } from '@/stores/root'
 import { useUserStore } from '@/stores/user'
+import { useChainStore } from '@/stores/chain'
 import { ElDropdown } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SettingsModalVue from '@/components/Settings/SettingsModal.vue'
+import FeeModal from '@/components/FeeModal/FeeModal.vue'
 import { useLayoutStore } from '@/stores/layout'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import MyWalletVue from './MyWallet.vue'
-import VersionVue from '../Version/Version.vue'
-import UserPersonaVue from '../UserPersona/UserPersona.vue'
-import UserCardVue from '../UserCard/UserCard.vue'
 import ProfileEditModal from '@/components/ProfileEditModal/ProfileEditModal.vue'
-
-import MetaNameLogo from '@/assets/svg/meta_name.svg?url'
-import MintLogo from '@/assets/svg/mint.svg?url'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useConnectionStore } from '@/stores/connection'
 import { useCredentialsStore } from '@/stores/credentials'
+
+import btcIcon from '@/assets/images/btc.png'
+import mvcIcon from '@/assets/images/mvc.png'
+import { CaretRight } from '@element-plus/icons-vue'
 const { openConnectionModal } = useConnectionModal()
 
 const connectionStore = useConnectionStore()
 const credentialsStore = useCredentialsStore()
 
 const i18n = useI18n()
-const rootStore = useRootStore()
 const userStore = useUserStore()
+const chainStore = useChainStore()
 const layout = useLayoutStore()
-const route = useRoute()
 const router = useRouter()
-const isProduction = import.meta.env.MODE === 'mainnet'
 
 const isShowUserMenu = ref(false)
+const showFeeModal = ref(false)
+
+// Fee badge computed properties
+const currentChainIcon = computed(() => {
+  return chainStore.state.currentChain === 'btc' ? btcIcon : mvcIcon
+})
+
+const currentFeeRate = computed(() => {
+  const currentChain = chainStore.state.currentChain
+  const chainData = chainStore.state[currentChain]
+  const selectedFeeType = chainData.selectedFeeType
+  return chainData[selectedFeeType]
+})
+
+// Handle fee confirmation
+const handleFeeConfirm = (data: { chain: 'btc' | 'mvc'; feeType: string; customFee?: number }) => {
+  console.log('Fee configuration updated:', data)
+}
+
+const handleVisibleChange = (val: boolean) => {
+  isShowUserMenu.value = val
+}
+
+const handleFeeClick = (event?: Event) => {
+  console.log('Fee item clicked!')
+  if (event) {
+    event.stopPropagation()
+    event.preventDefault()
+  }
+  console.log('Current showFeeModal:', showFeeModal.value)
+  showFeeModal.value = true
+  console.log('Updated showFeeModal:', showFeeModal.value)
+  // 稍微延迟一下，确保下拉菜单关闭后再显示模态框
+  nextTick(() => {
+    console.log('NextTick - showFeeModal:', showFeeModal.value)
+  })
+}
 const userOperates = computed(() => {
   const result = [
     {
@@ -238,17 +296,6 @@ const userOperates = computed(() => {
 
   return result
 })
-
-const isNftPage = computed(() => {
-  return route.path.indexOf('/nft') > -1
-})
-
-const toMetaName = () => {
-  const routerUrl = router.resolve({
-    path: '/metaname',
-  })
-  window.open(routerUrl.href, '_blank')
-}
 
 // function toMintNft(){
 //   if(userStore.metaletLogin){
