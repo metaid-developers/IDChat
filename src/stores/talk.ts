@@ -25,6 +25,21 @@ import {getUserInfoByAddress} from '@/api/man'
 import {ChannelMsg_Size} from '@/data/constants'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 
+function sortByConditionInPlace(array, conditionFn) {
+    array.sort((a, b) => {
+        const aMatches = conditionFn(a);
+        const bMatches = conditionFn(b);
+        
+        if (aMatches && !bMatches) {
+            return -1; // a排在b前面
+        } else if (!aMatches && bMatches) {
+            return 1; // b排在a前面
+        } else {
+            return 0; // 保持原有相对顺序
+        }
+    });
+    return array;
+}
 
 export const useTalkStore = defineStore('talk', {
   state: () => {
@@ -152,13 +167,13 @@ export const useTalkStore = defineStore('talk', {
     activeChannel(state): any {
       
       if (!this.activeCommunity) return null
-
+      
       // 功能頻道
       if (this.isActiveChannelGeneral) {
         return this.generalChannels.find(channel => channel.id === state.activeChannelId)
       }
       if (this.canAccessActiveChannel)
-        return this.activeCommunity.channels?.find((channel: any) => {
+        return this.activeCommunity?.channels?.find((channel: any) => {
           return channel.id === state.activeChannelId
         })
     },
@@ -200,6 +215,7 @@ export const useTalkStore = defineStore('talk', {
     activeCommunityChannels(): Channel[] {
       
       if (!this.activeCommunity) return []
+    
       return this.activeCommunity.channels || []
     },
 
@@ -469,7 +485,7 @@ export const useTalkStore = defineStore('talk', {
       const userStore= useUserStore()
       this.invitingChannel = await getOneChannel(routeChannelId)
       if(routeChannelId == 'welcome'){
-        return
+        return 
       }
 
       if(!userStore.isAuthorized){
@@ -615,6 +631,14 @@ export const useTalkStore = defineStore('talk', {
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
         this._updateReadPointers(message.timestamp, messageMetaId)
+         this.activeCommunity?.channels?.map((channel: any) => {
+          if(channel.id === messageMetaId){
+            
+            channel.newMessages=[message]
+            
+          }
+        })
+       sortByConditionInPlace(this.activeCommunity?.channels,(channel)=>channel?.groupId == messageMetaId)
         return
       }
 
@@ -693,9 +717,46 @@ export const useTalkStore = defineStore('talk', {
 
         return
       }
-
+      sortByConditionInPlace(this.activeCommunity?.channels,(channel)=>channel?.groupId == messageMetaId)
+   
       this.activeChannel.newMessages.push(message)
     
+
+      
+      
+      // this.activeCommunity?.channels.sort(()=>{
+
+      // })
+
+      //  this.activeCommunity?.channels.sort((a,b)=>{
+      //   if(b?.newMessages?.length && a?.newMessages?.length){
+          
+      //     return b?.newMessages[0].timestamp - a?.newMessages[0]?.timestamp
+      //   }else if(b?.newMessages?.length && !a?.newMessages?.length){
+          
+      //     return b?.newMessages?.length
+      //   }else if(!b?.newMessages?.length && a?.newMessages?.length){
+          
+      //     return -1
+      //   }
+      //  })
+       
+      // if(this.activeCommunity?.channels && this.activeCommunity?.channels.length){
+      //   debugger
+      //   for(let channel of this.activeCommunity.channels){
+      //     debugger
+      //     if(channel?.newMessages?.length){
+            
+           
+      //     }else{
+      //       continue
+      //     }
+      //   }
+      // }
+
+      //   console.log("this.activeCommunity.channels",this.activeCommunity?.channels)
+      // debugger
+
       // if(message){
       //    getUserInfoByAddress(message.address).then((userInfo)=>{
       //     message.userInfo=userInfo

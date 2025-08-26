@@ -315,6 +315,7 @@ const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
 const hasInput = computed(() => chatInput.value.length > 0)
 
+
 /** 输入框样式 */
 const isShowingButtonGroup = computed(() => {
   const isMobile = window.innerWidth <= 1024
@@ -373,6 +374,7 @@ const showImagePreview = ref(false)
 const useCompression = ref(true)
 
 const hasImage = computed(() => imageFile.value !== null)
+console.log("talk.activeChannel",talk.activeChannel)
 
 const openImageUploader = (close: Function) => {
   imageUploader.value?.click()

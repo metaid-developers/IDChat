@@ -230,7 +230,7 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 
 // const _putIntoRedPackets = (form: any, address: string): any[] => {
 //   const { amount, quantity, each, type } = form
-//   debugger
+//   
 //   // NFT🧧：将NFT分成指定数量个红包，平均分配
 //   if (type === RedPacketDistributeType.Nft) {
 //     const redPackets = []
@@ -270,7 +270,7 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 //     index: quantity + initIndex - 1,
 //   }) // 最后一个红包，使用剩餘金额
 //   console.log("redPackets",redPackets)
-//   debugger
+//   
 //   return redPackets
 // }
 
@@ -365,7 +365,7 @@ const nicerAmount=(amount:number,unit:string)=>{
 //   //   index: quantity + initIndex - 1,
 //   // }) // 最后一个红包，使用剩餘金额
 //   // console.log("redPackets",redPackets)
-//   // debugger
+//   // 
 //   // return redPackets
 // }
 
@@ -1478,9 +1478,11 @@ export function decryptedMessage(
   encryption: string,
   protocol: string,
   isMock: boolean = false,
-  isSession: boolean = false // 是否私聊
+  isSession: boolean = false, // 是否私聊
+  secretKeyStr:string=''
 ) {
   const talk = useTalkStore()
+  
   if (encryption === '0') {
     return content
   }
@@ -1501,6 +1503,6 @@ export function decryptedMessage(
     const otherPublicKeyStr = talk.activeChannel.publicKeyStr
     return ecdhDecrypt(content, sigStr, otherPublicKeyStr)
   } else {
-    return decrypt(content, talk.activeChannelId.substring(0, 16))
+    return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
   }
 }
