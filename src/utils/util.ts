@@ -1076,6 +1076,33 @@ export function hexToUint8Array(hexString:string) {
   return array;
 }
 
+export function hexToBase64(hexString:string) {
+    // 移除可能存在的空格和前缀
+    const cleanHex = hexString.replace(/\s/g, '').replace(/^0x/, '');
+    
+    // 验证是否为有效的十六进制字符串
+    if (!/^[0-9A-Fa-f]*$/.test(cleanHex)) {
+        throw new Error('Invalid hexadecimal string');
+    }
+    
+    // 确保十六进制字符串长度为偶数
+    const paddedHex = cleanHex.length % 2 === 0 ? cleanHex : '0' + cleanHex;
+    
+    // 将十六进制字符串转换为字节数组
+    const byteArray = [];
+    for (let i = 0; i < paddedHex.length; i += 2) {
+        byteArray.push(parseInt(paddedHex.substr(i, 2), 16));
+    }
+    
+    // 将字节数组转换为二进制字符串
+    const binaryString = byteArray.map(byte => 
+        String.fromCharCode(byte)
+    ).join('');
+    
+    // 使用btoa函数将二进制字符串转换为Base64
+    return btoa(binaryString);
+}
+
 // 降 AttachmentItem， 转为具有占位符 的 数组
 export function getAttachmentsMark(attachments: (AttachmentItem | string)[]) {
   let result = []

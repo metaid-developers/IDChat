@@ -36,7 +36,7 @@
       <el-skeleton-item variant="text" style="width: 30%" />
     </div>
     <p v-if="loading" class="text-center">Loading...</p>
-    <p v-if="noMore" class="text-center">No more</p>
+    <p v-if="noMore" class="text-center mt-5 text-gray-400">No more</p>
   </div>
 </template>
 <script lang="ts" setup>

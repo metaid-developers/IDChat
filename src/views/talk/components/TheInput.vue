@@ -179,7 +179,7 @@
           <div
             class="p-2 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer"
             v-if="talk.activeChannelType === ChannelType.Group && !quote"
-            @click="layout.isShowRedPacketModal = true"
+            @click="openRedPackDialog"
           >
             <Icon name="red_envelope" class="w-full h-full text-dark-800 dark:text-gray-100" />
           </div>
@@ -291,13 +291,15 @@ import { FileToAttachmentItem, compressImage,atobToHex } from '@/utils/util'
 import {useCredentialsStore} from '@/stores/credentials'
 import { encrypt, ecdhEncrypt } from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
-import { ChannelType, MessageType } from '@/enum'
+import { ChannelType, MessageType,ChatChain } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
 
 import TalkImagePreview from './ImagePreview.vue'
 import StickerVue from '@/components/Sticker/Sticker.vue'
 import Decimal from 'decimal.js-light'
 import { router } from '@/router'
+import { useChainStore } from '@/stores/chain'
+import { useI18n } from 'vue-i18n'
 
 
 interface Props {
@@ -307,7 +309,8 @@ const props = withDefaults(defineProps<Props>(), {})
 const emit = defineEmits(['update:quote', 'toQuote'])
 
 const doNothing = () => {}
-
+const i18n=useI18n()
+const chainStore=useChainStore()
 const showMoreCommandsBox = ref(false)
 const showStickersBox = ref(false)
 const spaceNotEnoughFlag = ref(false)
@@ -379,6 +382,15 @@ console.log("talk.activeChannel",talk.activeChannel)
 const openImageUploader = (close: Function) => {
   imageUploader.value?.click()
   close()
+}
+
+const openRedPackDialog=()=>{
+  if(chainStore.state.currentChain == ChatChain.btc){
+    return ElMessage.error(`${i18n.t('notSupoort_btc_send_repacket')}`)
+  }else{
+      layout.isShowRedPacketModal = true
+  }
+
 }
 
 const handleImageChange = (e: Event) => {

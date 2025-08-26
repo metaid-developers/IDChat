@@ -17,6 +17,8 @@ import { GetFT, GetGenesis } from '@/api/aggregation'
 // @ts-ignore
 import { SHA256 } from 'crypto-es/lib/sha256.js'
 import Decimal from 'decimal.js-light'
+import { useChainStore } from './chain'
+import i18n from '@/utils/i18n'
 
 const MIN=new Decimal(0.0001).mul(10 ** 8).toNumber()
 const MAX=new Decimal(10).mul(10 ** 8).toNumber()
@@ -435,6 +437,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       const talk = useTalkStore()
       const user = useUserStore()
       const layout = useLayoutStore()
+      const chainStore=useChainStore()
+      if(chainStore.state.currentChain == 'btc'){
+        return ElMessage.error(`${i18n.global.t('notSupoort_btc_send_repacket')}`)
+      }
       if (!this.isFinished) return
       
       layout.isShowRedPacketModal = false

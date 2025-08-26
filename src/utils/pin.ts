@@ -65,6 +65,7 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
     }[]
   }
 }): Promise<InscribeResultForIfBroadcasting[T]> {
+  
   const address = await window.metaidwallet.btc.getAddress()
   const metaidDataList: MetaidData[] = inscribeDataArray.map(inp => {
     const contentType = inp?.contentType ?? 'text/plain'
@@ -91,12 +92,26 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
     service: options?.service,
     outputs: options?.outputs,
   }
+
+  const data={
+    data: request,
+    options: {
+      noBroadcast: options?.noBroadcast !== 'no',
+    },
+  }
+
+  console.log("data",JSON.stringify(data))
+  
+
+
   const res = await window.metaidwallet.btc.inscribe({
     data: request,
     options: {
       noBroadcast: options?.noBroadcast !== 'no',
     },
   })
+
   console.log('inscrible res', res)
+  
   return res
 }

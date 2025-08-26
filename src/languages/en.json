@@ -1361,5 +1361,7 @@
       "tip2": "Fully Decentralized,Immutable,Uncensorable,and Unhackable"
     }
   },
-  "new_msg_img": "Image"
+  "new_msg_img": "Image",
+  "notSupoort_btc_send_repacket": "Temporarily not supporting sending red packets with BTC",
+  "upload_attachment_fail": "上传附件失败"
 }

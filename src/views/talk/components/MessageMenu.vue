@@ -21,7 +21,7 @@
 
 <script lang="ts" setup>
 import { Translate } from '@/api/core'
-import { EnvMode, NodeName } from '@/enum'
+import { EnvMode, NodeName,ChatChain } from '@/enum'
 import { useTalkStore } from '@/stores/talk'
 import { decryptedMessage } from '@/utils/talk'
 import { computed, ref, onMounted, onUnmounted, inject } from 'vue'
@@ -246,7 +246,12 @@ const actions = computed(() => {
         icon: 'tx',
         action: () => {
           // 跳转到该消息对应的交易
-          window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
+           if(props.message.chain == ChatChain.btc){
+             window.open(`https://mempool.space/tx/${props.message.txId}`, '_blank')
+            }else{
+                 window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
+            }
+         
         },
       })
     } else {
@@ -255,6 +260,7 @@ const actions = computed(() => {
           name: 'Talk.MessageMenu.tx',
           icon: 'tx',
           action: () => {
+           
             // 跳转到该消息对应的交易
             window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
           },

@@ -1355,5 +1355,7 @@
       "tip2": "完全去中心化、不可篡改、不可审查、不可入侵"
     }
   },
-  "new_msg_img": "图片"
+  "new_msg_img": "图片",
+  "notSupoort_btc_send_repacket": "暂不支持发送BTC红包",
+  "upload_attachment_fail": "Upload attachment fail"
 }

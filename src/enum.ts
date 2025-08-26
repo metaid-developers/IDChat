@@ -1,6 +1,11 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
 
+export enum ChatChain{
+  mvc='mvc',
+  btc='btc'
+}
+
 export enum ChatType{
   msg=0,
   red=1,

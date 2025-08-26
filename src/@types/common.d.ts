@@ -894,6 +894,7 @@ declare interface ChatMessageItem {
   content: string
   contentType: string
   data: string
+  chain:'btc' | 'mvc'
   encryption: string
   groupId: string
   metaId: string
@@ -923,13 +924,7 @@ declare interface ChatMessageItem {
 }
 
 declare interface ShareChatMessageData {
-  // content:string
-  // attachments:string[]
-  // contentType:string
-  // createTime:number
-  // quotePin:string
   communityId: string
-  //channelId: string
   groupId:string
   userMetaId: string
   comment:string

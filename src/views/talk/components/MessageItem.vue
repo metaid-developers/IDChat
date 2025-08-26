@@ -60,10 +60,14 @@
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
-          <div class="text-dark-300 dark:text-gray-400 text-xs shrink-0 whitespace-nowrap">
+          <div class="text-xs shrink-0 whitespace-nowrap"
+          :class="[msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400' ]"
+          >
             {{ formatTimestamp(message.timestamp, i18n) }}
           </div>
         </div>
+
+        
 
         <div
           class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
@@ -244,7 +248,7 @@ import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
 import { useImagePreview } from '@/stores/imagePreview'
 import MessageItemQuote from './MessageItemQuote.vue'
-import { NodeName } from '@/enum'
+import { NodeName ,ChatChain} from '@/enum'
 import { containsString } from '@/utils/util'
 import { getUserInfoByAddress } from '@/api/man'
 import { ElMessage } from 'element-plus'
@@ -296,6 +300,10 @@ const previewImage = (image: string) => {
   imagePreview.index = 0
   imagePreview.visibale = true
 }
+
+const msgChain=computed(()=>{
+  return props.message.chain
+})
 
 const resendTitle = computed(() => {
   return i18n.t('Talk.Messages.resend')

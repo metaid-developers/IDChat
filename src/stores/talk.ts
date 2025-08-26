@@ -721,7 +721,7 @@ export const useTalkStore = defineStore('talk', {
    
       this.activeChannel.newMessages.push(message)
     
-
+      
       
       
       // this.activeCommunity?.channels.sort(()=>{
@@ -1095,11 +1095,12 @@ export const useTalkStore = defineStore('talk', {
     },
 
     addMessage(message: any) {
+      
       if (!this.activeChannel) return
       if (!this.activeChannel.newMessages) {
         this.activeChannel.newMessages = []
       }
-
+      sortByConditionInPlace(this.activeCommunity?.channels,(channel)=>channel?.groupId == message.groupId)
       this.activeChannel.newMessages.push(message)
     },
 

@@ -14,7 +14,7 @@ import {
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import { SDK } from './sdk'
-import { FileToAttachmentItem, getTimestampInSeconds, realRandomString, sleep,atobToHex } from './util'
+import { FileToAttachmentItem, getTimestampInSeconds, realRandomString, sleep,atobToHex, containsString } from './util'
 import { Message, MessageDto } from '@/@types/talk'
 import { buildCryptoInfo, decrypt, ecdhDecrypt, encrypt, MD5Hash } from './crypto'
 import Decimal from 'decimal.js-light'
@@ -31,6 +31,8 @@ import { useConnectionStore } from '@/stores/connection'
 import {useBulidTx} from '@/hooks/use-build-tx'
 import { AttachmentItem } from '@/@types/hd-wallet'
 import {Red_Packet_Min,Red_Packet_Max} from '@/data/constants'
+import { useChainStore } from '@/stores/chain'
+import {ChatType,ChatChain} from '@/enum'
 type CommunityData = {
   communityId: string
   name: string
@@ -504,7 +506,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   const key = `${subId.toLocaleLowerCase()}${code.toLocaleLowerCase()}${createTime}`
   const net = import.meta.env.VITE_NET_WORK || 'mainnet'
   const { addressStr: address } = buildCryptoInfo(key, net)
-
+  
 
  
   
@@ -581,6 +583,7 @@ export const createChannel = async (
   selfMetaId?: string
 ) => {
   const buildTx=useBulidTx()
+  const chainStore=useChainStore()
   // communityId, groupName, groupNote, timestamp, groupType, status, type, codehash, genesis, limitAmount
   const { name: groupName } = form
 
@@ -645,7 +648,13 @@ export const createChannel = async (
       return { status: 'canceled' }
     }
 
-    return { status: 'success', subscribeId,channelId:res.txids[0] }
+    if(chainStore.state.currentChain == ChatChain.btc){
+      return { status: 'success', subscribeId,channelId:res?.revealTxIds[0] }
+    }else{
+      return { status: 'success', subscribeId,channelId:res?.txids[0] }
+    }
+    
+    
   } catch (err) {
     console.log(err)
     ElMessage.error('创建群组失败')
@@ -876,14 +885,17 @@ export const validateTextMessage = (message: string) => {
 }
 
 const _sendTextMessage = async (messageDto: MessageDto) => {
+  
   const userStore = useUserStore()
   const talkStore = useTalkStore()
+  const chainStore=useChainStore()
   const { content, channelId: groupID, userName: nickName, reply } = messageDto
   
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
   const contentType = 'text/plain'
-  const encryption = 'aes'
+  const encryption = '0'
+  const externalEncryption='aes'
   const dataCarrier = {
     groupID,
     timestamp,
@@ -899,6 +911,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     protocol:NodeName.SimpleGroupChat,
     body: dataCarrier,
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
+    externalEncryption,
   }
   
   // 2.5. mock发送
@@ -938,6 +951,9 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     protocol: NodeName.SimpleGroupChat,
     contentType: 'text/plain',
     content,
+    chatType:ChatType.msg,
+    groupId:groupID,
+    chain:chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
     avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
@@ -947,6 +963,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption,
+    externalEncryption,
     isMock: true,
     replyInfo: reply
       ? {
@@ -989,12 +1006,13 @@ export const tryCreateNode = async (node: {
   protocol:string
   body:any
   timestamp:number
+  externalEncryption?:'aes' | '1' | '0'
   attachments?:AttachmentItem[]
 }, mockId: string) => {
   const jobs = useJobsStore()
   const talk = useTalkStore()
   const buildTx=useBulidTx()
-   const {protocol,body,timestamp:timeStamp,attachments}=node
+   const {protocol,body,timestamp:timeStamp,attachments,externalEncryption}=node
   try {
     
    
@@ -1003,6 +1021,7 @@ export const tryCreateNode = async (node: {
       protocol,
       body,
       attachments,
+      externalEncryption,
       isBroadcast:true
     })
 
@@ -1033,6 +1052,7 @@ export const tryCreateNode = async (node: {
 const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
+  const chainStore=useChainStore()
   const { content, channelId: to, reply } = messageDto
 
   // 1. 构建协议数据
@@ -1094,6 +1114,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     nodeName: NodeName.ShowMsg,
     dataType: 'application/json',
     data: dataCarrier,
+    chain:chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
     avatarType:  'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
@@ -1150,6 +1171,8 @@ const _uploadImage = async (file: File, sdk: SDK) => {
 const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
+  const chainStore=useChainStore()
+  
   const { channelId,groupId, userName: nickName, attachments, originalFileUrl, reply } = messageDto
   
   // 1. 构建协议数据
@@ -1162,6 +1185,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const fileType = file.fileType.split('/')[1]
   // 1.5 encrypt
   const encrypt = '0'
+  const externalEncryption='aes'
   // const attachment =attachments//'metafile://$[0]'
   
   let dataCarrier: any = {
@@ -1191,6 +1215,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     body: dataCarrier,
     attachments,
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
+    externalEncryption
     
   }
 
@@ -1200,8 +1225,11 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     mockId,
     protocol: nodeName,
     nodeName,
+    groupId:channelId,
+    chatType:ChatType.img,
     contentType: fileType,
     content: originalFileUrl,
+    chain:chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
     avatarType: userStore.last?.avatar || 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
@@ -1213,6 +1241,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption: encrypt,
+    externalEncryption,
     isMock: true,
     replyInfo: reply,
   }
@@ -1483,12 +1512,15 @@ export function decryptedMessage(
 ) {
   const talk = useTalkStore()
   
-  if (encryption === '0') {
+ 
+
+  if (containsString(protocol,NodeName.SimpleFileGroupChat) || containsString(protocol,NodeName.SimpleFileMsg)) {
     return content
   }
 
-  if (protocol === NodeName.SimpleFileGroupChat || protocol === NodeName.SimpleFileMsg) {
-    return content
+   if (encryption === '0') {
+      return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
+    // return content
   }
 
   if (isSession) {

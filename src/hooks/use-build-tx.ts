@@ -10,11 +10,16 @@ import { useConnectionStore } from '@/stores/connection';
 import {SERVICE_ADDRESS,SERVICE_FEE} from '@/data/constants'
 import { AttachmentItem } from '@/@types/hd-wallet'
 import { NodeName,IsEncrypt } from '@/enum'
-import {hexToUint8Array} from '@/utils/util'
+import {hexToUint8Array,hexToBase64} from '@/utils/util'
 import { getInitUtxo } from "@/api/metaso";
 import {useUtxosStore} from '@/stores/useable-utxo'
 import {createPinWithAsset} from '@/utils/userInfo'
-
+import { createPinWithBtc,InscribeResultForIfBroadcasting } from "@/utils/pin";
+import { useChainStore } from '@/stores/chain';
+ import *  as bitcoin from 'bitcoinjs-lib'
+ import * as ecc from 'tiny-secp256k1'
+import { initEccLib } from 'bitcoinjs-lib'
+import i18n from '@/utils/i18n'
 export enum MetaFlag{
  metaid='metaid',
   testid='testid'
@@ -58,10 +63,38 @@ export const useBulidTx = createGlobalState(() => {
         return userStore.last?.address
     }))
   // actions
-  const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[]) => {
-    
+  const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
+    const chainStore=useChainStore()
     try {
-       const transactions=[] 
+
+      if(chainStore.state.currentChain === 'btc'){
+        const inscribeDataArray=[]
+        
+        if(SerialTransactions.length){
+          
+          inscribeDataArray.push(...SerialTransactions)
+        }
+        inscribeDataArray.push(metaidData)
+       
+        const options={
+          noBroadcast:isBroadcast === true ? 'no' : 'yes',
+          feeRate:chainStore.btcFeeRate(),
+          network:'mainnet'
+        }
+        
+       const txIDs= await createPinWithBtc({
+          inscribeDataArray,
+          options,
+        })
+        if(txIDs.status == "canceled"){
+          return null
+        }
+        console.log("txIDs",txIDs)
+        
+        
+         return txIDs
+      }else{
+         const transactions=[] 
        const pinTxComposer = new TxComposer()
         pinTxComposer.appendP2PKHOutput({
         address: address.value,
@@ -88,12 +121,22 @@ export const useBulidTx = createGlobalState(() => {
         // })
         // }
         
-
+        if(SerialTransactions.length){
+          transactions.push(...SerialTransactions)
+        }
 
         transactions.push({
         txComposer: pinTxComposer.serialize(),
         message: 'Create Pin',
         })
+
+        if(!isBroadcast){
+         return{
+            txid:pinTxComposer.getTxId(),
+            transactions:transactions
+         }
+        }
+        
 
        let payedTransactions
        if(needSmallpay){
@@ -128,6 +171,11 @@ export const useBulidTx = createGlobalState(() => {
         
         return txIDs
 
+      }
+
+
+
+      
 
     } catch (error) {
       ElMessage.error((error as any).message)
@@ -188,29 +236,50 @@ export const useBulidTx = createGlobalState(() => {
     body:any,
     protocol:string,
     isBroadcast:boolean,
+    externalEncryption?:'aes' | '1' | '0'
     attachments?:AttachmentItem[]
   })=>{
-    const {body,protocol,isBroadcast,attachments}=params
+    const {body,protocol,isBroadcast,attachments,externalEncryption}=params
     
+     const chainStore=useChainStore()
+    let SerialTransactions=[]
     try {
       if(attachments && attachments.length){
-       const fileTxId= await createMvcFile({
-          body:hexToUint8Array(attachments[0].data),
+       const fileRes= await createMvcFile({
+          body:chainStore.state.currentChain == 'btc' ? hexToBase64(attachments[0].data) : hexToUint8Array(attachments[0].data),
           mime:attachments[0].fileType,
           encryption:body.encryption || body.encrypt,
-          isBroadcast:isBroadcast
+          isBroadcast:false
        })
+
        
-       if(fileTxId){
-        body.attachment=`metafile://${fileTxId}i0`
-       }else{
-        ElMessage.error(`Upload attachment fail`)
+
+      //  if(chainStore.state.currentChain === 'btc'){
+      //   SerialTransactions=fileRes
+      //  }
+
+       if(fileRes == null){
+       
         return null
        }
 
+       if(fileRes?.pinRes?.revealTxIds?.length){
+        body.attachment=`metafile://${fileRes.pinRes.revealTxIds[0]}i0`
+        SerialTransactions=[fileRes.metaidData]
+       }else if(fileRes?.txid){
+        body.attachment=`metafile://${fileRes.txid}i0`
+        SerialTransactions=fileRes?.transactions
+        
+       }else{
+        ElMessage.error(i18n.global.t('upload_attachment_fail'))
+        return null
+       }
+
+       
+
       }
 
-
+      
       const metaidData={
         body:JSON.stringify(body),
         path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
@@ -218,11 +287,12 @@ export const useBulidTx = createGlobalState(() => {
         version: '1.0.0',
         operation: Operation.create,
         contentType:protocol == NodeName.SimpleGroupChat ? 'application/json' : body.contentType || 'application/json',
-        encryption: body.encryption || body.encrypt,
+        encryption:externalEncryption, //body.encryption || body.encrypt,
         encoding: 'utf-8',
       }
       
-      const pinRes= await createPin(metaidData,isBroadcast)
+      const pinRes= await createPin(metaidData,isBroadcast,true,[],SerialTransactions)
+      
       return pinRes
 
     } catch (error) {
@@ -306,6 +376,7 @@ export const useBulidTx = createGlobalState(() => {
     isBroadcast:boolean
   })=>{
     const {body,mime,encryption,isBroadcast,}=params
+    const chainStore=useChainStore()
     
     try {
       const metaidData={
@@ -315,12 +386,33 @@ export const useBulidTx = createGlobalState(() => {
         operation: Operation.create,
         contentType:`${mime};binary`, //`image/${mime};binary`,
         encryption: encryption,
-        encoding: 'binary',
+        encoding:chainStore.state.currentChain == 'btc' ? 'base64' : 'binary',
       }
       
       const pinRes= await createPin(metaidData,isBroadcast)
       
-      if(pinRes?.txids.length){
+      if(!isBroadcast){
+        if(chainStore.state.currentChain == 'btc'){
+          
+          initEccLib(ecc)
+          if(pinRes?.revealTxsHex?.length){
+            const rawTx=pinRes.revealTxsHex[0]
+            const transaction = bitcoin.Transaction.fromHex(rawTx);
+            const txid = transaction.getId();
+          //pinRes?.revealTxIds?.push()
+            pinRes.revealTxIds=[txid]
+            
+          }
+           return {
+            pinRes,
+            metaidData
+           }
+        }else{
+          return pinRes
+        }
+        
+      }
+      if(pinRes?.txids?.length){
         return pinRes?.txids[0]
       }else{
         return null

@@ -122,7 +122,7 @@ export const getOneCommunity = async (communityId: string): Promise<Community> =
   })
 }
 
-export const getOneChannel = async (groupId: string): Promise<Community> => {
+export const getOneChannel = async (groupId: string): Promise<Channel> => {
   
   if(groupId == 'welcome'){
     return null
@@ -301,7 +301,7 @@ export const getChannelMessages = async (
  {
    groupId,
   metaId='',
-  cursor='1',
+  cursor='0',
   size=String(ChannelMsg_Size),
   timestamp='0'
  }:{

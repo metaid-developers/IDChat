@@ -102,7 +102,7 @@
           <Icon
             name="arrow_up_right"
             class="w-3 h-3 p-1 box-content text-gray-500  cursor-pointer"
-            @click="goCheckTxId(talkStore.activeChannel?.txId)"
+            @click="goCheckTxId(currentChannel.val?.txId,currentChannel.val?.chain)"
           />
         </button>
 
@@ -169,7 +169,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted,reactive,watch } from 'vue'
 
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
@@ -177,14 +177,44 @@ import { isMobile } from '@/stores/root'
 
 import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
 import { useWsStore } from '@/stores/ws_new'
+import { useRoute } from 'vue-router'
+import {getOneChannel} from '@/api/talk'
+import { Channel } from '@/@types/talk'
+import {ChatChain} from '@/enum'
+
 
 const talkStore = useTalkStore()
 const layout = useLayoutStore()
 const WS = useWsStore()
+const route=useRoute()
+const currentChannelId=ref(route.params?.channelId || '')
+
+const currentChannel:{val:Channel | Object}=reactive({val:{
+
+}})
 
 const hasWS = computed(() => {
   return !!WS?.ws
 })
+
+watch(()=>route.params,(newVal)=>{
+  
+  if(newVal){
+    currentChannelId.value=newVal.channelId as string
+    getOneChannel(currentChannelId.value as string).then((res)=>{
+    currentChannel.val=res
+})
+  }
+})
+
+getOneChannel(currentChannelId.value as string).then((res)=>{
+  
+    currentChannel.val=res
+})
+
+
+
+
 
 const shortenMetaId = (id: string) => {
   return id.substring(0, 6) + '...' + id.substring(id.length - 6)
@@ -207,8 +237,13 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-const goCheckTxId = (txId: string) => {
-  window.open(`https://mvcscan.com/tx/${txId}`, '_blank')
+const goCheckTxId = (txId: string,chain:ChatChain) => {
+  if(chain == ChatChain.btc){
+      window.open(`https://mempool.space/tx/${txId}`, '_blank')
+  }else{
+      window.open(`https://mvcscan.com/tx/${txId}`, '_blank')
+  }
+
 }
 
 const doNothing = () => {}

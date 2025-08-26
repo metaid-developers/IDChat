@@ -7,6 +7,38 @@ import utc from 'dayjs/plugin/utc'
 import { Chains } from '@/enum'
 dayjs.extend(utc)
 
+export function truncateText(text:string, maxChars = 32) {
+    if (typeof text !== 'string') return '';
+    
+    let charCount = 0;
+    let result = '';
+    
+    for (let i = 0; i < text.length; i++) {
+        // 判断是否为中文字符（Unicode范围）
+        
+        const isChinese = /[\u4e00-\u9fa5]/.test(text[i]);
+        
+        // 中文字符算2个字符单位，其他算1个
+        charCount += isChinese ? 2 : 1;
+        
+        // 如果超出限制，添加省略号并返回
+        if (charCount > maxChars) {
+          
+            return result + '...';
+        }
+        
+        result += text[i];
+        
+        // 如果正好达到限制，直接返回
+        if (charCount === maxChars) {
+            return result;
+        }
+    }
+    
+    // 如果没有超出限制，返回原文本
+    return result;
+}
+
 export function handleWhiteSpace(str: string, genesis: string) {
   if (!str) return
   if (genesis !== 'af265d1a1bb482daf8189861b31b166a6848e499') {
