@@ -1,6 +1,5 @@
 import dayjs from 'dayjs'
 import advancedFormat from 'dayjs/plugin/advancedFormat'
-dayjs.extend(advancedFormat)
 import {
   ChannelType,
   CommunityJoinAction,
@@ -26,13 +25,15 @@ import { ElMessage } from 'element-plus'
 import { GetOneAnnouncement } from '@/api/aggregation'
 import { SHA256 } from 'crypto-js'
 import { toRaw } from 'vue'
-import {useCredentialsStore} from '@/stores/credentials'
+import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
-import {useBulidTx} from '@/hooks/use-build-tx'
+import { useBulidTx } from '@/hooks/use-build-tx'
 import { AttachmentItem } from '@/@types/hd-wallet'
-import {Red_Packet_Min,Red_Packet_Max} from '@/data/constants'
+
 import { useChainStore } from '@/stores/chain'
 import {ChatType,ChatChain} from '@/enum'
+import { Red_Packet_Min, Red_Packet_Max } from '@/data/constants'
+dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
   name: string
@@ -48,7 +49,7 @@ type CommunityData = {
 
 export const createCommunity = async (form: any, userStore: any, sdk: SDK) => {
   // communityId, name, description, cover, metaName, mateNameNft, admins, reserved, icon
-  let { icon, metaName, description, cover, name } = form
+  const { icon, metaName, description, cover, name } = form
   try {
     const attachments = []
     attachments.push(await FileToAttachmentItem(icon))
@@ -106,7 +107,7 @@ export const createCommunity = async (form: any, userStore: any, sdk: SDK) => {
 
 export const updateCommunity = async (form: any, sdk: SDK) => {
   // communityId, name, description, cover, metaName, mateNameNft, admins, reserved, icon
-  let { icon, description, cover, original, metaName, replacingMetaName, name } = form
+  const { icon, description, cover, original, metaName, replacingMetaName, name } = form
 
   const attachments = []
   let replaceIndex = 0
@@ -276,18 +277,17 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 //   return redPackets
 // }
 
-
-const nicerAmount=(amount:number,unit:string)=>{
-    if(unit == 'Space'){
-      return new Decimal(amount).mul(10 ** 8).toNumber()
-    }else{
-      return amount
-    }
+const nicerAmount = (amount: number, unit: string) => {
+  if (unit == 'Space') {
+    return new Decimal(amount).mul(10 ** 8).toNumber()
+  } else {
+    return amount
+  }
 }
 
 // const _putIntoRedPackets = (form: any, address: string): any[] => {
 //   const { amount, quantity, each, type,unit } = form
-  
+
 //   // NFT🧧：将NFT分成指定数量个红包，平均分配
 //   if (type === RedPacketDistributeType.Nft) {
 //     const redPackets = []
@@ -306,13 +306,12 @@ const nicerAmount=(amount:number,unit:string)=>{
 //   // const maxFactor = 1.8
 //   const minSats = Red_Packet_Min // 最小红包金额为1000sats
 //   const redPackets = []
-//   let remainsAmount =nicerAmount(amount,unit) 
+//   let remainsAmount =nicerAmount(amount,unit)
 //   //let remainsCount = quantity
 //   let initIndex=2
 
 //   const currentAmountSats=nicerAmount(amount,unit)
 //   const currentMinSats=unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats
-  
 
 //     // 确保最小金额合理
 //   if (currentAmountSats < minSats * quantity) {
@@ -323,16 +322,16 @@ const nicerAmount=(amount:number,unit:string)=>{
 //     // 计算当前红包的最大可能金额（确保后面每个红包至少有minSats）
 //     const maxPossible = remainsAmount - minSats * (quantity - i - 1);
 //     const minPossible = minSats;
-    
+
 //     // 在合理范围内随机分配
 //     const randomAmount = Math.floor(Math.random() * (maxPossible - minPossible)) + minPossible;
-    
+
 //     redPackets.push({
 //       amount: randomAmount,
 //       address,
 //       index: i + initIndex,
 //     });
-    
+
 //     remainsAmount -= randomAmount;
 //   }
 
@@ -342,12 +341,7 @@ const nicerAmount=(amount:number,unit:string)=>{
 //     index: quantity + initIndex - 1,
 //   });
 
-
 //   return redPackets;
-
-
-  
-
 
 //   // for (let i = 0; i < quantity - 1; i++) {
 //   //   let avgAmount = Math.round(remainsAmount / remainsCount)
@@ -372,8 +366,8 @@ const nicerAmount=(amount:number,unit:string)=>{
 // }
 
 const _putIntoRedPackets = (form: any, address: string): any[] => {
-  const { amount, quantity, each, type, unit } = form;
-  
+  const { amount, quantity, each, type, unit } = form
+
   // // NFT🧧：将NFT分成指定数量个红包，平均分配
   // if (type === RedPacketDistributeType.Nft) {
   //   const redPackets = [];
@@ -388,118 +382,120 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   // }
 
   // 货币🧧：使用正态分布算法分配
-  const minSats = Red_Packet_Min; // 最小红包金额
-  const totalAmount = nicerAmount(amount, unit);
-  
+  const minSats = Red_Packet_Min // 最小红包金额
+  const totalAmount = nicerAmount(amount, unit)
+
   // 确保最小金额合理
   if (totalAmount < minSats * quantity) {
-    const currentMinSats = unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats;
-    throw new Error(`总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${currentMinSats} ${unit}）`);
+    const currentMinSats = unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats
+    throw new Error(
+      `总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${currentMinSats} ${unit}）`
+    )
   }
 
-  const redPackets = [];
-  const initIndex = 2;
-  
+  const redPackets = []
+  const initIndex = 2
+
   // 正态分布算法参数
-  const mean = totalAmount / quantity; // 平均值
-  const stdDev = mean * 0.3; // 标准差，控制分布的集中程度（0.3表示相对集中）
-  
+  const mean = totalAmount / quantity // 平均值
+  const stdDev = mean * 0.3 // 标准差，控制分布的集中程度（0.3表示相对集中）
+
   // 生成符合正态分布的红包金额
-  let remainingAmount = totalAmount;
-  const amounts = [];
-  
+  let remainingAmount = totalAmount
+  const amounts = []
+
   // 首先生成 quantity-1 个红包金额
   for (let i = 0; i < quantity - 1; i++) {
-    let randomAmount;
-    let attempts = 0;
-    const maxAttempts = 100; // 防止无限循环
-    
+    let randomAmount
+    let attempts = 0
+    const maxAttempts = 100 // 防止无限循环
+
     do {
       // 使用Box-Muller变换生成正态分布随机数
-      const u1 = Math.random();
-      const u2 = Math.random();
-      const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-      
+      const u1 = Math.random()
+      const u2 = Math.random()
+      const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2)
+
       // 转换为指定均值和标准差的正态分布
-      randomAmount = Math.round(z0 * stdDev + mean);
-      
+      randomAmount = Math.round(z0 * stdDev + mean)
+
       // 确保金额在合理范围内
-      randomAmount = Math.max(minSats, randomAmount);
-      randomAmount = Math.min(
-        randomAmount,
-        remainingAmount - minSats * (quantity - i - 1)
-      );
-      
-      attempts++;
-    } while ((randomAmount > remainingAmount - minSats * (quantity - i - 1) || 
-             randomAmount < minSats) && attempts < maxAttempts);
-    
+      randomAmount = Math.max(minSats, randomAmount)
+      randomAmount = Math.min(randomAmount, remainingAmount - minSats * (quantity - i - 1))
+
+      attempts++
+    } while (
+      (randomAmount > remainingAmount - minSats * (quantity - i - 1) || randomAmount < minSats) &&
+      attempts < maxAttempts
+    )
+
     // 如果尝试多次仍然无法生成有效金额，使用安全值
     if (attempts >= maxAttempts) {
       randomAmount = Math.max(
         minSats,
-        Math.min(
-          Math.round(mean),
-          remainingAmount - minSats * (quantity - i - 1)
-        )
-      );
+        Math.min(Math.round(mean), remainingAmount - minSats * (quantity - i - 1))
+      )
     }
-    
-    amounts.push(randomAmount);
-    
-    remainingAmount -= randomAmount;
+
+    amounts.push(randomAmount)
+
+    remainingAmount -= randomAmount
   }
-  
+
   // 最后一个红包使用剩余金额，但要确保不小于最小值
-  amounts.push(Math.max(remainingAmount, minSats));
-  
+  amounts.push(Math.max(remainingAmount, minSats))
+
   // 如果最后一个红包过大，重新调整分配（可选的安全检查）
   if (amounts[amounts.length - 1] > mean * 2) {
-    return _redistributeEvenly(amounts, totalAmount, minSats);
+    return _redistributeEvenly(amounts, totalAmount, minSats).map(item => {
+      return {
+        amount: item,
+        address,
+        index: amounts.length + initIndex,
+      }
+    })
   }
-  
+
   // 构建红包对象
   for (let i = 0; i < amounts.length; i++) {
     redPackets.push({
       amount: amounts[i],
       address,
       index: i + initIndex,
-    });
+    })
   }
-  console.log("redPackets",redPackets)
-  return redPackets;
-};
+  console.log('redPackets', redPackets)
+  return redPackets
+}
 
 // 辅助函数：如果分配不均，进行重新分配
 const _redistributeEvenly = (amounts: number[], totalAmount: number, minSats: number): any[] => {
-  const quantity = amounts.length;
-  const mean = Math.round(totalAmount / quantity);
-  const adjustedAmounts = [];
-  
-  let remainingAmount = totalAmount;
-  
+  const quantity = amounts.length
+  const mean = Math.round(totalAmount / quantity)
+  const adjustedAmounts = []
+
+  let remainingAmount = totalAmount
+
   for (let i = 0; i < quantity - 1; i++) {
     // 在平均值附近小范围波动 (±20%)
-    const variation = Math.random() * 0.4 - 0.2; // -20% 到 +20%
-    let amount = Math.round(mean * (1 + variation));
-    
-    amount = Math.max(minSats, amount);
-    amount = Math.min(amount, remainingAmount - minSats * (quantity - i - 1));
-    
-    adjustedAmounts.push(amount);
-    remainingAmount -= amount;
+    const variation = Math.random() * 0.4 - 0.2 // -20% 到 +20%
+    let amount = Math.round(mean * (1 + variation))
+
+    amount = Math.max(minSats, amount)
+    amount = Math.min(amount, remainingAmount - minSats * (quantity - i - 1))
+
+    adjustedAmounts.push(amount)
+    remainingAmount -= amount
   }
-  
-  adjustedAmounts.push(Math.max(remainingAmount, minSats));
-  
-  return adjustedAmounts;
-};
 
+  adjustedAmounts.push(Math.max(remainingAmount, minSats))
 
+  return adjustedAmounts
+}
 
 export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string) => {
   // 1.1 构建红包地址
-  const buildTx=useBulidTx()
+  const buildTx = useBulidTx()
   const code = realRandomString(6)
   const subId = channelId.substring(0, 12)
   const createTime = Date.now()
@@ -512,20 +508,19 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000
-  const amountInSat =nicerAmount(form.amount,form.unit) // 现在直接使用sat为单位
-  
-  
+  const amountInSat = nicerAmount(form.amount, form.unit) // 现在直接使用sat为单位
+
   const redPackets = _putIntoRedPackets(form, address)
-  
+
   console.table(redPackets)
   console.log({ form })
 
   // 2. 构建数据载体
   const dataCarrier: any = {
     createTime,
-    groupId:channelId,
-    img:'',
-    imgType:'',
+    groupId: channelId,
+    img: '',
+    imgType: '',
     subId,
     content: form.message,
     code,
@@ -533,13 +528,12 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     count: form.quantity,
     metaid: selfMetaId,
     payList: redPackets,
-    type:'space',
-    requireType:'',
-    requireTickId:'',
-    requireCollectionId:"",
-    limitAmount:0
+    type: 'space',
+    requireType: '',
+    requireTickId: '',
+    requireCollectionId: '',
+    limitAmount: 0,
   }
-  
 
   // 2.1 nft红包处理
   if (form.nft && form.chain) {
@@ -559,21 +553,18 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     protocol: NodeName.SimpleGroupLuckyBag,
     body: dataCarrier,
     payTo: redPackets,
-    isBroadcast:true,
+    isBroadcast: true,
   }
 
   // 3. 发送节点
   try {
     const res = await buildTx.createRedPacket(node)
-    
+
     console.log({ res })
   } catch (err) {
     console.log(err)
     ElMessage.error('Failed')
-    return
   }
-
-  return
 }
 
 export const createChannel = async (
@@ -587,11 +578,8 @@ export const createChannel = async (
   // communityId, groupName, groupNote, timestamp, groupType, status, type, codehash, genesis, limitAmount
   const { name: groupName } = form
 
-  const { groupType, status, type, limitAmount } = _getChannelTypeInfo(
-    form,
-    selfMetaId!
-  )
-  
+  const { groupType, status, type, limitAmount } = _getChannelTypeInfo(form, selfMetaId!)
+
   // 发言设置，0：所有人，1：管理员
   const chatSettingType = form.adminOnly ? 1 : 0
 
@@ -606,22 +594,21 @@ export const createChannel = async (
     groupType,
     status,
     type,
-    tickId:'',
-    collectionId:'',
+    tickId: '',
+    collectionId: '',
     // codehash,
     // genesis,
     limitAmount,
     chatSettingType,
-    deleteStatus:0,
+    deleteStatus: 0,
     timestamp: getTimestampInSeconds(),
   }
 
-  if(!communityId){
-    
+  if (!communityId) {
     delete dataCarrier.groupId
   }
   console.log({ dataCarrier })
-  
+
   // 2. 构建节点参数
   const node = {
     protocol: NodeName.SimpleGroupCreate,
@@ -629,21 +616,20 @@ export const createChannel = async (
     // publickey: form.publicKey,
     // txId: form.txId,
   }
-  
 
   // 3. 发送节点
   try {
-    const {protocol,body}=node
-   // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
-   const res=await buildTx.createChannel({
+    const { protocol, body } = node
+    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const res = await buildTx.createChannel({
       protocol,
       body,
-      isBroadcast:true
+      isBroadcast: true,
     })
-    console.log("res",res)
-    
+    console.log('res', res)
+
     console.log({ res })
-    
+
     if (res === null) {
       return { status: 'canceled' }
     }
@@ -680,7 +666,7 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
   let codehash = null
   let genesis = null
   let limitAmount = null
-  
+
   switch (form.type) {
     case GroupChannelType.PublicText:
       groupType = '1'
@@ -749,30 +735,26 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
   return { groupType, status, type, codehash, genesis, limitAmount }
 }
 
-export const joinChannel= async (groupId: string,referrer?:string) => {
-  const buildTx=useBulidTx()
+export const joinChannel = async (groupId: string, referrer?: string) => {
+  const buildTx = useBulidTx()
   const dataCarrier = {
-    groupId:groupId || '',
+    groupId: groupId || '',
     state: CommunityJoinAction.Join,
-    referrer:referrer || '',
+    referrer: referrer || '',
   }
-
-  
 
   // 2. 构建节点参数
   const node = {
-    protocol:NodeName.SimpleGroupJoin, //NodeName.SimpleCommunityJoin,
+    protocol: NodeName.SimpleGroupJoin, // NodeName.SimpleCommunityJoin,
     encrypt: String(IsEncrypt.No),
-    //dataType: 'application/json',
-    isBroadcast:true,
+    // dataType: 'application/json',
+    isBroadcast: true,
     body: dataCarrier,
   }
 
-  
-
   // 3. 发送节点
   const nodeRes = await buildTx.joinGrop(node)
-  
+
   if (nodeRes === null) {
     return {
       status: 'failed',
@@ -782,20 +764,20 @@ export const joinChannel= async (groupId: string,referrer?:string) => {
   return { groupId }
 }
 
-export const joinCommunity= async (groupId: string,referrer?:string) => {
-  const buildTx=useBulidTx()
+export const joinCommunity = async (groupId: string, referrer?: string) => {
+  const buildTx = useBulidTx()
   const dataCarrier = {
-    groupId:groupId || '',
+    groupId: groupId || '',
     state: CommunityJoinAction.Join,
-    referrer:referrer || '',
+    referrer: referrer || '',
   }
 
   // 2. 构建节点参数
   const node = {
-    protocol:NodeName.SimpleGroupJoin, //NodeName.SimpleCommunityJoin,
+    protocol: NodeName.SimpleGroupJoin, // NodeName.SimpleCommunityJoin,
     encrypt: IsEncrypt.No,
-    //dataType: 'application/json',
-    isBroadcast:true,
+    // dataType: 'application/json',
+    isBroadcast: true,
     body: dataCarrier,
   }
 
@@ -811,12 +793,12 @@ export const joinCommunity= async (groupId: string,referrer?:string) => {
   return { groupId }
 }
 
-export const leaveCommunity = async (communityId: string ) => {
-   const buildTx=useBulidTx()
+export const leaveCommunity = async (communityId: string) => {
+  const buildTx = useBulidTx()
   const dataCarrier = {
-    groupId:communityId || '',
+    groupId: communityId || '',
     state: CommunityJoinAction.Leave,
-    referrer:'',
+    referrer: '',
   }
 
   // 2. 构建节点参数
@@ -824,11 +806,11 @@ export const leaveCommunity = async (communityId: string ) => {
     protocol: NodeName.SimpleCommunityJoin,
     body: dataCarrier,
     encrypt: IsEncrypt.No,
-    isBroadcast:true,
+    isBroadcast: true,
   }
 
   // 3. 发送节点
-  const nodeRes =await buildTx.joinGrop(node) //await sdk.createBrfcChildNode(node)
+  const nodeRes = await buildTx.joinGrop(node) // await sdk.createBrfcChildNode(node)
 
   if (nodeRes === null) {
     return {
@@ -860,7 +842,7 @@ export const sendMessage = async (messageDto: MessageDto) => {
 
 // export const reSendMessage = async (messageDto: MessageDto) => {
 //   try {
-    
+
 //     switch (messageDto.type) {
 //       case MessageType.Text:
 //         if (messageDto.channelType === ChannelType.Session) {
@@ -890,7 +872,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   const talkStore = useTalkStore()
   const chainStore=useChainStore()
   const { content, channelId: groupID, userName: nickName, reply } = messageDto
-  
+
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
   const contentType = 'text/plain'
@@ -908,12 +890,12 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
 
   // 2. 构建节点参数
   const node = {
-    protocol:NodeName.SimpleGroupChat,
+    protocol: NodeName.SimpleGroupChat,
     body: dataCarrier,
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
     externalEncryption,
   }
-  
+
   // 2.5. mock发送
   const mockId = realRandomString(12)
   // const mockMessage = {
@@ -946,7 +928,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   //       }
   //     : undefined,
   // }
-   const mockMessage = {
+  const mockMessage = {
     mockId,
     protocol: NodeName.SimpleGroupChat,
     contentType: 'text/plain',
@@ -959,7 +941,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     avatarImage: userStore.last?.avatar || '',
     metaId: userStore.last?.metaid || 'undefined',
     nickName: userStore.last?.name || '',
-    userInfo:userStore.last,
+    userInfo: userStore.last,
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption,
@@ -983,22 +965,18 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
-  //const sdk = userStore.showWallet
+  // const sdk = userStore.showWallet
   try {
-   const tryRes= await tryCreateNode(node, mockId)
-  
-   if(tryRes === false){
-    
-    talkStore.addRetryList({...messageDto,mockId})
-   
-   }else{
-    talkStore.removeRetryList(mockId)
-     return '1'
-   }
+    const tryRes = await tryCreateNode(node, mockId)
 
-   
+    if (tryRes === false) {
+      talkStore.addRetryList({ ...messageDto, mockId })
+    } else {
+      talkStore.removeRetryList(mockId)
+      return '1'
+    }
   } catch (error) {
-    talkStore.addRetryList({...messageDto,mockId})
+    talkStore.addRetryList({ ...messageDto, mockId })
   }
 }
 
@@ -1014,10 +992,8 @@ export const tryCreateNode = async (node: {
   const buildTx=useBulidTx()
    const {protocol,body,timestamp:timeStamp,attachments,externalEncryption}=node
   try {
-    
-   
-    //const nodeRes = await sdk.createBrfcChildNode(node)
-    const nodeRes=await buildTx.createShowMsg({
+    // const nodeRes = await sdk.createBrfcChildNode(node)
+    const nodeRes = await buildTx.createShowMsg({
       protocol,
       body,
       attachments,
@@ -1025,25 +1001,21 @@ export const tryCreateNode = async (node: {
       isBroadcast:true
     })
 
-  
-   
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
     if (nodeRes === null) {
       talk.removeMessage(mockId)
     }
-    
   } catch (error) {
-    
     const timestamp = timeStamp
     jobs?.node && jobs?.nodes.push({ node, timestamp })
     const newMessages = talk.activeChannel.newMessages
     const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
     if (message) {
-      console.log("message",message)
-      
+      console.log('message', message)
+
       message.error = true
-      message.reason=`${(error as any).toString()}`
+      message.reason = `${(error as any).toString()}`
       return false
     }
   }
@@ -1075,7 +1047,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
 
   // 2. 构建节点参数
   const node = {
-    protocol:NodeName.ShowMsg,
+    protocol: NodeName.ShowMsg,
     body: dataCarrier,
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
   }
@@ -1108,7 +1080,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   // }
 
   // 查找store中的位置
-    const mockMessage = {
+  const mockMessage = {
     content,
     mockId,
     nodeName: NodeName.ShowMsg,
@@ -1136,7 +1108,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
-  //const sdk = userStore.showWallet
+  // const sdk = userStore.showWallet
   await tryCreateNode(node, mockId)
 
   return '1'
@@ -1187,31 +1159,30 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const encrypt = '0'
   const externalEncryption='aes'
   // const attachment =attachments//'metafile://$[0]'
-  
-  let dataCarrier: any = {
+
+  const dataCarrier: any = {
     timestamp,
     encrypt,
     fileType,
-    groupId:channelId,
+    groupId: channelId,
     nickName,
-    attachment:'',
+    attachment: '',
     replyPin: reply ? `${reply.txId}i0` : '',
   }
 
-  
   if (messageDto.channelType !== ChannelType.Group) {
-     dataCarrier.to = channelId
-  } 
+    dataCarrier.to = channelId
+  }
 
   const nodeName =
     messageDto.channelType === ChannelType.Group
       ? NodeName.SimpleFileGroupChat
       : NodeName.SimpleFileMsg
-  
+
   // 2. 构建节点参数
   const node = {
     protocol: nodeName,
-    //dataType: 'application/json',
+    // dataType: 'application/json',
     body: dataCarrier,
     attachments,
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
@@ -1237,7 +1208,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     metaId: userStore.last?.metaid || 'undefined',
     from: userStore.last?.metaid,
     nickName: userStore.last?.name || '',
-    userInfo:userStore.last, //userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
+    userInfo: userStore.last, // userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption: encrypt,
@@ -1248,22 +1219,18 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
-  //const sdk = userStore.showWallet
+  // const sdk = userStore.showWallet
   try {
-   const tryRes= await tryCreateNode(node, mockId)
-   if(!tryRes){
-    talkStore.addRetryList({...messageDto,mockId})
-  
-   }else{
-    talkStore.removeRetryList(mockId)
-     return
-   }
-
-   
+    const tryRes = await tryCreateNode(node, mockId)
+    if (!tryRes) {
+      talkStore.addRetryList({ ...messageDto, mockId })
+    } else {
+      talkStore.removeRetryList(mockId)
+      return
+    }
   } catch (error) {
-    talkStore.addRetryList({...messageDto,mockId})
+    talkStore.addRetryList({ ...messageDto, mockId })
   }
-
 
   // await tryCreateNode(node,mockId)
 
@@ -1271,17 +1238,16 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
 }
 
 export const formatTimestamp = (timestamp: number, i18n: any, showMinutesWhenOld = true) => {
-
-  if(String(timestamp).length < 13){
-    timestamp=timestamp * 1000
+  if (String(timestamp).length < 13) {
+    timestamp = timestamp * 1000
   }
 
-  if(String(timestamp).length >= 16){
-    timestamp=timestamp / 1000
+  if (String(timestamp).length >= 16) {
+    timestamp = timestamp / 1000
   }
-  
+
   const day = dayjs(timestamp)
-  
+
   // 如果是今天，则显示为“今天 hour:minute”
   if (day.isSame(dayjs(), 'day')) {
     return `${day.format('HH:mm')}`
@@ -1525,10 +1491,10 @@ export function decryptedMessage(
 
   if (isSession) {
     if (!talk.activeChannel) return ''
-      const credentialsStore = useCredentialsStore()
-      const connectionStore=useConnectionStore()
-     const credential=credentialsStore.getByAddress(connectionStore.last.address)
-    const sigStr=atobToHex(credential!.signature)
+    const credentialsStore = useCredentialsStore()
+    const connectionStore = useConnectionStore()
+    const credential = credentialsStore.getByAddress(connectionStore.last.address)
+    const sigStr = atobToHex(credential!.signature)
     // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
     // // @ts-ignore
     // const privateKeyStr = privateKey.toHex()
