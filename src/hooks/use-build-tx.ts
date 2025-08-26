@@ -236,7 +236,7 @@ export const useBulidTx = createGlobalState(() => {
     body:any,
     protocol:string,
     isBroadcast:boolean,
-    externalEncryption?:'aes' | '1' | '0'
+    externalEncryption?:'0' | '1' | '2'
     attachments?:AttachmentItem[]
   })=>{
     const {body,protocol,isBroadcast,attachments,externalEncryption}=params
@@ -248,7 +248,7 @@ export const useBulidTx = createGlobalState(() => {
        const fileRes= await createMvcFile({
           body:chainStore.state.currentChain == 'btc' ? hexToBase64(attachments[0].data) : hexToUint8Array(attachments[0].data),
           mime:attachments[0].fileType,
-          encryption:body.encryption || body.encrypt,
+          encryption:externalEncryption,
           isBroadcast:false
        })
 
@@ -316,7 +316,7 @@ export const useBulidTx = createGlobalState(() => {
         version: '1.0.0',
         operation: Operation.create,
         contentType: 'application/json',
-        encryption: body.encryption || body.encrypt,
+        encryption:'0', //body.encryption || body.encrypt,
         encoding: 'utf-8',
       }
       

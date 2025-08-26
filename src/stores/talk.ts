@@ -354,7 +354,7 @@ export const useTalkStore = defineStore('talk', {
       const publicChannel=await getChannels({
             metaId:this.selfMetaId,
           })
-          console.log("publicChannel",publicChannel)
+          
           
       const channels=[...publicChannel]
       //[...publicChannel,...atMeChannel]

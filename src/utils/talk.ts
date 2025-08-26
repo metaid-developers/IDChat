@@ -876,8 +876,8 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
   const contentType = 'text/plain'
-  const encryption = '0'
-  const externalEncryption='aes'
+  const encryption = 'aes'
+  const externalEncryption='0'
   const dataCarrier = {
     groupID,
     timestamp,
@@ -984,7 +984,7 @@ export const tryCreateNode = async (node: {
   protocol:string
   body:any
   timestamp:number
-  externalEncryption?:'aes' | '1' | '0'
+  externalEncryption?:'0' | '1' | '2'
   attachments?:AttachmentItem[]
 }, mockId: string) => {
   const jobs = useJobsStore()
@@ -1156,8 +1156,8 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const file = attachments![0]
   const fileType = file.fileType.split('/')[1]
   // 1.5 encrypt
-  const encrypt = '0'
-  const externalEncryption='aes'
+  const encrypt = 'aes'
+  const externalEncryption='0'
   // const attachment =attachments//'metafile://$[0]'
 
   const dataCarrier: any = {
@@ -1478,16 +1478,16 @@ export function decryptedMessage(
 ) {
   const talk = useTalkStore()
   
- 
+   if (encryption === '0') {
+      //return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
+     return content
+  }
 
   if (containsString(protocol,NodeName.SimpleFileGroupChat) || containsString(protocol,NodeName.SimpleFileMsg)) {
     return content
   }
 
-   if (encryption === '0') {
-      return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
-    // return content
-  }
+ 
 
   if (isSession) {
     if (!talk.activeChannel) return ''
