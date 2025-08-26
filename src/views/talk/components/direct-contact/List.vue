@@ -8,7 +8,7 @@
       <!-- <div class="shrink-0 bg-white dark:bg-gray-700 w-22.5 lg:hidden"></div> -->
 
       <div
-        class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-60 flex flex-col justify-between items-stretch"
+        class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch"
       >
         <div class="flex flex-col overflow-y-hidden">
           <!-- 搜索栏 -->

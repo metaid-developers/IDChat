@@ -65,7 +65,7 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  return talkStore?.activeCommunity?.channels?.find(item => item.pinId === route.params.channelId)
+  return talkStore?.activeCommunity?.channels?.find(item => item.groupId === route.params.channelId)
 })
 
 // 监听currentChannelInfo变化，重新拉取成员数据

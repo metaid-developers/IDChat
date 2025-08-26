@@ -166,11 +166,11 @@ export function randomString() {
     .replace('.', '')
 }
 
-export function containsString(str:string, search:string) {
+export function containsString(protocol:string, searchProtocol:string) {
     // 创建一个正则表达式，匹配传入的字符串
     // 使用 'RegExp' 构造函数，并转义特殊字符
-    const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    return regex.test(str);
+    const regex = new RegExp(searchProtocol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    return regex.test(protocol);
 }
 
 export function getTimestampInSeconds() {

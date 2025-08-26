@@ -14,29 +14,37 @@
         class="w-12 h-12 shrink-0 select-none"
         :disabled="true"
       />
-      <div
-        class="absolute top-0 right-0 rounded-full w-2.5 h-2.5 bg-red-500"
-        v-if="talk.hasUnreadMessagesOfChannel(session?.metaId || session?.createUserMetaId)"
-      ></div>
+       <div
+        class="flex items-center justify-center absolute top-[-3px] right-0 rounded-full w-4 h-4 bg-red-500"
+        v-if="talk.hasUnreadMessagesOfChannel(session?.groupId || session?.id)"
+      >
+    
+      
+    </div>
+      
     </div>
 
     <div class="flex flex-col items-stretch grow space-y-1 overflow-x-hidden">
-      <div class="flex items-baseline justify-between self-stretch">
+      <div class="flex relative items-baseline justify-between self-stretch">
         <UserName
           :name="contact.name"
           :meta-name="contact?.metaName"
           :no-tag="true"
+          class="mr-2"
           :text-class="'font-medium dark:text-gray-100 max-w-[96PX]'"
         />
+       
 
-        <div class="shrink-0 text-dark-250 dark:text-gray-400 text-xs">
-          {{
-            session.lastMessageTimestamp
-              ? formatTimestamp(session.lastMessageTimestamp, i18n, false)
+        <div class="shrink-0  text-dark-250 dark:text-gray-400 text-xs">
+          {{lastMsgTimestamp ? formatTimestamp(lastMsgTimestamp, i18n, false) :
+            session.timestamp
+              ? formatTimestamp(session.timestamp, i18n, false)
               : ''
           }}
         </div>
       </div>
+      <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
+        <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
       <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-[160PX]">
         {{ lastMessage }}
       </div>
@@ -45,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { formatTimestamp } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
 import { computed, toRaw } from 'vue'
@@ -55,8 +63,9 @@ import { useTalkStore } from '@/stores/talk'
 import { ecdhDecrypt } from '@/utils/crypto'
 import {useCredentialsStore} from '@/stores/credentials'
 import {useConnectionStore } from '@/stores/connection'
-import {atobToHex} from '@/utils/util'
-import { NodeName } from '@/enum'
+import {atobToHex, containsString} from '@/utils/util'
+import { NodeName,IsEncrypt,ChatType } from '@/enum'
+import { nextTick } from 'process'
 const i18n = useI18n()
 const userStore = useUserStore()
 const layout = useLayoutStore()
@@ -64,14 +73,14 @@ const router = useRouter()
 const talk = useTalkStore()
 const credentialsStore = useCredentialsStore()
 const connectionStore=useConnectionStore()
-
+const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 
 console.log('props.session',props.session)
 
 const contact = computed<any>(() => {
   let contactSide = 'from'
-  
+    
   if (userStore.last) {
     const selfMetaId = userStore.last.metaid
     if (props.session.from === selfMetaId) {
@@ -93,29 +102,81 @@ const contact = computed<any>(() => {
 
 const lastMessage = computed<string>(() => {
   if (props.session.protocol === 'ShowMsg') {
-    return parseTextMessage(decryptedMessage.value)
+    return parseTextMessage(decryptedMsg.value)
   }
 
-  return i18n.t(`Talk.Channel.you_received_a_new_message`)
+  return parseTextMessage(decryptedMsg.value) //i18n.t(`Talk.Channel.you_received_a_new_message`)
 })
 
-const decryptedMessage = computed(() => {
-  if (props.session.data.encrypt !== '1') {
-    return props.session.data.content
+
+const lastMsgTimestamp=computed(()=>{
+  if(props.session?.newMessages?.length){
+    return props.session.newMessages[props.session.newMessages.length - 1].timestamp
+  }else return props.session.timestamp
+})
+
+
+
+
+
+
+
+
+const decryptedMsg = computed(() => {
+  if(!props.session.content){
+    return ''
+  }
+  let content
+  let secretKeyStr=props.session.groupId.substring(0,16)
+  if(props.session?.newMessages?.length){
+    content=props.session.newMessages[props.session.newMessages.length -1].content
+   
+  }else{
+    
+    content=props.session.content
+  }
+  const isSession=Number(props.session.type) === 2 ? true : false
+
+  const key=props.session?.newMessages?.length ?  props.session?.newMessages[props.session?.newMessages?.length - 1]?.chatType : props.session?.chatType
+   const isImg=props.session?.newMessages?.length ? imageType.includes(props.session?.newMessages[props.session?.newMessages?.length - 1]?.contentType) : props.session?.chatType == ChatType.img ? true : false
+    
+   if(isImg){
+     return `[${i18n.t('new_msg_img')}]`
+  }
+  switch (key) {
+    
+    case ChatType.msg:
+      
+      return decryptedMessage(content,String(IsEncrypt.Yes),'',props.session?.isMock,isSession,secretKeyStr)
+    case ChatType.red:
+      
+      return `🧧 ${content.replace(':','')}`;
+    case ChatType.img:
+      console.log("有没有进来")
+      
+      //const protocol=isSession ? NodeName.SimpleFileMsg : NodeName.SimpleFileGroupChat
+      return `[${i18n.t('new_msg_img')}]`//decryptedMessage(props.session.content,String(IsEncrypt.Yes),protocol,props.session?.isMock,isSession)
+  
+   
   }
 
-  // 处理mock的图片消息
-  if (props.session.isMock && props.session.protocol === NodeName.SimpleFileGroupChat ) {
-    return props.session.data.content
-  }
+  //return decryptedMessage(props.session.content,String(IsEncrypt.Yes),)
+  // if (props.session.type !== '1') {
+  //   return props.session.data.content
+  // }
 
-     const credential=credentialsStore.getByAddress(connectionStore.last.address)
-    const sigStr=atobToHex(credential!.signature)
-  // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
-  // const privateKeyStr = privateKey.toHex()
-  const otherPublicKeyStr = props.session.publicKeyStr
+  // // 处理mock的图片消息
+  // if (props.session.isMock && containsString(props.session.protocol,NodeName.SimpleFileGroupChat )) {
+  //   return props.session.content
+  // }
 
-  return ecdhDecrypt(props.session.data.content, sigStr, otherPublicKeyStr)
+  //    const credential=credentialsStore.getByAddress(connectionStore.last.address)
+  //   const sigStr=atobToHex(credential!.signature)
+  // // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
+  // // const privateKeyStr = privateKey.toHex()
+  // const otherPublicKeyStr = props.session.publicKeyStr
+
+  // return ecdhDecrypt(props.session.content, sigStr, otherPublicKeyStr)
 })
 
 const parseTextMessage = (text: string) => {

@@ -1,5 +1,12 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
+
+export enum ChatType{
+  msg=0,
+  red=1,
+  img=3
+}
+
 export enum GrabStatus{
   grabSuccess=0,
   grabSuccessAndBroadcastPending=1,
