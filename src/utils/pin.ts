@@ -46,6 +46,10 @@ export type InscriptionRequest = {
     satoshis: string
   }[]
 }
+
+export function getEffectiveBTCFeerate(feeRate: number): number {
+  return feeRate === 1 ? 1.1 : feeRate
+}
 export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadcasting>({
   inscribeDataArray,
   options,
@@ -65,7 +69,6 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
     }[]
   }
 }): Promise<InscribeResultForIfBroadcasting[T]> {
-  
   const address = await window.metaidwallet.btc.getAddress()
   const metaidDataList: MetaidData[] = inscribeDataArray.map(inp => {
     const contentType = inp?.contentType ?? 'text/plain'
@@ -85,7 +88,7 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
 
   const request: InscriptionRequest = {
     // commitTxPrevOutputList,
-    feeRate: options?.feeRate ?? 1,
+    feeRate: getEffectiveBTCFeerate(options?.feeRate ?? 1),
     revealOutValue: 546,
     metaidDataList,
     changeAddress: address,
@@ -93,16 +96,14 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
     outputs: options?.outputs,
   }
 
-  const data={
+  const data = {
     data: request,
     options: {
       noBroadcast: options?.noBroadcast !== 'no',
     },
   }
 
-  console.log("data",JSON.stringify(data))
-  
-
+  console.log('data', JSON.stringify(data))
 
   const res = await window.metaidwallet.btc.inscribe({
     data: request,
@@ -112,6 +113,6 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
   })
 
   console.log('inscrible res', res)
-  
+
   return res
 }

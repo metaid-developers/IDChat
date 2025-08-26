@@ -11,7 +11,10 @@
       <!-- Chain Options with Fee Types -->
       <div class="chain-sections">
         <!-- BTC Section -->
-        <div class="chain-section  main-border " :class="{ faded: selectedChain !== 'btc' }">
+        <div
+          class="chain-section  main-border "
+          :class="{ faded: selectedChain !== 'btc', selected: selectedChain === 'btc' }"
+        >
           <div class="chain-header flex items-center" @click="selectChain('btc')">
             <div class="chain-icon">
               <img src="@/assets/images/btc.png" alt="BTC" class="w-[30px] h-[30px] rounded-full" />
@@ -79,7 +82,10 @@
         </div>
 
         <!-- MVC Section -->
-        <div class="chain-section main-border" :class="{ faded: selectedChain !== 'mvc' }">
+        <div
+          class="chain-section main-border"
+          :class="{ faded: selectedChain !== 'mvc', selected: selectedChain === 'mvc' }"
+        >
           <div class="chain-header " @click="selectChain('mvc')">
             <div class="chain-icon">
               <img src="@/assets/images/mvc.png" alt="MVC" class="w-[30px] h-[30px] rounded-full" />
@@ -119,7 +125,7 @@
               }"
               @click="selectFeeType('fastestFee', 'mvc')"
             >
-              <div class="fee-label">Mining</div>
+              <div class="fee-label">High</div>
               <div class="flex items-center gap-1">
                 <div class="fee-value">{{ chainStore.state.mvc.fastestFee }}</div>
                 <div class="fee-time">sat/vB</div>
@@ -262,9 +268,9 @@ watch(
   border-radius: 12px;
   overflow: hidden;
 
-  &.selected {
-    border-color: var(--themeTextColor);
-  }
+  //   &.selected {
+  //     border-color: var(--themeTextColor);
+  //   }
 }
 
 .chain-header {
@@ -342,24 +348,38 @@ watch(
   background: var(--themeBgThreeColor);
   transition: all 0.15s ease;
 
+  //   &.selected {
+  //     border: 2px solid var(--themeTextColor);
+  //     background: var(--color-primary);
+  //   }
+}
+.chain-section {
   &.selected {
-    border: 2px solid var(--themeTextColor);
-    background: var(--color-primary);
+    .fee-option {
+      &.selected {
+        border: 2px solid var(--themeTextColor);
+        background: var(--color-primary);
+      }
+    }
   }
 }
 .dark {
-  .fee-option {
+  .chain-section {
     &.selected {
-      border: 2px solid #000;
-      background: var(--color-primary);
-      .fee-label {
-        color: #000;
-      }
-      .fee-value {
-        color: #000;
-      }
-      .fee-time {
-        color: #000;
+      .fee-option {
+        &.selected {
+          border: 2px solid #000;
+          background: var(--color-primary);
+          .fee-label {
+            color: #000;
+          }
+          .fee-value {
+            color: #000;
+          }
+          .fee-time {
+            color: #000;
+          }
+        }
       }
     }
   }

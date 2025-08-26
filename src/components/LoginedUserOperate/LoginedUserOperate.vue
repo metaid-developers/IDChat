@@ -121,7 +121,9 @@
           />
           <div class="fee-info">
             <span class="fee-rate-menu">{{ currentFeeRate }}</span>
-            <span class="fee-unit-menu">sats</span>
+            <span class="fee-unit-menu"
+              >{{ chainStore.state.currentChain === 'btc' ? 'sat/vB' : 'sats/b' }}
+            </span>
           </div>
           <el-icon><CaretRight class="arrow-icon-menu"/></el-icon>
         </div>

@@ -98,7 +98,7 @@ export const useChainStore = defineStore('chain', () => {
       state.value.mvc.fastestFee = feeRates.fastestFee
       state.value.mvc.halfHourFee = feeRates.halfHourFee
       state.value.mvc.hourFee = feeRates.hourFee
-      state.value.mvc.economyFee = feeRates.economyFee
+      state.value.mvc.economyFee = 1
       state.value.mvc.minimumFee = feeRates.minimumFee
       state.value.mvc.lastUpdated = Date.now()
     } catch (error) {
