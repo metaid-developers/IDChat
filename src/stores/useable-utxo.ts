@@ -4,6 +4,7 @@ import {type SA_utxo,UTXO} from '@/@types/common'
 
 
 
+
 export const useUtxosStore =defineStore('utxos', {
   state: () => {
     return {
@@ -31,8 +32,7 @@ export const useUtxosStore =defineStore('utxos', {
       
     },
 
-   
-
+  
     remove(address: string) {
       this.utxoList = this.utxoList.filter((s) => s.address !== address)
     },

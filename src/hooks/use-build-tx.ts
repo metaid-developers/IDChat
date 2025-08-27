@@ -459,6 +459,9 @@ export const useBulidTx = createGlobalState(() => {
       pinRes= await createPinWithAsset(metaidData,_options)
       
       if(pinRes){
+        // const {utxo} = pinRes
+        // utxoStore.remove(rootAddress.value)
+        // utxoStore.insert(utxo, utxo.address)
         utxoStore.remove(rootAddress.value)
       }
       

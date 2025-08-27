@@ -8,13 +8,14 @@
     <button
       v-for="action in actions"
       :key="action.name"
-      class="p-1.5"
+      class="p-1.5 flex items-center"
       @click="handleAction(action)"
     >
       <Icon
         :name="action.icon"
         class="w-5 h-5 text-dark-800 dark:text-gray-100 hover:text-primary dark:hover:text-primary transition-all duration-200"
       />
+      <img class="w-3 h-3" v-if="action?.suffixIcon" :src="action.suffixIcon" alt="">
     </button>
   </div>
 </template>
@@ -30,7 +31,8 @@ import { containsString, fetchTranlateResult } from '@/utils/util'
 import { ShareChatMessageData } from '@/@types/common'
 import { isMobile } from '@/stores/root'
 import { ElMessage } from 'element-plus'
-
+import BTC from '@/assets/images/btc.png'
+import MVC from '@/assets/images/icon_mvc.png'
 const i18n = useI18n()
 
 const props = defineProps(['message', 'parsed', 'translateStatus', 'translatedContent'])
@@ -240,10 +242,12 @@ const actions = computed(() => {
   }
 
   if (props.message.txId) {
+   
     if (!containsString(props.message?.protocol, NodeName.SimpleGroupOpenLuckybag)) {
       actions.push({
         name: 'Talk.MessageMenu.tx',
         icon: 'tx',
+        suffixIcon:props.message.chain == ChatChain.btc ? BTC : MVC,
         action: () => {
           // 跳转到该消息对应的交易
            if(props.message.chain == ChatChain.btc){
@@ -259,6 +263,7 @@ const actions = computed(() => {
         actions.push({
           name: 'Talk.MessageMenu.tx',
           icon: 'tx',
+          suffixIcon:props.message.chain == ChatChain.btc ? BTC : MVC,
           action: () => {
            
             // 跳转到该消息对应的交易
