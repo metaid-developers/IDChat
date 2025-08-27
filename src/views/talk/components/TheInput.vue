@@ -79,7 +79,6 @@
     </div>
 
     <div :class="[rows > 1 ? 'items-start' : 'items-center', 'flex h-fit']">
-     
       <!-- <Popover class="relative flex items-center" v-slot="{ open }">
         <PopoverButton
           as="button"
@@ -158,7 +157,9 @@
             })
           "
           v-model="chatInput"
-          @keyup.enter.exact.prevent="trySendText"
+          @keydown="handleKeyDown"
+          @compositionstart="onCompositionStart"
+          @compositionend="onCompositionEnd"
         />
       </div>
 
@@ -283,15 +284,16 @@
 <script setup lang="ts">
 import { computed, ref, toRaw, Ref } from 'vue'
 import { Popover, PopoverButton, PopoverPanel, TransitionRoot } from '@headlessui/vue'
+import { ElMessage, ElPopover } from 'element-plus'
 
 import { sendMessage, validateTextMessage, isImage, isFileTooLarge } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useConnectionStore } from '@/stores/connection'
-import { FileToAttachmentItem, compressImage,atobToHex } from '@/utils/util'
-import {useCredentialsStore} from '@/stores/credentials'
+import { FileToAttachmentItem, compressImage, atobToHex } from '@/utils/util'
+import { useCredentialsStore } from '@/stores/credentials'
 import { encrypt, ecdhEncrypt } from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
-import { ChannelType, MessageType,ChatChain } from '@/enum'
+import { ChannelType, MessageType, ChatChain } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
 
 import TalkImagePreview from './ImagePreview.vue'
@@ -301,7 +303,6 @@ import { router } from '@/router'
 import { useChainStore } from '@/stores/chain'
 import { useI18n } from 'vue-i18n'
 
-
 interface Props {
   quote?: any
 }
@@ -309,15 +310,14 @@ const props = withDefaults(defineProps<Props>(), {})
 const emit = defineEmits(['update:quote', 'toQuote'])
 
 const doNothing = () => {}
-const i18n=useI18n()
-const chainStore=useChainStore()
+const i18n = useI18n()
+const chainStore = useChainStore()
 const showMoreCommandsBox = ref(false)
 const showStickersBox = ref(false)
 const spaceNotEnoughFlag = ref(false)
 const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
 const hasInput = computed(() => chatInput.value.length > 0)
-
 
 /** 输入框样式 */
 const isShowingButtonGroup = computed(() => {
@@ -377,20 +377,19 @@ const showImagePreview = ref(false)
 const useCompression = ref(true)
 
 const hasImage = computed(() => imageFile.value !== null)
-console.log("talk.activeChannel",talk.activeChannel)
+console.log('talk.activeChannel', talk.activeChannel)
 
 const openImageUploader = (close: Function) => {
   imageUploader.value?.click()
   close()
 }
 
-const openRedPackDialog=()=>{
-  if(chainStore.state.currentChain == ChatChain.btc){
+const openRedPackDialog = () => {
+  if (chainStore.state.currentChain == ChatChain.btc) {
     return ElMessage.error(`${i18n.t('notSupoort_btc_send_repacket')}`)
-  }else{
-      layout.isShowRedPacketModal = true
+  } else {
+    layout.isShowRedPacketModal = true
   }
-
 }
 
 const handleImageChange = (e: Event) => {
@@ -449,8 +448,6 @@ const trySendImage = async () => {
   const hexedFiles = await FileToAttachmentItem(image)
   const attachments = [hexedFiles]
 
-  
-
   // clone，用于填充mock信息
   const originalFileUrl = imagePreviewUrl.value
   deleteImage()
@@ -458,7 +455,7 @@ const trySendImage = async () => {
   const messageDto = {
     type: MessageType.Image,
     channelId: talk.activeChannel.id,
-    groupId:talk?.activeCommunity?.id || '',
+    groupId: talk?.activeCommunity?.id || '',
     userName: userStore.last?.name!,
     attachments,
     content: '',
@@ -466,12 +463,10 @@ const trySendImage = async () => {
     channelType: talk.activeChannelType as ChannelType,
     reply: props.quote,
   }
-  console.log("props.quote",props.quote)
-  
+  console.log('props.quote', props.quote)
+
   emit('update:quote', undefined)
   await sendMessage(messageDto)
-
-  return
 }
 /** ------ */
 
@@ -479,9 +474,28 @@ const trySendImage = async () => {
 const chatInput = ref('')
 const userStore = useUserStore()
 
-const connectionStore=useConnectionStore()
+const connectionStore = useConnectionStore()
 const isSending = ref(false)
 const theTextBox: Ref<HTMLTextAreaElement | null> = ref(null)
+
+// 中文输入法状态管理
+const isComposing = ref(false)
+
+const onCompositionStart = () => {
+  isComposing.value = true
+}
+
+const onCompositionEnd = () => {
+  isComposing.value = false
+}
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  // 如果正在使用输入法，不处理回车键
+  if (e.key === 'Enter' && !e.shiftKey && !isComposing.value) {
+    e.preventDefault()
+    trySendText(e)
+  }
+}
 
 const rows = computed(() => {
   if (isSending.value) {
@@ -508,12 +522,11 @@ const rows = computed(() => {
 const checkSpaceBalance = () => {
   return new Promise<void>(async (resolve, reject) => {
     // 获取餘额
-    
-    const res = await connectionStore.adapter.getMvcBalance()
-      .catch(error => {
-        ElMessage.error(error.message)
-        resolve()
-      })
+
+    const res = await connectionStore.adapter.getMvcBalance().catch(error => {
+      ElMessage.error(error.message)
+      resolve()
+    })
     if (typeof res === 'number') {
       if (res >= talk.activeChannel.roomLimitAmount) {
         resolve()
@@ -528,7 +541,7 @@ const checkSpaceBalance = () => {
         reject()
       }
     } else {
-      ElMessage.error(`Network error.`)
+      ElMessage.error('Network error.')
       reject()
     }
   })
@@ -551,32 +564,29 @@ const trySendText = async (e: any) => {
       .catch(() => {
         isSending.value = false
         spaceNotEnoughFlag.value = true
-        return
       })
   }
 
   if (spaceNotEnoughFlag.value) {
     return
   }
-  console.log("activeChannelType",talk.activeChannelType)
-  
+  console.log('activeChannelType', talk.activeChannelType)
+
   // if (talk.activeChannelType === 'group') {
-   
-  // } 
-  if(talk.activeChannel.groupId){
-    
-     content = encrypt(chatInput.value, talk.activeChannel.id.substring(0, 16))
-  }else {
+
+  // }
+  if (talk.activeChannel.groupId) {
+    content = encrypt(chatInput.value, talk.activeChannel.id.substring(0, 16))
+  } else {
     // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')!
-    // 
+    //
     // const privateKeyStr = privateKey.toHex()
-    const credential=credentialsStore.getByAddress(connectionStore.last.address)
-    const sigStr=atobToHex(credential!.signature)
+    const credential = credentialsStore.getByAddress(connectionStore.last.address)
+    const sigStr = atobToHex(credential!.signature)
     const otherPublicKeyStr = talk.activeChannel.publicKeyStr
     console.log(chatInput.value, sigStr, otherPublicKeyStr)
 
     content = ecdhEncrypt(chatInput.value, sigStr, otherPublicKeyStr)
-    
   }
 
   chatInput.value = ''
@@ -589,8 +599,8 @@ const trySendText = async (e: any) => {
     channelType: talk.activeChannelType as ChannelType,
     reply: props.quote,
   }
-  console.log("props.quote",props.quote)
-  
+  console.log('props.quote', props.quote)
+
   emit('update:quote', undefined)
   await sendMessage(messageDto)
   isSending.value = false
