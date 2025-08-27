@@ -5,6 +5,7 @@ import { Buffer } from 'buffer'
 import { useConnectionStore } from "@/stores/connection";
 import { TxComposer } from 'meta-contract';
 import { useApprovedStore } from '@/stores/approved';
+import { useChainStore } from '@/stores/chain';
 // import { useNetworkStore } from '@/stores/network'
 
 // Add into life circle
@@ -203,10 +204,17 @@ export const pay=async (toPayTransactions:{
   transactions:Array<{
   txComposer: string,
   message: string,
-}>,hasMetaid:boolean
+}>,
+hasMetaid:boolean,
+feeb?:number
 })=>{
    checkMetalet()
-    return await window.metaidwallet.pay(toPayTransactions)
+   const chainStore=useChainStore()
+  if(!toPayTransactions.feeb){
+    
+    toPayTransactions.feeb=chainStore.mvcFeeRate()
+  }
+  return await window.metaidwallet.pay(toPayTransactions)
 }
 
 
@@ -214,11 +222,16 @@ export const smallPay=async (toPayTransactions:{
   transactions:Array<{
   txComposer: string,
   message: string,
-}>,hasMetaid:boolean,
-
+}>,
+hasMetaid:boolean,
+feeb?:number
 })=>{
+  const chainStore=useChainStore()
    checkMetalet()
-
+   
+  if(!toPayTransactions.feeb){
+    toPayTransactions.feeb=chainStore.mvcFeeRate()
+  }
   if(window.metaidwallet?.smallPay){
     
       const approvedStore=useApprovedStore()

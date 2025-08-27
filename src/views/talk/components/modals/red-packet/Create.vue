@@ -147,7 +147,9 @@
 
               <div class="w-full">
                 <button
-                  class="main-border uppercase font-medium text-base w-full py-3 primary"
+
+                  class="main-border uppercase font-medium text-base w-full py-3 "
+                  :class="[chainStore.state.currentChain == 'btc' ? 'disabled' : 'primary']"
                   @click="form.submit"
                 >
                   {{ $t('Talk.Input.send') }}
@@ -479,11 +481,12 @@ import { useUserStore } from '@/stores/user'
 import { GetNFTs } from '@/api/aggregation'
 import { showLoading } from '@/utils/util'
 import Decimal from 'decimal.js-light'
+import { useChainStore } from '@/stores/chain'
 
 const layout = useLayoutStore()
 const userStore = useUserStore()
 const isShowSelectTokenModal=ref(false)
-
+const chainStore=useChainStore()
 const currentUnit=ref('Space')
 
 const activeTab = ref('redPacket')
@@ -499,6 +502,8 @@ const changeTab = (tab: string) => {
     form.type = RedPacketDistributeType.Nft
   }
 }
+
+
 
 const form = useRedPacketFormStore()
 /** 验证 */

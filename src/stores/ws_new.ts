@@ -63,7 +63,7 @@ export const useWsStore = defineStore('ws', {
     
         
 
-      // debugger
+      // 
       // const socket=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
       //       query:{
       //         metaid:selfMetaId,
@@ -87,7 +87,7 @@ export const useWsStore = defineStore('ws', {
       
       // //this.wsHeartBeatTimer = this._createHeartBeatTimer()
       // socket.on('connect', () => {
-      //   debugger
+      //   
       // console.log('Socket.io connected successfully', socket.id);
       // });
       // socket.on('connect_error', (error) => {
@@ -167,7 +167,7 @@ export const useWsStore = defineStore('ws', {
     //   }) 
     //   this.ws=socket
     //     }
-    //   //   debugger
+    //   //   
     //   //   if (this.ws?.readyState === WebSocket.CLOSING || this.ws?.readyState === WebSocket.CLOSED) {
     //   //     // this.ws = new WebSocket(wsUri)
     //   //      const selfMetaId = this.selfMetaId

@@ -124,7 +124,7 @@ import MessageItemForSession from './MessageItemForSession.vue'
 import { openLoading, sleep } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
 import Publish from '@/views/buzz/components/Publish.vue'
-import { IsEncrypt, NodeName } from '@/enum'
+import { IsEncrypt, NodeName,ChatChain } from '@/enum'
 import { decrypt } from '@/utils/crypto'
 import { ShareChatMessageData } from '@/@types/common'
 import {useBulidTx} from '@/hooks/use-build-tx'
@@ -134,6 +134,7 @@ import { debounce } from '@/utils/util'
 import { CaretBottom } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
+import { useChainStore } from '@/stores/chain'
 const user = useUserStore()
 const talk = useTalkStore()
 const layout = useLayoutStore()
@@ -142,6 +143,7 @@ const loadingMore = ref(false)
 const isAtTop = ref(false)
 const router=useRouter()
 const isShowPublish = ref(false)
+const chainStore=useChainStore()
 const repostBuzzTxId = ref('')
 const PublishRef = ref()
 const buildTx=useBulidTx()
@@ -407,8 +409,9 @@ async function onToBuzz(data: ShareChatMessageData) {
  
    
   if (res) {
+    
     loading.close()
-    talk.shareToBuzzTxId = res.txids[0]
+    talk.shareToBuzzTxId =chainStore.state.currentChain == ChatChain.btc ? res?.revealTxIds[0] : res?.txids[0]
     layout.isShowShareSuccessModal = true
   } else if (res === null) {
     loading.close()

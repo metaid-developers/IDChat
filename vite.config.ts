@@ -22,7 +22,8 @@ import type { ViteSentryPluginOptions } from 'vite-plugin-sentry'
 import viteSentry from 'vite-plugin-sentry'
 import VueDevTools from 'vite-plugin-vue-devtools'
 import { createHtmlPlugin } from 'vite-plugin-html'
-
+import wasm from 'vite-plugin-wasm'
+import topLevelAwait from 'vite-plugin-top-level-await'
 // import dns from 'dns'
 // dns.setDefaultResultOrder('verbatim')
 const pathSrc = path.resolve(__dirname, 'src')
@@ -137,6 +138,8 @@ export default ({ mode, command }) => {
         ],
         dts: path.resolve(pathSrc, 'auto-imports.d.ts'),
       }),
+      wasm(),
+      topLevelAwait(),
       Components({
         resolvers: [
           ElementPlusResolver(),
@@ -261,6 +264,7 @@ export default ({ mode, command }) => {
     },
     optimizeDeps: {
       include: ['buffer', 'process'],
+      
       // disabled: true
     },
     define: {

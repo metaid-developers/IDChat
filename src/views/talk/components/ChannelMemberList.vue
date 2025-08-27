@@ -36,7 +36,7 @@
       <el-skeleton-item variant="text" style="width: 30%" />
     </div>
     <p v-if="loading" class="text-center">Loading...</p>
-    <p v-if="noMore" class="text-center">No more</p>
+    <p v-if="noMore" class="text-center mt-5 text-gray-400">No more</p>
   </div>
 </template>
 <script lang="ts" setup>
@@ -65,7 +65,7 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  return talkStore?.activeCommunity?.channels?.find(item => item.pinId === route.params.channelId)
+  return talkStore?.activeCommunity?.channels?.find(item => item.groupId === route.params.channelId)
 })
 
 // 监听currentChannelInfo变化，重新拉取成员数据

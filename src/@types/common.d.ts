@@ -1,5 +1,23 @@
 import {UserInfo as newUserInfo} from '@/api/man'
 
+
+
+export type SA_utxo = {
+    txId: string;
+    outputIndex: number;
+    satoshis: number;
+    address: string;
+    height: number;
+    flag: string;
+}
+
+
+export type UTXO = {
+    txid: string;
+    outIndex: number;
+    value: number;
+    address: string;
+};
 declare interface Pagination {
   page: number
   pageSize: number
@@ -876,6 +894,7 @@ declare interface ChatMessageItem {
   content: string
   contentType: string
   data: string
+  chain:'btc' | 'mvc'
   encryption: string
   groupId: string
   metaId: string
@@ -905,13 +924,7 @@ declare interface ChatMessageItem {
 }
 
 declare interface ShareChatMessageData {
-  // content:string
-  // attachments:string[]
-  // contentType:string
-  // createTime:number
-  // quotePin:string
   communityId: string
-  //channelId: string
   groupId:string
   userMetaId: string
   comment:string
