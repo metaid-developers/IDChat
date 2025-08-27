@@ -1,8 +1,10 @@
 <template>
   <div
-    class="relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group"
+    class="relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group message-item"
     :class="{ replying: reply.val?.timestamp === message.timestamp }"
+    :data-message-id="messageId"
     @touchstart="handleTouchStart"
+    @touchmove="handleTouchMove"
     @touchend="handleTouchEnd"
     @touchcancel="handleTouchEnd"
   >
@@ -10,6 +12,7 @@
     <template v-if="!isShare">
       <MessageMenu
         :message="props.message"
+        :message-id="messageId"
         :parsed="
           parseTextMessage(
             decryptedMessage(message.content, message.encryption, message.protocol, message.isMock)
@@ -20,7 +23,7 @@
         v-bind="$attrs"
         v-if="isText"
       />
-      <MessageMenu :message="props.message" v-bind="$attrs" v-else />
+      <MessageMenu :message="props.message" :message-id="messageId" v-bind="$attrs" v-else />
     </template>
 
     <!-- quote -->
@@ -60,14 +63,15 @@
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
-          <div class="text-xs shrink-0 whitespace-nowrap"
-          :class="[msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400' ]"
+          <div
+            class="text-xs shrink-0 whitespace-nowrap"
+            :class="[
+              msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
+            ]"
           >
             {{ formatTimestamp(message.timestamp, i18n) }}
           </div>
         </div>
-
-        
 
         <div
           class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
@@ -231,6 +235,7 @@ import {
   ref,
   Ref,
   onMounted,
+  onUnmounted,
   nextTick,
   provide,
   defineProps,
@@ -267,19 +272,56 @@ const reply: any = inject('Reply')
 const imagePreview = useImagePreview()
 const visiableMenu = ref(false)
 
-// 创建 ref 来存储 MessageMenu 的长按处理函数
-const longPressHandlers = ref({
-  start: () => {},
-  end: () => {}
-})
+const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
 
-// 提供设置长按处理函数的接口给子组件
-const setLongPressHandlers = (handlers: { start: () => void; end: () => void }) => {
-  longPressHandlers.value = handlers
+// 触摸状态管理
+const touchStartTime = ref(0)
+const touchStartPosition = ref({ x: 0, y: 0 })
+const longPressTimer = ref<number | null>(null)
+const LONG_PRESS_DURATION = 500 // 长按持续时间（毫秒）
+const MOVE_THRESHOLD = 10 // 移动阈值（像素）
+
+// 触摸开始处理
+const handleTouchStart = (event: TouchEvent) => {
+  if (!isMobile) return
+
+  const touch = event.touches[0]
+  touchStartTime.value = Date.now()
+  touchStartPosition.value = { x: touch.clientX, y: touch.clientY }
+
+  // 清除之前的菜单
+  talk.clearActiveMessageMenu()
+
+  // 设置长按定时器
+  longPressTimer.value = window.setTimeout(() => {
+    talk.setActiveMessageMenu(messageId.value)
+  }, LONG_PRESS_DURATION)
 }
 
-// 提供设置函数给子组件
-provide('setLongPressHandlers', setLongPressHandlers)
+// 触摸移动处理
+const handleTouchMove = (event: TouchEvent) => {
+  if (!isMobile || !longPressTimer.value) return
+
+  const touch = event.touches[0]
+  const deltaX = Math.abs(touch.clientX - touchStartPosition.value.x)
+  const deltaY = Math.abs(touch.clientY - touchStartPosition.value.y)
+
+  // 如果移动距离超过阈值，取消长按
+  if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
+// 触摸结束处理
+const handleTouchEnd = () => {
+  if (!isMobile) return
+
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
 
 interface Props {
   message: ChatMessageItem
@@ -289,11 +331,38 @@ const props = withDefaults(defineProps<Props>(), {})
 
 const emit = defineEmits<{}>()
 
-/** 翻译 */
+// 为每个消息生成唯一ID
+const messageId = computed(() => {
+  return `${props.message.timestamp}-${props.message.metaId}-${props.message.txId || 'mock'}`
+})
 type TranslateStatus = 'hidden' | 'showing' | 'processing'
 const translateStatus: Ref<TranslateStatus> = ref('hidden')
 const translatedContent = ref('')
 /** 翻译 end */
+
+// 在组件挂载和卸载时处理事件监听器和定时器清理
+onMounted(() => {
+  document.addEventListener('click', handleGlobalClick)
+})
+
+onUnmounted(() => {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+  document.removeEventListener('click', handleGlobalClick)
+})
+
+const handleGlobalClick = (event: MouseEvent) => {
+  // 如果点击的不是当前消息或其子元素，则隐藏菜单
+  const target = event.target as Element
+  const messageElement = target.closest('.message-item')
+  const currentMessageElement = document.querySelector(`[data-message-id="${messageId.value}"]`)
+
+  if (messageElement !== currentMessageElement) {
+    talk.clearActiveMessageMenu()
+  }
+}
 
 const previewImage = (image: string) => {
   imagePreview.images = [image]
@@ -443,21 +512,6 @@ const isGiveawayRedPacket = computed(() =>
 const isReceiveRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupOpenLuckybag)
 )
-const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
-
-// 触摸开始处理
-const handleTouchStart = () => {
-  if (isMobile) {
-    longPressHandlers.value.start()
-  }
-}
-
-// 触摸结束处理
-const handleTouchEnd = () => {
-  if (isMobile) {
-    longPressHandlers.value.end()
-  }
-}
 </script>
 
 <style lang="scss" scoped src="./MessageItem.scss"></style>

@@ -21,10 +21,10 @@
 
 <script lang="ts" setup>
 import { Translate } from '@/api/core'
-import { EnvMode, NodeName,ChatChain } from '@/enum'
+import { EnvMode, NodeName, ChatChain } from '@/enum'
 import { useTalkStore } from '@/stores/talk'
 import { decryptedMessage } from '@/utils/talk'
-import { computed, ref, onMounted, onUnmounted, inject } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { containsString, fetchTranlateResult } from '@/utils/util'
 import { ShareChatMessageData } from '@/@types/common'
@@ -33,7 +33,13 @@ import { ElMessage } from 'element-plus'
 
 const i18n = useI18n()
 
-const props = defineProps(['message', 'parsed', 'translateStatus', 'translatedContent'])
+const props = defineProps([
+  'message',
+  'parsed',
+  'translateStatus',
+  'translatedContent',
+  'messageId',
+])
 
 const emit = defineEmits<{
   (e: 'update:translateStatus', status: string): void
@@ -42,32 +48,21 @@ const emit = defineEmits<{
   (e: 'toBuzz', data: ShareChatMessageData): void
 }>()
 
+const talk = useTalkStore()
+
+// 使用全局状态管理菜单显示
+const showMenu = computed(() => {
+  return isMobile ? talk.activeMessageMenuId === props.messageId : false
+})
+
 const isText = computed(
   () =>
     containsString(props.message.protocol, NodeName.ShowMsg) ||
     containsString(props.message.protocol, NodeName.SimpleGroupChat)
 )
-const talk = useTalkStore()
 
-const showMenu = ref(false)
-const longPressTimer = ref<number | null>(null)
-const LONG_PRESS_DURATION = 500 // 长按持续时间（毫秒）
-
-// 从父组件获取设置长按处理函数的接口
-const setLongPressHandlers = inject('setLongPressHandlers') as (handlers: {
-  start: () => void
-  end: () => void
-}) => void
-
-// 在组件挂载时注册长按处理函数
+// 在组件挂载时添加点击外部隐藏菜单的监听器
 onMounted(() => {
-  if (isMobile && setLongPressHandlers) {
-    setLongPressHandlers({
-      start: handleLongPressStart,
-      end: handleLongPressEnd,
-    })
-  }
-
   if (isMobile) {
     document.addEventListener('click', handleClickOutside)
   }
@@ -246,12 +241,11 @@ const actions = computed(() => {
         icon: 'tx',
         action: () => {
           // 跳转到该消息对应的交易
-           if(props.message.chain == ChatChain.btc){
-             window.open(`https://mempool.space/tx/${props.message.txId}`, '_blank')
-            }else{
-                 window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
-            }
-         
+          if (props.message.chain == ChatChain.btc) {
+            window.open(`https://mempool.space/tx/${props.message.txId}`, '_blank')
+          } else {
+            window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
+          }
         },
       })
     } else {
@@ -260,7 +254,6 @@ const actions = computed(() => {
           name: 'Talk.MessageMenu.tx',
           icon: 'tx',
           action: () => {
-           
             // 跳转到该消息对应的交易
             window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
           },
@@ -275,30 +268,13 @@ const actions = computed(() => {
 // 处理动作点击
 const handleAction = (action: any) => {
   action.action()
-  showMenu.value = false // 点击后隐藏菜单
-}
-
-// 长按开始
-const handleLongPressStart = () => {
-  if (!isMobile) return
-
-  longPressTimer.value = window.setTimeout(() => {
-    showMenu.value = true
-  }, LONG_PRESS_DURATION)
-}
-
-// 长按结束或取消
-const handleLongPressEnd = () => {
-  if (longPressTimer.value) {
-    clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
+  talk.clearActiveMessageMenu() // 点击后隐藏菜单
 }
 
 // 点击其他地方隐藏菜单
-const handleClickOutside = (event: MouseEvent) => {
+const handleClickOutside = () => {
   if (showMenu.value) {
-    showMenu.value = false
+    talk.clearActiveMessageMenu()
   }
 }
 
@@ -306,7 +282,6 @@ const handleClickOutside = (event: MouseEvent) => {
 onUnmounted(() => {
   if (isMobile) {
     document.removeEventListener('click', handleClickOutside)
-    handleLongPressEnd()
   }
 })
 </script>
