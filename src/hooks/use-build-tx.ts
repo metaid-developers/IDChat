@@ -64,8 +64,13 @@ export const useBulidTx = createGlobalState(() => {
     }))
   // actions
   const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
+    
     const chainStore=useChainStore()
+    
+
+
     try {
+      
 
       if(chainStore.state.currentChain === 'btc'){
         const inscribeDataArray=[]

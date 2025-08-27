@@ -26,6 +26,7 @@ import {ChannelMsg_Size} from '@/data/constants'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 
 function sortByConditionInPlace(array, conditionFn) {
+  // console.log("arrray11111111111111111111",array)
     array.sort((a, b) => {
         const aMatches = conditionFn(a);
         const bMatches = conditionFn(b);
@@ -630,6 +631,7 @@ export const useTalkStore = defineStore('talk', {
 
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
+        
         this._updateReadPointers(message.timestamp, messageMetaId)
          this.activeCommunity?.channels?.map((channel: any) => {
           if(channel.id === messageMetaId){

@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, nextTick, watch, provide ,onBeforeUnmount,onUnmounted} from 'vue'
+import { reactive, ref, onMounted, nextTick, watch, provide ,onBeforeUnmount,onUnmounted,computed} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useRootStore } from '@/stores/root'
@@ -70,6 +70,7 @@ const blackRoute = reactive(['home'])
 const router = useRouter()
 const isNetworkChanging = ref(false)
 const i18n = useI18n()
+const accountInterval=ref()
 const routeKey = (route: any) => {
   if (route.params.communityId) return route.params.communityId
   return route.fullPath
@@ -78,6 +79,16 @@ const routeKey = (route: any) => {
 const networkStore = useNetworkStore()
 const connectionStore = useConnectionStore()
 const credentialsStore = useCredentialsStore()
+
+// const currentMetaletAddress=computed(async()=>{
+//   return window.metaidwallet && window.metaidwallet.getAddress().then((res)=>{
+//     return res
+//   })
+// })
+
+
+// console.log('currentMetaletAddress',currentMetaletAddress.value)
+// debugger
 
 
 
@@ -117,9 +128,26 @@ const metaletNetworkChangedHandler = (network: Network) => {
 }
 
 
+
 onMounted(async () => {
   let retryCount = 0
   let timeoutId: number
+  //document.addEventListener('visibilitychange', handleVisibilityChange);
+  accountInterval.value=setInterval(async()=>{
+    if(window.metaidwallet && connectionStore.last.status == 'connected'){
+         window.metaidwallet.getAddress().then((res)=>{
+          
+             if (res?.status == 'not-connected' || userStore.last?.address !== res) {
+              connectionStore.disconnect(router)
+              ElMessage.warning({
+              message:i18n.t('account.change'),
+              type: 'warning',
+              })
+      }
+        })
+   
+    }
+  },10 * 1000)
 
   const checkMetalet = async () => {
     if (window.metaidwallet) {
@@ -131,6 +159,7 @@ onMounted(async () => {
         console.error('Failed to setup Metalet listeners:', err)
       }
     } else if (retryCount * RETRY_INTERVAL < MAX_RETRY_TIME) {
+      
       retryCount++
       timeoutId = setTimeout(checkMetalet, RETRY_INTERVAL)
     } else {
@@ -141,10 +170,14 @@ onMounted(async () => {
   // 初始检查
   checkMetalet()
 
+ 
+
   onUnmounted(() => {
+    
     clearTimeout(timeoutId)
   })
 })
+
 
 
 onBeforeUnmount(async() => {
@@ -158,6 +191,10 @@ onBeforeUnmount(async() => {
     'networkChanged',
     metaletNetworkChangedHandler,
   )
+
+  clearInterval(accountInterval.value)
+
+  
 })
 
 // if (!localStorage.getItem('showDiffLang')) {
