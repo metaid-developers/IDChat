@@ -68,7 +68,8 @@
       "buy_tip": "I purchased your NFT!",
       "price": "Price",
       "resend": "Resend",
-      "translated": "Translated"
+      "translated": "Translated",
+      "reload_image": "Reload Image"
     },
     "General": {
       "publish_new_announcement": "Publish a new announcement",

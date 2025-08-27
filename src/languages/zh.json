@@ -108,7 +108,8 @@
       "buy_tip": "購買了您的NFT",
       "price": "價格",
       "resend": "重新發送",
-      "translated": "已翻譯"
+      "translated": "已翻譯",
+      "reload_image": "重新加載圖片"
     },
     "General": {
       "publish_new_announcement": "發表新公告",
