@@ -11,6 +11,7 @@
           :src="url"
           :class="[customClass, 'lazyload']"
           @error="fail"
+          @load="handleLoad"
           loading="lazy"
         />
       </template>
@@ -19,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import DefaultAvatar from '@/assets/images/default_avatar.png'
 import DefaultMetafile from '@/assets/images/release_add_img.svg?url'
 // import 'lazysizes'
@@ -37,7 +38,9 @@ const props = withDefaults(defineProps<Props>(), {
   type: 'metafile',
 })
 
-console.log("props11111",props.src)
+const emit = defineEmits(['load', 'error'])
+
+console.log('props11111', props.src)
 
 const Default = {
   metafile: props.defaultImage ? props.defaultImage : DefaultMetafile,
@@ -59,18 +62,27 @@ watch(
 
 async function getImageUrl() {
   isSkeleton.value = true
-  let src = props.src
+  const src = props.src
 
-  DB.getMetaFile(src, props.width, 'metafile').then(res => {
+  try {
+    const res = await DB.getMetaFile(src, props.width, 'metafile')
     url.value = res
     isSkeleton.value = false
-  })
+  } catch (error) {
+    console.error('获取图片失败:', error)
+    isSkeleton.value = false
+  }
 }
 
-function fail(event: any) {
-  const img = event.srcElement
+const handleLoad = (event: Event) => {
+  emit('load', event)
+}
+
+function fail(event: Event) {
+  const img = event.target as HTMLImageElement
   img.src = props.type === 'metafile' ? Default.metafile : Default.metaId
   img.onerror = null // 防止闪图
+  emit('error', event)
 }
 
 defineExpose({

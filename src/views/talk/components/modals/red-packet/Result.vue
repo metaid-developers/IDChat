@@ -59,12 +59,12 @@
                     {{ note }}
                   </div>
 
-                  <div class="mt-5 flex items-end space-x-1" v-if="myDraw">
+                  <div class="mt-5 flex items-end space-x-1">
                     <div class="text-4xl font-bold tracking-tight">
-                      {{ nicerAmountWithUnit(myDraw?.amount).amount }}
+                      {{ nicerAmountWithUnit(redPacketResult?.amount || '0').amount }}
                     </div>
-                    <div class="text-base">
-                      {{ nicerAmountWithUnit(myDraw?.amount).unit }}
+                    <div class="text-sm">
+                      {{ nicerAmountWithUnit(redPacketResult?.amount || '0').unit }}
                     </div>
                   </div>
                   <!-- <div class="mt-2 text-sm text-dark-300 font-bold font-sans">
@@ -81,63 +81,68 @@
                   </div>
 
                   <div
-                    class="h-[218PX] self-stretch flex flex-col items-stretch overflow-y-auto divide-y divide-solid divide-gray-100 px-2 -mx-2 no-dark"
+                    class="h-[218px] self-stretch flex flex-col items-stretch overflow-y-auto divide-y divide-solid divide-gray-100 px-2 -mx-2 no-dark"
                   >
-                    <div class="flex items-center justify-between py-3" v-for="draw in sortedDraws">
-                      <div class="flex space-x-3 items-center">
+                    <div
+                      class="flex items-center justify-between py-2.5 lg:py-3"
+                      v-for="draw in sortedDraws"
+                      :key="draw.gradMetaId + draw.timestamp"
+                    >
+                      <div class="flex space-x-2 lg:space-x-3 items-center flex-1 min-w-0">
                         <UserAvatar
                           :meta-id="draw.userInfo?.metaid"
                           :image="draw.userInfo?.avatar"
-                          
                           :meta-name="''"
-                          class="w-12 h-12"
+                          class="w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0"
                         />
 
-                      <UserName
-                      :name="draw.userInfo?.name || draw.userInfo?.metaid?.slice(0,6)"
-                      :meta-name="''"
-                      :no-tag="true"
-                      />
-
-                        <div class="flex flex-col space-y-0.5 items-start">
-                          <span :class="['text-sm text-dark-800 font-medium']">{{
-                            draw.name
-                          }}</span>
-                          <span class="text-xs text-dark-250">
+                        <div
+                          class="flex flex-col lg:flex-row lg:space-x-3 lg:items-center space-y-0.5 lg:space-y-0 items-start flex-1 min-w-0"
+                        >
+                          <UserName
+                            :name="draw.userInfo?.name || draw.userInfo?.metaid?.slice(0, 6)"
+                            :meta-name="''"
+                            :no-tag="true"
+                            class="truncate text-sm lg:text-base"
+                          />
+                          <span class="text-xs text-dark-250 whitespace-nowrap">
                             {{ formatTimestamp(draw.timestamp, i18n) }}
                           </span>
                         </div>
                       </div>
 
-                      <div class="flex flex-col space-y-1 items-end">
-                        <div class="text-sm text-dark-800 font-medium flex items-center space-x-2">
-                          <span>
-                            {{
-                              nicerAmountWithUnit(draw.amount).amount +
-                                ' ' +
-                                nicerAmountWithUnit(draw.amount).unit
-                            }}
+                      <div
+                        class="flex flex-col space-y-1 items-end flex-shrink-0 bg-white lg:bg-transparent px-2 lg:px-0 py-1 lg:py-0 rounded lg:rounded-none"
+                      >
+                        <div class="text-sm text-dark-800 font-medium flex items-center space-x-1">
+                          <span class="whitespace-nowrap">
+                            {{ nicerAmountWithUnit(draw.amount).amount }}
+                            <span class="text-xs text-dark-400">{{
+                              nicerAmountWithUnit(draw.amount).unit
+                            }}</span>
                           </span>
                           <span
                             v-if="draw.amount >= luckiestAmount"
-                            class="text-xxs bg-amber-400 text-white rounded-md px-1 py-0.5"
+                            class="bg-amber-400 text-white rounded px-0.5 lg:px-1 py-0.5 whitespace-nowrap text-xxs"
                           >
                             {{ $t('Talk.Modals.lucky') }}
                           </span>
-                          
-                          <span class="py-0.5 px-1 text-xs text-white rounded-md" :class="grayState(draw.gradState)?.color">
+
+                          <span
+                            class="py-0.5 px-1 text-xxs lg:text-xs text-white rounded whitespace-nowrap"
+                            :class="grayState(draw.gradState)?.color"
+                          >
                             {{ grayState(draw.gradState)?.state }}
                           </span>
                           <button
-                          v-if="draw.gradState == GrabStatus.broadCastSuccess "
-                           @click="toMvcScan(draw.gradTxId)"
-                          class=" w-5 h-5 flex items-center justify-center rounded-md text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-amber-400  transition-all duration-300"
+                            v-if="draw.gradState == GrabStatus.broadCastSuccess"
+                            @click="toMvcScan(draw.gradTxId)"
+                            class="w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center rounded text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-amber-400 transition-all duration-300 flex-shrink-0"
                           >
-                          <Icon
-                          name="link"
-                          class="w-3 h-3 p-1 box-content text-gray-500 hover:text-white  cursor-pointer"
-                         
-                          />
+                            <Icon
+                              name="link"
+                              class="w-2.5 h-2.5 lg:w-3 lg:h-3 p-0.5 lg:p-1 box-content text-gray-500 hover:text-white cursor-pointer"
+                            />
                           </button>
                         </div>
                         <!-- <div class="text-xs text-dark-250 font-sans">≈ 723.00 CNY</div> -->
@@ -192,8 +197,8 @@ import { useTalkStore } from '@/stores/talk'
 import { GetNFT } from '@/api/aggregation'
 import { nftSeries } from '@/utils/series'
 import Decimal from 'decimal.js-light'
-import {toMvcScan} from '@/utils/util'
-import {GrabStatus} from '@/enum'
+import { toMvcScan } from '@/utils/util'
+import { GrabStatus } from '@/enum'
 const layout = useLayoutStore()
 const modals = useModalsStore()
 const talk = useTalkStore()
@@ -207,15 +212,14 @@ const closeModal = () => {
 
 const redPacketResult = modals.redPacketResult
 
-console.log("redPacketResult",redPacketResult)
+console.log('redPacketResult', redPacketResult)
 const note = computed(() => {
   return redPacketResult?.content || i18n.t('Talk.Channel.default_red_envelope_message')
 })
 const draws = computed(() => {
-  return (redPacketResult?.payList || []).filter((item: any) => item.used === true || item.isWithdraw === true)
-})
-const myDraw = computed(() => {
-  return draws.value.find((item: any) => item.gradMetaId === talk.selfMetaId)
+  return (redPacketResult?.payList || []).filter(
+    (item: any) => item.used === true || item.isWithdraw === true
+  )
 })
 const sortedDraws = computed(() => {
   return draws.value.sort((a: any, b: any) => b.timestamp - a.timestamp)
@@ -225,36 +229,31 @@ const luckiestAmount = computed(() => {
   return amount
 })
 
-
-function grayState(state:GrabStatus){
+function grayState(state: GrabStatus) {
   switch (state) {
     case GrabStatus.grabSuccess:
-      
       return {
-        state:'Pending',
-        color:'bg-amber-300'
-      };
-      case GrabStatus.grabSuccessAndBroadcastPending:
-      
+        state: 'Pending',
+        color: 'bg-amber-300',
+      }
+    case GrabStatus.grabSuccessAndBroadcastPending:
       return {
-        state:'Pending',
-        color:'bg-amber-300'
-      };
-        case GrabStatus.broadCastSuccess:
-      
+        state: 'Pending',
+        color: 'bg-amber-300',
+      }
+    case GrabStatus.broadCastSuccess:
       return {
-        state:'Success',
-        color:'bg-lime-400'
-      };
-        case GrabStatus.grabSuccessAndBroadcastFail:
-      
+        state: 'Success',
+        color: 'bg-lime-400',
+      }
+    case GrabStatus.grabSuccessAndBroadcastFail:
       return {
-        state:'Fail',
-        color:'bg-rose-600'
-      };
-  
+        state: 'Fail',
+        color: 'bg-rose-600',
+      }
+
     default:
-      break;
+      break
   }
 }
 
@@ -265,7 +264,7 @@ const nicerAmountWithUnit = (amount: string) => {
       unit: '',
     }
   }
-  
+
   const amountNumber = new Decimal(amount).div(10 ** 8).toNumber()
   // if (amountNumber >= 100_000_000) {
   //   return {
@@ -275,12 +274,10 @@ const nicerAmountWithUnit = (amount: string) => {
   // }
 
   return {
-    amount:amountNumber,
+    amount: amountNumber,
     unit: 'Space',
   }
 }
-
-
 
 onMounted(async () => {
   const requireType = redPacketResult?.requireType
