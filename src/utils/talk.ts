@@ -866,6 +866,49 @@ export const validateTextMessage = (message: string) => {
   return message.length > 0 && message.length <= 5000
 }
 
+
+
+export const tryCreateNode = async (node: {
+  protocol:string
+  body:any
+  timestamp:number
+  externalEncryption?:'0' | '1' | '2'
+  attachments?:AttachmentItem[]
+}, mockId: string) => {
+  const jobs = useJobsStore()
+  const talk = useTalkStore()
+  const buildTx=useBulidTx()
+   const {protocol,body,timestamp:timeStamp,attachments,externalEncryption}=node
+  try {
+    // const nodeRes = await sdk.createBrfcChildNode(node)
+    const nodeRes = await buildTx.createShowMsg({
+      protocol,
+      body,
+      attachments,
+      externalEncryption,
+      isBroadcast:true
+    })
+
+    // 取消支付的情况下，删除mock消息
+    console.log({ nodeRes })
+    if (nodeRes === null) {
+      talk.removeMessage(mockId)
+    }
+  } catch (error) {
+    const timestamp = timeStamp
+    jobs?.node && jobs?.nodes.push({ node, timestamp })
+    const newMessages = talk.activeChannel.newMessages
+    const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
+    if (message) {
+      console.log('message', message)
+
+      message.error = true
+      message.reason = `${(error as any).toString()}`
+      return false
+    }
+  }
+}
+
 const _sendTextMessage = async (messageDto: MessageDto) => {
   
   const userStore = useUserStore()
@@ -980,47 +1023,6 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   }
 }
 
-export const tryCreateNode = async (node: {
-  protocol:string
-  body:any
-  timestamp:number
-  externalEncryption?:'0' | '1' | '2'
-  attachments?:AttachmentItem[]
-}, mockId: string) => {
-  const jobs = useJobsStore()
-  const talk = useTalkStore()
-  const buildTx=useBulidTx()
-   const {protocol,body,timestamp:timeStamp,attachments,externalEncryption}=node
-  try {
-    // const nodeRes = await sdk.createBrfcChildNode(node)
-    const nodeRes = await buildTx.createShowMsg({
-      protocol,
-      body,
-      attachments,
-      externalEncryption,
-      isBroadcast:true
-    })
-
-    // 取消支付的情况下，删除mock消息
-    console.log({ nodeRes })
-    if (nodeRes === null) {
-      talk.removeMessage(mockId)
-    }
-  } catch (error) {
-    const timestamp = timeStamp
-    jobs?.node && jobs?.nodes.push({ node, timestamp })
-    const newMessages = talk.activeChannel.newMessages
-    const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
-    if (message) {
-      console.log('message', message)
-
-      message.error = true
-      message.reason = `${(error as any).toString()}`
-      return false
-    }
-  }
-}
-
 const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
@@ -1035,7 +1037,8 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   // 1.4 contentType
   const contentType = 'text/plain'
   // 1.5 encrypt
-  const encrypt = '1'
+  const encrypt = 'ecdh'
+  const externalEncryption='0'
   const dataCarrier = {
     to,
     timestamp,
@@ -1047,9 +1050,10 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
 
   // 2. 构建节点参数
   const node = {
-    protocol: NodeName.ShowMsg,
+    protocol: NodeName.SimpleMsg,
     body: dataCarrier,
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
+    externalEncryption
   }
 
   // 2.5. mock发送
@@ -1083,7 +1087,8 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const mockMessage = {
     content,
     mockId,
-    nodeName: NodeName.ShowMsg,
+    nodeName: NodeName.SimpleMsg,
+    chatType:ChatType.msg,
     dataType: 'text/plain',
     data: dataCarrier,
     chain:chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
@@ -1100,18 +1105,31 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
     encryption: encrypt,
+    externalEncryption,
     isMock: true,
     to,
     replyInfo: reply,
-    protocol: NodeName.ShowMsg,
+    protocol: NodeName.SimpleMsg,
   }
   talkStore.addMessage(mockMessage)
   debugger
   // 3. 发送节点
   // const sdk = userStore.showWallet
-  await tryCreateNode(node, mockId)
+  // await tryCreateNode(node, mockId)
 
-  return '1'
+  // return '1'
+   try {
+    const tryRes = await tryCreateNode(node, mockId)
+
+    if (tryRes === false) {
+      talkStore.addRetryList({ ...messageDto, mockId })
+    } else {
+      talkStore.removeRetryList(mockId)
+      return '1'
+    }
+  } catch (error) {
+    talkStore.addRetryList({ ...messageDto, mockId })
+  }
 }
 
 const _uploadImage = async (file: File, sdk: SDK) => {

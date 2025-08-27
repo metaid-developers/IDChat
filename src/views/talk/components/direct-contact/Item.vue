@@ -101,7 +101,7 @@ const contact = computed<any>(() => {
 })
 
 const lastMessage = computed<string>(() => {
-  if (props.session.protocol === 'ShowMsg') {
+  if (containsString(props.session.protocol,NodeName.SimpleMsg)) {
     return parseTextMessage(decryptedMsg.value)
   }
 

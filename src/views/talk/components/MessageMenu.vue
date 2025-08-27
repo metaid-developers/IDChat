@@ -44,7 +44,7 @@ const emit = defineEmits<{
 
 const isText = computed(
   () =>
-    containsString(props.message.protocol, NodeName.ShowMsg) ||
+    containsString(props.message.protocol, NodeName.SimpleMsg) ||
     containsString(props.message.protocol, NodeName.SimpleGroupChat)
 )
 const talk = useTalkStore()
@@ -139,7 +139,7 @@ const actions = computed(() => {
   const ShareProtocols = [
     NodeName.SimpleFileGroupChat,
     NodeName.SimpleGroupChat,
-    NodeName.ShowMsg,
+    NodeName.SimpleMsg,
     NodeName.SimpleFileMsg,
   ]
 
@@ -162,7 +162,7 @@ const actions = computed(() => {
           message.protocol
         )
 
-        if (containsString(props.message.protocol, NodeName.ShowMsg)) {
+        if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
           data = {
             communityId: '', // talk.activeCommunityId,
             groupId: talk.activeChannelId,
@@ -221,7 +221,7 @@ const actions = computed(() => {
   const quoteProtocols = [
     NodeName.SimpleFileGroupChat,
     NodeName.SimpleGroupChat,
-    NodeName.ShowMsg,
+    NodeName.SimpleMsg,
     NodeName.SimpleFileMsg,
   ]
 

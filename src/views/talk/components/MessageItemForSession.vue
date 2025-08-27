@@ -551,7 +551,7 @@ const isNftEmoji = computed(() => props.message.protocol === 'SimpleEmojiGroupCh
 const isImage = computed(() => props.message.protocol === NodeName.SimpleFileMsg )
 const isGiveawayRedEnvelope = computed(() => props.message.protocol === NodeName.SimpleGroupLuckyBag )
 const isReceiveRedEnvelope = computed(() => props.message.protocol === NodeName.OpenRedenvelope)
-const isText = computed(() => props.message.protocol === NodeName.ShowMsg)
+const isText = computed(() => props.message.protocol === NodeName.SimpleMsg)
 const isLike = computed(() => props.message.protocol === NodeName.PayLike )
 const isFollow = computed(() => props.message.protocol === NodeName.PayFollow)
 const isRepost = computed(() => props.message.protocol ===  NodeName.SimpleRePost)

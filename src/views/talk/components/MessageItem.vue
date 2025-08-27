@@ -254,6 +254,7 @@ import { containsString } from '@/utils/util'
 import { ElMessage } from 'element-plus'
 import type { ChatMessageItem } from '@/@types/common'
 import { isMobile } from '@/stores/root'
+import { useRouter } from 'vue-router'
 
 const i18n = useI18n()
 

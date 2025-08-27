@@ -328,6 +328,7 @@ export enum NodeName {
   SimpleGroupJoin='simplegroupjoin',
   SimpleGroupCreate = 'simplegroupcreate',
   ShowMsg = 'showmsg',
+  SimpleMsg='simplemsg',
   NftIssue = 'NftIssue',
   NftGenesis = 'NftGenesis',
   NftSell = 'NftSell',
