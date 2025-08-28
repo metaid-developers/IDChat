@@ -615,11 +615,20 @@ export const useTalkStore = defineStore('talk', {
             channel.newMessages = [message]
           }
         })
-        sortByConditionInPlace(
+
+           try {
+           sortByConditionInPlace(
           this.activeCommunity?.channels,
           channel => channel?.groupId == messageMetaId
         )
         return
+      } catch (error) {
+        console.log("socket推送11111",error.toString())
+        return
+      }
+
+       
+        
       }
 
       // 当前頻道，插入新消息
@@ -692,12 +701,19 @@ export const useTalkStore = defineStore('talk', {
 
         return
       }
-      sortByConditionInPlace(
+
+
+      this.activeChannel.newMessages.push(message)
+
+      try {
+          sortByConditionInPlace(
         this.activeCommunity?.channels,
         channel => channel?.groupId == messageMetaId
       )
+      } catch (error) {
+        console.log("socket推送2222",error.toString())
+      }
 
-      this.activeChannel.newMessages.push(message)
 
       // this.activeCommunity?.channels.sort(()=>{
 

@@ -59,6 +59,8 @@ export const useWsStore = defineStore('ws', {
           }
           }, 2000);
 
+         
+
 
         // const socket=client.getSocket()
     
