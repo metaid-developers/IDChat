@@ -28,7 +28,7 @@ const { communityId, channelId } = route.params
 
 const tryInitChannel = async (status: string) => {
   if (status !== 'ready') return
-
+  debugger
   const initChannelStatus = await talk.initChannel(communityId as string, channelId as string)
   if (['redirect'].includes(initChannelStatus)) return
 

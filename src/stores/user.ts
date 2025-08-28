@@ -31,6 +31,7 @@ export const useUserStore = defineStore('user', {
         pinId: '',
         soulbondToken: '',
         unconfirmed: '',
+        pubkey:''
       } as UserInfo) as RemovableRef<UserInfo>,
     }
   },
@@ -61,6 +62,10 @@ export const useUserStore = defineStore('user', {
       //     })
       //     }
       // },
+
+      async updateUserInfo(userInfo:Partial<UserInfo>){
+        this.last={...this.last,...userInfo}
+      },
 
       async setUserInfo(address: string) {
       const user: UserInfo = this.last

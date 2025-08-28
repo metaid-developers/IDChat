@@ -28,7 +28,15 @@ declare global {
           data: InscriptionRequest
           options?: { noBroadcast: boolean }
         }): Promise<any>
-      }
+      },
+      common:{
+      ecdh:(params:{externalPubKey:string})=> Promise<{
+      externalPubKey: string
+      sharedSecret:string
+      ecdhPubKey:string
+      creatorPubkey: string
+    }>,
+    }
     }
   }
 }
@@ -670,7 +678,7 @@ export const createUserPubkey=async ({
     metaDatas.push({
       operation:'create',
       body: pubkey,
-      path: '/info/chatpubkey',
+      path: `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`,
       encoding: 'utf-8',
       contentType: 'text/plain',
       flag: 'metaid',

@@ -9,6 +9,7 @@ import {
   getOneCommunity,
   getOneChannel,
   getChannelMembers,
+  GetUserEcdhPubkeyForPrivateChat
 } from '@/api/talk'
 
 import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName } from '@/enum'
@@ -21,7 +22,7 @@ import { useUserStore } from './user'
 import { GetUserInfo } from '@/api/aggregation'
 import { useWsStore } from './ws_new'
 import { getMetaNameAddress, isPublicChannel } from '@/utils/meta-name'
-import { getUserInfoByAddress } from '@/api/man'
+import { getUserInfoByAddress,getUserInfoByMetaId } from '@/api/man'
 import { ChannelMsg_Size } from '@/data/constants'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 
@@ -359,8 +360,22 @@ export const useTalkStore = defineStore('talk', {
       const publicChannel = await getChannels({
         metaId: this.selfMetaId,
       })
+      let channels:Channel[]=[]
+      if(isAtMe){
+        publicChannel.forEach((item)=>{
+          if(!item.groupId){
+            channels.push(item)
+          }
+        })
+      }else{
+        publicChannel.forEach((item)=>{
+          if(item.groupId){
+            channels.push(item)
+          }
+        })
+      }
 
-      const channels = [...publicChannel]
+      //const channels = [...publicChannel]
       // [...publicChannel,...atMeChannel]
 
       // const channels = isAtMe
@@ -372,6 +387,7 @@ export const useTalkStore = defineStore('talk', {
       //     })
 
       if (!this.activeCommunity?.channels) this.activeCommunity!.channels = []
+       
       this.activeCommunity!.channels = channels
       debugger
       console.log('activeChannel',channels)
@@ -383,7 +399,13 @@ export const useTalkStore = defineStore('talk', {
 
         // 只保存頻道id
         const channelIds = channels.map((channel: any) => channel.id)
-        this.communityChannelIds[communityId] = channelIds
+        console.log("channelIds",channelIds,communityId)
+        debugger
+        if(communityId == 'public'){
+          this.communityChannelIds[communityId] = channelIds.filter((item)=>item)
+          this.communityChannelIds['@me']=channelIds.filter((item)=>item)
+        }
+        
         localStorage.setItem(
           'communityChannels-' + this.selfMetaId,
           JSON.stringify(this.communityChannelIds)
@@ -547,22 +569,26 @@ export const useTalkStore = defineStore('talk', {
     },
 
     async initChannel(routeCommunityId: string, routeChannelId?: string) {
-      
+      debugger
       // 如果是私聊，而且路由中的頻道 ID 不存在，则新建会话
       if (
         routeCommunityId === '@me' &&
         routeChannelId &&
         !this.activeCommunityChannels.some((channel: any) => channel.id === routeChannelId)
       ) {
-        
-        const metaidInfo = await getUserInfoByMetaId(routeChannelId)
-        const userInfo= await getUserInfoByAddress(metaidInfo?.address)
+        debugger
+        const userInfo=await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
+        debugger
+        // const userInfo=await 
+        // const metaidInfo = await getUserInfoByMetaId(routeChannelId)
+        // debugger
+        // const userInfo= await getUserInfoByAddress(metaidInfo?.address)
         
         const newSession = {
           id: routeChannelId,
           name: userInfo.name,
           address:userInfo.address,
-          //publicKeyStr: data.pubKey,
+          publicKeyStr: userInfo.chatPublicKey,
           avatarImage:userInfo.avatar,
           metaId:userInfo.metaid,
           lastMessage: '',
@@ -797,7 +823,9 @@ export const useTalkStore = defineStore('talk', {
     },
 
     async handleNewSessionMessage(message: any) {
+      debugger
       const messageMetaId = message.from === this.selfMetaId ? message.to : message.from
+      debugger
       const isFromActiveChannel = messageMetaId === this.activeChannelId
 
       // 如果不是当前頻道的消息，则更新未读指针
@@ -824,7 +852,7 @@ export const useTalkStore = defineStore('talk', {
 
       if (mockMessage) {
         console.log('替换中')
-        if (message.protocol === NodeName.SimpleFileMsg) {
+        if (containsString(message.protocol,NodeName.SimpleFileMsg)) {
           console.log('image')
           await sleep(2000)
           this.$patch(state => {
@@ -858,7 +886,7 @@ export const useTalkStore = defineStore('talk', {
 
     initCommunityChannelIds() {
       const selfMetaId = this.selfMetaId
-
+      debugger
       if (this.communityChannelIds || !selfMetaId) return
 
       // 从本地存储中读取社区頻道id
@@ -938,7 +966,7 @@ export const useTalkStore = defineStore('talk', {
 
     async initChannelMessages(selfMetaId?: string) {
       if (!selfMetaId) selfMetaId = this.selfMetaId
-
+      debugger
       if (!this.activeChannel) return
 
       const layoutStore = useLayoutStore()

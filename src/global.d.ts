@@ -217,6 +217,14 @@ interface Window {
         txid: string
       }>
       txids: string[]
-    }>
+    }>,
+    common:{
+      ecdh:({externalPubKey:string})=> Promise<{
+      externalPubKey: string
+      sharedSecret:string
+      ecdhPubKey:string
+      creatorPubkey: string
+    }>,
+    }
   }
 }

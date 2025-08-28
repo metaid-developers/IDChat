@@ -575,7 +575,7 @@ const trySendText = async (e: any) => {
   // if (talk.activeChannelType === 'group') {
 
   // }
-  if (talk.activeChannel.groupId) {
+  if (talk.activeChannel?.groupId) {
     content = encrypt(chatInput.value, talk.activeChannel.id.substring(0, 16))
   } else {
     // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')!
@@ -583,7 +583,8 @@ const trySendText = async (e: any) => {
     // const privateKeyStr = privateKey.toHex()
     const credential=credentialsStore.getByAddress(connectionStore.last.address)
     const sigStr=atobToHex(credential!.signature)
-    const otherPublicKeyStr =credential!.publicKey //talk.activeChannel.publicKeyStr
+    const otherPublicKeyStr =talk.activeChannel.publicKeyStr
+    debugger
     console.log(chatInput.value, sigStr, otherPublicKeyStr)
 
     content = ecdhEncrypt(chatInput.value, sigStr, otherPublicKeyStr)

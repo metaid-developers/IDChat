@@ -10,7 +10,7 @@
         parseTextMessage(
           decryptedMessage(
             message.content,
-            (message.data.encrypt) as any,
+            message.encryption,
             message.protocol,
             message.isMock,
             true
@@ -71,7 +71,7 @@
           <Image
             :src="decryptedMessage(
             message.content,
-            (message.data.encrypt) as any,
+            message.encryption,
             message.protocol,
             message.isMock,
             true
@@ -295,7 +295,7 @@
               v-if="showImagePreview"
               :src="decryptedMessage(
             message.content,
-            (message.data.encrypt) as any,
+           message.encryption,
             message.protocol,
             message.isMock,
             true
@@ -353,7 +353,7 @@
             v-else
             v-html="parseTextMessage(decryptedMessage(
             message.content,
-            (message.data.encrypt) as any,
+            message.encryption,
             message.protocol,
             message.isMock,
             true
@@ -385,6 +385,7 @@ import { useTalkStore } from '@/stores/talk'
 import { useJobsStore } from '@/stores/jobs'
 import { NodeName } from '@/enum'
 import MessageItemQuote from './MessageItemQuote.vue'
+import { containsString } from '@/utils/util'
 
 const reply: any = inject('Reply')
 const i18n = useI18n()
@@ -547,19 +548,19 @@ const nftPrice = computed(() => {
   return '-'
 })
 
-const isNftEmoji = computed(() => props.message.protocol === 'SimpleEmojiGroupChat')
-const isImage = computed(() => props.message.protocol === NodeName.SimpleFileMsg )
-const isGiveawayRedEnvelope = computed(() => props.message.protocol === NodeName.SimpleGroupLuckyBag )
-const isReceiveRedEnvelope = computed(() => props.message.protocol === NodeName.OpenRedenvelope)
-const isText = computed(() => props.message.protocol === NodeName.SimpleMsg)
-const isLike = computed(() => props.message.protocol === NodeName.PayLike )
-const isFollow = computed(() => props.message.protocol === NodeName.PayFollow)
-const isRepost = computed(() => props.message.protocol ===  NodeName.SimpleRePost)
-const isRepostWithComment = computed(() => props.message.nodeName === NodeName.SimpleMicroblog)
-const isComment = computed(() => props.message.protocol ===NodeName.PayComment )
-const isFtTransfer = computed(() => props.message.protocol ===NodeName.FtTransfer)
-const isNftTransfer = computed(() => props.message.protocol === NodeName.NftTransfer)
-const isNftBuy = computed(() => props.message.protocol === NodeName.nftBuy )
+const isNftEmoji = computed(() =>containsString(props.message.protocol,NodeName.SimpleEmojiGroupChat))
+const isImage = computed(() =>containsString(props.message.protocol,NodeName.SimpleFileMsg))
+const isGiveawayRedEnvelope = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupLuckyBag))
+const isReceiveRedEnvelope = computed(() =>containsString(props.message.protocol ,NodeName.OpenRedenvelope))
+const isText = computed(() =>containsString(props.message.protocol, NodeName.SimpleMsg))
+const isLike = computed(() =>containsString(props.message.protocol,NodeName.PayLike))
+const isFollow = computed(() =>containsString(props.message.protocol,NodeName.PayFollow))
+const isRepost = computed(() =>containsString(props.message.protocol,NodeName.SimpleRePost))
+const isRepostWithComment = computed(() =>containsString(props.message.nodeName,NodeName.SimpleMicroblog))
+const isComment = computed(() => containsString(props.message.protocol,NodeName.PayComment))
+const isFtTransfer = computed(() =>containsString( props.message.protocol,NodeName.FtTransfer))
+const isNftTransfer = computed(() =>containsString(props.message.protocol,NodeName.NftTransfer) )
+const isNftBuy = computed(() => containsString(props.message.protocol, NodeName.nftBuy) )
 </script>
 
 <style lang="scss" scoped>

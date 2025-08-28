@@ -493,6 +493,31 @@ export const grabRedPacket = async (params: {
   
 }
 
+export const GetUserEcdhPubkeyForPrivateChat=(address:string):Promise<{
+    metaid:string,
+    name:string,
+    avatar:string,
+    avatarImage:string,
+    chatPublicKey:string,
+    chatPublicKeyId:string,
+    address:string
+}>=>{
+  const query =new URLSearchParams({address}).toString() 
+
+  return TalkApi.get(`/user-info?${query}`).then(res => {
+     if(res?.code == 0){
+      debugger
+       return {...res.data.userInfo,address:res.data.address}
+     }else if(res?.code == 1){
+      throw new Error(res?.message)
+     }
+   
+  }).catch((e)=>{
+    
+    throw new Error(e.message)
+  })
+}
+
 // 获取某个頻道的引用公告列表
 export const GetCommunityAnnouncements = (params: {
   communityId: string
@@ -508,3 +533,5 @@ export const GetCommunityAnnouncements = (params: {
   const { communityId, ..._params } = params
   return TalkApi.get('/community/' + communityId + '/announcements', { params: _params })
 }
+
+
