@@ -9,22 +9,26 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
-  <div v-if="_welComePage">
-       <div class="mt-20 flex text-center  items-center justify-center flex-col">
+    <div v-if="_welComePage">
+      <div class="mt-20 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
-        <div class="text-lg text-zinc-500 mt-3 break-all">A Messaging Service Built on Bitcoin and its Sidechains</div>
-        <div class="text-xl mt-5 text-zinc-600 break-all ">Fully Decentralized,Immutable,Uncensorable,and Unhackable</div>
-        <div class="flex flex-col mt-5"> 
-          <div class="font-medium flex flex-row items-center text-lg" ><span>{{ $t('link.metaid.group') }}</span><el-icon><CaretBottom /></el-icon></div>
-            <a
-      class="main-border mt-5 text-lg primary p-3"
-      @click="toMetaIdGrop"
-      >{{ $t('MetaID.official_group') }}</a
-    >
-
+        <div class="text-lg text-zinc-500 mt-3 break-all">
+          A Messaging Service Built on Bitcoin and its Sidechains
+        </div>
+        <div class="text-xl mt-5 text-zinc-600 break-all ">
+          Fully Decentralized,Immutable,Uncensorable,and Unhackable
+        </div>
+        <div class="flex flex-col mt-5">
+          <div class="font-medium flex flex-row items-center text-lg">
+            <span>{{ $t('link.metaid.group') }}</span
+            ><el-icon><CaretBottom /></el-icon>
+          </div>
+          <a class="main-border mt-5 text-lg primary p-3" @click="toMetaIdGrop">{{
+            $t('MetaID.official_group')
+          }}</a>
         </div>
       </div>
-  </div>
+    </div>
     <div class="" v-else>
       <div class="flex flex-col-reverse space-y-2 space-y-reverse">
         <!-- 群聊 -->
@@ -34,10 +38,8 @@
             :message="message"
             :id="message.timestamp"
             v-bind="$attrs"
-           
             @toBuzz="onToBuzz"
             @to-time-stamp="time => scrollToTimeStamp(time)"
-          
           />
           <div
             class="border-b border-solid border-gray-300 dark:border-gray-600 mb-6 pb-6 pt-2 mx-4"
@@ -116,53 +118,95 @@
 import { getChannelMessages } from '@/api/talk'
 import { useTalkStore } from '@/stores/talk'
 import { useLayoutStore } from '@/stores/layout'
-import { computed, nextTick, onBeforeUnmount, ref, watch, inject, onMounted } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  watch,
+  inject,
+  onMounted,
+  onUnmounted,
+} from 'vue'
 import LoadingItem from './LoadingItem.vue'
 import LoadingList from './LoadingList.vue'
 import MessageItem from './MessageItem.vue'
 import MessageItemForSession from './MessageItemForSession.vue'
-import { openLoading, sleep } from '@/utils/util'
+import { openLoading, sleep, debounce } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
 import Publish from '@/views/buzz/components/Publish.vue'
-import { IsEncrypt, NodeName,ChatChain } from '@/enum'
+import { IsEncrypt, NodeName, ChatChain } from '@/enum'
 import { decrypt } from '@/utils/crypto'
 import { ShareChatMessageData } from '@/@types/common'
-import {useBulidTx} from '@/hooks/use-build-tx'
-import {GroupMessagePollingQueue} from '@/utils/taskQueue'
-import { getUserInfoByAddress } from "@/api/man";
-import { debounce } from '@/utils/util'
+import { useBulidTx } from '@/hooks/use-build-tx'
+import { GroupMessagePollingQueue } from '@/utils/taskQueue'
+import { getUserInfoByAddress } from '@/api/man'
 import { CaretBottom } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useChainStore } from '@/stores/chain'
+import { isMobile } from '@/stores/root'
 const user = useUserStore()
 const talk = useTalkStore()
 const layout = useLayoutStore()
-const MetaIdUrl=`${location.origin}/talk/channels/public/396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0`
+const MetaIdUrl = `${location.origin}/talk/channels/public/396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0`
 const loadingMore = ref(false)
 const isAtTop = ref(false)
-const router=useRouter()
+const router = useRouter()
 const isShowPublish = ref(false)
-const chainStore=useChainStore()
+const chainStore = useChainStore()
 const repostBuzzTxId = ref('')
 const PublishRef = ref()
-const buildTx=useBulidTx()
+const buildTx = useBulidTx()
 const messagesScroll = ref<HTMLElement>()
-const preTime=ref(0)
+const preTime = ref(0)
 const { openConnectionModal } = useConnectionModal()
-const _welComePage=computed(()=>{
+const _welComePage = computed(() => {
   return talk.showWelcome
 })
-//const pollingQueue = new GroupMessagePollingQueue(5000);
+
+// 全局点击监听器，用于隐藏消息菜单
+const handleGlobalClick = (event: MouseEvent) => {
+  if (!isMobile || !talk.activeMessageMenuId) return
+
+  const target = event.target as Element
+
+  // 检查是否点击了菜单
+  const messageMenu = target.closest('.message-menu')
+
+  // 如果点击的是菜单内部，不关闭菜单
+  if (messageMenu) {
+    console.log('点击了菜单内部，不关闭菜单')
+    return
+  }
+
+  // 否则关闭菜单
+  console.log('点击了菜单外部，关闭菜单')
+  talk.clearActiveMessageMenu()
+}
+
+// 添加和移除全局点击监听器
+onMounted(() => {
+  if (isMobile) {
+    document.addEventListener('click', handleGlobalClick)
+  }
+})
+
+onUnmounted(() => {
+  if (isMobile) {
+    document.removeEventListener('click', handleGlobalClick)
+  }
+})
+// const pollingQueue = new GroupMessagePollingQueue(5000);
 // const taskInterval=ref()
 
 // onMounted(()=>{
 
 // taskInterval.value= setInterval(()=>{
 //    if(talk.activeChannel?.pastMessages.length){
-    
+
 //     // const nextTimeStamp= talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length-1].timestamp
-//     // 
+//     //
 
 //     pollingQueue.enqueue(talk.activeChannelId,talk.selfMetaId).then((messages)=>{
 //       console.log("messages",messages)
@@ -170,14 +214,13 @@ const _welComePage=computed(()=>{
 //            const currentTimeStamp=messages[0].timestamp
 //       const talkLastTimeStamp=talk.activeChannel?.pastMessages[0].timestamp
 //       if(currentTimeStamp == talkLastTimeStamp){
-       
-        
+
 //       }else{
 //          talk.updateChannelMessages(messages).then()
 //         // talk.activeChannel?.pastMessages.unshift(...messages)
 //       }
 //       }
-   
+
 //     })
 //   }
 //  },5000)
@@ -188,38 +231,36 @@ const _welComePage=computed(()=>{
 //   taskInterval.value=null
 // })
 
-function toMetaIdGrop(){
-  if(user.isAuthorized){
+function toMetaIdGrop() {
+  if (user.isAuthorized) {
     router.push({
-        name: 'talkChannel',
-        params:{
-          communityId:'public',
-          channelId:'396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0'
-        }
-      })
-      // setTimeout(() => {
-      //   window.location.reload()
-      // }, 2000);
-  }else{
+      name: 'talkChannel',
+      params: {
+        communityId: 'public',
+        channelId: '396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
+      },
+    })
+    // setTimeout(() => {
+    //   window.location.reload()
+    // }, 2000);
+  } else {
     openConnectionModal()
   }
-        
 }
-
 
 const handleScroll = async () => {
   if (!user.isAuthorized) return
-    // if(isLoadingMore.value === true){
-    // return
-    // }
+  // if(isLoadingMore.value === true){
+  // return
+  // }
   const topAnchor = document.getElementById('topAnchor')
   if (topAnchor) {
     const topAnchorRect = topAnchor.getBoundingClientRect()
     if (topAnchorRect.bottom > -100 && !loadingMore.value && !layout.isShowMessagesLoading) {
-      //isLoadingMore.value=true
+      // isLoadingMore.value=true
       loadingMore.value = true
-      const getMoreRes= await loadMore(preTime.value)
-      preTime.value=getMoreRes
+      const getMoreRes = await loadMore(preTime.value)
+      preTime.value = getMoreRes
       loadingMore.value = false
       // const preTimestamp=talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
       //     console.log("getMoreRes",getMoreRes,preTimestamp)
@@ -229,10 +270,7 @@ const handleScroll = async () => {
       //     loadingMore.value = false
       //     debugger
       // }
-    //debugger
-      
-     
-     
+      // debugger
     }
   }
 }
@@ -257,18 +295,18 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-const loadMore = async (preTimestamp:number=0) => {
+const loadMore = async (preTimestamp = 0) => {
   if (!talk.activeChannelId || !talk.selfMetaId) return
-  
+
   const earliestMessage =
     talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
   const earliestMessageTimestamp = earliestMessage?.timestamp
   const earliestMessageElement = document.getElementById(earliestMessageTimestamp?.toString() || '')
-  
+
   const earliestMessagePosition = earliestMessageElement?.getBoundingClientRect().bottom
-  
+
   let params
-  
+
   if (earliestMessageTimestamp) {
     params = {
       timestamp: earliestMessageTimestamp,
@@ -280,57 +318,46 @@ const loadMore = async (preTimestamp:number=0) => {
       metaId: talk.selfMetaId,
     }
   }
-  console.log("earliestMessageTimestamp",earliestMessageTimestamp,preTimestamp)
-  if(earliestMessageTimestamp == preTimestamp){
+  console.log('earliestMessageTimestamp', earliestMessageTimestamp, preTimestamp)
+  if (earliestMessageTimestamp == preTimestamp) {
     return earliestMessageTimestamp
   }
-  let items = await getChannelMessages(
-    {
-          groupId:talk.activeChannelId,
-         metaId: talk.selfMetaId,
-         timestamp:params.timestamp ?? '0',
-
-    }
-  )
-
-  
+  const items = await getChannelMessages({
+    groupId: talk.activeChannelId,
+    metaId: talk.selfMetaId,
+    timestamp: params.timestamp ?? '0',
+  })
 
   // 如果没有更多消息了，就不再加载
   if (items.length === 0) {
     isAtTop.value = true
-    
+
     return earliestMessageTimestamp
   }
 
-
-
-
   for (const item of items) {
-    console.log("talk.activeChannel.pastMessages",item.txId)
-      // const isDuplicate= talk.activeChannel.pastMessages?.find((item: Message) => item.txId === item.txId)
+    console.log('talk.activeChannel.pastMessages', item.txId)
+    // const isDuplicate= talk.activeChannel.pastMessages?.find((item: Message) => item.txId === item.txId)
 
-      // debugger
-      // if(isDuplicate){
-      //   continue
-      // }
-        
+    // debugger
+    // if(isDuplicate){
+    //   continue
+    // }
+
     //  getUserInfoByAddress(item.address).then((userInfo)=>{
     //     item.userInfo=userInfo
     //        if(item.replyInfo){
     //       getUserInfoByAddress(item.replyInfo.address).then((replyUserInfo)=>{
     //         item.replyInfo.userInfo=replyUserInfo
-          
+
     //         talk.activeChannel?.pastMessages.push(item)
-    //   }) 
+    //   })
     // }else{
     //       talk.activeChannel?.pastMessages.push(item)
     // }
     // })
-    
 
-
-    
-     talk.activeChannel?.pastMessages.push(item)
+    talk.activeChannel?.pastMessages.push(item)
   }
 
   // 滚动到原来的位置
@@ -374,7 +401,6 @@ const scrollToMessagesBottom = async (retryCount = 0) => {
 }
 
 function scrollToTimeStamp(time: number) {
-  
   const target = document.getElementById(time.toString())
   if (target) {
     const top = target.offsetTop - target.clientHeight
@@ -385,30 +411,28 @@ function scrollToTimeStamp(time: number) {
 async function onToBuzz(data: ShareChatMessageData) {
   const loading = openLoading()
 
-  console.log("data12313",data)
+  console.log('data12313', data)
 
-    const metaidData={
-    body:JSON.stringify(data),
+  const metaidData = {
+    body: JSON.stringify(data),
     path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.ShareChatMessage}`,
     flag: 'metaid',
     version: '1.0.0',
     operation: 'create',
-    contentType:'application/json',
+    contentType: 'application/json',
     encryption: '0',
     encoding: 'utf-8',
-    }
-      
-      
- const res= await buildTx.createPin(metaidData,true).catch(error => {
-      loading.close()
-      ElMessage.error(error.message)
-    })
- 
-   
-  if (res) {
-    
+  }
+
+  const res = await buildTx.createPin(metaidData, true).catch(error => {
     loading.close()
-    talk.shareToBuzzTxId =chainStore.state.currentChain == ChatChain.btc ? res?.revealTxIds[0] : res?.txids[0]
+    ElMessage.error(error.message)
+  })
+
+  if (res) {
+    loading.close()
+    talk.shareToBuzzTxId =
+      chainStore.state.currentChain == ChatChain.btc ? res?.revealTxIds[0] : res?.txids[0]
     layout.isShowShareSuccessModal = true
   } else if (res === null) {
     loading.close()
@@ -444,7 +468,7 @@ watch(
       const lastMessage =
         talk.activeChannel?.newMessages[talk.activeChannel?.newMessages.length - 1]
       const isMyMessage = lastMessage?.metaId === talk.selfMetaId
-      
+
       if (disFromBottom > mse.clientHeight && !isMyMessage) {
         return
       }

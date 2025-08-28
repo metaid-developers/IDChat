@@ -1,15 +1,16 @@
 <template>
   <div
-    class="absolute bg-white dark:bg-gray-700 right-0 -top-[5PX] -translate-x-4 px-1.5 py-0.5 rounded-xl shadow hidden lg:group-hover:flex hover:shadow-md transition-all duration-200 z-10"
+    class="message-menu absolute bg-white dark:bg-gray-700 right-0 -top-[5PX] -translate-x-4 px-1.5 py-0.5 rounded-xl shadow hidden lg:group-hover:flex hover:shadow-md transition-all duration-200 z-10"
     :class="{ '!flex': showMenu }"
     v-if="actions.length > 0"
-    @click.stop
   >
     <button
       v-for="action in actions"
       :key="action.name"
       class="p-1.5 flex items-center"
-      @click="handleAction(action)"
+      @click="handleButtonClick($event, action)"
+      @touchstart.stop
+      @touchend.stop
     >
       <Icon
         :name="action.icon"
@@ -65,9 +66,7 @@ const isText = computed(
 
 // 在组件挂载时添加点击外部隐藏菜单的监听器
 onMounted(() => {
-  if (isMobile) {
-    document.addEventListener('click', handleClickOutside)
-  }
+  // 移除全局点击监听器，改为在MessageItem中处理
 })
 
 const actions = computed(() => {
@@ -124,11 +123,18 @@ const actions = computed(() => {
     actions.push({
       name: 'Talk.MessageMenu.copy',
       icon: 'copy',
-      action: () => {
+      action: async () => {
         // 复制该消息内容到剪贴板
         const content = props.parsed
-        navigator.clipboard.writeText(content)
-        ElMessage.success(i18n.t('Copy_success'))
+        console.log('复制消息内容:', content)
+
+        try {
+          await navigator.clipboard.writeText(content)
+          ElMessage.success(i18n.t('Copy_success'))
+        } catch (error) {
+          console.error('复制失败:', error)
+          ElMessage.error('复制失败，请在HTTPS环境下使用此功能')
+        }
       },
     })
   }
@@ -270,23 +276,42 @@ const actions = computed(() => {
   return actions
 })
 
-// 处理动作点击
-const handleAction = (action: any) => {
-  action.action()
-  talk.clearActiveMessageMenu() // 点击后隐藏菜单
+// 处理按钮点击
+const handleButtonClick = (event: MouseEvent, action: any) => {
+  // 阻止事件冒泡
+  event.preventDefault()
+  event.stopPropagation()
+
+  console.log('执行菜单动作:', action.name)
+
+  // 立即执行动作
+  try {
+    action.action()
+  } catch (error) {
+    console.error('执行菜单动作失败:', error)
+  }
+
+  // 立即关闭菜单
+  talk.clearActiveMessageMenu()
 }
 
-// 点击其他地方隐藏菜单
-const handleClickOutside = () => {
-  if (showMenu.value) {
-    talk.clearActiveMessageMenu()
+// 处理动作点击（保留，但不再使用）
+const handleAction = (action: any) => {
+  console.log('执行菜单动作:', action.name)
+
+  // 立即执行动作
+  try {
+    action.action()
+  } catch (error) {
+    console.error('执行菜单动作失败:', error)
   }
+
+  // 立即关闭菜单
+  talk.clearActiveMessageMenu()
 }
 
 // 移除事件监听器
 onUnmounted(() => {
-  if (isMobile) {
-    document.removeEventListener('click', handleClickOutside)
-  }
+  // 不再需要移除全局点击监听器
 })
 </script>

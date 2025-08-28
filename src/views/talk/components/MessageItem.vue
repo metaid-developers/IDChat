@@ -366,7 +366,7 @@ const translatedContent = ref('')
 
 // 在组件挂载和卸载时处理事件监听器和定时器清理
 onMounted(() => {
-  document.addEventListener('click', handleGlobalClick)
+  // 移除全局点击监听器，改为在更高级别处理
 })
 
 onUnmounted(() => {
@@ -374,19 +374,8 @@ onUnmounted(() => {
     clearTimeout(longPressTimer.value)
     longPressTimer.value = null
   }
-  document.removeEventListener('click', handleGlobalClick)
+  // 移除全局点击监听器
 })
-
-const handleGlobalClick = (event: MouseEvent) => {
-  // 如果点击的不是当前消息或其子元素，则隐藏菜单
-  const target = event.target as Element
-  const messageElement = target.closest('.message-item')
-  const currentMessageElement = document.querySelector(`[data-message-id="${messageId.value}"]`)
-
-  if (messageElement !== currentMessageElement) {
-    talk.clearActiveMessageMenu()
-  }
-}
 
 const previewImage = (image: string) => {
   imagePreview.images = [image]
