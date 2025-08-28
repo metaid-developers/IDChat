@@ -13,7 +13,14 @@ import {
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import { SDK } from './sdk'
-import { FileToAttachmentItem, getTimestampInSeconds, realRandomString, sleep,atobToHex, containsString } from './util'
+import {
+  FileToAttachmentItem,
+  getTimestampInSeconds,
+  realRandomString,
+  sleep,
+  atobToHex,
+  containsString,
+} from './util'
 import { Message, MessageDto } from '@/@types/talk'
 import { buildCryptoInfo, decrypt, ecdhDecrypt, encrypt, MD5Hash } from './crypto'
 import Decimal from 'decimal.js-light'
@@ -31,7 +38,7 @@ import { useBulidTx } from '@/hooks/use-build-tx'
 import { AttachmentItem } from '@/@types/hd-wallet'
 
 import { useChainStore } from '@/stores/chain'
-import {ChatType,ChatChain} from '@/enum'
+import { ChatType, ChatChain } from '@/enum'
 import { Red_Packet_Min, Red_Packet_Max } from '@/data/constants'
 dayjs.extend(advancedFormat)
 type CommunityData = {
@@ -233,7 +240,7 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 
 // const _putIntoRedPackets = (form: any, address: string): any[] => {
 //   const { amount, quantity, each, type } = form
-//   
+//
 //   // NFT🧧：将NFT分成指定数量个红包，平均分配
 //   if (type === RedPacketDistributeType.Nft) {
 //     const redPackets = []
@@ -273,7 +280,7 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 //     index: quantity + initIndex - 1,
 //   }) // 最后一个红包，使用剩餘金额
 //   console.log("redPackets",redPackets)
-//   
+//
 //   return redPackets
 // }
 
@@ -361,7 +368,7 @@ const nicerAmount = (amount: number, unit: string) => {
 //   //   index: quantity + initIndex - 1,
 //   // }) // 最后一个红包，使用剩餘金额
 //   // console.log("redPackets",redPackets)
-//   // 
+//   //
 //   // return redPackets
 // }
 
@@ -447,11 +454,11 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
 
   // 如果最后一个红包过大，重新调整分配（可选的安全检查）
   if (amounts[amounts.length - 1] > mean * 2) {
-    return _redistributeEvenly(amounts, totalAmount, minSats).map(item => {
+    return _redistributeEvenly(amounts, totalAmount, minSats).map((item, index) => {
       return {
         amount: item,
         address,
-        index: amounts.length + initIndex,
+        index: index + initIndex,
       }
     })
   }
@@ -502,10 +509,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   const key = `${subId.toLocaleLowerCase()}${code.toLocaleLowerCase()}${createTime}`
   const net = import.meta.env.VITE_NET_WORK || 'mainnet'
   const { addressStr: address } = buildCryptoInfo(key, net)
-  
 
- 
-  
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000
   const amountInSat = nicerAmount(form.amount, form.unit) // 现在直接使用sat为单位
@@ -573,8 +577,8 @@ export const createChannel = async (
   subscribeId: string,
   selfMetaId?: string
 ) => {
-  const buildTx=useBulidTx()
-  const chainStore=useChainStore()
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
   // communityId, groupName, groupNote, timestamp, groupType, status, type, codehash, genesis, limitAmount
   const { name: groupName } = form
 
@@ -634,13 +638,11 @@ export const createChannel = async (
       return { status: 'canceled' }
     }
 
-    if(chainStore.state.currentChain == ChatChain.btc){
-      return { status: 'success', subscribeId,channelId:res?.revealTxIds[0] }
-    }else{
-      return { status: 'success', subscribeId,channelId:res?.txids[0] }
+    if (chainStore.state.currentChain == ChatChain.btc) {
+      return { status: 'success', subscribeId, channelId: res?.revealTxIds[0] }
+    } else {
+      return { status: 'success', subscribeId, channelId: res?.txids[0] }
     }
-    
-    
   } catch (err) {
     console.log(err)
     ElMessage.error('创建群组失败')
@@ -910,17 +912,16 @@ export const tryCreateNode = async (node: {
 }
 
 const _sendTextMessage = async (messageDto: MessageDto) => {
-  
   const userStore = useUserStore()
   const talkStore = useTalkStore()
-  const chainStore=useChainStore()
+  const chainStore = useChainStore()
   const { content, channelId: groupID, userName: nickName, reply } = messageDto
 
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
   const contentType = 'text/plain'
   const encryption = 'aes'
-  const externalEncryption='0'
+  const externalEncryption = '0'
   const dataCarrier = {
     groupID,
     timestamp,
@@ -976,9 +977,9 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     protocol: NodeName.SimpleGroupChat,
     contentType: 'text/plain',
     content,
-    chatType:ChatType.msg,
-    groupId:groupID,
-    chain:chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+    chatType: ChatType.msg,
+    groupId: groupID,
+    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
     avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
@@ -1026,7 +1027,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
 const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
-  const chainStore=useChainStore()
+  const chainStore = useChainStore()
   const { content, channelId: to, reply } = messageDto
 
   // 1. 构建协议数据
@@ -1091,8 +1092,8 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     chatType:ChatType.msg,
     dataType: 'text/plain',
     data: dataCarrier,
-    chain:chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
-    avatarType:  'undefined',
+    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+    avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
     fromAvatarImage: userStore.last?.avatar || '',
@@ -1161,10 +1162,10 @@ const _uploadImage = async (file: File, sdk: SDK) => {
 const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
-  const chainStore=useChainStore()
-  
-  const { channelId,groupId, userName: nickName, attachments, originalFileUrl, reply } = messageDto
-  
+  const chainStore = useChainStore()
+
+  const { channelId, groupId, userName: nickName, attachments, originalFileUrl, reply } = messageDto
+
   // 1. 构建协议数据
   // 1.1 groupId: done
   // 1.2 timestamp
@@ -1175,7 +1176,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const fileType = file.fileType.split('/')[1]
   // 1.5 encrypt
   const encrypt = 'aes'
-  const externalEncryption='0'
+  const externalEncryption = '0'
   // const attachment =attachments//'metafile://$[0]'
 
   const dataCarrier: any = {
@@ -1204,8 +1205,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     body: dataCarrier,
     attachments,
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
-    externalEncryption
-    
+    externalEncryption,
   }
 
   // 2.5. mock发送
@@ -1214,11 +1214,11 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     mockId,
     protocol: nodeName,
     nodeName,
-    groupId:channelId,
-    chatType:ChatType.img,
+    groupId: channelId,
+    chatType: ChatType.img,
     contentType: fileType,
     content: originalFileUrl,
-    chain:chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
     avatarType: userStore.last?.avatar || 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
@@ -1492,20 +1492,21 @@ export function decryptedMessage(
   protocol: string,
   isMock: boolean = false,
   isSession: boolean = false, // 是否私聊
-  secretKeyStr:string=''
+  secretKeyStr: string = ''
 ) {
   const talk = useTalkStore()
-  
-   if (encryption === '0') {
-      //return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
-     return content
-  }
 
-  if (containsString(protocol,NodeName.SimpleFileGroupChat) || containsString(protocol,NodeName.SimpleFileMsg)) {
+  if (encryption === '0') {
+    //return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
     return content
   }
 
- 
+  if (
+    containsString(protocol, NodeName.SimpleFileGroupChat) ||
+    containsString(protocol, NodeName.SimpleFileMsg)
+  ) {
+    return content
+  }
 
   if (isSession) {
     if (!talk.activeChannel) return ''
@@ -1519,6 +1520,6 @@ export function decryptedMessage(
     const otherPublicKeyStr = talk.activeChannel.publicKeyStr
     return ecdhDecrypt(content, sigStr, otherPublicKeyStr)
   } else {
-    return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
+    return decrypt(content, secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
   }
 }

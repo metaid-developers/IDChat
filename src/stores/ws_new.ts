@@ -40,6 +40,7 @@ export const useWsStore = defineStore('ws', {
 
   actions: {
     async init() {
+      
       const selfMetaId = this.selfMetaId
       if (!selfMetaId) return
         const config: SocketConfig = {
@@ -47,16 +48,18 @@ export const useWsStore = defineStore('ws', {
         path: '/socket-test/socket.io',
         metaid: selfMetaId
         };
-        const client=new SocketIOClient(config);
-        this.ws=client
-         client.connect();
+        this.ws=new SocketIOClient(config);
+        // this.ws=client
+         this.ws.connect();
          
-           setTimeout(() => {
-          if (client.isConnected()) {
-            console.log("Hello from TypeScript client!")
+        setTimeout(() => {
+          if (this.ws?.isConnected()) {
+            // console.log("Hello from TypeScript client!")
           //client.sendMessage('Hello from TypeScript client!');
           }
           }, 2000);
+
+         
 
 
         // const socket=client.getSocket()

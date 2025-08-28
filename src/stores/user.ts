@@ -3,6 +3,8 @@ import { useLocalStorage, type RemovableRef } from '@vueuse/core'
 import { type UserInfo, getUserInfoByAddress } from '@/api/man'
 import { useConnectionStore } from '@/stores/connection'
 import { useLayoutStore } from './layout'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -38,10 +40,28 @@ export const useUserStore = defineStore('user', {
     isAuthorized: (state) => {
       const connectedStore = useConnectionStore()
       return !!(state.last.address && state.last.metaid && connectedStore.last.status == 'connected')
-    }
+    },
+
   },
 
    actions: {
+
+      // async checkUserIsChange(){
+      //   debugger
+      // const connectedStore = useConnectionStore()
+      // const router=useRouter()
+      // const i18n=useI18n()
+      //  const res=await connectedStore.adapter.getAddress()
+
+      //     if (res?.status == 'not-connected' || this.last?.address !== res) {
+      //     connectedStore.disconnect(router)
+      //     ElMessage.warning({
+      //     message:i18n.t('account.change'),
+      //     type: 'warning',
+      //     })
+      //     }
+      // },
+
       async setUserInfo(address: string) {
       const user: UserInfo = this.last
         ? (JSON.parse(JSON.stringify(this.last)) as UserInfo)

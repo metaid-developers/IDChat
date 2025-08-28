@@ -20,9 +20,8 @@ import Decimal from 'decimal.js-light'
 import { useChainStore } from './chain'
 import i18n from '@/utils/i18n'
 
-const MIN=new Decimal(0.0001).mul(10 ** 8).toNumber()
-const MAX=new Decimal(10).mul(10 ** 8).toNumber()
-
+const MIN = new Decimal(0.0001).mul(10 ** 8).toNumber()
+const MAX = new Decimal(10).mul(10 ** 8).toNumber()
 
 export const useCommunityFormStore = defineStore('communityForm', {
   state: () => {
@@ -31,14 +30,14 @@ export const useCommunityFormStore = defineStore('communityForm', {
       description: '',
       cover: null as File | null,
       name: '',
-     //metaName: null as MetaNameItem | null,
+      // metaName: null as MetaNameItem | null,
     }
   },
 
   getters: {
     isStep1Finished(state) {
-      return !!state.icon &&  state.name.length > 0 //!!state.metaName && state.name.length > 0
-      //return !!state.icon && state.name.length > 0
+      return !!state.icon && state.name.length > 0 //! !state.metaName && state.name.length > 0
+      // return !!state.icon && state.name.length > 0
     },
 
     isStep2Finished(state) {
@@ -46,13 +45,13 @@ export const useCommunityFormStore = defineStore('communityForm', {
     },
 
     isFinished(state) {
-      //return !!state.icon && !!state.name
-      return !!state.icon  && !!state.name //&& !!state.metaName
+      // return !!state.icon && !!state.name
+      return !!state.icon && !!state.name // && !!state.metaName
     },
 
     isAllFinished(state) {
       return (
-        !!state.icon && !!state.description  && !!state.name && !!state.cover //&& !!state.metaName 
+        !!state.icon && !!state.description && !!state.name && !!state.cover // && !!state.metaName
       )
     },
 
@@ -71,7 +70,7 @@ export const useCommunityFormStore = defineStore('communityForm', {
       this.description = ''
       this.cover = null
       this.name = ''
-      //this.metaName = null
+      // this.metaName = null
     },
   },
 })
@@ -83,7 +82,7 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       description: '',
       cover: null as File | null,
       original: null as any,
-      //metaName: null as MetaNameItem | null,
+      // metaName: null as MetaNameItem | null,
       name: '',
     }
   },
@@ -92,7 +91,7 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
     isChanged(state) {
       const descriptionChanged = state.description !== state.original.description
       const nameChanged = state.name !== state.original.name
-      return state.icon  || descriptionChanged  || state.cover || nameChanged  //||  !!state.metaName
+      return state.icon || descriptionChanged || state.cover || nameChanged // ||  !!state.metaName
     },
 
     isFinished(state): boolean {
@@ -113,14 +112,14 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       this.icon = null
       this.description = ''
       this.cover = null
-      //this.metaName = null
+      // this.metaName = null
       this.name = ''
     },
 
     resetInForm() {
       this.icon = null
       this.cover = null
-      //this.metaName = null
+      // this.metaName = null
       this.description = this.original.description
       this.name = this.original.name
     },
@@ -128,8 +127,8 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
     async submit() {
       if (!this.isFinished) return
 
-      //const metaName = await getCommunityAuth(this.original.communityId)
-      //const replacingMetaName = this.metaName
+      // const metaName = await getCommunityAuth(this.original.communityId)
+      // const replacingMetaName = this.metaName
 
       const layout = useLayoutStore()
       const user = useUserStore()
@@ -140,8 +139,8 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
         description: this.description,
         cover: this.cover,
         original: this.original,
-        //metaName,
-        //replacingMetaName,
+        // metaName,
+        // replacingMetaName,
         name: this.name,
       }
       await updateCommunity(form, user.showWallet)
@@ -313,13 +312,34 @@ export const usePasswordFormStore = defineStore('passwordForm', {
 
 export const useRedPacketFormStore = defineStore('redPacketForm', {
   state: () => {
-    return {
-      amount: 0.001 as number | '',
-      each: 0.001 as number,
-      unit:'Space' as 'Sats' | 'Space',
-      quantity: 1,
+    // 从 localStorage 读取之前保存的设置
+    const savedSettings = localStorage.getItem('redPacketFormSettings')
+    const defaultSettings = {
+      amount: 0.1,
+      each: 0.05,
+      unit: 'Space' as 'Sats' | 'Space',
+      quantity: 2,
       message: '',
       type: RedPacketDistributeType.Random,
+    }
+
+    let settings = defaultSettings
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings)
+        settings = { ...defaultSettings, ...parsed }
+      } catch (e) {
+        console.warn('Failed to parse saved red packet settings:', e)
+      }
+    }
+
+    return {
+      amount: settings.amount as number | '',
+      each: settings.each as number,
+      unit: settings.unit as 'Sats' | 'Space',
+      quantity: settings.quantity,
+      message: settings.message,
+      type: settings.type,
       nft: null as any,
       chain: null as any,
     }
@@ -328,15 +348,15 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
   getters: {
     nicerAmount(state): string {
       if (state.amount === '') return '0'
-      console.log("state.amount",state.amount)
+      console.log('state.amount', state.amount)
       // 小于 0.01 的红包金额，会使用sat为单位
-      
+
       return new Decimal(state.amount).toString()
       // return state.amount < 0.01 ? (state.amount * 100000000).toFixed(0) : state.amount.toFixed(2)
     },
 
     amountUnit(state) {
-      return state.unit //'sats'
+      return state.unit // 'sats'
       // if (state.amount === 0 || state.amount === '') return 'Space'
       // return state.amount < 0.01 ? 'sats' : 'Space'
     },
@@ -358,6 +378,19 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
   },
 
   actions: {
+    // 保存当前设置到 localStorage
+    saveSettings() {
+      const settings = {
+        amount: this.amount,
+        each: this.each,
+        unit: this.unit,
+        quantity: this.quantity,
+        message: this.message,
+        type: this.type,
+      }
+      localStorage.setItem('redPacketFormSettings', JSON.stringify(settings))
+    },
+
     validateQuantity() {
       if (this.quantity < 1) {
         this.quantity = 1
@@ -374,60 +407,60 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     validateAmount() {
       // 每个人最少 1000 sat（0.00001 Space）
       const min = MIN
-      const max= MAX
-      
-      if(this.unit == 'Sats'){
-      const minAmount = min * this.quantity
-      const maxAmount = max // 2 Space = 200_000_000 sat
-      if (+this.amount < minAmount) {
-        this.amount = minAmount
-      }
-      if (+this.amount > maxAmount) {
-        this.amount = maxAmount
-      }
-      }else{
-      const minAmount = new Decimal(min).div(10 ** 8).mul(this.quantity).toNumber()
-      const maxAmount = new Decimal(max).div(10 ** 8).mul(this.quantity).toNumber() // 2 Space = 200_000_000 sat
-      if (+this.amount < minAmount) {
-        this.amount = minAmount
-      }
-      if (+this.amount > maxAmount) {
-        this.amount = maxAmount
-      }
-      }
+      const max = MAX
 
-    
+      if (this.unit == 'Sats') {
+        const minAmount = min * this.quantity
+        const maxAmount = max // 2 Space = 200_000_000 sat
+        if (+this.amount < minAmount) {
+          this.amount = minAmount
+        }
+        if (+this.amount > maxAmount) {
+          this.amount = maxAmount
+        }
+      } else {
+        const minAmount = new Decimal(min)
+          .div(10 ** 8)
+          .mul(this.quantity)
+          .toNumber()
+        const maxAmount = new Decimal(max)
+          .div(10 ** 8)
+          .mul(this.quantity)
+          .toNumber() // 2 Space = 200_000_000 sat
+        if (+this.amount < minAmount) {
+          this.amount = minAmount
+        }
+        if (+this.amount > maxAmount) {
+          this.amount = maxAmount
+        }
+      }
     },
     validateEach() {
-      const min =MIN
-      const max=MAX
-      if(this.unit == 'Sats'){
-        const minAmount=min
-        const maxAmount=max
-          if (this.each < minAmount) {
-        this.each = minAmount
-      }
-      if (this.each > maxAmount) {
-        this.each = maxAmount
-      }
-      }else{
-         const minAmount=new Decimal(min).div(10 ** 8).toNumber()
-        const maxAmount=new Decimal(max).div(10 ** 8).toNumber()
+      const min = MIN
+      const max = MAX
+      if (this.unit == 'Sats') {
+        const minAmount = min
+        const maxAmount = max
         if (this.each < minAmount) {
-        this.each = minAmount
+          this.each = minAmount
+        }
+        if (this.each > maxAmount) {
+          this.each = maxAmount
+        }
+      } else {
+        const minAmount = new Decimal(min).div(10 ** 8).toNumber()
+        const maxAmount = new Decimal(max).div(10 ** 8).toNumber()
+        if (this.each < minAmount) {
+          this.each = minAmount
+        }
+        if (this.each > maxAmount) {
+          this.each = maxAmount
+        }
       }
-      if (this.each > maxAmount) {
-        this.each = maxAmount
-      }
-      }
-
-    
     },
 
     reset() {
-      this.amount =this.unit == 'Sats' ? 1000 : 0.00001
-      this.each = this.unit == 'Sats' ? 1000 : 0.00001
-      this.quantity = 1
+      // 重置 nft 和 chain，但保留其他设置
       this.message = ''
       this.nft = null
       this.chain = null
@@ -437,12 +470,15 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       const talk = useTalkStore()
       const user = useUserStore()
       const layout = useLayoutStore()
-      const chainStore=useChainStore()
-      if(chainStore.state.currentChain == 'btc'){
+      const chainStore = useChainStore()
+      if (chainStore.state.currentChain == 'btc') {
         return ElMessage.error(`${i18n.global.t('notSupoort_btc_send_repacket')}`)
       }
       if (!this.isFinished) return
-      
+
+      // 保存当前设置
+      this.saveSettings()
+
       layout.isShowRedPacketModal = false
       layout.isShowLoading = true
       await giveRedPacket(
@@ -454,10 +490,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           chain: this.chain,
           nft: this.nft,
           type: this.type,
-          unit:this.unit
+          unit: this.unit,
         },
         talk.activeChannelId,
-        talk.selfMetaId,
+        talk.selfMetaId
       )
       layout.isShowLoading = false
       this.reset()
@@ -591,25 +627,25 @@ export const useMutateDaoFormStore = defineStore('mutateDaoForm', {
   state: () => {
     const userStroe = useUserStore()
     return {
-      communityId: '', //string
-      daoName: '', //string
-      daoID: SHA256(realRandomString(64)).toString(), //string, 生成方法hash(随机64位)，必须确保是唯一。Sha256 once after generating a 64-bit random string.
-      daoAdmins: [userStroe.user!.metaId], //array, 管理员metaId数组
-      daoIntro: '', //string
-      daoMission: '', //string
-      daoTypes: [], //array, 值: "protocol/service/social/investment/grant/collector/culture",
-      daoLogo: '', //string, logo所在的metafile
-      governanceType: 'space', //string, 治理类型：ft/nft/bsv/space/none
+      communityId: '', // string
+      daoName: '', // string
+      daoID: SHA256(realRandomString(64)).toString(), // string, 生成方法hash(随机64位)，必须确保是唯一。Sha256 once after generating a 64-bit random string.
+      daoAdmins: [userStroe.user!.metaId], // array, 管理员metaId数组
+      daoIntro: '', // string
+      daoMission: '', // string
+      daoTypes: [], // array, 值: "protocol/service/social/investment/grant/collector/culture",
+      daoLogo: '', // string, logo所在的metafile
+      governanceType: 'space', // string, 治理类型：ft/nft/bsv/space/none
       governanceSymbol: 'space', // {space/ft-symbol} string, Symbol of Governance Token.治理代币的Symbol。
-      governanceToken: 'space', //string, 治理tokenId,若为源生币为"space", 如没有则为"none",
-      daoWebsite: '', //string, DAO官网
-      daoTwitter: '', //string, 推特账号
-      daoDiscord: '', //string, discord地址
-      daoTelegram: '', //string, telegrame地址
-      daoTerms: '', //string,
-      daoTermsContentType: 'text/markdwon', //string, 进入条款的内容格式
-      joinDaoRequireTokenNumber: 1, //number, 加入该DAO的时候，需要最少治理token数量，如果治理Token为none，则忽略此值
-      createProposalRequireTokenNumber: 10000, //number, 创建议题需要的治理Token数量，如果治理Token为none，则忽略此值
+      governanceToken: 'space', // string, 治理tokenId,若为源生币为"space", 如没有则为"none",
+      daoWebsite: '', // string, DAO官网
+      daoTwitter: '', // string, 推特账号
+      daoDiscord: '', // string, discord地址
+      daoTelegram: '', // string, telegrame地址
+      daoTerms: '', // string,
+      daoTermsContentType: 'text/markdwon', // string, 进入条款的内容格式
+      joinDaoRequireTokenNumber: 1, // number, 加入该DAO的时候，需要最少治理token数量，如果治理Token为none，则忽略此值
+      createProposalRequireTokenNumber: 10000, // number, 创建议题需要的治理Token数量，如果治理Token为none，则忽略此值
       publiceKey: '',
     }
   },
@@ -624,25 +660,25 @@ export const useMutateDaoFormStore = defineStore('mutateDaoForm', {
     },
 
     reset() {
-      this.communityId = '' //string
-      this.daoName = '' //string
-      this.daoID = SHA256(realRandomString(64)).toString() //string, 生成方法hash(随机64位)，必须确保是唯一。Sha256 once after generating a 64-bit random string.
-      this.daoAdmins = [] //array, 管理员metaId数组
-      this.daoIntro = '' //string
-      this.daoMission = '' //string
-      this.daoTypes = [] //array, 值: "protocol/service/social/investment/grant/collector/culture",
-      this.daoLogo = '' //string, logo所在的metafile
-      this.governanceType = 'space' //string, 治理类型：ft/nft/bsv/space/none
+      this.communityId = '' // string
+      this.daoName = '' // string
+      this.daoID = SHA256(realRandomString(64)).toString() // string, 生成方法hash(随机64位)，必须确保是唯一。Sha256 once after generating a 64-bit random string.
+      this.daoAdmins = [] // array, 管理员metaId数组
+      this.daoIntro = '' // string
+      this.daoMission = '' // string
+      this.daoTypes = [] // array, 值: "protocol/service/social/investment/grant/collector/culture",
+      this.daoLogo = '' // string, logo所在的metafile
+      this.governanceType = 'space' // string, 治理类型：ft/nft/bsv/space/none
       this.governanceSymbol = 'space' // {space/ft-symbol} string, Symbol of Governance Token.治理代币的Symbol。
-      this.governanceToken = 'space' //string, 治理tokenId,若为源生币为"space", 如没有则为"none",
-      this.daoWebsite = '' //string, DAO官网
-      this.daoTwitter = '' //string, 推特账号
-      this.daoDiscord = '' //string, discord地址
-      this.daoTelegram = '' //string, telegrame地址
-      this.daoTerms = '' //string,
-      this.daoTermsContentType = 'text/markdwon' //string, 进入条款的内容格式
-      this.joinDaoRequireTokenNumber = 1 //number, 加入该DAO的时候，需要最少治理token数量，如果治理Token为none，则忽略此值
-      this.createProposalRequireTokenNumber = 10000 //number, 创建议题需要的治理Token数量，如果治理Token为none，则忽略此值
+      this.governanceToken = 'space' // string, 治理tokenId,若为源生币为"space", 如没有则为"none",
+      this.daoWebsite = '' // string, DAO官网
+      this.daoTwitter = '' // string, 推特账号
+      this.daoDiscord = '' // string, discord地址
+      this.daoTelegram = '' // string, telegrame地址
+      this.daoTerms = '' // string,
+      this.daoTermsContentType = 'text/markdwon' // string, 进入条款的内容格式
+      this.joinDaoRequireTokenNumber = 1 // number, 加入该DAO的时候，需要最少治理token数量，如果治理Token为none，则忽略此值
+      this.createProposalRequireTokenNumber = 10000 // number, 创建议题需要的治理Token数量，如果治理Token为none，则忽略此值
     },
   },
 })

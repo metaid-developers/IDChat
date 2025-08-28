@@ -360,6 +360,7 @@ class SocketIOClient {
    */
   private sendHeartbeat(): void {
     if (!this.socket || !this.socket.connected) {
+      
       console.warn('⚠️ 未连接到服务器，跳过心跳发送');
       return;
     }
@@ -372,6 +373,7 @@ class SocketIOClient {
       // };
       const heartbeatMessage ={"M":"HEART_BEAT","C":10}
       //this.socket.emit('message', heartbeatMessage)
+      
        this.socket.emit('ping');
       console.log('📤 发送心跳包:', heartbeatMessage);
 

@@ -189,6 +189,7 @@ watch(
       talk.initReceivedRedPacketIds()
       talk.initReadPointers()
       ws.init()
+      
     } else {
       talk.reset()
       ws.disconnect()

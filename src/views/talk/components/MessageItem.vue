@@ -1,8 +1,10 @@
 <template>
   <div
-    class="relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group"
+    class="relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group message-item"
     :class="{ replying: reply.val?.timestamp === message.timestamp }"
+    :data-message-id="messageId"
     @touchstart="handleTouchStart"
+    @touchmove="handleTouchMove"
     @touchend="handleTouchEnd"
     @touchcancel="handleTouchEnd"
   >
@@ -10,6 +12,7 @@
     <template v-if="!isShare">
       <MessageMenu
         :message="props.message"
+        :message-id="messageId"
         :parsed="
           parseTextMessage(
             decryptedMessage(message.content, message.encryption, message.protocol, message.isMock)
@@ -20,7 +23,7 @@
         v-bind="$attrs"
         v-if="isText"
       />
-      <MessageMenu :message="props.message" v-bind="$attrs" v-else />
+      <MessageMenu :message="props.message" :message-id="messageId" v-bind="$attrs" v-else />
     </template>
 
     <!-- quote -->
@@ -61,14 +64,15 @@
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
-          <div class="text-xs shrink-0 whitespace-nowrap"
-          :class="[msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400' ]"
+          <div
+            class="text-xs shrink-0 whitespace-nowrap"
+            :class="[
+              msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
+            ]"
           >
             {{ formatTimestamp(message.timestamp, i18n) }}
           </div>
         </div>
-
-        
 
         <div
           class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
@@ -101,11 +105,12 @@
 
         <div class="w-full py-0.5 flex items-center" v-else-if="isImage">
           <div
-            class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200"
+            class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200 relative"
             :class="[message.error && 'opacity-50']"
             @click="previewImage(message.content)"
           >
             <Image
+              ref="imageRef"
               :src="
                 decryptedMessage(
                   message.content,
@@ -115,7 +120,22 @@
                 )
               "
               customClass="rounded-xl py-0.5 object-scale-down"
+              @error="handleImageError"
+              @load="handleImageLoad"
             />
+            <!-- 重加载按钮 -->
+            <button
+              v-if="showReloadButton"
+              class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 transition-all duration-200"
+              @click.stop="reloadImage"
+              :title="$t('Talk.Messages.reload_image')"
+            >
+              <Icon
+                name="arrow_path"
+                class="w-4 h-4 text-white"
+                :class="{ 'animate-spin': isReloading }"
+              />
+            </button>
           </div>
           <!--message.error-->
           <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
@@ -232,6 +252,7 @@ import {
   ref,
   Ref,
   onMounted,
+  onUnmounted,
   nextTick,
   provide,
   defineProps,
@@ -268,19 +289,64 @@ const router=useRouter()
 const imagePreview = useImagePreview()
 const visiableMenu = ref(false)
 
-// 创建 ref 来存储 MessageMenu 的长按处理函数
-const longPressHandlers = ref({
-  start: () => {},
-  end: () => {}
-})
+// 图片重加载相关
+const imageRef = ref()
+const showReloadButton = ref(false)
+const isReloading = ref(false)
+const imageLoadFailed = ref(false)
+const imageLoadAttempts = ref(0)
+const MAX_RELOAD_ATTEMPTS = 3
 
-// 提供设置长按处理函数的接口给子组件
-const setLongPressHandlers = (handlers: { start: () => void; end: () => void }) => {
-  longPressHandlers.value = handlers
+const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
+
+// 触摸状态管理
+const touchStartTime = ref(0)
+const touchStartPosition = ref({ x: 0, y: 0 })
+const longPressTimer = ref<number | null>(null)
+const LONG_PRESS_DURATION = 500 // 长按持续时间（毫秒）
+const MOVE_THRESHOLD = 10 // 移动阈值（像素）
+
+// 触摸开始处理
+const handleTouchStart = (event: TouchEvent) => {
+  if (!isMobile) return
+
+  const touch = event.touches[0]
+  touchStartTime.value = Date.now()
+  touchStartPosition.value = { x: touch.clientX, y: touch.clientY }
+
+  // 清除之前的菜单
+  talk.clearActiveMessageMenu()
+
+  // 设置长按定时器
+  longPressTimer.value = window.setTimeout(() => {
+    talk.setActiveMessageMenu(messageId.value)
+  }, LONG_PRESS_DURATION)
 }
 
-// 提供设置函数给子组件
-provide('setLongPressHandlers', setLongPressHandlers)
+// 触摸移动处理
+const handleTouchMove = (event: TouchEvent) => {
+  if (!isMobile || !longPressTimer.value) return
+
+  const touch = event.touches[0]
+  const deltaX = Math.abs(touch.clientX - touchStartPosition.value.x)
+  const deltaY = Math.abs(touch.clientY - touchStartPosition.value.y)
+
+  // 如果移动距离超过阈值，取消长按
+  if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
+// 触摸结束处理
+const handleTouchEnd = () => {
+  if (!isMobile) return
+
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
 
 interface Props {
   message: ChatMessageItem
@@ -290,7 +356,10 @@ const props = withDefaults(defineProps<Props>(), {})
 
 const emit = defineEmits<{}>()
 
-/** 翻译 */
+// 为每个消息生成唯一ID
+const messageId = computed(() => {
+  return `${props.message.timestamp}-${props.message.metaId}-${props.message.txId || 'mock'}`
+})
 type TranslateStatus = 'hidden' | 'showing' | 'processing'
 const translateStatus: Ref<TranslateStatus> = ref('hidden')
 const translatedContent = ref('')
@@ -305,11 +374,75 @@ function toPrivateChat(metaid:string){
   }
  })
 }
+// 在组件挂载和卸载时处理事件监听器和定时器清理
+onMounted(() => {
+  // 移除全局点击监听器，改为在更高级别处理
+})
+
+onUnmounted(() => {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+  // 移除全局点击监听器
+})
 
 const previewImage = (image: string) => {
   imagePreview.images = [image]
   imagePreview.index = 0
   imagePreview.visibale = true
+}
+
+// 图片加载处理函数
+const handleImageLoad = () => {
+  imageLoadFailed.value = false
+  showReloadButton.value = false
+  imageLoadAttempts.value = 0
+  isReloading.value = false
+}
+
+const handleImageError = () => {
+  imageLoadFailed.value = true
+  imageLoadAttempts.value++
+
+  // 如果是第一次失败，等待一段时间后自动重试
+  if (imageLoadAttempts.value === 1) {
+    setTimeout(() => {
+      if (imageLoadFailed.value && imageLoadAttempts.value < MAX_RELOAD_ATTEMPTS) {
+        reloadImage()
+      } else {
+        showReloadButton.value = true
+      }
+    }, 2000) // 2秒后自动重试
+  } else {
+    showReloadButton.value = true
+  }
+
+  isReloading.value = false
+}
+
+const reloadImage = async () => {
+  if (isReloading.value || imageLoadAttempts.value >= MAX_RELOAD_ATTEMPTS) return
+
+  isReloading.value = true
+  showReloadButton.value = false
+
+  try {
+    // 强制重新获取图片
+    const imageComponent = imageRef.value
+    if (imageComponent && imageComponent.imgRef) {
+      const img = imageComponent.imgRef
+      const originalSrc = img.src
+
+      // 添加时间戳强制重新加载
+      const separator = originalSrc.includes('?') ? '&' : '?'
+      img.src = originalSrc + separator + 't=' + Date.now()
+    }
+  } catch (error) {
+    console.error('重加载图片失败:', error)
+    isReloading.value = false
+    showReloadButton.value = true
+  }
 }
 
 const msgChain=computed(()=>{
@@ -454,21 +587,6 @@ const isGiveawayRedPacket = computed(() =>
 const isReceiveRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupOpenLuckybag)
 )
-const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
-
-// 触摸开始处理
-const handleTouchStart = () => {
-  if (isMobile) {
-    longPressHandlers.value.start()
-  }
-}
-
-// 触摸结束处理
-const handleTouchEnd = () => {
-  if (isMobile) {
-    longPressHandlers.value.end()
-  }
-}
 </script>
 
 <style lang="scss" scoped src="./MessageItem.scss"></style>

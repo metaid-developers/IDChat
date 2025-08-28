@@ -64,8 +64,13 @@ export const useBulidTx = createGlobalState(() => {
     }))
   // actions
   const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
+    
     const chainStore=useChainStore()
+    
+
+
     try {
+      
 
       if(chainStore.state.currentChain === 'btc'){
         const inscribeDataArray=[]
@@ -459,6 +464,9 @@ export const useBulidTx = createGlobalState(() => {
       pinRes= await createPinWithAsset(metaidData,_options)
       
       if(pinRes){
+        // const {utxo} = pinRes
+        // utxoStore.remove(rootAddress.value)
+        // utxoStore.insert(utxo, utxo.address)
         utxoStore.remove(rootAddress.value)
       }
       
