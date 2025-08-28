@@ -10,10 +10,13 @@
       <div
         class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch"
       >
+      
         <div class="flex flex-col overflow-y-hidden">
           <!-- 搜索栏 -->
           <DirectContactSearch />
 
+         
+           <div @click="createPubkeyNode">Pubkey</div>
           <!-- 联系人列表 -->
           <div class="overflow-y-auto">
             <DirectContactItem
@@ -35,9 +38,31 @@ import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import { useTalkStore } from '@/stores/talk'
 import { computed} from 'vue'
-
+import {createUserPubkey} from '@/utils/userInfo'
+import { useCredentialsStore } from '@/stores/credentials'
 const layout = useLayoutStore()
 const talkStore = useTalkStore()
+const credentialsStore=useCredentialsStore()
+
+async function createPubkeyNode() {
+  debugger
+  try {
+      const credential=credentialsStore.get
+  const txid= await createUserPubkey({
+        pubkey:credential.publicKey,
+        options: {
+        feeRate: 1,
+        network: 'mainnet',
+        assistDomain: 'https://www.metaso.network/assist-open-api',
+      },
+  })
+  console.log('txid',txid)
+  debugger
+  } catch (error) {
+    debugger
+  }
+}
+
 
 const test=computed(()=>{
  return talkStore.activeCommunityChannels

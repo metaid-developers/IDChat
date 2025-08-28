@@ -61,6 +61,23 @@ export const getMvcBalance = async () => {
   return balance
 }
 
+export const getUseableUtxo = async () => {
+  checkMetalet()
+  
+  const utxos = await window.metaidwallet.getUtxos().catch(()=>{
+    return []
+  })
+
+  if(utxos.length){
+   return utxos.filter((utxo)=>{
+      return utxo.value !== 600 && utxo.value !== 1 && utxo.value > 1000
+    })
+  }else{
+    return []
+  }
+  
+}
+
 export const signMvcMessage = async (Message: { message: string }) => {
   checkMetalet()
   const { message } = Message
