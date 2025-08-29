@@ -1364,5 +1364,6 @@
   },
   "new_msg_img": "Image",
   "notSupoort_btc_send_repacket": "Temporarily not supporting sending red packets with BTC",
-  "upload_attachment_fail": "上传附件失败"
+  "upload_attachment_fail": "上传附件失败",
+  "retry_join": "Please re-perform the group entry operation"
 }

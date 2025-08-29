@@ -1358,5 +1358,6 @@
   },
   "new_msg_img": "图片",
   "notSupoort_btc_send_repacket": "暂不支持发送BTC红包",
-  "upload_attachment_fail": "Upload attachment fail"
+  "upload_attachment_fail": "Upload attachment fail",
+  "retry_join": "请重新执行进群操作"
 }
