@@ -5,6 +5,7 @@ import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
 import {  NodeName } from '@/enum'
+import type { PriviteChatMessageItem } from '@/@types/common'
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
   responseHandel: response => {
     return new Promise((resolve, reject) => {
@@ -255,7 +256,7 @@ export const getChannels = async ({
  //latest-group-list
   return TalkApi.get(`/user/latest-chat-info-list?${params}`).then(
     res => {
-      debugger
+      
      if(res.data.list){
        return res.data.list.map((channel: any) => {
         channel.id = channel.groupId
@@ -361,6 +362,67 @@ const data:{
   return data.data.list ?? []
 }
 
+export const getPrivateChatMessages = async (
+ {
+  metaId='',
+  otherMetaId='',
+  cursor='0',
+  size=String(ChannelMsg_Size),
+  timestamp='0'
+ }:{
+  metaId:string,
+  otherMetaId:string,
+  cursor?:string,
+  size?:string
+  timestamp?:string
+ }
+): Promise<any> => {
+  const selfMetaId = metaId
+  const query = new URLSearchParams({
+  otherMetaId,
+  metaId,
+  cursor,
+  size,
+  timestamp
+  }).toString()
+  
+  // if (type === 'session') {
+  //   const {
+  //     data: { data: messages },
+  //   } = await TalkApi.get(`/chat/${selfMetaId}/${channelId}?${query}`)
+
+  //   return messages
+  // }
+
+const data:{
+  data:{
+    total:number
+    nextTimestamp:number,
+    list: PriviteChatMessageItem[] | null
+  }
+} = await TalkApi.get(`/private-chat-list?${query}`)
+  return data.data.list ?? []
+  // if(data.data.list?.length){
+  //   for(let item of data.data.list){
+  //     if(containsString(item.protocol,NodeName.SimpleGroupLuckyBag)){
+  //      const redpackInfo=await getOneRedPacket({
+  //          groupId: item.groupId,
+  //         pinId: item.pinId,
+  //       })
+        
+  //       if(Number(redpackInfo.count) == Number(redpackInfo.usedCount)){
+  //         item.claimOver=true
+  //       }
+        
+  //     } 
+     
+  // }
+  // }
+
+
+  
+}
+
 export const getChannelMessagesForTask = async (
  {
    groupId,
@@ -454,7 +516,7 @@ export const getRedPacketRemains = async (params:{
   const query =new URLSearchParams(params).toString() 
   // return axios.get(`http://47.83.198.218:7568/group-chat/lucky-bag-unused-info?${query}`).then((res)=>{
   //   console.log("res",res)
-  //   debugger
+  //   
   //   return res.data.data
   // })
   return TalkApi.get(`/lucky-bag-unused-info?${query}`).then(res => {
@@ -474,7 +536,7 @@ export const grabRedPacket = async (params: {
 
   //   return axios.post(`http://47.83.198.218:7568/group-chat/grab-lucky-bag`,params).then((res)=>{
   //   console.log("res",res)
-  //   debugger
+  //   
   //   return res.data.data
   // })
   return TalkApi.post(`/grab-lucky-bag`,params).then(res => {
@@ -493,7 +555,7 @@ export const grabRedPacket = async (params: {
   
 }
 
-export const GetUserEcdhPubkeyForPrivateChat=(address:string):Promise<{
+export const GetUserEcdhPubkeyForPrivateChat=(metaId:string):Promise<{
     metaid:string,
     name:string,
     avatar:string,
@@ -502,11 +564,11 @@ export const GetUserEcdhPubkeyForPrivateChat=(address:string):Promise<{
     chatPublicKeyId:string,
     address:string
 }>=>{
-  const query =new URLSearchParams({address}).toString() 
+  const query =new URLSearchParams({metaId}).toString() 
 
   return TalkApi.get(`/user-info?${query}`).then(res => {
      if(res?.code == 0){
-      debugger
+      
        return {...res.data.userInfo,address:res.data.address}
      }else if(res?.code == 1){
       throw new Error(res?.message)

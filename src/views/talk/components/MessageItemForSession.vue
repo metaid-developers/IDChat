@@ -50,16 +50,16 @@
       <UserAvatar
         :image="messageAvatarImage"
         :meta-id="'undefined'"
-        :name="message.fromName"
-        :meta-name="message?.fromUserInfo?.metaName"
+        :name="message?.fromUserInfo?.name"
+        :meta-name="''"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none"
         :disabled="true"
       />
       <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
         <div class="flex items-baseline space-x-2">
           <UserName
-            :name="message.fromName"
-            :meta-name="message?.fromUserInfo?.metaName"
+            :name="message?.fromUserInfo?.name"
+            :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100'"
           />
           <div class="text-dark-300 dark:text-gray-400 text-xs shrink-0 whitespace-nowrap">
@@ -386,13 +386,13 @@ import { useJobsStore } from '@/stores/jobs'
 import { NodeName } from '@/enum'
 import MessageItemQuote from './MessageItemQuote.vue'
 import { containsString } from '@/utils/util'
-
+import type { PriviteChatMessageItem } from '@/@types/common'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 
 const showImagePreview = ref(false)
 interface Props {
-  message: ChatSessionMessageItem
+  message:PriviteChatMessageItem //ChatSessionMessageItem
 }
 const props = withDefaults(defineProps<Props>(), {})
 const userStore = useUserStore()

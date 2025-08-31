@@ -159,7 +159,10 @@ declare interface Channel {
       communityId:string
       groupId:string
       txId:string
+      id:string
+      metaId:string
       pinId:string
+      type:string
       roomName:string
       roomNote:string
       roomType:import('@/enum').ChannelPublicityType
@@ -179,6 +182,7 @@ declare interface Channel {
       chatSettingType: 0 | 1
       deleteStatus: number
       timestamp:number
+      publicKeyStr?:string
 }
 
 declare interface MessageDto {

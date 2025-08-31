@@ -77,13 +77,13 @@ const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 
 console.log('props.session',props.session)
-debugger
+
 const contact = computed<any>(() => {
   let contactSide = 'from'
     
   if (userStore.last) {
     const selfMetaId = userStore.last.metaid
-    if (props.session.from === selfMetaId) {
+    if (props.session.from === selfMetaId || props.session.userInfo?.metaid === selfMetaId) {
       contactSide = 'to'
     }
 
@@ -92,9 +92,9 @@ const contact = computed<any>(() => {
   }
 
   return {
-    name: props.session.name || props.session[`${contactSide}Name`],
+    name: props.session.name || props.session.userInfo?.name ||  props.session[`${contactSide}Name`],
     metaName: props.session[`${contactSide}UserInfo`]?.metaName || '',
-    metaId: props.session.id || props.session.createUserMetaId,
+    metaId: props.session.id || props.session.userInfo?.metaid || props.session.createUserMetaId,
     lastMessage: props.session.lastMessage,
     lastMessageTimestamp: props.session.lastMessageTimestamp,
   }
@@ -136,7 +136,7 @@ const decryptedMsg = computed(() => {
     content=props.session.content
   }
   const isSession=Number(props.session.type) === 2 ? true : false
-
+  
   const key=props.session?.newMessages?.length ?  props.session?.newMessages[props.session?.newMessages?.length - 1]?.chatType : props.session?.chatType
    const isImg=props.session?.newMessages?.length ? imageType.includes(props.session?.newMessages[props.session?.newMessages?.length - 1]?.contentType) : props.session?.chatType == ChatType.img ? true : false
     
@@ -215,12 +215,13 @@ const switchChannel = () => {
   layout.$patch({
     isShowLeftNav: false,
   })
+  console.log("props.session",props.session)
 
   if (isActive.value) return
   if(props.session?.groupId){
      router.push(`/talk/channels/public/${props.session?.groupId}`)
   }else{
-     router.push(`/talk/channels/@me/${contact.value.metaId}`)
+     router.push(`/talk/@me/${contact.value.metaId}`)
   }
  
 }

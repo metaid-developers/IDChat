@@ -93,7 +93,7 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  return talkStore?.activeCommunity?.channels?.find(item => item.groupId === route.params.channelId)
+  return talkStore?.activeCommunity?.channels?.find(item => item?.groupId === route.params.channelId || item?.metaId == route.params.channelId)
 })
 
 // 监听currentChannelInfo变化，重新拉取成员数据
@@ -110,7 +110,7 @@ watch(
       load()
     }
   },
-  { immediate: true }
+  { immediate: false }
 )
 
 // 虚拟列表
@@ -123,6 +123,8 @@ const load = () => {
 
 async function getMoreMember() {
   if (!currentChannelInfo.value) return
+  const isSession=Number(currentChannelInfo.value?.type) === 2 ? true : false
+  if(isSession) return
   loading.value = true
   try {
     const members = await getChannelMembers({

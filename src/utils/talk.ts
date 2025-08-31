@@ -40,6 +40,7 @@ import { AttachmentItem } from '@/@types/hd-wallet'
 import { useChainStore } from '@/stores/chain'
 import { ChatType, ChatChain } from '@/enum'
 import { Red_Packet_Min, Red_Packet_Max } from '@/data/constants'
+import { useEcdhsStore } from '@/stores/ecdh'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -1048,6 +1049,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     encrypt,
     replyPin: reply ? `${reply.txId}i0` : '',
   }
+  
 
   // 2. 构建节点参数
   const node = {
@@ -1113,7 +1115,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     protocol: NodeName.SimpleMsg,
   }
   talkStore.addMessage(mockMessage)
-  debugger
+  
   // 3. 发送节点
   // const sdk = userStore.showWallet
   // await tryCreateNode(node, mockId)
@@ -1509,16 +1511,23 @@ export function decryptedMessage(
   }
 
   if (isSession) {
+    
     if (!talk.activeChannel) return ''
     const credentialsStore = useCredentialsStore()
     const connectionStore = useConnectionStore()
-    const credential = credentialsStore.getByAddress(connectionStore.last.address)
-    const sigStr = atobToHex(credential!.signature)
+    const ecdhsStore=useEcdhsStore()
+    console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
+    
+    let ecdh= ecdhsStore.getEcdh(talk.activeChannel.publicKeyStr)
+ 
+    const sharedSecret=ecdh?.sharedSecret
+    // const sigStr = atobToHex(credential!.signature)
     // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
     // // @ts-ignore
     // const privateKeyStr = privateKey.toHex()
-    const otherPublicKeyStr = talk.activeChannel.publicKeyStr
-    return ecdhDecrypt(content, sigStr, otherPublicKeyStr)
+    
+    //const otherPublicKeyStr = talk.activeChannel.publicKeyStr
+    return ecdhDecrypt(content, sharedSecret)
   } else {
     return decrypt(content, secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
   }

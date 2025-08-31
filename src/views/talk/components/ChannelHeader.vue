@@ -177,7 +177,7 @@ import { isMobile } from '@/stores/root'
 
 import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
 import { useWsStore } from '@/stores/ws_new'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {getOneChannel} from '@/api/talk'
 import { Channel } from '@/@types/talk'
 import {ChatChain} from '@/enum'
@@ -187,6 +187,8 @@ const talkStore = useTalkStore()
 const layout = useLayoutStore()
 const WS = useWsStore()
 const route=useRoute()
+const router=useRouter()
+
 const currentChannelId=ref(route.params?.channelId || '')
 
 const currentChannel:{val:Channel | Object}=reactive({val:{
@@ -197,20 +199,31 @@ const hasWS = computed(() => {
   return !!WS?.ws
 })
 
+const isAtMe=computed(()=>{
+  return route.name == 'talkAtMe'
+})
+
 watch(()=>route.params,(newVal)=>{
   
   if(newVal){
     currentChannelId.value=newVal.channelId as string
+    if(isAtMe.value){
+      return
+    }
     getOneChannel(currentChannelId.value as string).then((res)=>{
     currentChannel.val=res
 })
   }
 })
 
-getOneChannel(currentChannelId.value as string).then((res)=>{
-  
+  if(!isAtMe.value){
+      getOneChannel(currentChannelId.value as string).then((res)=>{
+
     currentChannel.val=res
 })
+    }
+
+
 
 
 

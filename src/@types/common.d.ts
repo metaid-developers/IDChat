@@ -1,6 +1,12 @@
 import {UserInfo as newUserInfo} from '@/api/man'
+import { fromASM } from 'bitcoinjs-lib/src/script';
 
-
+export type ECDH_TYPE={
+  creatorPubkey:string
+  ecdhPubKey:string
+  externalPubKey:string
+  sharedSecret:string
+}
 
 export type SA_utxo = {
     txId: string;
@@ -887,6 +893,7 @@ declare interface ChatSessionMessageItem {
 }
 
 declare interface ChatMessageItem {
+  address:string
   avatarImage: string
   avatarTxId: string
   avatarType: string
@@ -921,6 +928,57 @@ declare interface ChatMessageItem {
     userInfo: newUserInfo
   },
   claimOver?:boolean
+}
+
+declare interface ChatUserInfo{
+    metaid:string
+    address:string
+    name:string
+    avatar:string,
+    avatarImage:string,
+    chatPublicKey:string
+    chatPublicKeyId:string
+  }
+
+declare interface PriviteChatMessageItem {
+  from:string
+  fromUserInfo:ChatUserInfo
+  to: string
+  toUserInfo: ChatUserInfo
+  txId: string
+  pinId: string
+  metaId: string
+  address: string
+  userInfo: ChatUserInfo
+  nickName:string
+  protocol: string
+  content: string
+  contentType: string
+  encryption: string
+  chatType: string
+  data: any
+  replyPin: string
+  redMetaId:string
+  timestamp: number
+  params: string
+  chain:'mvc' | 'btc'
+  blockHeight: number
+  index:number
+  isMock?: boolean
+  replyInfo?: {
+    chatType: number
+    content: string
+    contentType: string
+    encryption: string
+    metaId: string
+    nickName: string
+    protocol: string
+    timestamp: number
+    txId: string
+    userInfo: newUserInfo
+  },
+  error?:boolean
+  
 }
 
 declare interface ShareChatMessageData {

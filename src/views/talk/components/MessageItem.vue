@@ -51,7 +51,7 @@
         "
         :meta-id="props.message.userInfo?.metaid"
         :meta-name="''"
-        @click="toPrivateChat(props.message.userInfo?.metaid)"
+        @click="toPrivateChat(props.message)"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
       />
       <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
@@ -276,6 +276,7 @@ import { ElMessage } from 'element-plus'
 import type { ChatMessageItem } from '@/@types/common'
 import { isMobile } from '@/stores/root'
 import { useRouter } from 'vue-router'
+import {getUserInfoByAddress} from '@/api/man'
 
 const i18n = useI18n()
 
@@ -366,13 +367,24 @@ const translatedContent = ref('')
 /** 翻译 end */
 
 
-function toPrivateChat(metaid:string){
- router.push({
+function toPrivateChat(message:ChatMessageItem){
+  
+  getUserInfoByAddress(message.userInfo.address).then((res)=>{
+    if(res.chatpubkey){
+       router.push({
   name:'talkAtMe',
   params:{
-    channelId:metaid,
+    channelId:message.userInfo.metaid,
+    // metaid:message.userInfo.metaid
   }
  })
+    }else{
+      return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
+    }
+  })
+
+
+
 }
 // 在组件挂载和卸载时处理事件监听器和定时器清理
 onMounted(() => {

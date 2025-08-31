@@ -31,7 +31,7 @@ export const useUserStore = defineStore('user', {
         pinId: '',
         soulbondToken: '',
         unconfirmed: '',
-        pubkey:''
+        chatpubkey:''
       } as UserInfo) as RemovableRef<UserInfo>,
     }
   },

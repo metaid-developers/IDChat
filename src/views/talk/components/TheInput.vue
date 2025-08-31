@@ -302,7 +302,8 @@ import Decimal from 'decimal.js-light'
 import { router } from '@/router'
 import { useChainStore } from '@/stores/chain'
 import { useI18n } from 'vue-i18n'
-
+import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { useEcdhsStore } from '@/stores/ecdh'
 interface Props {
   quote?: any
 }
@@ -317,6 +318,7 @@ const showStickersBox = ref(false)
 const spaceNotEnoughFlag = ref(false)
 const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
+const ecdhsStore=useEcdhsStore()
 const hasInput = computed(() => chatInput.value.length > 0)
 
 /** 输入框样式 */
@@ -549,7 +551,7 @@ const checkSpaceBalance = () => {
 
 const trySendText = async (e: any) => {
   isSending.value = true
-  debugger
+  
   // 去除首尾空格
   chatInput.value = chatInput.value.trim()
   if (!validateTextMessage(chatInput.value)) return
@@ -581,28 +583,39 @@ const trySendText = async (e: any) => {
     // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')!
     //
     // const privateKeyStr = privateKey.toHex()
-    const credential=credentialsStore.getByAddress(connectionStore.last.address)
-    const sigStr=atobToHex(credential!.signature)
-    const otherPublicKeyStr =talk.activeChannel.publicKeyStr
-    debugger
-    console.log(chatInput.value, sigStr, otherPublicKeyStr)
-
-    content = ecdhEncrypt(chatInput.value, sigStr, otherPublicKeyStr)
+    //const credential=credentialsStore.getByAddress(connectionStore.last.address)
+    let ecdh= ecdhsStore.getEcdh(talk.activeChannel.publicKeyStr)
     
-    console.log("ecdhDecrypt",ecdhDecrypt(content,sigStr,otherPublicKeyStr))
-    debugger
+    if(!ecdh){
+      ecdh=await getEcdhPublickey(talk.activeChannel.publicKeyStr)
+      ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+    }
+    //const 
+ 
+    const sharedSecret=ecdh?.sharedSecret//atobToHex(credential!.signature)
+    // credentialsStore.update(sigStr)
+    //const otherPublicKeyStr =talk.activeChannel.publicKeyStr
+  
+    console.log(chatInput.value, sharedSecret)
+
+    content = ecdhEncrypt(chatInput.value, sharedSecret)
+    
+    console.log("ecdhDecrypt",ecdhDecrypt(content,sharedSecret))
+    
   }
 
   chatInput.value = ''
-
+  console.log("talk.activeChannel.id",talk.activeChannel.id)
+  
   const messageDto = {
     content,
     type: MessageType.Text,
-    channelId: talk.activeChannel.id,
+    channelId:talk.activeChannel.id  ,
     userName: userStore.last?.name || '',
     channelType: talk.activeChannelType as ChannelType,
     reply: props.quote,
   }
+  
   console.log('props.quote', props.quote)
 
   emit('update:quote', undefined)

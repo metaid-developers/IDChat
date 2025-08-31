@@ -55,16 +55,31 @@ export function aesEncrypt(message: string, secretKeyStr: string) {
   }).toString()
 }
 
-export function ecdhDecrypt(message: string, privateKeyStr: string, publicKeyStr: string): string {
-  const secretKey = _createEcdhSecret(privateKeyStr, publicKeyStr)
-  const messageBytes = AES.decrypt(message, secretKey)
+// export function ecdhDecrypt(message: string, privateKeyStr: string, publicKeyStr: string): string {
+//   
+//   const secretKey = _createEcdhSecret(privateKeyStr, publicKeyStr)
+//   console.log("secretKey0",secretKey)
+//   
+//   const messageBytes = AES.decrypt(message, secretKey)
 
+//   return messageBytes.toString(enc.Utf8)
+// }
+
+export function ecdhDecrypt(message: string, secretKey: string): string {
+
+  const messageBytes = AES.decrypt(message, secretKey)
+  
   return messageBytes.toString(enc.Utf8)
 }
 
-export function ecdhEncrypt(message: string, privateKeyStr: string, publicKeyStr: string): string {
-  const secretKey = _createEcdhSecret(privateKeyStr, publicKeyStr)
+// export function ecdhEncrypt(message: string, privateKeyStr: string, publicKeyStr: string): string {
+//   const secretKey = _createEcdhSecret(privateKeyStr, publicKeyStr)
 
+//   return AES.encrypt(message, secretKey).toString()
+// }
+
+
+export function ecdhEncrypt(message: string, secretKey: string,): string {
   return AES.encrypt(message, secretKey).toString()
 }
 
@@ -104,8 +119,12 @@ export function buildCryptoInfo(key: string, net: string): CryptoInfo {
 }
 
 function _createEcdhSecret(privateKeyStr: string, publicKeyStr: string): string {
-  const ECDH = crypto.createECDH('secp256k1')
-  ECDH.setPrivateKey(privateKeyStr, 'hex')
+  // const ECDH = crypto.createECDH('secp256k1')
+  // ECDH.setPrivateKey(privateKeyStr, 'hex')
 
-  return ECDH.computeSecret(publicKeyStr, 'hex', 'hex')
+  // return ECDH.computeSecret(publicKeyStr, 'hex', 'hex')
+     const ECDH = crypto.createECDH('secp256k1')
+   ECDH.setPrivateKey(privateKeyStr, 'hex')
+
+   return ECDH.computeSecret(publicKeyStr, 'hex', 'hex')
 }

@@ -106,7 +106,7 @@ export const useBulidTx = createGlobalState(() => {
         satoshis: 1,
         })
         const pinScript = createScriptForMvc(metaidData)
-        debugger
+        
         pinTxComposer.appendOpReturnOutput(pinScript)
         
         if(payTo.length){
@@ -291,7 +291,7 @@ export const useBulidTx = createGlobalState(() => {
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
-        contentType:protocol == NodeName.SimpleGroupChat ? 'application/json' : body.contentType || 'application/json',
+        contentType:protocol == NodeName.SimpleGroupChat || protocol == NodeName.SimpleMsg  ? 'application/json' : body.contentType || 'application/json',
         encryption:externalEncryption, //body.encryption || body.encrypt,
         encoding: 'utf-8',
       }
@@ -437,9 +437,11 @@ export const useBulidTx = createGlobalState(() => {
     isBroadcast:boolean,
   })=>{
     const {body,protocol,isBroadcast,encrypt}=params
+       let pinRes
+       let metaidData
     try {
         
-         const metaidData={
+          metaidData={
         body:JSON.stringify(body),
         path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
@@ -451,7 +453,7 @@ export const useBulidTx = createGlobalState(() => {
       }
 
       const utxo=utxoStore.getUtxo(rootAddress.value)
-      let pinRes
+   
       
       if(utxo){
         const _options: any = {
@@ -464,20 +466,26 @@ export const useBulidTx = createGlobalState(() => {
       pinRes= await createPinWithAsset(metaidData,_options)
       
       if(pinRes){
-        const {utxo} = pinRes
+       // const {utxo} = pinRes
         utxoStore.remove(rootAddress.value)
-        utxoStore.insert(utxo, utxo.address)
+        //utxoStore.insert(utxo, utxo.address)
         //utxoStore.remove(rootAddress.value)
       }
       
       return pinRes
       }else{
+        
          pinRes= await createPin(metaidData,isBroadcast)
+        utxoStore.remove(rootAddress.value)
          return pinRes
       }
 
     } catch (error) {
-       throw new Error(error as any)
+      // 
+      // if(error as string)
+      pinRes= await createPin(metaidData,isBroadcast)
+      return pinRes
+      //  throw new Error(error as any)
     }
   }
 

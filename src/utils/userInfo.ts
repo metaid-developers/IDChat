@@ -273,7 +273,13 @@ export const createPinWithAsset = async (
     }),
   })
   const commitData = await commitRes.json()
-
+  if(commitData.code == 1 && !commitData.data){
+    throw new Error(JSON.stringify({
+      state:commitData.code,
+      message:commitData.message
+    }))
+  }
+  
   return {
     txid: commitData.data.txId,
     utxo: {
@@ -670,7 +676,7 @@ export const createUserPubkey=async ({
   const userStore=useUserStore()
   const localUtxo= utxoStore.getUtxo(userStore.last.address)
   const availableUtxo=await getUseableUtxo()
-  debugger
+  
   try {
     
   
@@ -693,7 +699,7 @@ export const createUserPubkey=async ({
   let _transactions: Transaction[] = []
   let _txids: string[] = []
   if(options.assistDomain  && availableUtxo.length) {
-    debugger
+    
     for (let i = 0; i < metaDatas.length; i++) {
       const metaData = metaDatas[i]
       const { transactions, txid, txids } = await createPin(metaData, {
@@ -710,7 +716,7 @@ export const createUserPubkey=async ({
        return _txids[0]
     }
   }else if (options.assistDomain  && localUtxo) {
-   debugger
+   
     let utxo: {
       txid: string
       outIndex: number

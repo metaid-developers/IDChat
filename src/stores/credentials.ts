@@ -5,6 +5,7 @@ import { useConnectionStore } from '@/stores/connection'
 import { SIGNING_MESSAGE } from '@/data/constants'
 // import { login } from '@/queries/orders-api'
 import {useUserStore} from '@/stores/user'
+import { update } from 'lodash'
 
 
 export const useCredentialsStore =defineStore('credentials', {
@@ -12,9 +13,9 @@ export const useCredentialsStore =defineStore('credentials', {
     return {
       credentials: useLocalStorage(
         'credentials',
-        [] as { publicKey: string; signature: string; address: string,marketSig?:string }[],
+        [] as { publicKey: string; signature: string; address: string,shareSecret?:string,marketSig?:string }[],
       ) as RemovableRef<
-        { publicKey: string; signature: string; address: string,marketSig?:string }[]
+        { publicKey: string; signature: string; address: string,shareSecret?:string,marketSig?:string }[]
       >,
       signing: false,
     }
@@ -32,6 +33,9 @@ export const useCredentialsStore =defineStore('credentials', {
         return !!state.credentials.find((s) => s.address === address)
       }
     },
+
+
+
 
     get: (state) => {
       const connectionStore = useConnectionStore()
@@ -75,6 +79,17 @@ export const useCredentialsStore =defineStore('credentials', {
 
     remove(address: string) {
       this.credentials = this.credentials.filter((s) => s.address !== address)
+    },
+
+    update(shareSecret: string){
+        const connectionStore = useConnectionStore()
+        const connected = connectionStore.connected
+        const address = connectionStore.getAddress
+        this.credentials.forEach((s) => {
+        if( s.address === address && !s.shareSecret){
+        s.shareSecret=shareSecret
+        }
+        })
     },
 
     async sign() {

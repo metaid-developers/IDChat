@@ -41,7 +41,7 @@ export interface UserInfo {
   pinId: string
   soulbondToken: string
   unconfirmed: string
-  pubkey:string
+  chatpubkey?:string
 }
 
 export const getUserInfoByAddress = async (address: string): Promise<UserInfo> => {

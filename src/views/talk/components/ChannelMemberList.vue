@@ -65,14 +65,21 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  return talkStore?.activeCommunity?.channels?.find(item => item.groupId === route.params.channelId)
+  console.log("talkStore?.activeCommunity?.channels",talkStore?.activeCommunity?.channels)
+  return talkStore?.activeCommunity?.channels?.find(item => item?.groupId === route.params.channelId || item?.metaId == route.params.channelId)
 })
 
 // 监听currentChannelInfo变化，重新拉取成员数据
 watch(
   currentChannelInfo,
   (newChannelInfo, oldChannelInfo) => {
+
+
     if (newChannelInfo && newChannelInfo !== oldChannelInfo) {
+    const isSession=Number(currentChannelInfo.value?.type) === 2 ? true : false
+    if(isSession) return
+
+
       console.log('currentChannelInfo', newChannelInfo)
       // 重置分页状态
       cursor.value = 0
@@ -94,6 +101,10 @@ const load = () => {
 }
 
 async function getMoreMember() {
+  console.log("currentChannelInfo.value",currentChannelInfo.value)
+    const isSession=Number(currentChannelInfo.value?.type) === 2 ? true : false
+  if(isSession) return
+  
   if (!currentChannelInfo.value) return
   loading.value = true
   try {

@@ -15,7 +15,7 @@
           <!-- 搜索栏 -->
           <DirectContactSearch />
 
-          <CreatePubkey v-if="userStore.isAuthorized && !userStore.last?.pubkey" />
+          <CreatePubkey v-if="userStore.isAuthorized && !userStore.last?.chatpubkey" />
           
           <!-- 联系人列表 -->
           <div class="overflow-y-auto">
