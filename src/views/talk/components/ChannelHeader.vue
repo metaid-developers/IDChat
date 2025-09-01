@@ -30,6 +30,7 @@
 
         <template v-else>
           <div
+            class="min-w-4 min-h-2 "
             :class="[
               talkStore.isActiveChannelReserved ? metaNameClass : 'text-dark-800 dark:text-white',
               'text-base leading-tight no-wrap grow whitespace-nowrap truncate mr-2 max-w-[40vw] lg:max-w-[600PX]',
@@ -39,8 +40,8 @@
           >
             {{
               talkStore.isActiveChannelReserved
-                ? talkStore.activeCommunity?.name
-                : talkStore.activeChannel?.name || talkStore.activeCommunity?.name
+                ? talkStore.activeCommunity?.name || 'kkkk'
+                : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || '----'
             }}
           </div>
 
@@ -102,7 +103,7 @@
           <Icon
             name="arrow_up_right"
             class="w-3 h-3 p-1 box-content text-gray-500  cursor-pointer"
-            @click="goCheckTxId(currentChannel.val?.txId,currentChannel.val?.chain)"
+            @click="goCheckTxId(currentChannel.val?.txId, currentChannel.val?.chain)"
           />
         </button>
 
@@ -169,7 +170,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted,reactive,watch } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
@@ -180,8 +181,7 @@ import { useWsStore } from '@/stores/ws_new'
 import { useRoute, useRouter } from 'vue-router'
 import {getOneChannel} from '@/api/talk'
 import { Channel } from '@/@types/talk'
-import {ChatChain} from '@/enum'
-
+import { ChatChain } from '@/enum'
 
 const talkStore = useTalkStore()
 const layout = useLayoutStore()
@@ -191,9 +191,9 @@ const router=useRouter()
 
 const currentChannelId=ref(route.params?.channelId || '')
 
-const currentChannel:{val:Channel | Object}=reactive({val:{
-
-}})
+const currentChannel: { val: Channel | Object } = reactive({
+  val: {},
+})
 
 const hasWS = computed(() => {
   return !!WS?.ws
@@ -211,15 +211,20 @@ watch(()=>route.params,(newVal)=>{
     if(isAtMe.value){
       return
     }
-    debugger
+    
     getOneChannel(currentChannelId.value as string).then((res)=>{
     currentChannel.val=res
 })
   }
+}
+)
+
+getOneChannel(currentChannelId.value as string).then(res => {
+  currentChannel.val = res
 })
 
   if(!isAtMe.value){
-    debugger
+    
       getOneChannel(currentChannelId.value as string).then((res)=>{
 
     currentChannel.val=res
@@ -253,21 +258,20 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-const goCheckTxId = (txId: string,chain:ChatChain) => {
-  if(chain == ChatChain.btc){
-      window.open(`https://mempool.space/tx/${txId}`, '_blank')
-  }else{
-      window.open(`https://mvcscan.com/tx/${txId}`, '_blank')
+const goCheckTxId = (txId: string, chain: ChatChain) => {
+  if (chain == ChatChain.btc) {
+    window.open(`https://mempool.space/tx/${txId}`, '_blank')
+  } else {
+    window.open(`https://mvcscan.com/tx/${txId}`, '_blank')
   }
-
 }
 
 const doNothing = () => {}
 
 const handleChannelNameClick = () => {
-  if (isMobile) {
-    layout.isShowMemberListDrawer = true
-  }
+  // if (isMobile) {
+  layout.isShowMemberListDrawer = true
+  // }
 }
 </script>
 

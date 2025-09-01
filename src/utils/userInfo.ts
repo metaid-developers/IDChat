@@ -356,9 +356,17 @@ const pay = async ({
 
     const {
       payedTransactions,
+      status,
+      message,
     }: {
       payedTransactions: string[]
+      status: string
+      message: string
     } = ret
+
+    if (status) {
+      throw new Error(message || status)
+    }
 
     return payedTransactions.map((txComposerSerialized: string) => {
       return TxComposer.deserialize(txComposerSerialized)
@@ -369,9 +377,17 @@ const pay = async ({
 
   const {
     payedTransactions,
+    status,
+    message,
   }: {
     payedTransactions: string[]
+    status: string
+    message: string
   } = ret
+
+  if (status) {
+    throw new Error(message || status)
+  }
 
   return payedTransactions.map((txComposerSerialized: string) => {
     return TxComposer.deserialize(txComposerSerialized)
@@ -434,7 +450,7 @@ const batchBroadcast = async ({
   return res
 }
 
-const createPin = async (
+export const createPin = async (
   metaidData: Omit<MetaidData, 'revealAddr'>,
   options: {
     signMessage?: string

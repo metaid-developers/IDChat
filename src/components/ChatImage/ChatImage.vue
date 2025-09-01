@@ -10,8 +10,8 @@
       <img
         :src="defaultMetafileImage"
         :alt="alt"
-        :class="customClass"
         class="rounded-xl object-cover w-full h-full"
+        :class="customClass"
       />
 
       <!-- 重试按钮 -->
@@ -36,8 +36,8 @@
       v-show="isLoaded && !hasError"
       :src="currentSrc"
       :alt="alt"
-      :class="customClass"
       class="rounded-xl object-cover"
+      :class="customClass"
       @load="handleLoad"
       @error="handleError"
       @loadstart="handleLoadStart"

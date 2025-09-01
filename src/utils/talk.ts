@@ -9,6 +9,8 @@ import {
   NodeName,
   RedPacketDistributeType,
   SdkPayType,
+  ChatType,
+  ChatChain,
 } from '@/enum'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
@@ -34,13 +36,14 @@ import { SHA256 } from 'crypto-js'
 import { toRaw } from 'vue'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
-import { useBulidTx } from '@/hooks/use-build-tx'
+import { MetaFlag, useBulidTx } from '@/hooks/use-build-tx'
 import { AttachmentItem } from '@/@types/hd-wallet'
 
 import { useChainStore } from '@/stores/chain'
-import { ChatType, ChatChain } from '@/enum'
 import { Red_Packet_Min, Red_Packet_Max } from '@/data/constants'
 import { useEcdhsStore } from '@/stores/ecdh'
+import { createPin } from './userInfo'
+import { createPinWithBtc } from './pin'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -651,6 +654,77 @@ export const createChannel = async (
   }
 }
 
+export type SimpleGroup = {
+  communityId: string
+  groupId: string
+  groupName: string
+  groupNote: string
+  groupType: string
+  status: string
+  type: string
+  tickId: string
+  collectionId: string
+  codehash: string
+  genesis: string
+  limitAmount: string
+  chatSettingType: string
+  deleteStatus: string
+  timestamp: string
+  groupIcon: string
+}
+
+export const updateGroupChannel = async (
+  groupInfo: SimpleGroup,
+  changeItem: Partial<SimpleGroup>
+) => {
+  const data = {
+    ...groupInfo,
+    ...changeItem,
+    timestamp: getTimestampInSeconds(),
+  }
+
+  const metaidData = {
+    body: JSON.stringify(data),
+    path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.SimpleGroupCreate}`,
+    flag: MetaFlag.metaid,
+    version: '1.0.0',
+    operation: 'modify',
+    contentType: 'application/json',
+    encryption: '0',
+    encoding: 'utf-8',
+  }
+  const chainStore = useChainStore()
+  const currentChain = chainStore.state.currentChain
+  const chainData = chainStore.state[currentChain]
+  const selectedFeeType = chainData.selectedFeeType
+  const feeRate = chainData[selectedFeeType]
+  if (currentChain === ChatChain.btc) {
+    const txIDs = await createPinWithBtc({
+      inscribeDataArray: [metaidData],
+      options: {
+        network: 'mainnet',
+        noBroadcast: 'no',
+        feeRate: feeRate,
+      },
+    })
+    return {
+      status: 'success',
+      txIDs,
+    }
+  } else {
+    const { txids } = await createPin(metaidData, {
+      network: 'mainnet',
+      signMessage: 'update Group Info',
+      serialAction: 'finish',
+      feeRate: feeRate,
+    })
+    return {
+      status: 'success',
+      txIDs: txids,
+    }
+  }
+}
+
 export const verifyPassword = (key: string, hashedPassword: string, creatorMetaId: string) => {
   const decrypted = decrypt(key, hashedPassword)
 
@@ -741,32 +815,31 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
 export const joinChannel = async (groupId: string, referrer?: string) => {
   try {
     const buildTx = useBulidTx()
-  const dataCarrier = {
-    groupId: groupId || '',
-    state: CommunityJoinAction.Join,
-    referrer: referrer || '',
-  }
-
-  // 2. 构建节点参数
-  const node = {
-    protocol: NodeName.SimpleGroupJoin, // NodeName.SimpleCommunityJoin,
-    encrypt: String(IsEncrypt.No),
-    // dataType: 'application/json',
-    isBroadcast: true,
-    body: dataCarrier,
-  }
-
-
-  // 3. 发送节点
-  const nodeRes = await buildTx.joinGrop(node)
-
-  if (nodeRes === null) {
-    return {
-      status: 'failed',
+    const dataCarrier = {
+      groupId: groupId || '',
+      state: CommunityJoinAction.Join,
+      referrer: referrer || '',
     }
-  }
 
-  return { groupId }
+    // 2. 构建节点参数
+    const node = {
+      protocol: NodeName.SimpleGroupJoin, // NodeName.SimpleCommunityJoin,
+      encrypt: String(IsEncrypt.No),
+      // dataType: 'application/json',
+      isBroadcast: true,
+      body: dataCarrier,
+    }
+
+    // 3. 发送节点
+    const nodeRes = await buildTx.joinGrop(node)
+
+    if (nodeRes === null) {
+      return {
+        status: 'failed',
+      }
+    }
+
+    return { groupId }
   } catch (error) {
     throw new Error(error as any)
   }
@@ -775,66 +848,62 @@ export const joinChannel = async (groupId: string, referrer?: string) => {
 export const joinCommunity = async (groupId: string, referrer?: string) => {
   try {
     const buildTx = useBulidTx()
-  const dataCarrier = {
-    groupId: groupId || '',
-    state: CommunityJoinAction.Join,
-    referrer: referrer || '',
-  }
-
-  // 2. 构建节点参数
-  const node = {
-    protocol: NodeName.SimpleGroupJoin, // NodeName.SimpleCommunityJoin,
-    encrypt: IsEncrypt.No,
-    // dataType: 'application/json',
-    isBroadcast: true,
-    body: dataCarrier,
-  }
-
-  // 3. 发送节点
-  const nodeRes = await buildTx.joinGrop(node)
-
-  if (nodeRes === null) {
-    return {
-      status: 'failed',
+    const dataCarrier = {
+      groupId: groupId || '',
+      state: CommunityJoinAction.Join,
+      referrer: referrer || '',
     }
-  }
 
-  return { groupId }
-  } catch (error) {
-    
-  }
+    // 2. 构建节点参数
+    const node = {
+      protocol: NodeName.SimpleGroupJoin, // NodeName.SimpleCommunityJoin,
+      encrypt: IsEncrypt.No,
+      // dataType: 'application/json',
+      isBroadcast: true,
+      body: dataCarrier,
+    }
+
+    // 3. 发送节点
+    const nodeRes = await buildTx.joinGrop(node)
+
+    if (nodeRes === null) {
+      return {
+        status: 'failed',
+      }
+    }
+
+    return { groupId }
+  } catch (error) {}
 }
 
 export const leaveCommunity = async (communityId: string) => {
- try {
-   const buildTx = useBulidTx()
-  const dataCarrier = {
-    groupId: communityId || '',
-    state: CommunityJoinAction.Leave,
-    referrer: '',
-  }
-
-  // 2. 构建节点参数
-  const node = {
-    protocol: NodeName.SimpleCommunityJoin,
-    body: dataCarrier,
-    encrypt: IsEncrypt.No,
-    isBroadcast: true,
-  }
-
-  // 3. 发送节点
-  const nodeRes = await buildTx.joinGrop(node) // await sdk.createBrfcChildNode(node)
-
-  if (nodeRes === null) {
-    return {
-      status: 'failed',
+  try {
+    const buildTx = useBulidTx()
+    const dataCarrier = {
+      groupId: communityId || '',
+      state: CommunityJoinAction.Leave,
+      referrer: '',
     }
-  }
 
-  return { communityId }
- } catch (error) {
-  
- }
+    // 2. 构建节点参数
+    const node = {
+      protocol: NodeName.SimpleCommunityJoin,
+      body: dataCarrier,
+      encrypt: IsEncrypt.No,
+      isBroadcast: true,
+    }
+
+    // 3. 发送节点
+    const nodeRes = await buildTx.joinGrop(node) // await sdk.createBrfcChildNode(node)
+
+    if (nodeRes === null) {
+      return {
+        status: 'failed',
+      }
+    }
+
+    return { communityId }
+  } catch (error) {}
 }
 
 export const sendMessage = async (messageDto: MessageDto) => {
@@ -1505,16 +1574,16 @@ export function decryptedMessage(
   content: string,
   encryption: string,
   protocol: string,
-  isMock: boolean = false,
-  isSession: boolean = false, // 是否私聊
-  secretKeyStr: string = ''
+  isMock = false,
+  isSession = false, // 是否私聊
+  secretKeyStr = ''
 ) {
 
   if(!content) return
   const talk = useTalkStore()
 
   if (encryption === '0') {
-    //return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
+    // return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
     return content
   }
 
@@ -1543,6 +1612,6 @@ export function decryptedMessage(
       throw new Error((error as any).toString())
     }
   } else {
-    return decrypt(content, secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
+    return decrypt(content, secretKeyStr || talk.activeChannelId.substring(0, 16))
   }
 }

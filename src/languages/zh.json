@@ -247,8 +247,12 @@
       "you_received_a_new_message": "您收到了一條新消息",
       "no_contacts_yet": "還沒有添加任何聯系人",
       "back_to_buzz": "返回 Buzz",
+      "edit_announcement": "編輯公告",
+      "announcement": "群组公告",
+      "announcement_placeholder": "在此輸入您的公告...",
       "follow": "關注",
-      "followed": "已關注"
+      "followed": "已關注",
+      "SetNewPhoto": "設置新照片"
     },
     "Community": {
       "optional": "（可選）",

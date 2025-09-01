@@ -33,6 +33,7 @@
   "Enter Password Remark": "Enter Password Remark",
   "Insufficient balance": "Insufficient balance",
   "Time": "Time",
+
   "To Showbuzz": "To Showbuzz",
   "Talk": {
     "period": ".",
@@ -213,8 +214,12 @@
       "you_received_a_new_message": "You received a new message",
       "no_contacts_yet": "No contacts yet.",
       "back_to_buzz": "Back to Buzz",
+      "edit_announcement": "Cancel",
+      "announcement": "Group Announcement",
+      "announcement_placeholder": "Enter your announcement here...",
       "follow": "Follow",
-      "followed": "Followed"
+      "followed": "Followed",
+      "SetNewPhoto": "Set New Photo"
     },
     "Community": {
       "optional": "",
