@@ -16,7 +16,7 @@
         :name="action.icon"
         class="w-5 h-5 text-dark-800 dark:text-gray-100 hover:text-primary dark:hover:text-primary transition-all duration-200"
       />
-      <img class="w-3 h-3" v-if="action?.suffixIcon" :src="action.suffixIcon" alt="">
+      <img class="w-3 h-3" v-if="action?.suffixIcon" :src="action.suffixIcon" alt="" />
     </button>
   </div>
 </template>
@@ -25,6 +25,7 @@
 import { Translate } from '@/api/core'
 import { EnvMode, NodeName, ChatChain } from '@/enum'
 import { useTalkStore } from '@/stores/talk'
+import copy from 'copy-to-clipboard'
 import { decryptedMessage } from '@/utils/talk'
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -126,14 +127,13 @@ const actions = computed(() => {
       action: async () => {
         // 复制该消息内容到剪贴板
         const content = props.parsed
-        console.log('复制消息内容:', content)
 
         try {
-          await navigator.clipboard.writeText(content)
+          copy(content)
           ElMessage.success(i18n.t('Copy_success'))
         } catch (error) {
           console.error('复制失败:', error)
-          ElMessage.error('复制失败，请在HTTPS环境下使用此功能')
+          // ElMessage.error('复制失败')
         }
       },
     })
@@ -243,12 +243,11 @@ const actions = computed(() => {
   }
 
   if (props.message.txId) {
-   
     if (!containsString(props.message?.protocol, NodeName.SimpleGroupOpenLuckybag)) {
       actions.push({
         name: 'Talk.MessageMenu.tx',
         icon: 'tx',
-        suffixIcon:props.message.chain == ChatChain.btc ? BTC : MVC,
+        suffixIcon: props.message.chain == ChatChain.btc ? BTC : MVC,
         action: () => {
           // 跳转到该消息对应的交易
           if (props.message.chain == ChatChain.btc) {
@@ -263,7 +262,7 @@ const actions = computed(() => {
         actions.push({
           name: 'Talk.MessageMenu.tx',
           icon: 'tx',
-          suffixIcon:props.message.chain == ChatChain.btc ? BTC : MVC,
+          suffixIcon: props.message.chain == ChatChain.btc ? BTC : MVC,
           action: () => {
             // 跳转到该消息对应的交易
             window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')

@@ -1368,5 +1368,6 @@
   "privite_chat_success": "Private messaging feature is now available.",
   "approve_private": "You need to authorize the activation of the private chat function",
   "get_ecdhPubkey_fail": "Failed to obtain public key",
-  "user_private_chat_unsupport": "The user has not enabled the private chat feature yet."
+  "user_private_chat_unsupport": "The user has not enabled the private chat feature yet.",
+  "retry_join": "Please re-perform the group entry operation"
 }

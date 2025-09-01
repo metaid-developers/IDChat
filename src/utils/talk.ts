@@ -739,7 +739,8 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
 }
 
 export const joinChannel = async (groupId: string, referrer?: string) => {
-  const buildTx = useBulidTx()
+  try {
+    const buildTx = useBulidTx()
   const dataCarrier = {
     groupId: groupId || '',
     state: CommunityJoinAction.Join,
@@ -755,6 +756,7 @@ export const joinChannel = async (groupId: string, referrer?: string) => {
     body: dataCarrier,
   }
 
+
   // 3. 发送节点
   const nodeRes = await buildTx.joinGrop(node)
 
@@ -765,10 +767,14 @@ export const joinChannel = async (groupId: string, referrer?: string) => {
   }
 
   return { groupId }
+  } catch (error) {
+    throw new Error(error as any)
+  }
 }
 
 export const joinCommunity = async (groupId: string, referrer?: string) => {
-  const buildTx = useBulidTx()
+  try {
+    const buildTx = useBulidTx()
   const dataCarrier = {
     groupId: groupId || '',
     state: CommunityJoinAction.Join,
@@ -794,10 +800,14 @@ export const joinCommunity = async (groupId: string, referrer?: string) => {
   }
 
   return { groupId }
+  } catch (error) {
+    
+  }
 }
 
 export const leaveCommunity = async (communityId: string) => {
-  const buildTx = useBulidTx()
+ try {
+   const buildTx = useBulidTx()
   const dataCarrier = {
     groupId: communityId || '',
     state: CommunityJoinAction.Leave,
@@ -822,6 +832,9 @@ export const leaveCommunity = async (communityId: string) => {
   }
 
   return { communityId }
+ } catch (error) {
+  
+ }
 }
 
 export const sendMessage = async (messageDto: MessageDto) => {

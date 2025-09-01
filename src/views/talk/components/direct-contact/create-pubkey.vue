@@ -50,7 +50,7 @@ async function createPubkeyNode() {
   }
  
   } catch (error) {
-    
+    return ElMessage.error(error.toString())
   }
 }
 

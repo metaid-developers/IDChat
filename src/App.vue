@@ -134,7 +134,8 @@ onMounted(async () => {
   let timeoutId: number
   //document.addEventListener('visibilitychange', handleVisibilityChange);
   accountInterval.value=setInterval(async()=>{
-    if(window.metaidwallet && connectionStore.last.status == 'connected'){
+    if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
+      
          window.metaidwallet.getAddress().then((res)=>{
           
              if (res?.status == 'not-connected' || userStore.last?.address !== res) {
@@ -147,7 +148,7 @@ onMounted(async () => {
         })
    
     }
-  },10 * 1000)
+  },5 * 1000)
 
   const checkMetalet = async () => {
     if (window.metaidwallet) {

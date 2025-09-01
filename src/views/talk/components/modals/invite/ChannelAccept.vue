@@ -60,6 +60,7 @@ import { useRouter } from 'vue-router'
 import { useRootStore } from '@/stores/root'
 import { sleep } from '@/utils/util'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
+import i18n from '@/utils/i18n'
 const layout = useLayoutStore()
 const root = useRootStore()
 const talk = useTalkStore()
@@ -77,7 +78,8 @@ const loginFirst = () => {
 
 const tryJoinChannel = async () => {
   // 游客
-  
+ try {
+   
   if (!user.isAuthorized) {
     return loginFirst()
   }
@@ -113,5 +115,10 @@ const tryJoinChannel = async () => {
 
   talk.communityStatus = 'invited'
   window.location.reload()
+ } catch (error) {
+   talk.invitingChannel = null
+  layout.isShowLoading = false
+  ElMessage.error(`${(error as any).toString()}! ${i18n.global.t('retry_join')}`,)
+ }
 }
 </script>

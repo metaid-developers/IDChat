@@ -88,7 +88,7 @@
         </div>
 
         <div class="w-full" v-else-if="isNftEmoji">
-          <Image
+          <ChatImage
             :src="
               decryptedMessage(
                 message.content,
@@ -106,11 +106,9 @@
         <div class="w-full py-0.5 flex items-center" v-else-if="isImage">
           <div
             class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200 relative"
-            :class="[message.error && 'opacity-50']"
             @click="previewImage(message.content)"
           >
-            <Image
-              ref="imageRef"
+            <ChatImage
               :src="
                 decryptedMessage(
                   message.content,
@@ -119,23 +117,8 @@
                   message.isMock
                 )
               "
-              customClass="rounded-xl py-0.5 object-scale-down"
-              @error="handleImageError"
-              @load="handleImageLoad"
+              customClass="rounded-xl py-0.5 object-scale-down max-w-full max-h-full"
             />
-            <!-- 重加载按钮 -->
-            <button
-              v-if="showReloadButton"
-              class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 transition-all duration-200"
-              @click.stop="reloadImage"
-              :title="$t('Talk.Messages.reload_image')"
-            >
-              <Icon
-                name="arrow_path"
-                class="w-4 h-4 text-white"
-                :class="{ 'animate-spin': isReloading }"
-              />
-            </button>
           </div>
           <!--message.error-->
           <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
@@ -277,6 +260,7 @@ import type { ChatMessageItem } from '@/@types/common'
 import { isMobile } from '@/stores/root'
 import { useRouter } from 'vue-router'
 import {getUserInfoByAddress} from '@/api/man'
+import ChatImage from '@/components/ChatImage/ChatImage.vue'
 
 const i18n = useI18n()
 
@@ -289,14 +273,6 @@ const reply: any = inject('Reply')
 const router=useRouter()
 const imagePreview = useImagePreview()
 const visiableMenu = ref(false)
-
-// 图片重加载相关
-const imageRef = ref()
-const showReloadButton = ref(false)
-const isReloading = ref(false)
-const imageLoadFailed = ref(false)
-const imageLoadAttempts = ref(0)
-const MAX_RELOAD_ATTEMPTS = 3
 
 const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
 
@@ -405,59 +381,7 @@ const previewImage = (image: string) => {
   imagePreview.visibale = true
 }
 
-// 图片加载处理函数
-const handleImageLoad = () => {
-  imageLoadFailed.value = false
-  showReloadButton.value = false
-  imageLoadAttempts.value = 0
-  isReloading.value = false
-}
-
-const handleImageError = () => {
-  imageLoadFailed.value = true
-  imageLoadAttempts.value++
-
-  // 如果是第一次失败，等待一段时间后自动重试
-  if (imageLoadAttempts.value === 1) {
-    setTimeout(() => {
-      if (imageLoadFailed.value && imageLoadAttempts.value < MAX_RELOAD_ATTEMPTS) {
-        reloadImage()
-      } else {
-        showReloadButton.value = true
-      }
-    }, 2000) // 2秒后自动重试
-  } else {
-    showReloadButton.value = true
-  }
-
-  isReloading.value = false
-}
-
-const reloadImage = async () => {
-  if (isReloading.value || imageLoadAttempts.value >= MAX_RELOAD_ATTEMPTS) return
-
-  isReloading.value = true
-  showReloadButton.value = false
-
-  try {
-    // 强制重新获取图片
-    const imageComponent = imageRef.value
-    if (imageComponent && imageComponent.imgRef) {
-      const img = imageComponent.imgRef
-      const originalSrc = img.src
-
-      // 添加时间戳强制重新加载
-      const separator = originalSrc.includes('?') ? '&' : '?'
-      img.src = originalSrc + separator + 't=' + Date.now()
-    }
-  } catch (error) {
-    console.error('重加载图片失败:', error)
-    isReloading.value = false
-    showReloadButton.value = true
-  }
-}
-
-const msgChain=computed(()=>{
+const msgChain = computed(() => {
   return props.message.chain
 })
 

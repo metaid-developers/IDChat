@@ -1362,5 +1362,6 @@
   "privite_chat_success": "私聊功能已开通",
   "approve_private": "需要你授权开通私聊功能",
   "get_ecdhPubkey_fail": "获取公钥失败",
-  "user_private_chat_unsupport": "该用户尚未开通私聊功能！"
+  "user_private_chat_unsupport": "该用户尚未开通私聊功能",
+  "retry_join": "请重新执行进群操作"
 }

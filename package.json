@@ -46,6 +46,7 @@
     "buffer": "^6.0.3",
     "chart.js": "^4.2.1",
     "compressorjs": "^1.1.1",
+    "copy-to-clipboard": "^3.3.3",
     "crypto-es": "^1.2.7",
     "crypto-js": "^4.1.1",
     "dayjs": "^1.11.6",

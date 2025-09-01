@@ -114,7 +114,47 @@
                       <div
                         class="flex flex-col space-y-1 items-end flex-shrink-0 bg-white lg:bg-transparent px-2 lg:px-0 py-1 lg:py-0 rounded lg:rounded-none"
                       >
-                        <div class="text-sm text-dark-800 font-medium flex items-center space-x-1">
+                        <!-- 移动端：金额单独一行 -->
+                        <div class="lg:hidden text-sm text-dark-800 font-medium text-right">
+                          <span class="whitespace-nowrap">
+                            {{ nicerAmountWithUnit(draw.amount).amount }}
+                            <span class="text-xs text-dark-400">{{
+                              nicerAmountWithUnit(draw.amount).unit
+                            }}</span>
+                          </span>
+                        </div>
+
+                        <!-- 移动端：标签和按钮一行 -->
+                        <div class="lg:hidden flex items-center space-x-1 justify-end">
+                          <span
+                            v-if="draw.amount >= luckiestAmount"
+                            class="bg-amber-400 text-white rounded px-0.5 py-0.5 whitespace-nowrap text-xxs"
+                          >
+                            {{ $t('Talk.Modals.lucky') }}
+                          </span>
+
+                          <span
+                            class="py-0.5 px-1 text-xxs text-white rounded whitespace-nowrap"
+                            :class="grayState(draw.gradState)?.color"
+                          >
+                            {{ grayState(draw.gradState)?.state }}
+                          </span>
+                          <button
+                            v-if="draw.gradState == GrabStatus.broadCastSuccess"
+                            @click="toMvcScan(draw.gradTxId)"
+                            class="w-4 h-4 flex items-center justify-center rounded text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-amber-400 transition-all duration-300 flex-shrink-0"
+                          >
+                            <Icon
+                              name="link"
+                              class="w-2.5 h-2.5 p-0.5 box-content text-gray-500 hover:text-white cursor-pointer"
+                            />
+                          </button>
+                        </div>
+
+                        <!-- 桌面端：保持原来的横向布局 -->
+                        <div
+                          class="hidden lg:flex text-sm text-dark-800 font-medium items-center space-x-1"
+                        >
                           <span class="whitespace-nowrap">
                             {{ nicerAmountWithUnit(draw.amount).amount }}
                             <span class="text-xs text-dark-400">{{
@@ -123,13 +163,13 @@
                           </span>
                           <span
                             v-if="draw.amount >= luckiestAmount"
-                            class="bg-amber-400 text-white rounded px-0.5 lg:px-1 py-0.5 whitespace-nowrap text-xxs"
+                            class="bg-amber-400 text-white rounded px-1 py-0.5 whitespace-nowrap text-xxs"
                           >
                             {{ $t('Talk.Modals.lucky') }}
                           </span>
 
                           <span
-                            class="py-0.5 px-1 text-xxs lg:text-xs text-white rounded whitespace-nowrap"
+                            class="py-0.5 px-1 text-xs text-white rounded whitespace-nowrap"
                             :class="grayState(draw.gradState)?.color"
                           >
                             {{ grayState(draw.gradState)?.state }}
@@ -137,11 +177,11 @@
                           <button
                             v-if="draw.gradState == GrabStatus.broadCastSuccess"
                             @click="toMvcScan(draw.gradTxId)"
-                            class="w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center rounded text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-amber-400 transition-all duration-300 flex-shrink-0"
+                            class="w-5 h-5 flex items-center justify-center rounded text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-amber-400 transition-all duration-300 flex-shrink-0"
                           >
                             <Icon
                               name="link"
-                              class="w-2.5 h-2.5 lg:w-3 lg:h-3 p-0.5 lg:p-1 box-content text-gray-500 hover:text-white cursor-pointer"
+                              class="w-3 h-3 p-1 box-content text-gray-500 hover:text-white cursor-pointer"
                             />
                           </button>
                         </div>
@@ -269,13 +309,13 @@ const nicerAmountWithUnit = (amount: string) => {
   // if (amountNumber >= 100_000_000) {
   //   return {
   //     amount: `${(amountNumber / 100_000_000).toFixed(2)}`,
-  //     unit: 'Space',
+  //     unit: 'SPACE',
   //   }
   // }
 
   return {
     amount: amountNumber,
-    unit: 'Space',
+    unit: 'SPACE',
   }
 }
 
