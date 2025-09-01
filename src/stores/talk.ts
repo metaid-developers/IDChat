@@ -850,13 +850,30 @@ export const useTalkStore = defineStore('talk', {
     async handleNewSessionMessage(message: any) {
       
       const messageMetaId = message.from === this.selfMetaId ? message.to : message.from
-      
+      debugger
       const isFromActiveChannel = messageMetaId === this.activeChannelId
 
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
+        debugger
         this._updateReadPointers(message.timestamp, messageMetaId)
+        debugger
+          this.activeCommunity?.channels?.map((channel: any) => {
+          if (channel?.userInfo?.metaid === messageMetaId) {
+            channel.newMessages = [message]
+          }
+        })
+        debugger
+           try {
+          sortByConditionInPlace(
+          this.activeCommunity?.channels,
+          channel => channel?.userInfo?.metaid == messageMetaId
+        )
         return
+      } catch (error) {
+        console.log("socket推送11111",error.toString())
+        return
+      }
       }
       console.log("11111111",this.activeChannel.newMessages, message.txId)
       
@@ -874,9 +891,9 @@ export const useTalkStore = defineStore('talk', {
       const mockMessage = this.activeChannel.newMessages.find(
         (item: Message) =>
           
-          item.txId === '' && item.isMock === true && (item.nodeName === message.nodeName )
+          item.txId === '' && item.isMock === true && (item.nodeName === message.nodeName || containsString(message?.protocol,item.nodeName))
       )
-      
+      debugger
       if (mockMessage) {
         console.log('替换中')
         if (containsString(message.protocol,NodeName.SimpleFileMsg)) {
@@ -891,7 +908,7 @@ export const useTalkStore = defineStore('talk', {
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
-            mockMessage.data.content = message.data.content
+            mockMessage.data.content =message.content ||  message.data?.content
             delete mockMessage.isMock
           })
         }
