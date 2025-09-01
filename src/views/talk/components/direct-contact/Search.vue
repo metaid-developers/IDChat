@@ -14,19 +14,17 @@
         />
       </div>
 
-         <div
+      <div
         class="border-dashed border-2 border-gray-200 dark:border-gray-600 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
         v-if="userStore.isAuthorized && whiteList"
-        @click="
-          layout.isShowCreatePublicChannelModal = true
-        "
+        @click="layout.isShowCreatePublicChannelModal = true"
       >
         <Icon name="plus" class="w-[20PX] h-[20PX]" />
       </div>
 
       <!-- <div class="">
          <Icon name="user_plus" class="w-6 h-6 p-0.5 cursor-pointer" />
-        
+
       </div> -->
     </div>
   </div>
@@ -34,11 +32,17 @@
 
 <script lang="ts" setup>
 import { useUserStore } from '@/stores/user'
-import { ref, watch,computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useLayoutStore } from '@/stores/layout'
 
-const groupWhiteList=['1Fw9tW2p6hossLoXXbsX8vjYrCBJyCFLCX','1JJSRmegmjgth5HLHHjjaCFVoUzSu5iLxP','16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo','12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ']
-const userStore=useUserStore()
+const groupWhiteList = [
+  '1Fw9tW2p6hossLoXXbsX8vjYrCBJyCFLCX',
+  '1JJSRmegmjgth5HLHHjjaCFVoUzSu5iLxP',
+  '16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo',
+  '12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ',
+  '195gtuVbW9DsKPnSZLrt9kdJrQmvrAt7e3',
+]
+const userStore = useUserStore()
 const layout = useLayoutStore()
 const keyword = ref('')
 const handleSearch = () => {
@@ -47,7 +51,7 @@ const handleSearch = () => {
   // 先进行名字搜索
 }
 
-const whiteList=computed(()=>{
-  return groupWhiteList.includes( userStore.last?.address)
+const whiteList = computed(() => {
+  return groupWhiteList.includes(userStore.last?.address)
 })
 </script>

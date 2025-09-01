@@ -27,19 +27,19 @@ import { useConnectionModal } from '@/hooks/use-connection-modal'
 
 function sortByConditionInPlace(array, conditionFn) {
   // console.log("arrray11111111111111111111",array)
-    array.sort((a, b) => {
-        const aMatches = conditionFn(a);
-        const bMatches = conditionFn(b);
-        
-        if (aMatches && !bMatches) {
-            return -1; // a排在b前面
-        } else if (!aMatches && bMatches) {
-            return 1; // b排在a前面
-        } else {
-            return 0; // 保持原有相对顺序
-        }
-    });
-    return array;
+  array.sort((a, b) => {
+    const aMatches = conditionFn(a)
+    const bMatches = conditionFn(b)
+
+    if (aMatches && !bMatches) {
+      return -1 // a排在b前面
+    } else if (!aMatches && bMatches) {
+      return 1 // b排在a前面
+    } else {
+      return 0 // 保持原有相对顺序
+    }
+  })
+  return array
 }
 
 export const useTalkStore = defineStore('talk', {
@@ -94,6 +94,9 @@ export const useTalkStore = defineStore('talk', {
       consensualNative: null as any,
       isShowWelcome: false,
       retryMsgList: [] as MessageDto,
+
+      // 强制更新触发器
+      channelUpdateTrigger: 0,
     }
   },
 
@@ -608,7 +611,6 @@ export const useTalkStore = defineStore('talk', {
 
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
-        
         this._updateReadPointers(message.timestamp, messageMetaId)
         this.activeCommunity?.channels?.map((channel: any) => {
           if (channel.id === messageMetaId) {
@@ -616,19 +618,16 @@ export const useTalkStore = defineStore('talk', {
           }
         })
 
-           try {
-           sortByConditionInPlace(
-          this.activeCommunity?.channels,
-          channel => channel?.groupId == messageMetaId
-        )
-        return
-      } catch (error) {
-        console.log("socket推送11111",error.toString())
-        return
-      }
-
-       
-        
+        try {
+          sortByConditionInPlace(
+            this.activeCommunity?.channels,
+            channel => channel?.groupId == messageMetaId
+          )
+          return
+        } catch (error) {
+          console.log('socket推送11111', error.toString())
+          return
+        }
       }
 
       // 当前頻道，插入新消息
@@ -702,18 +701,16 @@ export const useTalkStore = defineStore('talk', {
         return
       }
 
-
       this.activeChannel.newMessages.push(message)
 
       try {
-          sortByConditionInPlace(
-        this.activeCommunity?.channels,
-        channel => channel?.groupId == messageMetaId
-      )
+        sortByConditionInPlace(
+          this.activeCommunity?.channels,
+          channel => channel?.groupId == messageMetaId
+        )
       } catch (error) {
-        console.log("socket推送2222",error.toString())
+        console.log('socket推送2222', error.toString())
       }
-
 
       // this.activeCommunity?.channels.sort(()=>{
 
@@ -1117,6 +1114,68 @@ export const useTalkStore = defineStore('talk', {
 
     clearActiveMessageMenu() {
       this.activeMessageMenuId = ''
+    },
+
+    // 更新频道信息
+    updateChannelInfo(
+      channelId: string,
+      updates: {
+        roomName?: string
+        roomNote?: string
+        roomAvatarUrl?: string
+        roomIcon?: string
+        [key: string]: any
+      }
+    ) {
+      // 查找并更新活动社区中的频道
+      if (this.activeCommunity?.channels) {
+        const channel = this.activeCommunity.channels.find(
+          (c: any) => c.groupId === channelId || c.id === channelId
+        )
+        if (channel) {
+          // 直接更新属性，确保响应式
+          if (updates.roomName !== undefined) channel.roomName = updates.roomName
+          if (updates.roomNote !== undefined) channel.roomNote = updates.roomNote
+          if (updates.roomAvatarUrl !== undefined) channel.roomAvatarUrl = updates.roomAvatarUrl
+          if (updates.roomIcon !== undefined) channel.roomIcon = updates.roomIcon
+
+          // 更新其他属性
+          Object.keys(updates).forEach(key => {
+            if (!['roomName', 'roomNote', 'roomAvatarUrl', 'roomIcon'].includes(key)) {
+              ;(channel as any)[key] = updates[key]
+            }
+          })
+
+          console.log('Channel info updated:', channel)
+          this.activeCommunity.channels = this.activeCommunity.channels.map(c =>
+            c.groupId === channel.groupId ? channel : c
+          )
+
+          this.$patch({})
+
+          // 触发强制更新
+          this.channelUpdateTrigger++
+        }
+      }
+
+      // 如果是通用频道，也需要更新
+      const generalChannel = this.generalChannels.find(
+        (c: any) => c.groupId === channelId || c.id === channelId
+      )
+      if (generalChannel) {
+        // 通用频道的更新（如果需要的话）
+        Object.keys(updates).forEach(key => {
+          if ((generalChannel as any)[key] !== undefined) {
+            ;(generalChannel as any)[key] = updates[key]
+          }
+        })
+        console.log('General channel info updated:', generalChannel)
+      }
+    },
+
+    // 更新频道公告
+    updateChannelAnnouncement(channelId: string, announcement: string) {
+      this.updateChannelInfo(channelId, { roomNote: announcement })
     },
   },
 })

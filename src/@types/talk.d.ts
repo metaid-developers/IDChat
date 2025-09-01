@@ -1,7 +1,7 @@
 import { ChannelType, MessageType } from '@/enum'
 import { Address, HDPrivateKey, PrivateKey, PublicKey, Script } from 'meta-contract/dist/mvc'
 import { AttachmentItem } from './hd-wallet'
- declare interface Message {
+declare interface Message {
   protocol?: string
   nodeName?: string
   data?: any
@@ -156,43 +156,44 @@ declare interface CommunityAuth {
 // }
 
 declare interface Channel {
-      communityId:string
-      groupId:string
-      txId:string
-      pinId:string
-      roomName:string
-      roomNote:string
-      roomType:import('@/enum').ChannelPublicityType
-      roomStatus: string
-      roomJoinType: string
-      roomAvatarUrl: string
-      roomNinePersonHash:string
-      roomNewestTxId:string
-      roomNewestPinId:string
-      roomNewestMetaId:string
-      roomNewestUserName:string
-      roomNewestProtocol:string
-      roomNewestProtocol:string
-      roomNewestTimestamp: number
-      createUserMetaId:string
-      userCount:number
-      chatSettingType: 0 | 1
-      deleteStatus: number
-      timestamp:number
+  communityId: string
+  groupId: string
+  txId: string
+  pinId: string
+  roomName: string
+  roomNote: string
+  roomType: import('@/enum').ChannelPublicityType
+  roomStatus: string
+  roomJoinType: string
+  roomAvatarUrl: string
+  roomNinePersonHash: string
+  roomNewestTxId: string
+  roomNewestPinId: string
+  roomNewestMetaId: string
+  roomNewestUserName: string
+  roomNewestProtocol: string
+  roomNewestProtocol: string
+  roomNewestTimestamp: number
+  createUserMetaId: string
+  userCount: number
+  chatSettingType: 0 | 1
+  deleteStatus: number
+  timestamp: number
+  roomIcon: string
 }
 
 declare interface MessageDto {
   type: MessageType
   content: string
   channelId: string
-  groupId?:string
+  groupId?: string
   userName: string
   attachments?: AttachmentItem[]
   originalFileUrl?: any
   channelType?: ChannelType
   reply?: ChatMessageItem
-  mockId?:string
-  reason?:string
+  mockId?: string
+  reason?: string
 }
 
 declare interface CryptoInfo {
