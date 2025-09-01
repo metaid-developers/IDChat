@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { useTalkStore } from '@/stores/talk'
-import { defineAsyncComponent, onBeforeUnmount, onMounted, provide, reactive, ref } from 'vue'
+import { defineAsyncComponent, onBeforeUnmount, onMounted, onUnmounted, provide, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DirectContactList from './components/direct-contact/List.vue'
 import DirectContactInfo from './components/direct-contact/Info.vue'
@@ -77,9 +77,15 @@ onMounted(async () => {
   await talk.initChannelMessages(talk.selfMetaId)
 })
 
-onBeforeUnmount(() => {
-  talk.resetCurrentChannel()
+onUnmounted(()=>{
+    talk.resetCurrentChannel()
   talk.saveReadPointers()
   talk.closeReadPointerTimer()
 })
+// onBeforeUnmount(() => {
+//   debugger
+//   talk.resetCurrentChannel()
+//   talk.saveReadPointers()
+//   talk.closeReadPointerTimer()
+// })
 </script>

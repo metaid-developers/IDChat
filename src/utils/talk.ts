@@ -1509,6 +1509,8 @@ export function decryptedMessage(
   isSession: boolean = false, // 是否私聊
   secretKeyStr: string = ''
 ) {
+
+  if(!content) return
   const talk = useTalkStore()
 
   if (encryption === '0') {
@@ -1533,14 +1535,13 @@ export function decryptedMessage(
     
     let ecdh= ecdhsStore.getEcdh(talk.activeChannel.publicKeyStr)
  
-    const sharedSecret=ecdh?.sharedSecret
-    // const sigStr = atobToHex(credential!.signature)
-    // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
-    // // @ts-ignore
-    // const privateKeyStr = privateKey.toHex()
-    
-    //const otherPublicKeyStr = talk.activeChannel.publicKeyStr
+    try {
+      const sharedSecret=ecdh?.sharedSecret
+   
     return ecdhDecrypt(content, sharedSecret)
+    } catch (error) {
+      throw new Error((error as any).toString())
+    }
   } else {
     return decrypt(content, secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
   }

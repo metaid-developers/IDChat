@@ -78,6 +78,7 @@ export const useUserStore = defineStore('user', {
             bio: '',
             bioId: '',
             blocked: false,
+           chatpubkey:'',
             chainName: 'mvc',
             fdv: 0,
             followCount: 0,

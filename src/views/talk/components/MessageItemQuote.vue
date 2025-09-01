@@ -28,10 +28,10 @@
             <div class="content">
               {{
                 decryptedMessage(
-                  quote.content,
-                  quote.encryption,
-                  quote.protocol,
-                  quote.isMock,
+                  quote?.content,
+                  quote?.encryption,
+                  quote?.protocol,
+                  quote?.isMock,
                   isSession
                 )
               }}

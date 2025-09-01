@@ -153,7 +153,7 @@
           ref="theTextBox"
           :placeholder="
             $t('Talk.Channel.message_to', {
-              channel: talk?.activeChannelSymbol + (talk.activeChannel?.name || ''),
+              channel: talk?.activeChannelSymbol + (talk.activeChannel?.name || activeChannel?.userInfo?.name || ''),
             })
           "
           v-model="chatInput"
@@ -379,7 +379,14 @@ const showImagePreview = ref(false)
 const useCompression = ref(true)
 
 const hasImage = computed(() => imageFile.value !== null)
-console.log('talk.activeChannel', talk.activeChannel)
+
+
+const activeChannel=computed(()=>{
+  return  talk.activeChannel
+})
+
+console.log('talk.activeChannel22222',activeChannel)
+
 
 const openImageUploader = (close: Function) => {
   imageUploader.value?.click()
@@ -448,16 +455,17 @@ const trySendImage = async () => {
   console.log('size', image.size / 1024, 'KB')
 
   const hexedFiles = await FileToAttachmentItem(image)
+  debugger
   const attachments = [hexedFiles]
 
   // clone，用于填充mock信息
   const originalFileUrl = imagePreviewUrl.value
   deleteImage()
-
+  
   const messageDto = {
     type: MessageType.Image,
     channelId: talk.activeChannel.id,
-    groupId: talk?.activeCommunity?.id || '',
+    groupId:talk.activeChannelType == ChannelType.Session ? '' : talk?.activeCommunity?.id || '',
     userName: userStore.last?.name!,
     attachments,
     content: '',
@@ -466,7 +474,7 @@ const trySendImage = async () => {
     reply: props.quote,
   }
   console.log('props.quote', props.quote)
-
+  
   emit('update:quote', undefined)
   await sendMessage(messageDto)
 }
@@ -584,7 +592,10 @@ const trySendText = async (e: any) => {
     //
     // const privateKeyStr = privateKey.toHex()
     //const credential=credentialsStore.getByAddress(connectionStore.last.address)
-    let ecdh= ecdhsStore.getEcdh(talk.activeChannel.publicKeyStr)
+    if(!talk.activeChannel?.publicKeyStr){
+      return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
+    }
+    let ecdh= ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
     
     if(!ecdh){
       ecdh=await getEcdhPublickey(talk.activeChannel.publicKeyStr)

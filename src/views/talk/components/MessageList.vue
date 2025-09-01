@@ -193,6 +193,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  
   if (isMobile) {
     document.removeEventListener('click', handleGlobalClick)
   }
@@ -264,13 +265,13 @@ const handleScroll = async () => {
       loadingMore.value = false
       // const preTimestamp=talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
       //     console.log("getMoreRes",getMoreRes,preTimestamp)
-      //     debugger
+      //     
       // if(getMoreRes == preTimestamp.timestamp){
       //     isLoadingMore.value=false
       //     loadingMore.value = false
-      //     debugger
+      //     
       // }
-      // debugger
+      // 
     }
   }
 }
@@ -339,7 +340,7 @@ const loadMore = async (preTimestamp = 0) => {
     console.log('talk.activeChannel.pastMessages', item.txId)
     // const isDuplicate= talk.activeChannel.pastMessages?.find((item: Message) => item.txId === item.txId)
 
-    // debugger
+    // 
     // if(isDuplicate){
     //   continue
     // }
@@ -440,6 +441,7 @@ async function onToBuzz(data: ShareChatMessageData) {
 }
 
 function decryptedMessage(message: ChatMessageItem) {
+  if(!message) return
   if (message.encryption === '0') {
     return message.content
   }
@@ -462,6 +464,7 @@ watch(
     // 依据滚动状态，如果当前距离底部的距离超过一屏，则说明在阅读历史消息，不需要滚动到底部
     if (messagesScroll.value && talk.activeChannel?.newMessages) {
       const mse: HTMLElement = messagesScroll.value as HTMLElement
+      
       const disFromBottom = mse.scrollHeight - mse.scrollTop - mse.clientHeight // 滚动元素的总高度 - 滚动元素的离顶部距离 - 滚动元素的可视高度
 
       // 还要判断是不是用户自己发的消息
@@ -483,9 +486,19 @@ defineExpose({
   scrollToTimeStamp,
 })
 
-onBeforeUnmount(() => {
-  messagesScroll.value?.removeEventListener('scroll', handleScroll)
+onUnmounted(() => {
+  
+  if(messagesScroll.value){
+    
+     messagesScroll.value?.removeEventListener('scroll', handleScroll)
+  }
+ 
 })
+
+// onBeforeUnmount(() => {
+//   
+//   messagesScroll.value?.removeEventListener('scroll', handleScroll)
+// })
 </script>
 
 <style lang="scss" scoped>

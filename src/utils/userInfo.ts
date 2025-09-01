@@ -521,12 +521,14 @@ export const createOrUpdateUserInfo = async ({
     bio?: string
     avatar?: string
     background?: string
+    chatpubkey?:string
   }
   oldUserData: {
     nameId: string
     bioId?: string
     avatarId?: string
     backgroundId?: string
+     chatpubkey?:string
   }
   options: { feeRate?: number; network?: BtcNetwork; assistDomain?: string }
 }): Promise<{
@@ -573,6 +575,22 @@ export const createOrUpdateUserInfo = async ({
       contentType: 'image/jpeg;binary',
       flag: 'metaid',
     })
+  }
+
+    if (userData.chatpubkey) {
+      
+      if(!oldUserData.chatpubkey){
+            metaDatas.push({
+            operation:'create',
+            body: userData.chatpubkey,
+            path: `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`,
+            encoding: 'utf-8',
+            contentType: 'text/plain',
+            flag: 'metaid',
+            })
+            
+      }
+
   }
   if (metaDatas.length === 0) {
     throw new Error('No user data provided to create user info')
@@ -627,8 +645,9 @@ export const createOrUpdateUserInfo = async ({
     bioRes: undefined,
     avatarRes: undefined,
     backgroundRes: undefined,
+    chatpubkeyRes:undefined
   }
-  type ResKey = 'nameRes' | 'bioRes' | 'avatarRes' | 'backgroundRes'
+  type ResKey = 'nameRes' | 'bioRes' | 'avatarRes' | 'backgroundRes' | 'chatpubkeyRes'
   const userInfos: {
     key: string
     resKey: ResKey
@@ -648,6 +667,10 @@ export const createOrUpdateUserInfo = async ({
     {
       key: 'background',
       resKey: 'backgroundRes',
+    },
+    {
+      key: 'chatpubkey',
+      resKey: 'chatpubkeyRes',
     },
   ]
   for (let i = 0; i < userInfos.length; i++) {

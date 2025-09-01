@@ -101,7 +101,12 @@ export const getMvcPublickey = async () => {
 }
 
 
-export const getEcdhPublickey = async (pubkey?:string) => {
+export const getEcdhPublickey = async (pubkey?:string):Promise<{
+  externalPubKey: string;
+    sharedSecret: string;
+    ecdhPubKey: string;
+    creatorPubkey: string;
+} | any> => {
   checkMetalet()
   
   try {

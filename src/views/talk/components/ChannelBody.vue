@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
-import { nextTick, onBeforeUnmount, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onUnmounted, watch } from 'vue'
 
 import { useTalkStore } from '@/stores/talk'
 import { GroupChannelType } from '@/enum'
@@ -420,7 +420,11 @@ watch(
   }
 )
 
-onBeforeUnmount(() => {
-  talk.resetCurrentChannel()
+onUnmounted(()=>{
+    talk.resetCurrentChannel()
 })
+// onBeforeUnmount(() => {
+//   debugger
+//   talk.resetCurrentChannel()
+// })
 </script>

@@ -347,7 +347,7 @@ export enum NodeName {
   LegalSellNft = 'sell_nft',
   Name = 'name',
   MetaNote = 'metanote',
-  SimpleFileMsg = 'Simplefilemsg',
+  SimpleFileMsg = 'simplefilemsg',
   SimpleCreateAnnouncement = 'SimpleCreateAnnouncement',
   SimpleAnnouncementQuote = 'SimpleAnnouncementQuote',
   SimpleDAOCreate = 'SimpleDAOCreate',

@@ -198,6 +198,7 @@ export const router = createRouter({
           redirect: to => {
             
             let { communityId,channelId } = to.params
+            debugger
             if(!channelId){
               channelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL
             }

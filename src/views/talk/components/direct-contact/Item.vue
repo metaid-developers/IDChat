@@ -215,6 +215,7 @@ const switchChannel = () => {
   layout.$patch({
     isShowLeftNav: false,
   })
+  
   console.log("props.session",props.session)
 
   if (isActive.value) return

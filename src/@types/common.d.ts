@@ -1,4 +1,4 @@
-import {UserInfo as newUserInfo} from '@/api/man'
+import {UserInfo as newUserInfo,ChatUserInfo} from '@/api/man'
 import { fromASM } from 'bitcoinjs-lib/src/script';
 
 export type ECDH_TYPE={
@@ -913,7 +913,7 @@ declare interface ChatMessageItem {
   timestamp: number
   txId: string
   replyTx:string
-  userInfo: newUserInfo
+  userInfo: ChatUserInfo
   isMock?: boolean
   replyInfo?: {
     chatType: number
@@ -925,7 +925,7 @@ declare interface ChatMessageItem {
     protocol: string
     timestamp: number
     txId: string
-    userInfo: newUserInfo
+    userInfo: ChatUserInfo
   },
   claimOver?:boolean
 }
@@ -975,7 +975,7 @@ declare interface PriviteChatMessageItem {
     protocol: string
     timestamp: number
     txId: string
-    userInfo: newUserInfo
+    userInfo: ChatUserInfo
   },
   error?:boolean
   

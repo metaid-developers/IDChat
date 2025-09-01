@@ -169,7 +169,7 @@ export const useTalkStore = defineStore('talk', {
     },
 
     activeChannel(state): any {
-      
+      debugger
       if (!this.activeCommunity) return null
 
       // 功能頻道
@@ -177,10 +177,10 @@ export const useTalkStore = defineStore('talk', {
         return this.generalChannels.find(channel => channel.id === state.activeChannelId)
       }
       if (this.canAccessActiveChannel) {
-        
+        debugger 
         return this.activeCommunity?.channels?.find((channel: any) => {
           
-          return (channel.id === state.activeChannelId || (channel.metaId && channel.metaId === state.activeChannelId))
+          return (channel.id && channel.id === state.activeChannelId || (channel.metaId && channel.metaId === state.activeChannelId))
         })
       }
     },
@@ -382,7 +382,9 @@ export const useTalkStore = defineStore('talk', {
           for(let channel of priviteChannel){
             
             const userInfo=await GetUserEcdhPubkeyForPrivateChat(channel.metaId)
-            channel.publicKeyStr=userInfo.chatPublicKey
+            debugger
+            if(userInfo.chatPublicKey){
+              channel.publicKeyStr=userInfo.chatPublicKey
             channel.id=userInfo.metaid
               let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
               
@@ -390,6 +392,8 @@ export const useTalkStore = defineStore('talk', {
               ecdh=await getEcdhPublickey(userInfo.chatPublicKey)
               ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
               }
+            }
+            
             
           }
         }
@@ -528,8 +532,9 @@ export const useTalkStore = defineStore('talk', {
     async inviteChannel(routeChannelId: string) {
       const { openConnectionModal } = useConnectionModal()
       const layout = useLayoutStore()
-
+      debugger
       const userStore = useUserStore()
+     
       this.invitingChannel = await getOneChannel(routeChannelId)
       if (routeChannelId == 'welcome') {
         return
@@ -594,7 +599,7 @@ export const useTalkStore = defineStore('talk', {
     },
 
     async initChannel(routeCommunityId: string, routeChannelId?: string) {
-      
+        debugger
       // 如果是私聊，而且路由中的頻道 ID 不存在，则新建会话
       if (
         routeCommunityId === '@me' &&
@@ -636,6 +641,7 @@ export const useTalkStore = defineStore('talk', {
         } else {
           channelId = latestChannels[routeCommunityId] || 'welcome'
         }
+        debugger
 
         this.activeChannelId = channelId
         return
@@ -850,20 +856,20 @@ export const useTalkStore = defineStore('talk', {
     async handleNewSessionMessage(message: any) {
       
       const messageMetaId = message.from === this.selfMetaId ? message.to : message.from
-      debugger
+      
       const isFromActiveChannel = messageMetaId === this.activeChannelId
 
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
-        debugger
+        
         this._updateReadPointers(message.timestamp, messageMetaId)
-        debugger
+        
           this.activeCommunity?.channels?.map((channel: any) => {
           if (channel?.userInfo?.metaid === messageMetaId) {
             channel.newMessages = [message]
           }
         })
-        debugger
+        
            try {
           sortByConditionInPlace(
           this.activeCommunity?.channels,
@@ -893,7 +899,7 @@ export const useTalkStore = defineStore('talk', {
           
           item.txId === '' && item.isMock === true && (item.nodeName === message.nodeName || containsString(message?.protocol,item.nodeName))
       )
-      debugger
+      
       if (mockMessage) {
         console.log('替换中')
         if (containsString(message.protocol,NodeName.SimpleFileMsg)) {
@@ -902,7 +908,7 @@ export const useTalkStore = defineStore('talk', {
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
-            mockMessage.data = message.data
+            mockMessage.data.content = message.content || message.data?.content
           })
         } else {
           this.$patch(state => {
@@ -917,6 +923,7 @@ export const useTalkStore = defineStore('talk', {
       }
 
       if (message) {
+        
         getUserInfoByAddress(message.address).then(userInfo => {
           message.userInfo = userInfo
           // 如果没有替代mock数据，就直接添加到新消息队列首

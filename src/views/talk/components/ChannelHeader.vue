@@ -200,7 +200,8 @@ const hasWS = computed(() => {
 })
 
 const isAtMe=computed(()=>{
-  return route.name == 'talkAtMe'
+
+  return  route.name == 'talkAtMe'
 })
 
 watch(()=>route.params,(newVal)=>{
@@ -210,6 +211,7 @@ watch(()=>route.params,(newVal)=>{
     if(isAtMe.value){
       return
     }
+    debugger
     getOneChannel(currentChannelId.value as string).then((res)=>{
     currentChannel.val=res
 })
@@ -217,6 +219,7 @@ watch(()=>route.params,(newVal)=>{
 })
 
   if(!isAtMe.value){
+    debugger
       getOneChannel(currentChannelId.value as string).then((res)=>{
 
     currentChannel.val=res

@@ -19,6 +19,17 @@ const manApi = new HttpRequest(`${import.meta.env.VITE_MAN_API}/api`, {
   },
 }).request
 
+export interface ChatUserInfo{
+
+address:string
+avatar:string
+avatarImage:string
+chatPublicKey:string
+chatPublicKeyId:string
+metaid:string
+name:string
+}
+
 export interface UserInfo {
   address: string
   avatar: string

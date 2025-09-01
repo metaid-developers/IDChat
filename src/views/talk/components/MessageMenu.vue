@@ -160,9 +160,9 @@ const actions = computed(() => {
         const message = props.message
 
         const decryptedMessageContent = decryptedMessage(
-          message.content,
-          message.encryption,
-          message.protocol
+          message?.content,
+          message?.encryption,
+          message?.protocol
         )
 
         if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
@@ -311,6 +311,7 @@ const handleAction = (action: any) => {
 
 // 移除事件监听器
 onUnmounted(() => {
+  
   // 不再需要移除全局点击监听器
 })
 </script>

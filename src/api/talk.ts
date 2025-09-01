@@ -125,7 +125,7 @@ export const getOneCommunity = async (communityId: string): Promise<Community> =
 
 export const getOneChannel = async (groupId: string): Promise<Channel> => {
   
-  if(groupId == 'welcome'){
+  if(groupId == 'welcome' ){
     return null
   }else{
       return TalkApi.get(`group-info?groupId=${groupId}`).then(res => {

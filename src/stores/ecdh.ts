@@ -20,6 +20,7 @@ export const useEcdhsStore =defineStore('ecdhs', {
   getters: {
     getEcdh: (state) => {
       return (ecdhPubKey: string) => {
+        
         return state.ecdhList.find((s) => s.externalPubKey === ecdhPubKey)
       }
     },

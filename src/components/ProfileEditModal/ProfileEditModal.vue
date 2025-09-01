@@ -87,12 +87,15 @@ import { image2Attach, compressImage } from '@/lib/file'
 import { createOrUpdateUserInfo, getMVCRewards } from '@/utils/userInfo'
 import { useRouter } from 'vue-router'
 import { Camera } from '@element-plus/icons-vue'
+import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { useEcdhsStore } from '@/stores/ecdh'
 const props = defineProps<{
   modelValue: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
 const router = useRouter()
+const ecdhsStore=useEcdhsStore()
 const userStore = useUserStore()
 const avatarPreview = ref<string>('')
 const username = ref<string>('')
@@ -192,6 +195,15 @@ const save = async () => {
     if (profile.value !== userStore.last?.bio) {
       values.bio = profile.value
     }
+    if(!userStore.last?.chatpubkey){
+      
+      const ecdh=await getEcdhPublickey()
+      if(ecdh){
+         values.chatpubkey=ecdh?.ecdhPubKey
+         ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+      }
+      
+    }
     //   export const ASSIST_ENDPOINT =
     // curNetwork === "testnet"
     //   ? "https://www.metaso.network/assist-open-api-testnet"
@@ -202,6 +214,7 @@ const save = async () => {
         nameId: userStore.last?.nameId || '',
         bioId: userStore.last?.bioId || '',
         avatarId: userStore.last?.avatarId || '',
+        chatpubkey:userStore.last?.chatpubkey || ''
       },
       options: {
         feeRate: 1,

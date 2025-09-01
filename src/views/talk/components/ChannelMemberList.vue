@@ -89,7 +89,7 @@ watch(
       load()
     }
   },
-  { immediate: true }
+  { immediate: false }
 )
 
 // 虚拟列表

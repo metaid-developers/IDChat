@@ -15,7 +15,7 @@
         :message-id="messageId"
         :parsed="
           parseTextMessage(
-            decryptedMessage(message.content, message.encryption, message.protocol, message.isMock)
+            decryptedMessage(message?.content, message?.encryption, message?.protocol, message?.isMock)
           )
         "
         v-model:translateStatus="translateStatus"
@@ -91,10 +91,10 @@
           <ChatImage
             :src="
               decryptedMessage(
-                message.content,
-                message.encryption,
-                message.protocol,
-                message.isMock
+                message?.content,
+                message?.encryption,
+                message?.protocol,
+                message?.isMock
               )
             "
             customClass="max-w-[80%] md:max-w-[50%] lg:max-w-[320px] py-0.5 object-scale-down"
@@ -111,10 +111,10 @@
             <ChatImage
               :src="
                 decryptedMessage(
-                  message.content,
-                  message.encryption,
-                  message.protocol,
-                  message.isMock
+                  message?.content,
+                  message?.encryption,
+                  message?.protocol,
+                  message?.isMock
                 )
               "
               customClass="rounded-xl py-0.5 object-scale-down max-w-full max-h-full"
@@ -191,16 +191,16 @@
             class="text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
               isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
-              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
+              message?.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else
             v-html="
               parseTextMessage(
                 decryptedMessage(
-                  message.content,
-                  message.encryption,
-                  message.protocol,
-                  message.isMock
+                  message?.content,
+                  message?.encryption,
+                  message?.protocol,
+                  message?.isMock
                 )
               )
             "
@@ -344,7 +344,9 @@ const translatedContent = ref('')
 
 
 function toPrivateChat(message:ChatMessageItem){
-  
+  if(message.userInfo.metaid == userStore.last.metaid){
+     return 
+  }
   getUserInfoByAddress(message.userInfo.address).then((res)=>{
     if(res.chatpubkey){
        router.push({
@@ -368,7 +370,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  
   if (longPressTimer.value) {
+    
     clearTimeout(longPressTimer.value)
     longPressTimer.value = null
   }

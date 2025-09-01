@@ -67,9 +67,13 @@ export function aesEncrypt(message: string, secretKeyStr: string) {
 
 export function ecdhDecrypt(message: string, secretKey: string): string {
 
-  const messageBytes = AES.decrypt(message, secretKey)
+ try {
+   const messageBytes = AES.decrypt(message, secretKey)
   
   return messageBytes.toString(enc.Utf8)
+ } catch (error) {
+  
+ }
 }
 
 // export function ecdhEncrypt(message: string, privateKeyStr: string, publicKeyStr: string): string {

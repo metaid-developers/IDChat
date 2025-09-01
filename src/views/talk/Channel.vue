@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from 'vue'
+import { onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useTalkStore } from '@/stores/talk'
@@ -187,7 +187,9 @@ watch(
   { immediate: true }
 )
 
+
 onBeforeUnmount(() => {
+  
   talk.saveReadPointers()
   talk.closeReadPointerTimer()
 })

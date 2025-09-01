@@ -9,10 +9,10 @@
       :parsed="
         parseTextMessage(
           decryptedMessage(
-            message.content,
-            message.encryption,
-            message.protocol,
-            message.isMock,
+            message?.content,
+            message?.encryption,
+            message?.protocol,
+            message?.isMock,
             true
           )
         )
@@ -28,19 +28,19 @@
     <MessageItemQuote
       v-if="message.replyInfo"
       :quote="{
-        avatarImage: message.replyInfo.fromUserInfo.avatarImage,
-        metaName: message.replyInfo.fromUserInfo.metaName,
-        metaId: message.replyInfo.fromUserInfo.metaId,
-        nickName: message.replyInfo.fromUserInfo.name,
+        avatarImage: message.replyInfo?.userInfo?.avatarImage,
+        metaName: '',
+        metaId: message.replyInfo?.userInfo?.metaid,
+        nickName: message.replyInfo.userInfo.name,
         protocol: message.replyInfo.protocol,
         content:
-          message.replyInfo.protocol === NodeName.SimpleFileMsg
-            ? message.replyInfo.icon
+         containsString(message.replyInfo.protocol,NodeName.SimpleFileMsg)
+            ? message.replyInfo.content
             : message.replyInfo.content,
-        encryption: message.replyInfo.encoding,
+        encryption: message.replyInfo.encryption,
         timestamp: message.replyInfo.timestamp,
         isMock: message.isMock,
-        userInfo:message.replyInfo.userInfo
+        
       }"
       :isSession="true"
       v-bind="$attrs"
@@ -70,10 +70,10 @@
         <div class="w-full" v-if="isNftEmoji">
           <Image
             :src="decryptedMessage(
-            message.content,
-            message.encryption,
-            message.protocol,
-            message.isMock,
+            message?.content,
+            message?.encryption,
+            message?.protocol,
+            message?.isMock,
             true
           )"
             customClass="max-w-[80%] md:max-w-[50%] lg:max-w-[320px] py-0.5 object-scale-down"
@@ -352,10 +352,10 @@
             ]"
             v-else
             v-html="parseTextMessage(decryptedMessage(
-            message.content,
-            message.encryption,
-            message.protocol,
-            message.isMock,
+            message?.content,
+            message?.encryption,
+            message?.protocol,
+            message?.isMock,
             true
           ))"
           ></div>
@@ -440,9 +440,9 @@ const decryptedImageMessage = computed(() => {
   if (props.message.isMock) {
     return props.message.content
   }
-
-  if (props.message.data?.encrypt !== '1') {
-    return props.message.data?.attachment || props.message.data?.content
+  
+  if (props.message.encryption !== '1') {
+    return props.message.data?.attachment || props.message?.content
   }
 })
 
