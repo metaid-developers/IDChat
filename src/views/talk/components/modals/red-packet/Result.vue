@@ -115,7 +115,7 @@
                         class="flex flex-col space-y-1 items-end flex-shrink-0 bg-white lg:bg-transparent px-2 lg:px-0 py-1 lg:py-0 rounded lg:rounded-none"
                       >
                         <!-- 移动端：金额单独一行 -->
-                        <div class="lg:hidden text-sm text-dark-800 font-medium text-right">
+                        <div class=" text-sm text-dark-800 font-medium text-right">
                           <span class="whitespace-nowrap">
                             {{ nicerAmountWithUnit(draw.amount).amount }}
                             <span class="text-xs text-dark-400">{{
@@ -125,7 +125,7 @@
                         </div>
 
                         <!-- 移动端：标签和按钮一行 -->
-                        <div class="lg:hidden flex items-center space-x-1 justify-end">
+                        <div class="flex  items-center space-x-1 justify-end">
                           <span
                             v-if="draw.amount >= luckiestAmount"
                             class="bg-amber-400 text-white rounded px-0.5 py-0.5 whitespace-nowrap text-xxs"
@@ -153,7 +153,7 @@
 
                         <!-- 桌面端：保持原来的横向布局 -->
                         <div
-                          class="hidden lg:flex text-sm text-dark-800 font-medium items-center space-x-1"
+                          class="hidden  text-sm text-dark-800 font-medium items-center space-x-1"
                         >
                           <span class="whitespace-nowrap">
                             {{ nicerAmountWithUnit(draw.amount).amount }}

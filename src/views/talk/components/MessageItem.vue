@@ -64,12 +64,17 @@
             :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
           />
           <div
-            class="text-xs shrink-0 whitespace-nowrap"
+            class="text-xs shrink-0 whitespace-nowrap inline-flex items-center gap-1"
             :class="[
               msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
             ]"
           >
             {{ formatTimestamp(message.timestamp, i18n) }}
+            <img
+              :src="btcIcon"
+              class="chain-icon-menu w-[16px] h-[16px]"
+              v-if="msgChain == ChatChain.btc"
+            />
           </div>
         </div>
 
@@ -177,6 +182,7 @@
             :class="[
               isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
+              msgChain == ChatChain.btc && 'btc-item',
             ]"
             v-if="translateStatus === 'showing'"
           >
@@ -191,6 +197,7 @@
             :class="[
               isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
+              msgChain == ChatChain.btc && 'btc-item',
             ]"
             v-else
             v-html="
@@ -259,6 +266,7 @@ import { ElMessage } from 'element-plus'
 import type { ChatMessageItem } from '@/@types/common'
 import { isMobile } from '@/stores/root'
 import ChatImage from '@/components/ChatImage/ChatImage.vue'
+import btcIcon from '@/assets/images/btc.png'
 
 const i18n = useI18n()
 
