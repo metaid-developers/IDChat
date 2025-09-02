@@ -5,23 +5,15 @@
     @click="switchChannel"
   >
     <div class="rounded-3xl w-12 h-12 shrink-0 relative">
-      <UserAvatar
-        :image="session?.avatarImage"
-        :meta-id="session?.metaId || session?.createUserMetaId"
-        :name="session?.name"
-        :meta-name="''"
-        :is-custom="session?.groupId ? true : false"
-        class="w-12 h-12 shrink-0 select-none"
-        :disabled="true"
+      <ChatIcon
+        :src="session?.roomIcon"
+        :alt="session?.name"
+        :customClass="'w-12 h-12 rounded-full'"
       />
-       <div
+      <div
         class="flex items-center justify-center absolute top-[-3px] right-0 rounded-full w-4 h-4 bg-red-500"
         v-if="talk.hasUnreadMessagesOfChannel(session?.groupId || session?.id)"
-      >
-    
-      
-    </div>
-      
+      ></div>
     </div>
 
     <div class="flex flex-col items-stretch grow space-y-1 overflow-x-hidden">
@@ -33,18 +25,19 @@
           class="mr-2"
           :text-class="'font-medium dark:text-gray-100 max-w-[96PX]'"
         />
-       
 
         <div class="shrink-0  text-dark-250 dark:text-gray-400 text-xs">
-          {{lastMsgTimestamp ? formatTimestamp(lastMsgTimestamp, i18n, false) :
-            session.timestamp
+          {{
+            lastMsgTimestamp
+              ? formatTimestamp(lastMsgTimestamp, i18n, false)
+              : session.timestamp
               ? formatTimestamp(session.timestamp, i18n, false)
               : ''
           }}
         </div>
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
-        <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
+      <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
       <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-[160PX]">
         {{ lastMessage }}
       </div>
@@ -61,34 +54,30 @@ import { useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
 import { ecdhDecrypt } from '@/utils/crypto'
-import {useCredentialsStore} from '@/stores/credentials'
-import {useConnectionStore } from '@/stores/connection'
-import {atobToHex, containsString} from '@/utils/util'
-import { NodeName,IsEncrypt,ChatType } from '@/enum'
+import { useCredentialsStore } from '@/stores/credentials'
+import { useConnectionStore } from '@/stores/connection'
+import { atobToHex, containsString } from '@/utils/util'
+import { NodeName, IsEncrypt, ChatType } from '@/enum'
 import { nextTick } from 'process'
+import { storeToRefs } from 'pinia'
 const i18n = useI18n()
 const userStore = useUserStore()
 const layout = useLayoutStore()
 const router = useRouter()
 const talk = useTalkStore()
 const credentialsStore = useCredentialsStore()
-const connectionStore=useConnectionStore()
+const connectionStore = useConnectionStore()
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 
-console.log('props.session',props.session)
-
 const contact = computed<any>(() => {
   let contactSide = 'from'
-    
+
   if (userStore.last) {
     const selfMetaId = userStore.last.metaid
     if (props.session.from === selfMetaId) {
       contactSide = 'to'
     }
-
-   
-    
   }
 
   return {
@@ -108,56 +97,56 @@ const lastMessage = computed<string>(() => {
   return parseTextMessage(decryptedMsg.value) //i18n.t(`Talk.Channel.you_received_a_new_message`)
 })
 
-
-const lastMsgTimestamp=computed(()=>{
-  if(props.session?.newMessages?.length){
+const lastMsgTimestamp = computed(() => {
+  if (props.session?.newMessages?.length) {
     return props.session.newMessages[props.session.newMessages.length - 1].timestamp
-  }else return props.session.timestamp
+  } else return props.session.timestamp
 })
 
-
-
-
-
-
-
-
 const decryptedMsg = computed(() => {
-  if(!props.session.content){
+  if (!props.session.content) {
     return ''
   }
   let content
-  let secretKeyStr=props.session.groupId.substring(0,16)
-  if(props.session?.newMessages?.length){
-    content=props.session.newMessages[props.session.newMessages.length -1].content
-   
-  }else{
-    
-    content=props.session.content
+  let secretKeyStr = props.session.groupId.substring(0, 16)
+  if (props.session?.newMessages?.length) {
+    content = props.session.newMessages[props.session.newMessages.length - 1].content
+  } else {
+    content = props.session.content
   }
-  const isSession=Number(props.session.type) === 2 ? true : false
+  const isSession = Number(props.session.type) === 2 ? true : false
 
-  const key=props.session?.newMessages?.length ?  props.session?.newMessages[props.session?.newMessages?.length - 1]?.chatType : props.session?.chatType
-   const isImg=props.session?.newMessages?.length ? imageType.includes(props.session?.newMessages[props.session?.newMessages?.length - 1]?.contentType) : props.session?.chatType == ChatType.img ? true : false
-    
-   if(isImg){
-     return `[${i18n.t('new_msg_img')}]`
+  const key = props.session?.newMessages?.length
+    ? props.session?.newMessages[props.session?.newMessages?.length - 1]?.chatType
+    : props.session?.chatType
+  const isImg = props.session?.newMessages?.length
+    ? imageType.includes(
+        props.session?.newMessages[props.session?.newMessages?.length - 1]?.contentType
+      )
+    : props.session?.chatType == ChatType.img
+    ? true
+    : false
+
+  if (isImg) {
+    return `[${i18n.t('new_msg_img')}]`
   }
   switch (key) {
-    
     case ChatType.msg:
-      
-      return decryptedMessage(content,String(IsEncrypt.Yes),'',props.session?.isMock,isSession,secretKeyStr)
+      return decryptedMessage(
+        content,
+        String(IsEncrypt.Yes),
+        '',
+        props.session?.isMock,
+        isSession,
+        secretKeyStr
+      )
     case ChatType.red:
-      
-      return `🧧 ${content.replace(':','')}`;
+      return `🧧 ${content.replace(':', '')}`
     case ChatType.img:
-      console.log("有没有进来")
-      
+      console.log('有没有进来')
+
       //const protocol=isSession ? NodeName.SimpleFileMsg : NodeName.SimpleFileGroupChat
-      return `[${i18n.t('new_msg_img')}]`//decryptedMessage(props.session.content,String(IsEncrypt.Yes),protocol,props.session?.isMock,isSession)
-  
-   
+      return `[${i18n.t('new_msg_img')}]` //decryptedMessage(props.session.content,String(IsEncrypt.Yes),protocol,props.session?.isMock,isSession)
   }
 
   //return decryptedMessage(props.session.content,String(IsEncrypt.Yes),)
@@ -217,12 +206,11 @@ const switchChannel = () => {
   })
 
   if (isActive.value) return
-  if(props.session?.groupId){
-     router.push(`/talk/channels/public/${props.session?.groupId}`)
-  }else{
-     router.push(`/talk/channels/@me/${contact.value.metaId}`)
+  if (props.session?.groupId) {
+    router.push(`/talk/channels/public/${props.session?.groupId}`)
+  } else {
+    router.push(`/talk/channels/@me/${contact.value.metaId}`)
   }
- 
 }
 </script>
 

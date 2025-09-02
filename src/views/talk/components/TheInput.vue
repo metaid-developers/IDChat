@@ -377,7 +377,6 @@ const showImagePreview = ref(false)
 const useCompression = ref(true)
 
 const hasImage = computed(() => imageFile.value !== null)
-console.log('talk.activeChannel', talk.activeChannel)
 
 const openImageUploader = (close: Function) => {
   imageUploader.value?.click()
