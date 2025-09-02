@@ -243,6 +243,7 @@ export const useBulidTx = createGlobalState(() => {
     isBroadcast:boolean,
     externalEncryption?:'0' | '1' | '2'
     attachments?:AttachmentItem[]
+    
   })=>{
     const {body,protocol,isBroadcast,attachments,externalEncryption}=params
     

@@ -437,13 +437,19 @@ const tryResend = async () => {
 }
 
 const decryptedImageMessage = computed(() => {
+  console.log("props.message.content",props.message)
+  
   if (props.message.isMock) {
     return props.message.content
   }
+
+
   
   if (props.message.encryption !== '1') {
     return props.message.data?.attachment || props.message?.content
   }
+
+
 })
 
 // const decryptedMessage = computed(() => {

@@ -35,6 +35,7 @@ export class DBClass extends Dexie {
       data: Blob
     }>(async resolve => {
       try {
+        
         const txId = this.getMetaFileTxId(metafile)
         const fileUrl =
           width !== -1
@@ -55,9 +56,12 @@ export class DBClass extends Dexie {
 
   addMetaFileData(metafile: string, width: number) {
     return new Promise<string>(async resolve => {
+      
       const result = await this.getMetaFileData(metafile, width).catch(() => {
+
         resolve('')
       })
+      
       if (result) {
         const params: MetafileSchems = {
           txId: result.txId,
@@ -92,6 +96,7 @@ export class DBClass extends Dexie {
         // 普通txId
         const txId = this.getMetaFileTxId(metafileTxId)
         const file = await this.metafiles.get(txId)
+        
         if (file) {
           this.metafiles.update(txId, { latestTime: new Date().getTime() })
           // 存在数据库
@@ -139,6 +144,7 @@ export class DBClass extends Dexie {
             }
           }
         } else {
+          
           // 不存在数据库
           const res = await this.addMetaFileData(txId, width)
           resolve(res)

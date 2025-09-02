@@ -20,7 +20,7 @@
           <div class="overflow-y-auto">
             <DirectContactItem
               v-for="session in talkStore.activeCommunityChannels"
-              :key="session.timestamp"
+              :key="getSessionKey(session)"
               :session="session"
             />
           </div>
@@ -48,6 +48,13 @@ const userStore = useUserStore()
 const test = computed(() => {
   return talkStore.activeCommunityChannels
 })
+
+// 优化key生成策略，避免不必要的重新渲染
+const getSessionKey = (session: any) => {
+  // 使用稳定的ID作为key，避免使用timestamp等会变化的属性
+  return session.id || session.groupId || session.metaId || session.timestamp
+}
+
 console.log('test1111111', test.value)
 </script>
 

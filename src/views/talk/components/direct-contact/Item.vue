@@ -1,6 +1,6 @@
 <template>
   <div
-    class="p-3 flex w-full items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer"
+    class="p-3 flex w-full items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer transition-all duration-200"
     :class="{ 'bg-gray-200 dark:bg-gray-900': isActive }"
     @click="switchChannel"
   >
@@ -14,14 +14,10 @@
         class="w-12 h-12 shrink-0 select-none"
         :disabled="true"
       />
-       <div
+      <div
         class="flex items-center justify-center absolute top-[-3px] right-0 rounded-full w-4 h-4 bg-red-500"
         v-if="talk.hasUnreadMessagesOfChannel(session?.groupId || session?.id)"
-      >
-    
-      
-    </div>
-      
+      ></div>
     </div>
 
     <div class="flex flex-col items-stretch grow space-y-1 overflow-x-hidden">
@@ -33,18 +29,19 @@
           class="mr-2"
           :text-class="'font-medium dark:text-gray-100 max-w-[96PX]'"
         />
-       
 
         <div class="shrink-0  text-dark-250 dark:text-gray-400 text-xs">
-          {{lastMsgTimestamp ? formatTimestamp(lastMsgTimestamp, i18n, false) :
-            session.timestamp
+          {{
+            lastMsgTimestamp
+              ? formatTimestamp(lastMsgTimestamp, i18n, false)
+              : session.timestamp
               ? formatTimestamp(session.timestamp, i18n, false)
               : ''
           }}
         </div>
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
-        <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
+      <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
       <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-[160PX]">
         {{ lastMessage }}
       </div>
@@ -56,15 +53,15 @@
 import { formatTimestamp, decryptedMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
-import { computed, toRaw } from 'vue'
+import { computed, toRaw, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
 import { ecdhDecrypt } from '@/utils/crypto'
-import {useCredentialsStore} from '@/stores/credentials'
-import {useConnectionStore } from '@/stores/connection'
-import {atobToHex, containsString} from '@/utils/util'
-import { NodeName,IsEncrypt,ChatType } from '@/enum'
+import { useCredentialsStore } from '@/stores/credentials'
+import { useConnectionStore } from '@/stores/connection'
+import { atobToHex, containsString } from '@/utils/util'
+import { NodeName, IsEncrypt, ChatType } from '@/enum'
 import { nextTick } from 'process'
 const i18n = useI18n()
 const userStore = useUserStore()
@@ -72,27 +69,43 @@ const layout = useLayoutStore()
 const router = useRouter()
 const talk = useTalkStore()
 const credentialsStore = useCredentialsStore()
-const connectionStore=useConnectionStore()
+const connectionStore = useConnectionStore()
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 
-console.log('props.session3333333',props.session)
+console.log('props.session3333333', props.session)
+
+// 添加防抖机制来减少闪烁
+const debouncedLastMessage = ref('')
+const debouncedLastMsgTimestamp = ref(0)
+
+// 使用防抖更新显示内容
+watch(
+  () => props.session,
+  newSession => {
+    if (newSession) {
+      // 延迟更新，避免频繁闪烁
+      setTimeout(() => {
+        debouncedLastMessage.value = computeLastMessage(newSession)
+        debouncedLastMsgTimestamp.value = computeLastMsgTimestamp(newSession)
+      }, 200)
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 const contact = computed<any>(() => {
   let contactSide = 'from'
-    
+
   if (userStore.last) {
     const selfMetaId = userStore.last.metaid
     if (props.session.from === selfMetaId || props.session.userInfo?.metaid === selfMetaId) {
       contactSide = 'to'
     }
-
-   
-    
   }
 
   return {
-    name: props.session.name || props.session.userInfo?.name ||  props.session[`${contactSide}Name`],
+    name: props.session.name || props.session.userInfo?.name || props.session[`${contactSide}Name`],
     metaName: props.session[`${contactSide}UserInfo`]?.metaName || '',
     metaId: props.session.id || props.session.userInfo?.metaid || props.session.createUserMetaId,
     lastMessage: props.session.lastMessage,
@@ -101,85 +114,97 @@ const contact = computed<any>(() => {
 })
 
 const lastMessage = computed<string>(() => {
-  if (containsString(props.session.protocol,NodeName.SimpleMsg)) {
-    return parseTextMessage(decryptedMsg.value)
+  return debouncedLastMessage.value
+})
+
+const lastMsgTimestamp = computed(() => {
+  return debouncedLastMsgTimestamp.value
+})
+
+// 将计算逻辑提取为函数
+const computeLastMessage = (session: any): string => {
+  if (containsString(session.protocol, NodeName.SimpleMsg)) {
+    return parseTextMessage(computeDecryptedMsg(session))
   }
 
-  return parseTextMessage(decryptedMsg.value) //i18n.t(`Talk.Channel.you_received_a_new_message`)
-})
+  return parseTextMessage(computeDecryptedMsg(session))
+}
 
+const computeLastMsgTimestamp = (session: any): number => {
+  if (session?.newMessages?.length) {
+    return session.newMessages[session.newMessages.length - 1].timestamp
+  } else return session.timestamp
+}
 
-const lastMsgTimestamp=computed(()=>{
-  if(props.session?.newMessages?.length){
-    return props.session.newMessages[props.session.newMessages.length - 1].timestamp
-  }else return props.session.timestamp
-})
-
-
-
-
-
-
-
-
-const decryptedMsg = computed(() => {
-  if(!props.session.content){
+const computeDecryptedMsg = (session: any) => {
+  if (!session.content) {
     return ''
   }
   let content
-  let secretKeyStr=props.session.groupId.substring(0,16)
+  let secretKeyStr = session.groupId?.substring(0, 16) || ''
 
-  let publicKeyStr=props.session?.userInfo?.chatPublicKey
+  let publicKeyStr = session?.userInfo?.chatPublicKey
 
-  if(props.session?.newMessages?.length){
-    content=props.session.newMessages[props.session.newMessages.length -1].content
-   
-  }else{
-    
-    content=props.session.content
+  if (session?.newMessages?.length) {
+    content = session.newMessages[session.newMessages.length - 1].content
+  } else {
+    content = session.content
   }
-  const isSession=Number(props.session.type) === 2 ? true : false
-  
-  const key=props.session?.newMessages?.length ?  props.session?.newMessages[props.session?.newMessages?.length - 1]?.chatType : props.session?.chatType
-   const isImg=props.session?.newMessages?.length ? imageType.includes(props.session?.newMessages[props.session?.newMessages?.length - 1]?.contentType) : props.session?.chatType == ChatType.img ? true : false
-    
-   if(isImg){
-     return `[${i18n.t('new_msg_img')}]`
+  const isSession = Number(session.type) === 2 ? true : false
+
+  const key = session?.newMessages?.length
+    ? session?.newMessages[session?.newMessages?.length - 1]?.chatType
+    : session?.chatType
+  const isImg = session?.newMessages?.length
+    ? imageType.includes(session?.newMessages[session?.newMessages?.length - 1]?.contentType)
+    : session?.chatType == ChatType.img
+    ? true
+    : false
+
+  if (isImg) {
+    return `[${i18n.t('new_msg_img')}]`
   }
   switch (key) {
-    
     case ChatType.msg:
-      
-      return decryptedMessage(content,String(IsEncrypt.Yes),'',props.session?.isMock,isSession,secretKeyStr,publicKeyStr)
+      return decryptedMessage(
+        content,
+        String(IsEncrypt.Yes),
+        '',
+        session?.isMock,
+        isSession,
+        secretKeyStr,
+        publicKeyStr
+      )
     case ChatType.red:
-      
-      return `🧧 ${content.replace(':','')}`;
+      return `🧧 ${content.replace(':', '')}`
     case ChatType.img:
-      console.log("有没有进来")
-      
+      console.log('有没有进来')
+
       //const protocol=isSession ? NodeName.SimpleFileMsg : NodeName.SimpleFileGroupChat
-      return `[${i18n.t('new_msg_img')}]`//decryptedMessage(props.session.content,String(IsEncrypt.Yes),protocol,props.session?.isMock,isSession)
-  
-   
+      return `[${i18n.t('new_msg_img')}]` //decryptedMessage(session.content,String(IsEncrypt.Yes),protocol,session?.isMock,isSession)
   }
 
-  //return decryptedMessage(props.session.content,String(IsEncrypt.Yes),)
-  // if (props.session.type !== '1') {
-  //   return props.session.data.content
+  //return decryptedMessage(session.content,String(IsEncrypt.Yes),)
+  // if (session.type !== '1') {
+  //   return session.data.content
   // }
 
-  // // 处理mock的图片消息
-  // if (props.session.isMock && containsString(props.session.protocol,NodeName.SimpleFileGroupChat )) {
-  //   return props.session.content
+  // 处理mock的图片消息
+  // if (session.isMock && containsString(session.protocol,NodeName.SimpleFileGroupChat )) {
+  //   return session.content
   // }
 
   //    const credential=credentialsStore.getByAddress(connectionStore.last.address)
   //   const sigStr=atobToHex(credential!.signature)
   // // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')
   // // const privateKeyStr = privateKey.toHex()
-  // const otherPublicKeyStr = props.session.publicKeyStr
+  // const otherPublicKeyStr = session.publicKeyStr
 
-  // return ecdhDecrypt(props.session.content, sigStr, otherPublicKeyStr)
+  // return ecdhDecrypt(session.content, sigStr, otherPublicKeyStr)
+}
+
+const decryptedMsg = computed(() => {
+  return computeDecryptedMsg(props.session)
 })
 
 const parseTextMessage = (text: string) => {
@@ -218,17 +243,25 @@ const switchChannel = () => {
   layout.$patch({
     isShowLeftNav: false,
   })
-  
-  console.log("props.session",props.session)
+
+  console.log('props.session', props.session)
 
   if (isActive.value) return
-  if(props.session?.groupId){
-     router.push(`/talk/channels/public/${props.session?.groupId}`)
-  }else{
-     router.push(`/talk/@me/${contact.value.metaId}`)
+  if (props.session?.groupId) {
+    router.push(`/talk/channels/public/${props.session?.groupId}`)
+  } else {
+    router.push(`/talk/@me/${contact.value.metaId}`)
   }
- 
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+* {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+</style>

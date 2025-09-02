@@ -1254,7 +1254,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const talkStore = useTalkStore()
   const chainStore = useChainStore()
 
-  const { channelId, groupId, userName: nickName, attachments, originalFileUrl, reply } = messageDto
+  const { channelId, groupId, userName: nickName, attachments, originalFileUrl, reply,channelType } = messageDto
 
   // 1. 构建协议数据
   // 1.1 groupId: done
@@ -1266,7 +1266,8 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const fileType = file.fileType.split('/')[1]
   // 1.5 encrypt
   const encrypt = 'aes'
-  const externalEncryption = '0'
+  const externalEncryption = channelType == ChannelType.Group ?  '0' : '1'
+  
   // const attachment =attachments//'metafile://$[0]'
 
   const dataCarrier: any = {

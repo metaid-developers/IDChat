@@ -29,6 +29,7 @@ import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useCredentialsStore } from './credentials'
 import { useEcdhsStore } from './ecdh'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
+import { nextTick } from 'vue'
 function sortByConditionInPlace(array, conditionFn) {
   // console.log("arrray11111111111111111111",array)
   array.sort((a, b) => {
@@ -1054,8 +1055,9 @@ export const useTalkStore = defineStore('talk', {
 
       // }
 
+      // 优化：使用nextTick来减少对session列表的影响
+      await nextTick()
       this.activeChannel.pastMessages = messages
-
       this.activeChannel.newMessages = []
 
       // 设置已读指针
@@ -1181,7 +1183,6 @@ export const useTalkStore = defineStore('talk', {
 
       const isSession = Number(message.type) == 2 ? true : false
       if (isSession) {
-        
         sortByConditionInPlace(this.activeCommunity?.channels, channel => channel?.id == message.to)
         console.log('this.activeChannel333333333333333', this.activeChannel)
       } else {

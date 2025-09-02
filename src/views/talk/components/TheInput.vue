@@ -458,6 +458,33 @@ const trySendImage = async () => {
   
   const attachments = [hexedFiles]
 
+  // if(talk.activeChannelType == ChannelType.Session){
+  //   debugger
+
+  //   if(!talk.activeChannel?.publicKeyStr){
+  //     return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
+  //   }
+  //   let ecdh= ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+    
+  //   if(!ecdh){
+  //     ecdh=await getEcdhPublickey(talk.activeChannel.publicKeyStr)
+  //     ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+  //   }
+  //   //const 
+ 
+  //   const sharedSecret=ecdh?.sharedSecret//atobToHex(credential!.signature)
+  //   // credentialsStore.update(sigStr)
+  //   //const otherPublicKeyStr =talk.activeChannel.publicKeyStr
+  
+  //   const originalAttacthment=attachments[0].data
+
+  //   attachments[0].data = ecdhEncrypt(attachments[0].data, sharedSecret)
+  //    console.log("ecdhDecrypt",ecdhDecrypt( attachments[0].data,sharedSecret) == originalAttacthment)
+  //    debugger
+  // }
+
+  
+
   // clone，用于填充mock信息
   const originalFileUrl = imagePreviewUrl.value
   deleteImage()
