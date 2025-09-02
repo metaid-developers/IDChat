@@ -36,6 +36,7 @@ import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import { useTalkStore } from '@/stores/talk'
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
@@ -45,9 +46,6 @@ const talkStore = useTalkStore()
 const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
 
-const test = computed(() => {
-  return talkStore.activeCommunityChannels
-})
 
 // 优化key生成策略，避免不必要的重新渲染
 const getSessionKey = (session: any) => {
@@ -55,7 +53,13 @@ const getSessionKey = (session: any) => {
   return session.id || session.groupId || session.metaId || session.timestamp
 }
 
-console.log('test1111111', test.value)
+
+const { activeCommunity } = storeToRefs(useTalkStore())
+
+// const test=computed(()=>{
+//  return talkStore.activeCommunityChannels
+// })
+// console.log("test",test.value)
 </script>
 
 <style lang="scss" scoped>

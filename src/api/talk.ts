@@ -16,7 +16,6 @@ const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
     return new Promise((resolve, reject) => {
       if (response?.data && typeof response.data?.code === 'number') {
         if (response.data.code === 0) {
-          
           resolve(response.data)
         } else {
           reject({
@@ -30,9 +29,6 @@ const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
     })
   },
 }).request
-
-
-
 
 const seedFakeMetaName = (item: any) => {
   // 以50%的几率随机塞进metaName
@@ -120,7 +116,6 @@ export const getEnsNames = async (
 }
 
 export const getOneCommunity = async (communityId: string): Promise<Community> => {
-  
   return TalkApi.get(`/community/${communityId}`).then(res => {
     const community = res.data
     community.id = community.communityId
@@ -132,16 +127,15 @@ export const getOneChannel = async (groupId: string): Promise<Channel> => {
   
   if(groupId == 'welcome' ){
     return null
-  }else{
-      return TalkApi.get(`group-info?groupId=${groupId}`).then(res => {
-    const channel = res.data
-    channel.id = channel.groupId
+  } else {
+    return TalkApi.get(`group-info?groupId=${groupId}`).then(res => {
+      const channel = res.data
+      channel.id = channel.groupId
       channel.name = channel.roomName
       channel.uuid = channel.txId // 用于key,不修改
-    return channel
-  })
+      return channel
+    })
   }
-
 }
 
 export const getCommunityAuth = async (communityId: string): Promise<CommunityAuth> => {
@@ -156,7 +150,7 @@ export const getCommunityMembership = async (communityId: string, metaId: string
 }
 
 export const getChannelMembership = async (groupId: string, metaId: string): Promise<any> => {
-  const query = new URLSearchParams({ metaId,groupId }).toString()
+  const query = new URLSearchParams({ metaId, groupId }).toString()
   return TalkApi.get(`/group-person?${query}`).then(res => {
     return res.data.isInGroup
   })
@@ -164,30 +158,29 @@ export const getChannelMembership = async (groupId: string, metaId: string): Pro
 
 export const getChannelMembers = async ({
   groupId,
-  cursor='0',
-  size='20',
-  timestamp='0',
-  orderBy='timestamp',
-  orderType='asc'
-}:{
-  groupId:string
-  cursor?:string
-  size?:string
-  timestamp?:string
-  orderBy?:string
-  orderType?:'asc' | 'desc'
-
+  cursor = '0',
+  size = '20',
+  timestamp = '0',
+  orderBy = 'timestamp',
+  orderType = 'asc',
+}: {
+  groupId: string
+  cursor?: string
+  size?: string
+  timestamp?: string
+  orderBy?: string
+  orderType?: 'asc' | 'desc'
 }): Promise<any> => {
-  const query = new URLSearchParams({ 
-      groupId,
-      cursor,
-      size,
-      timestamp,
-      orderBy,
-      orderType
-   }).toString()
-  return TalkApi.get(`/group-member-list?${query}`).then(async(res) => {
-    const members=res.data.list
+  const query = new URLSearchParams({
+    groupId,
+    cursor,
+    size,
+    timestamp,
+    orderBy,
+    orderType,
+  }).toString()
+  return TalkApi.get(`/group-member-list?${query}`).then(async res => {
+    const members = res.data.list
     // if(members){
     //   for(let i of members){
     //     const userInfo= await getUserInfoByAddress(i.address)
@@ -195,7 +188,26 @@ export const getChannelMembers = async ({
     //   }
     // }
 
+    return members || []
+  })
+}
 
+export const searchChannelMembers = async ({
+  groupId,
+  size = '20',
+  query,
+}: {
+  groupId: string
+  size?: string
+  query: string
+}): Promise<any> => {
+  const _query = new URLSearchParams({
+    groupId,
+    size,
+    query,
+  }).toString()
+  return TalkApi.get(`/search-group-members?${_query}`).then(async res => {
+    const members = res.data.list
     return members || []
   })
 }
@@ -240,16 +252,15 @@ export const getAtMeChannels = async (params?: any): Promise<any> => {
 
 export const getChannels = async ({
   metaId,
-  cursor="0",
-  size="20",
+  cursor = '0',
+  size = '20',
   timestamp=''
-}:{
-  metaId:string
-  cursor?:string
-  size?:string
-  timestamp?:string
+}: {
+  metaId: string
+  cursor?: string
+  size?: string
+  timestamp?: string
 }): Promise<Channel[]> => {
-  
   // const communityId = params.communityId
  ///community/${communityId}/rooms
  const params=new URLSearchParams({
@@ -291,60 +302,91 @@ export const getChannels = async ({
   )
 }
 
-export const getAllChannels = async ({
-  metaId='',
-  cursor="1",
-  size="20"
-}:{
-  metaId?:string
-  cursor?:string
-  size?:string
-  timestamp?:string
-}): Promise<Channel[]> => {
+// export const getAllChannels = async ({
+//   metaId='',
+//   cursor="1",
+//   size="20"
+// }:{
+//   metaId?:string
+//   cursor?:string
+//   size?:string
+//   timestamp?:string
+// }): Promise<Channel[]> => {
   
+//   // const communityId = params.communityId
+//  ///community/${communityId}/rooms
+//  const params=new URLSearchParams({
+//   metaId,
+//   cursor,
+//   size
+//  })
+//   return TalkApi.get(`/group-list?${params}`).then(
+//     res => {
+//       return res.data.list.map((channel: any) => {
+//         channel.id = channel.groupId
+//         channel.name = channel.roomName
+//         channel.uuid = channel.txId // 用于key,不修改
+//         return channel
+//       })
+//     } else {
+//       return []
+//     }
+//   })
+// }
+
+export const getAllChannels = async ({
+  metaId = '',
+  cursor = '1',
+  size = '20',
+}: {
+  metaId?: string
+  cursor?: string
+  size?: string
+  timestamp?: string
+}): Promise<Channel[]> => {
   // const communityId = params.communityId
- ///community/${communityId}/rooms
- const params=new URLSearchParams({
-  metaId,
-  cursor,
-  size
- })
-  return TalkApi.get(`/group-list?${params}`).then(
-    res => {
-      return res.data.list.map((channel: any) => {
-        channel.id = channel.groupId
-        channel.name = channel.roomName
-        channel.uuid = channel.txId // 用于key,不修改
-        return channel
-      })
-    }
-  )
+  ///community/${communityId}/rooms
+  const params = new URLSearchParams({
+    metaId,
+    cursor,
+    size,
+  })
+  return TalkApi.get(`/group-list?${params}`).then(res => {
+   if(res.data.list?.length){
+     return res.data.list.map((channel: any) => {
+      channel.id = channel.groupId
+      channel.name = channel.roomName
+      channel.uuid = channel.txId // 用于key,不修改
+      return channel
+    })
+   }else{
+    return []
+   }
+  })
 }
 
-export const getChannelMessages = async (
- {
-   groupId,
-  metaId='',
-  cursor='0',
-  size=String(ChannelMsg_Size),
-  timestamp='0'
- }:{
-   groupId:string,
-  metaId:string,
-  cursor?:string,
-  size?:string
-  timestamp?:string
- }
-): Promise<any> => {
+export const getChannelMessages = async ({
+  groupId,
+  metaId = '',
+  cursor = '0',
+  size = String(ChannelMsg_Size),
+  timestamp = '0',
+}: {
+  groupId: string
+  metaId: string
+  cursor?: string
+  size?: string
+  timestamp?: string
+}): Promise<any> => {
   const selfMetaId = metaId
   const query = new URLSearchParams({
-  groupId,
-  metaId,
-  cursor,
-  size,
-  timestamp
+    groupId,
+    metaId,
+    cursor,
+    size,
+    timestamp,
   }).toString()
-  
+
   // if (type === 'session') {
   //   const {
   //     data: { data: messages },
@@ -353,31 +395,28 @@ export const getChannelMessages = async (
   //   return messages
   // }
 
-const data:{
-  data:{
-    total:number
-    nextTimestamp:number,
-    list: ChatMessageItem[] | null
-  }
-} = await TalkApi.get(`/group-chat-list-v2?${query}`)
+  const data: {
+    data: {
+      total: number
+      nextTimestamp: number
+      list: ChatMessageItem[] | null
+    }
+  } = await TalkApi.get(`/group-chat-list-v2?${query}`)
 
-  if(data.data.list?.length){
-    for(let item of data.data.list){
-      if(containsString(item.protocol,NodeName.SimpleGroupLuckyBag)){
-       const redpackInfo=await getOneRedPacket({
-           groupId: item.groupId,
+  if (data.data.list?.length) {
+    for (let item of data.data.list) {
+      if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
+        const redpackInfo = await getOneRedPacket({
+          groupId: item.groupId,
           pinId: item.pinId,
         })
-        
-        if(Number(redpackInfo.count) == Number(redpackInfo.usedCount)){
-          item.claimOver=true
-        }
-        
-      } 
-     
-  }
-  }
 
+        if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
+          item.claimOver = true
+        }
+      }
+    }
+  }
 
   return data.data.list ?? []
 }
@@ -460,13 +499,13 @@ export const getChannelMessagesForTask = async (
 ): Promise<any> => {
   const selfMetaId = metaId
   const query = new URLSearchParams({
-  groupId,
-  metaId,
-  cursor,
-  size,
-  timestamp
+    groupId,
+    metaId,
+    cursor,
+    size,
+    timestamp,
   }).toString()
-  
+
   // if (type === 'session') {
   //   const {
   //     data: { data: messages },
@@ -475,13 +514,13 @@ export const getChannelMessagesForTask = async (
   //   return messages
   // }
 
-const data:{
-  data:{
-    total:number
-    nextTimestamp:number,
-    list: ChatMessageItem[] | null
-  }
-} = await TalkApi.get(`/group-chat-list?${query}`)
+  const data: {
+    data: {
+      total: number
+      nextTimestamp: number
+      list: ChatMessageItem[] | null
+    }
+  } = await TalkApi.get(`/group-chat-list?${query}`)
 
   return data.data ?? null
 }
@@ -506,34 +545,29 @@ export const getOneRedPacket = async (params: any): Promise<any> => {
   // const groupId = params.groupId
   // const pinId = params.pinId
   //const query = params.address ? new URLSearchParams({ address: params.address }).toString() : ''
-  const query=new URLSearchParams(params).toString()
-  return TalkApi.get(`/lucky-bag-info?${query}`).then(async(res) => {
-  
-  //   if(res.data.payList.length){
-  //     for(let user of res.data.payList){
-        
-  //       if(user?.gradAddress){
-  //          const userInfo=await getUserInfoByAddress(user?.gradAddress)
-  //       user.userInfo=userInfo
-  //       }
-       
-  //     }
-  //   }
-  //  const userInfo=await getUserInfoByAddress(res.data?.address)
-  //   res.data.userInfo=userInfo
-    return res.data
+  const query = new URLSearchParams(params).toString()
+  return TalkApi.get(`/lucky-bag-info?${query}`).then(async res => {
+    //   if(res.data.payList.length){
+    //     for(let user of res.data.payList){
 
-   
+    //       if(user?.gradAddress){
+    //          const userInfo=await getUserInfoByAddress(user?.gradAddress)
+    //       user.userInfo=userInfo
+    //       }
+
+    //     }
+    //   }
+    //  const userInfo=await getUserInfoByAddress(res.data?.address)
+    //   res.data.userInfo=userInfo
+    return res.data
   })
 }
 
-export const getRedPacketRemains = async (params:{
-  groupId:string
-  pinId:string
+export const getRedPacketRemains = async (params: {
+  groupId: string
+  pinId: string
 }): Promise<any> => {
-
- 
-  const query =new URLSearchParams(params).toString() 
+  const query = new URLSearchParams(params).toString()
   // return axios.get(`http://47.83.198.218:7568/group-chat/lucky-bag-unused-info?${query}`).then((res)=>{
   //   console.log("res",res)
   //   
@@ -545,13 +579,13 @@ export const getRedPacketRemains = async (params:{
 }
 
 export const grabRedPacket = async (params: {
-  groupId:string
-  pinId:string
-  metaId:string
-  address:string
+  groupId: string
+  pinId: string
+  metaId: string
+  address: string
 }): Promise<any> => {
   params = params || {}
- 
+
   //const query = new URLSearchParams(params).toString()
 
   //   return axios.post(`http://47.83.198.218:7568/group-chat/grab-lucky-bag`,params).then((res)=>{
@@ -559,20 +593,17 @@ export const grabRedPacket = async (params: {
   //   
   //   return res.data.data
   // })
-  return TalkApi.post(`/grab-lucky-bag`,params).then(res => {
-    
-     if(res?.code == 0){
-       return res.data
-     }else if(res?.code == 1){
-      throw new Error(res?.message)
-     }
-   
-  }).catch((e)=>{
-    
-    throw new Error(e.message)
-  })
-
-  
+  return TalkApi.post(`/grab-lucky-bag`, params)
+    .then(res => {
+      if (res?.code == 0) {
+        return res.data
+      } else if (res?.code == 1) {
+        throw new Error(res?.message)
+      }
+    })
+    .catch(e => {
+      throw new Error(e.message)
+    })
 }
 
 export const GetUserEcdhPubkeyForPrivateChat=(metaId:string):Promise<{

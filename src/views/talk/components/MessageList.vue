@@ -337,7 +337,6 @@ const loadMore = async (preTimestamp = 0) => {
   }
 
   for (const item of items) {
-    console.log('talk.activeChannel.pastMessages', item.txId)
     // const isDuplicate= talk.activeChannel.pastMessages?.find((item: Message) => item.txId === item.txId)
 
     // 

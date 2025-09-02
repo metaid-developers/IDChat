@@ -1,3 +1,7 @@
+import { ChatChain } from '@/enum'
+import { useChainStore } from '@/stores/chain'
+import { createPin } from './userInfo'
+
 export interface InscribeResultForYesBroadcast {
   commitTxId: string
   revealTxIds: string[]
@@ -115,4 +119,40 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
   console.log('inscrible res', res)
 
   return res
+}
+
+export async function createSinglePin(metaidData: InscribeData) {
+  const chainStore = useChainStore()
+  const currentChain = chainStore.state.currentChain
+  const chainData = chainStore.state[currentChain]
+  const selectedFeeType = chainData.selectedFeeType
+  const feeRate = chainData[selectedFeeType]
+  if (currentChain === ChatChain.btc) {
+    const txIDs = await createPinWithBtc({
+      inscribeDataArray: [metaidData],
+      options: {
+        network: 'mainnet',
+        noBroadcast: 'no',
+        feeRate: feeRate,
+      },
+    })
+    if (txIDs.status) {
+      throw new Error(txIDs.status)
+    }
+    return {
+      status: 'success',
+      txIDs,
+    }
+  } else {
+    const { txids } = await createPin(metaidData, {
+      network: 'mainnet',
+      signMessage: 'update Group Info',
+      serialAction: 'finish',
+      feeRate: feeRate,
+    })
+    return {
+      status: 'success',
+      txIDs: txids,
+    }
+  }
 }

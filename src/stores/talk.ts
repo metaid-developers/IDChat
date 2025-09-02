@@ -180,7 +180,7 @@ export const useTalkStore = defineStore('talk', {
       if (this.isActiveChannelGeneral) {
         return this.generalChannels.find(channel => channel.id === state.activeChannelId)
       }
-      if (this.canAccessActiveChannel) {
+        if (this.canAccessActiveChannel) {
         return this.activeCommunity?.channels?.find((channel: any) => {
           return (
             (channel.id && channel.id === state.activeChannelId) ||
@@ -197,6 +197,12 @@ export const useTalkStore = defineStore('talk', {
           )
         })
       }
+
+      // if (this.canAccessActiveChannel) {
+      //   return this.activeCommunity?.channels?.find((channel: any) => {
+      //     return channel.id === state.activeChannelId
+      //   })
+      // }
     },
 
     channelType(channel) {
@@ -393,8 +399,9 @@ export const useTalkStore = defineStore('talk', {
 
       if (priviteChannel.length) {
         for (let channel of priviteChannel) {
+          debugger
           const userInfo = await GetUserEcdhPubkeyForPrivateChat(channel.metaId)
-
+          debugger
           if (userInfo.chatPublicKey) {
             channel.publicKeyStr = userInfo.chatPublicKey
             channel.id = userInfo.metaid
@@ -608,18 +615,27 @@ export const useTalkStore = defineStore('talk', {
 
     async initChannel(routeCommunityId: string, routeChannelId?: string) {
       // 如果是私聊，而且路由中的頻道 ID 不存在，则新建会话
+      
+       const ecdhsStore=useEcdhsStore()
+
       if (
         routeCommunityId === '@me' &&
         routeChannelId &&
         !this.activeCommunityChannels.some((channel: any) => channel.metaId === routeChannelId)
       ) {
-        const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
-
+     
         // const userInfo=await
         // const metaidInfo = await getUserInfoByMetaId(routeChannelId)
         //
         // const userInfo= await getUserInfoByAddress(metaidInfo?.address)
-
+       debugger
+        const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
+        let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        if (!ecdh) {
+            debugger
+            ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+            ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+        }
         const newSession = {
           id: routeChannelId,
           name: userInfo.name,
@@ -632,8 +648,25 @@ export const useTalkStore = defineStore('talk', {
           pastMessages: [],
           newMessages: [],
         }
+
         this.activeCommunityChannels.unshift(newSession)
       }
+
+      if (
+        routeCommunityId === '@me' &&
+        routeChannelId &&
+        this.activeCommunityChannels.some((channel: any) => channel.metaId === routeChannelId)
+      ){
+        debugger
+          const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
+        let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        if (!ecdh) {
+            debugger
+            ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+            ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+        }
+      }
+      
 
       // 如果没有指定頻道，则先从存储中尝试读取该社区的最后阅读頻道
       const latestChannelsRecords =
@@ -1263,7 +1296,10 @@ export const useTalkStore = defineStore('talk', {
         )
         if (channel) {
           // 直接更新属性，确保响应式
-          if (updates.roomName !== undefined) channel.roomName = updates.roomName
+          if (updates.roomName !== undefined) {
+            channel.roomName = updates.roomName
+            channel.name = updates.roomName
+          }
           if (updates.roomNote !== undefined) channel.roomNote = updates.roomNote
           if (updates.roomAvatarUrl !== undefined) channel.roomAvatarUrl = updates.roomAvatarUrl
           if (updates.roomIcon !== undefined) channel.roomIcon = updates.roomIcon
@@ -1280,10 +1316,10 @@ export const useTalkStore = defineStore('talk', {
             c.groupId === channel.groupId ? channel : c
           )
 
-          this.$patch({})
+          // this.$patch({})
 
-          // 触发强制更新
-          this.channelUpdateTrigger++
+          // // 触发强制更新
+          // this.channelUpdateTrigger++
         }
       }
 

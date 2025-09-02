@@ -219,7 +219,10 @@
       "announcement_placeholder": "Enter your announcement here...",
       "follow": "Follow",
       "followed": "Followed",
-      "SetNewPhoto": "Set New Photo"
+      "SetNewPhoto": "Set New Photo",
+      "ShareLink": "Share Link",
+      "SendMessage": "Send Message",
+      "RemoveUser": "Remove User"
     },
     "Community": {
       "optional": "",

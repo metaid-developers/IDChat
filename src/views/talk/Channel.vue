@@ -10,12 +10,15 @@
         <router-view :key="($route.params.channelId as string)"></router-view>
       </div>
 
-      <Transition name="slide">
+      <!-- <Transition name="slide">
         <ChannelMemberListWrap v-show="layout.isShowMemberList" />
-      </Transition>
+      </Transition> -->
     </div>
 
-    <ChannelMemberListDrawer v-model="layout.isShowMemberListDrawer" />
+    <ChannelMemberListDrawer
+      v-model="layout.isShowMemberListDrawer"
+      :key="($route.params.channelId as string)"
+    />
 
     <!-- modals -->
     <PasswordModal v-if="layout.isShowPasswordModal" />

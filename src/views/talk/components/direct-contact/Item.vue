@@ -5,14 +5,20 @@
     @click="switchChannel"
   >
     <div class="rounded-3xl w-12 h-12 shrink-0 relative">
-      <UserAvatar
+      <!-- <UserAvatar
         :image="session?.avatarImage || session?.userInfo?.avatarImage"
         :meta-id="session?.metaId || session?.createUserMetaId"
         :name="session?.name"
         :meta-name="''"
         :is-custom="session?.groupId ? true : false"
         class="w-12 h-12 shrink-0 select-none"
-        :disabled="true"
+        :disabled="true" /> -->
+      <ChatIcon
+        :src="session?.roomIcon || session?.avatarImage || session?.userInfo?.avatarImage"
+        :alt="session?.name"
+        :avatarType="avatarType "
+        :is-custom="session?.groupId ? true : false"
+        :customClass="'w-12 h-12 shrink-0 select-none'"
       />
       <div
         class="flex items-center justify-center absolute top-[-3px] right-0 rounded-full w-4 h-4 bg-red-500"
@@ -61,8 +67,10 @@ import { ecdhDecrypt } from '@/utils/crypto'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
 import { atobToHex, containsString } from '@/utils/util'
-import { NodeName, IsEncrypt, ChatType } from '@/enum'
+import { NodeName, IsEncrypt, ChatType,ChannelType } from '@/enum'
 import { nextTick } from 'process'
+import { storeToRefs } from 'pinia'
+
 const i18n = useI18n()
 const userStore = useUserStore()
 const layout = useLayoutStore()
@@ -93,6 +101,10 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+const avatarType=computed(()=>{
+  return Number(props.session.type) == 2 ? ChannelType.Session : ChannelType.Group
+})
 
 const contact = computed<any>(() => {
   let contactSide = 'from'

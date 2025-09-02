@@ -114,12 +114,11 @@ const currentAvatar: { val: NFTAvatarItem } = reactive({
     avatarImage: userStore.last?.avatar,
   },
 })
-console.log('currentAvatar', currentAvatar.val)
 
 watch(
   () => userStore.isAuthorized,
   () => {
-    if (userStore.isAuthorized ) {
+    if (userStore.isAuthorized) {
       currentAvatar.val.avatarImage = userStore.last!.avatar
     }
   }
