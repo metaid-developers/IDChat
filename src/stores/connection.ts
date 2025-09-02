@@ -13,6 +13,7 @@ import { useUserStore } from './user'
 import { useRouter, Router } from 'vue-router'
 import { useApprovedStore } from './approved'
 import { useTalkStore } from './talk'
+import { useEcdhsStore } from './ecdh'
 function getWalletAdapter(wallet: Wallet) {
   switch (wallet) {
     case 'metalet':
@@ -247,9 +248,12 @@ export const useConnectionStore = defineStore('connection', {
       const userStore = useUserStore()
       const talkStore = useTalkStore()
       const approvedStore = useApprovedStore()
+      const ecdhsStore=useEcdhsStore()
       console.log('router', router)
 
       await userStore.clearUserInfo()
+      ecdhsStore.clear()
+     
       if (window.metaidwallet?.smallPay) {
         await approvedStore.clear()
       }

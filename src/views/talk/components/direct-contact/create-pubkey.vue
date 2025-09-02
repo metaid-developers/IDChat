@@ -43,6 +43,7 @@ async function createPubkeyNode() {
       },
   })
   if(txid){
+       ecdh.insert(ecdh,ecdh?.externalPubKey)
        userStore.updateUserInfo({
         chatpubkey:ecdh?.ecdhPubKey//credential.publicKey
     })

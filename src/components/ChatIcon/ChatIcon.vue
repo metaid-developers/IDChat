@@ -36,7 +36,7 @@
 
     <!-- 真实图片 - 只有加载成功后才显示 -->
     <img
-      v-show="isLoaded && !hasError"
+      v-if="useGroupAvatar && currentSrc && isLoaded && !hasError"
       :src="currentSrc"
       :alt="alt"
       class=" object-cover"
@@ -45,6 +45,19 @@
       @error="handleError"
       @loadstart="handleLoadStart"
     />
+
+
+
+    <UserAvatar
+        v-else-if="!useGroupAvatar && currentSrc "
+        :image="currentSrc"
+        :name="alt"
+        :meta-name="''"
+        :is-custom="isCustom"
+        :class="customClass"
+        :disabled="true"
+        :size="props.size || 48"
+      />
 
     <!-- 隐藏的图片预加载 - 用于检测加载状态 -->
     <img
@@ -58,14 +71,14 @@
     <!-- 无图片源的情况 -->
     <div
       v-if="!props.src && props.alt"
-      class="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl p-4"
+      class="flex items-center justify-center  dark:bg-gray-800 rounded-xl p-4"
       :class="customClass || 'min-h-[120px]'"
     >
       <UserAvatar
-        :image="''"
+        :image="currentSrc"
         :name="alt"
         :meta-name="''"
-        is-custom
+        :is-custom="isCustom"
         :class="customClass"
         :disabled="true"
         :size="props.size || 48"
@@ -80,12 +93,15 @@ import { metafile } from '@/utils/filters'
 import defaultMetafileImage from '@/assets/images/default_metafile.svg?url'
 import refreshIcon from '@/assets/icons/refresh.svg?url'
 import UserAvatar from '../UserAvatar/UserAvatar.vue'
+import { ChannelType } from '@/enum'
 
 interface Props {
   src: string
   alt?: string
+  avatarType:ChannelType
   customClass?: string
   maxRetries?: number
+  isCustom?:boolean
   size?: number
 }
 
@@ -95,6 +111,9 @@ const props = withDefaults(defineProps<Props>(), {
   maxRetries: 3,
 })
 
+
+
+
 // 状态管理
 const hasError = ref(false)
 const isRetrying = ref(false)
@@ -102,6 +121,10 @@ const retryCount = ref(0)
 const isLoaded = ref(false)
 const hasStartedLoading = ref(false)
 const isFirstLoad = ref(true) // 标记是否是第一次加载
+
+const useGroupAvatar=computed(()=>{
+  return props.avatarType == ChannelType.Group
+})
 
 // 当前图片源，直接转换metafile://为HTTP URL
 const currentSrc = computed(() => {

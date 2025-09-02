@@ -5,6 +5,7 @@ import {type ECDH_TYPE} from '@/@types/common'
 
 
 
+
 export const useEcdhsStore =defineStore('ecdhs', {
   state: () => {
     return {
@@ -37,6 +38,11 @@ export const useEcdhsStore =defineStore('ecdhs', {
     remove(ecdhPubKey: string) {
       this.ecdhList = this.ecdhList.filter((s) => s.externalPubKey !== ecdhPubKey)
     },
+
+
+    clear(){
+      this.ecdhList=[]
+    }
 
  
 
