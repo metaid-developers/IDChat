@@ -1371,7 +1371,7 @@
   "notSupoort_btc_send_repacket": "Temporarily not supporting sending red packets with BTC",
   "upload_attachment_fail": "上传附件失败",
   "privite_chat_success": "Private messaging feature is now available.",
-  "approve_private": "You need to authorize the activation of the private chat function",
+  "approve_private": "You need to enable private chat",
   "get_ecdhPubkey_fail": "Failed to obtain public key",
   "user_private_chat_unsupport": "The user has not enabled the private chat feature yet.",
   "retry_join": "Please re-perform the group entry operation",

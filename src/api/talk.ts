@@ -6,6 +6,11 @@ import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
 import {  NodeName } from '@/enum'
 import type { PriviteChatMessageItem } from '@/@types/common'
+import { useEcdhsStore } from '@/stores/ecdh'
+import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+
+
+
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
   responseHandel: response => {
     return new Promise((resolve, reject) => {
@@ -254,16 +259,31 @@ export const getChannels = async ({
   timestamp
  })
  //latest-group-list
+ const ecdhsStore=useEcdhsStore()
   return TalkApi.get(`/user/latest-chat-info-list?${params}`).then(
-    res => {
+    (res) => {
       
      if(res.data.list){
-       return res.data.list.map((channel: any) => {
+       const list= res.data.list.map((channel: any) => {
         channel.id = channel.groupId
         channel.name = channel.roomName
         channel.uuid = channel.id // 用于key,不修改
+        if(Number(channel.type) == 2){
+          
+          if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
+            
+                getEcdhPublickey(channel.userInfo.chatPublicKey).then((ecdh)=>{
+                  
+                    ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+                })
+              
+          }
+          
+        }
         return channel
       })
+
+      return list.sort((pre,next)=>next.timestamp - pre.timestamp)
      }else{
       return []
      }

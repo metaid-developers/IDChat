@@ -455,7 +455,7 @@ const trySendImage = async () => {
   console.log('size', image.size / 1024, 'KB')
 
   const hexedFiles = await FileToAttachmentItem(image)
-  debugger
+  
   const attachments = [hexedFiles]
 
   // clone，用于填充mock信息

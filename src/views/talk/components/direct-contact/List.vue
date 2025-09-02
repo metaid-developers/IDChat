@@ -10,20 +10,18 @@
       <div
         class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch"
       >
-      
         <div class="flex flex-col overflow-y-hidden">
           <!-- 搜索栏 -->
           <DirectContactSearch />
 
           <CreatePubkey v-if="userStore.isAuthorized && !userStore.last?.chatpubkey" />
-          
+
           <!-- 联系人列表 -->
           <div class="overflow-y-auto">
             <DirectContactItem
               v-for="session in talkStore.activeCommunityChannels"
               :key="session.timestamp"
               :session="session"
-             
             />
           </div>
         </div>
@@ -37,24 +35,20 @@ import { useLayoutStore } from '@/stores/layout'
 import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import { useTalkStore } from '@/stores/talk'
-import { computed} from 'vue'
+import { computed } from 'vue'
 
 import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
 import CreatePubkey from './create-pubkey.vue'
 const layout = useLayoutStore()
 const talkStore = useTalkStore()
-const credentialsStore=useCredentialsStore()
-const userStore=useUserStore()
+const credentialsStore = useCredentialsStore()
+const userStore = useUserStore()
 
-
-
-
-const test=computed(()=>{
- return talkStore.activeCommunityChannels
+const test = computed(() => {
+  return talkStore.activeCommunityChannels
 })
-console.log("test",test.value)
-
+console.log('test1111111', test.value)
 </script>
 
 <style lang="scss" scoped>

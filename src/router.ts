@@ -47,7 +47,7 @@ export const router = createRouter({
       //        const myChannelList=await getChannels({
       //         metaId:userStore.last.metaid
       //         })
-      //         debugger
+      //         
 
       //          if(myChannelList.length){
 
@@ -198,7 +198,7 @@ export const router = createRouter({
           redirect: to => {
             
             let { communityId,channelId } = to.params
-            debugger
+            
             if(!channelId){
               channelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL
             }

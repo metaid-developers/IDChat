@@ -5,15 +5,14 @@
     "moduleResolution": "node",
     "strict": true,
     "jsx": "preserve",
-    "sourceMap": false,
+    "sourceMap": true,
     "lib": ["esnext", "dom"],
     "typeRoots": ["./node_modules/@types", "./src/types"], // 自定义类型路径
     "types": [
       "vite/client",
       "node",
       "@intlify/vite-plugin-vue-i18n/client",
-      "vite-plugin-pwa/client",
-      "global"
+      "vite-plugin-pwa/client"
     ],
     "plugins": [
       {
@@ -24,15 +23,30 @@
       "@/*": ["./src/*"]
     },
     "esModuleInterop": true,
-    // "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowJs": true,
+    "checkJs": false,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.vue",
+    "src/**/*.js",
     "node_modules/element-plus/global.d.ts",
-    "global.d.ts"
+    "global.d.ts",
+    "auto-imports.d.ts",
+    "components.d.ts"
   ],
-  "exclude": ["node_modules", "dist", "public", "tests"]
+  "exclude": ["node_modules", "dist", "public", "tests", "dev-dist"]
 }

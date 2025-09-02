@@ -1088,6 +1088,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
           userInfo: reply.userInfo,
         }
       : undefined,
+    type:1
   }
   talkStore.addMessage(mockMessage)
 
@@ -1111,8 +1112,9 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
   const chainStore = useChainStore()
+  
   const { content, channelId: to, reply } = messageDto
-
+  
   // 1. 构建协议数据
   // 1.1 to: done
   // 1.2 timestamp
@@ -1182,19 +1184,23 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     avatarImage: userStore.last?.avatar || '',
     fromAvatarImage: userStore.last?.avatar || '',
     metaId: userStore.last?.metaid || 'undefined',
+    address:userStore.last?.address,
     from: userStore.last?.metaid,
     nickName: userStore.last?.name || '',
     fromName: userStore.last?.name || '',
-    userInfo: userStore.last?.name || {},
-    fromUserInfo: userStore.last?.name || {},
+    userInfo: userStore.last || {},
+    fromUserInfo: userStore.last || {},
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
+   
     encryption: encrypt,
     externalEncryption,
     isMock: true,
     to,
     replyInfo: reply,
     protocol: NodeName.SimpleMsg,
+    type:2
+  
   }
   talkStore.addMessage(mockMessage)
   
@@ -1317,6 +1323,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     externalEncryption,
     isMock: true,
     replyInfo: reply,
+    type:messageDto.channelType === ChannelType.Group ? 1 : 2
   }
   talkStore.addMessage(mockMessage)
 
@@ -1576,7 +1583,8 @@ export function decryptedMessage(
   protocol: string,
   isMock = false,
   isSession = false, // 是否私聊
-  secretKeyStr = ''
+  secretKeyStr = '',
+  publicKeyStr='' //私聊获取协商密钥使用
 ) {
 
   if(!content) return
@@ -1597,13 +1605,13 @@ export function decryptedMessage(
   if (isSession) {
     
     if (!talk.activeChannel) return ''
-    const credentialsStore = useCredentialsStore()
-    const connectionStore = useConnectionStore()
-    const ecdhsStore=useEcdhsStore()
-    console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
+    // const credentialsStore = useCredentialsStore()
+    // const connectionStore = useConnectionStore()
+     const ecdhsStore=useEcdhsStore()
+    // console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
+    const ecdhPubkey=publicKeyStr ? publicKeyStr : talk.activeChannel.publicKeyStr
+    let ecdh= ecdhsStore.getEcdh(ecdhPubkey)
     
-    let ecdh= ecdhsStore.getEcdh(talk.activeChannel.publicKeyStr)
- 
     try {
       const sharedSecret=ecdh?.sharedSecret
    

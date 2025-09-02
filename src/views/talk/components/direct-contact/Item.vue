@@ -6,7 +6,7 @@
   >
     <div class="rounded-3xl w-12 h-12 shrink-0 relative">
       <UserAvatar
-        :image="session?.avatarImage"
+        :image="session?.avatarImage || session?.userInfo?.avatarImage"
         :meta-id="session?.metaId || session?.createUserMetaId"
         :name="session?.name"
         :meta-name="''"
@@ -76,7 +76,7 @@ const connectionStore=useConnectionStore()
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 
-console.log('props.session',props.session)
+console.log('props.session3333333',props.session)
 
 const contact = computed<any>(() => {
   let contactSide = 'from'
@@ -128,6 +128,9 @@ const decryptedMsg = computed(() => {
   }
   let content
   let secretKeyStr=props.session.groupId.substring(0,16)
+
+  let publicKeyStr=props.session?.userInfo?.chatPublicKey
+
   if(props.session?.newMessages?.length){
     content=props.session.newMessages[props.session.newMessages.length -1].content
    
@@ -147,7 +150,7 @@ const decryptedMsg = computed(() => {
     
     case ChatType.msg:
       
-      return decryptedMessage(content,String(IsEncrypt.Yes),'',props.session?.isMock,isSession,secretKeyStr)
+      return decryptedMessage(content,String(IsEncrypt.Yes),'',props.session?.isMock,isSession,secretKeyStr,publicKeyStr)
     case ChatType.red:
       
       return `🧧 ${content.replace(':','')}`;

@@ -11,9 +11,9 @@
 
       <div class="flex shrink-0 items-center">
         <UserAvatar
-          :image="activeChannel?.avatarImage"
+          :image="activeChannel?.userInfo?.avatarImage"
           :meta-id="activeChannel?.id"
-          :name="activeChannel?.name"
+          :name="activeChannel?.userInfo?.name"
           :meta-name="''"
           class="w-8 h-8 shrink-0 select-none hidden lg:block mr-2"
           :disabled="true"
@@ -23,7 +23,7 @@
           @click="layout.isShowUserInfo = !layout.isShowUserInfo"
         >
           <UserName
-            :name="activeChannel?.name"
+            :name="activeChannel?.userInfo?.name"
             :meta-name="''"
             :text-class="'!text-base'"
           />
@@ -62,7 +62,7 @@ const userStore = useUserStore()
 const layout = useLayoutStore()
 const activeChannel = computed(() => talkStore.activeChannel)
 const activeChannelId=computed(() => talkStore.activeChannel && talkStore.activeChannel.groupId)
-console.log("activeChannel",activeChannel.value)
+console.log("activeChannel11111111111",activeChannel.value)
 
 const shortenMetaId = (id: string) => {
   return id.substring(0, 6) + '...' + id.substring(id.length - 6)
