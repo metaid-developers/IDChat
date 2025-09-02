@@ -34,9 +34,9 @@
       </button>
     </div>
 
-    <!-- 真实图片 - 只有加载成功后才显示 -->
+    <!-- 真实图片 - 只有 Group 类型且加载成功后才显示 -->
     <img
-      v-if="useGroupAvatar && currentSrc && isLoaded && !hasError"
+      v-if="shouldShowRealImage && currentSrc && isLoaded && !hasError"
       :src="currentSrc"
       :alt="alt"
       class=" object-cover"
@@ -46,18 +46,17 @@
       @loadstart="handleLoadStart"
     />
 
-
-
+    <!-- UserAvatar 组件 - 用于 Session 类型或有自定义头像的情况 -->
     <UserAvatar
-        v-else-if="!useGroupAvatar && currentSrc "
-        :image="currentSrc"
-        :name="alt"
-        :meta-name="''"
-        :is-custom="isCustom"
-        :class="customClass"
-        :disabled="true"
-        :size="props.size || 48"
-      />
+      v-else-if="shouldShowUserAvatar && currentSrc"
+      :image="currentSrc"
+      :name="alt"
+      :meta-name="''"
+      :is-custom="isCustom"
+      :class="customClass"
+      :disabled="true"
+      :size="props.size || 48"
+    />
 
     <!-- 隐藏的图片预加载 - 用于检测加载状态 -->
     <img
@@ -98,10 +97,10 @@ import { ChannelType } from '@/enum'
 interface Props {
   src: string
   alt?: string
-  avatarType:ChannelType
+  avatarType: ChannelType
   customClass?: string
   maxRetries?: number
-  isCustom?:boolean
+  isCustom?: boolean
   size?: number
 }
 
@@ -111,9 +110,6 @@ const props = withDefaults(defineProps<Props>(), {
   maxRetries: 3,
 })
 
-
-
-
 // 状态管理
 const hasError = ref(false)
 const isRetrying = ref(false)
@@ -122,8 +118,16 @@ const isLoaded = ref(false)
 const hasStartedLoading = ref(false)
 const isFirstLoad = ref(true) // 标记是否是第一次加载
 
-const useGroupAvatar=computed(()=>{
-  return props.avatarType == ChannelType.Group
+// 计算属性：是否应该显示真实图片
+const shouldShowRealImage = computed(() => {
+  // 只有当 avatarType 为 Group 且不是自定义头像时才显示真实图片
+  return props.avatarType === ChannelType.Group && !props.isCustom
+})
+
+// 计算属性：是否应该显示 UserAvatar 组件
+const shouldShowUserAvatar = computed(() => {
+  // 当 avatarType 为 Session 或有自定义头像时显示 UserAvatar
+  return props.avatarType === ChannelType.Session || props.isCustom
 })
 
 // 当前图片源，直接转换metafile://为HTTP URL
