@@ -1134,7 +1134,10 @@ export const useTalkStore = defineStore('talk', {
         )
         if (channel) {
           // 直接更新属性，确保响应式
-          if (updates.roomName !== undefined) channel.roomName = updates.roomName
+          if (updates.roomName !== undefined) {
+            channel.roomName = updates.roomName
+            channel.name = updates.roomName
+          }
           if (updates.roomNote !== undefined) channel.roomNote = updates.roomNote
           if (updates.roomAvatarUrl !== undefined) channel.roomAvatarUrl = updates.roomAvatarUrl
           if (updates.roomIcon !== undefined) channel.roomIcon = updates.roomIcon
@@ -1151,10 +1154,10 @@ export const useTalkStore = defineStore('talk', {
             c.groupId === channel.groupId ? channel : c
           )
 
-          this.$patch({})
+          // this.$patch({})
 
-          // 触发强制更新
-          this.channelUpdateTrigger++
+          // // 触发强制更新
+          // this.channelUpdateTrigger++
         }
       }
 

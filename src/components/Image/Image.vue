@@ -40,8 +40,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits(['load', 'error'])
 
-console.log('props11111', props.src)
-
 const Default = {
   metafile: props.defaultImage ? props.defaultImage : DefaultMetafile,
   metaId: props.defaultImage ? props.defaultImage : DefaultAvatar,

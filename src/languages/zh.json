@@ -252,7 +252,10 @@
       "announcement_placeholder": "在此輸入您的公告...",
       "follow": "關注",
       "followed": "已關注",
-      "SetNewPhoto": "設置新照片"
+      "SetNewPhoto": "設置新照片",
+      "ShareLink": "分享鏈接",
+      "SendMessage": "發送消息",
+      "RemoveUser": "移除用戶"
     },
     "Community": {
       "optional": "（可選）",

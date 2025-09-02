@@ -30,20 +30,11 @@
               :before-upload="beforeAvatarUpload"
             >
               <div v-if="!imageUrl">
-                <ChatImage
-                  :src="channelAvatar"
-                  v-if="channelAvatar"
+                <ChatIcon
+                  :src="channelAvatar || ''"
+                  :alt="channelName"
                   customClass="w-[88px] h-[88px] rounded-full"
-                />
-                <UserAvatar
-                  :image="''"
-                  :name="channelName"
-                  :meta-name="''"
-                  :is-custom="true"
-                  :disabled="true"
                   :size="88"
-                  type="metafile"
-                  v-else
                 />
               </div>
 
@@ -89,7 +80,7 @@
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits, withDefaults, computed } from 'vue'
 import { ElMessage, UploadProps } from 'element-plus'
-import { Camera } from '@element-plus/icons-vue'
+import { Camera, Search } from '@element-plus/icons-vue'
 import { image2Attach } from '@/lib/file'
 import { useChainStore } from '@/stores/chain'
 import { createPinWithBtc } from '@/utils/pin'
@@ -275,8 +266,7 @@ const saveChannelInfo = async () => {
     })
     emit('update:modelValue', false)
   } catch (error) {
-    console.error('更新群信息失败:', error)
-    ElMessage.error('更新群信息失败')
+    ElMessage.error((error as any).message || 'update failed')
   } finally {
     saving.value = false
   }
