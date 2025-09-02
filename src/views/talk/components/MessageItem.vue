@@ -176,6 +176,52 @@
           </div>
         </div>
 
+        <!-- 群聊邀请链接 -->
+        <div class="w-full py-0.5" v-else-if="isChatGroupLink">
+          <div
+            class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
+            @click="handleGroupLinkClick"
+          >
+            <div class="p-4 space-y-3">
+              <!-- 群头像和基本信息 -->
+              <div class="flex items-center space-x-3">
+                <div class="">
+                  <ChatIcon
+                    :src="groupLinkInfo.groupAvatar"
+                    :alt="groupLinkInfo.groupName"
+                    custom-class="w-12 h-12 min-w-12 min-h-12 rounded-full"
+                    :size="48"
+                  />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="text-dark-800 dark:text-gray-100 font-medium text-base truncate">
+                    {{ groupLinkInfo.groupName || 'Group Chat' }}
+                  </div>
+                  <div class="text-dark-400 dark:text-gray-400 text-sm">
+                    {{ props.message.userInfo?.name || 'Someone' }} invites you to join this group
+                  </div>
+                  <div
+                    v-if="groupLinkInfo.memberCount > 0"
+                    class="text-dark-400 dark:text-gray-400 text-xs mt-1"
+                  >
+                    {{ groupLinkInfo.memberCount }} members
+                  </div>
+                </div>
+              </div>
+
+              <!-- 查看群组按钮 -->
+              <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                <div
+                  class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
+                >
+                  VIEW GROUP
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="my-1.5 max-w-full flex " v-else>
           <div
             class="text-sm  text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
@@ -257,6 +303,7 @@ import { useLayoutStore } from '@/stores/layout'
 import { useModalsStore } from '@/stores/modals'
 import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
+import { getOneChannel } from '@/api/talk'
 import { useImagePreview } from '@/stores/imagePreview'
 import MessageItemQuote from './MessageItemQuote.vue'
 import { NodeName ,ChatChain} from '@/enum'
@@ -279,6 +326,9 @@ const reply: any = inject('Reply')
 
 const imagePreview = useImagePreview()
 const visiableMenu = ref(false)
+
+// 群信息缓存
+const channelInfo = ref<any>(null)
 
 const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
 
@@ -513,6 +563,81 @@ const isImage = computed(() => containsString(props.message.protocol, NodeName.S
 const isGiveawayRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupLuckyBag)
 )
+const isChatGroupLink = computed(() => {
+  const messageContent = decryptedMessage(
+    props.message.content,
+    props.message.encryption,
+    props.message.protocol,
+    props.message.isMock
+  )
+
+  // 检测群聊链接的正则表达式
+  const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
+  const isGroupLink = groupLinkPattern.test(messageContent)
+
+  // 如果是群链接且还没有获取过群信息，则获取群信息
+  if (isGroupLink && !channelInfo.value) {
+    const match = messageContent.match(groupLinkPattern)
+    if (match) {
+      const pinId = match[1]
+      fetchChannelInfo(pinId+'i0')
+    }
+  }
+
+  return isGroupLink
+})
+
+// 解析群链接信息
+const groupLinkInfo = computed(() => {
+  const messageContent = decryptedMessage(
+    props.message.content,
+    props.message.encryption,
+    props.message.protocol,
+    props.message.isMock
+  )
+
+  const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
+  const match = messageContent.match(groupLinkPattern)
+
+  if (match) {
+    const pinId = match[1]
+    return {
+      pinId,
+      groupName: channelInfo.value?.roomName || `Group ${pinId.slice(0, 8)}...`,
+      groupAvatar: channelInfo.value?.roomIcon || '',
+      memberCount: channelInfo.value?.memberCount || 0,
+      fullUrl: messageContent
+    }
+  }
+
+  return {
+    pinId: '',
+    groupName: 'Group Chat',
+    groupAvatar: '',
+    memberCount: 0,
+    fullUrl: messageContent
+  }
+})
+
+// 获取群信息
+const fetchChannelInfo = async (pinId: string) => {
+  try {
+    const channel = await getOneChannel(pinId)
+    channelInfo.value = channel
+    console.log('Fetched channel info:', channel)
+  } catch (error) {
+    console.error('Failed to fetch channel info:', error)
+  }
+}
+
+// 处理群链接点击
+const handleGroupLinkClick = () => {
+  const linkInfo = groupLinkInfo.value
+  if (linkInfo.fullUrl) {
+    // 在新窗口打开群链接
+    window.open(linkInfo.fullUrl, '_self')
+  }
+}
 const isReceiveRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupOpenLuckybag)
 )
