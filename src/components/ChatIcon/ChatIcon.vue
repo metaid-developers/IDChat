@@ -58,7 +58,7 @@
     <!-- 无图片源的情况 -->
     <div
       v-if="!props.src && props.alt"
-      class="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl p-4"
+      class="flex items-center justify-center dark:bg-gray-800 rounded-xl p-4"
       :class="customClass || 'min-h-[120px]'"
     >
       <UserAvatar
