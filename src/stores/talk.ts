@@ -175,11 +175,28 @@ export const useTalkStore = defineStore('talk', {
       if (this.isActiveChannelGeneral) {
         return this.generalChannels.find(channel => channel.id === state.activeChannelId)
       }
-      if (this.canAccessActiveChannel) {
+        if (this.canAccessActiveChannel) {
         return this.activeCommunity?.channels?.find((channel: any) => {
-          return channel.id === state.activeChannelId
+          return (
+            (channel.id && channel.id === state.activeChannelId) ||
+            (channel.metaId && channel.metaId === state.activeChannelId)
+          )
         })
       }
+
+      if (this.activeChannelType == 'session') {
+        return this.activeCommunity?.channels?.find((channel: any) => {
+          return (
+            (channel.id && channel.id === state.activeChannelId) ||
+            (channel.metaId && channel.metaId === state.activeChannelId)
+          )
+        })
+      }
+      // if (this.canAccessActiveChannel) {
+      //   return this.activeCommunity?.channels?.find((channel: any) => {
+      //     return channel.id === state.activeChannelId
+      //   })
+      // }
     },
 
     channelType(channel) {
