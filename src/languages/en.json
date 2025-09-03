@@ -1388,5 +1388,13 @@
   "upload_attachment_fail": "上传附件失败",
   "retry_join": "Please re-perform the group entry operation",
   "groupId": "Group ID",
-  "members": "members"
+  "members": "members",
+  "searchPlaceholder": "Search groups...",
+  "searching": "Searching...",
+  "localContacts": "Local Contacts",
+  "remoteGroups": "Remote Groups",
+  "joinGroup": "Join Group",
+  "noSearchResults": "No search results found",
+  "recentContacts": "Recent Contacts",
+  "searchError": "Search failed"
 }

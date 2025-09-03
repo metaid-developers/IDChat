@@ -20,16 +20,16 @@
         leave-from-class="transform translate-y-0 opacity-100"
         leave-to-class="transform -translate-y-4 opacity-0"
       >
-        <div v-if="isVisible" class="w-full h-full" @click.stop>
+        <div v-if="isVisible" class="flex flex-col w-full h-full max-h-[100vh]" @click.stop>
           <!-- 搜索框区域 -->
-          <div class="p-4 border-b border-gray-200 dark:border-gray-600">
+          <div class="p-2 border-b border-gray-200 dark:border-gray-600">
             <div class="flex items-center gap-3">
               <div class="flex-1 relative">
                 <input
                   ref="searchInput"
                   v-model="searchKeyword"
                   type="text"
-                  placeholder="搜索群组..."
+                  :placeholder="$t('searchPlaceholder')"
                   class="w-full h-10 px-4 pr-10 bg-gray-100 dark:bg-gray-700 rounded-full border-none outline-none text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
                   @input="handleSearch"
                 />
@@ -41,13 +41,13 @@
                 class="px-4 py-2 text-blue-500 hover:text-blue-600 font-medium text-sm"
                 @click="closeModal"
               >
-                取消
+                {{ $t('cancel') }}
               </button>
             </div>
           </div>
 
           <!-- 搜索结果区域 -->
-          <div class="flex-1 overflow-y-auto">
+          <div class="flex-1 overflow-y-scroll">
             <!-- 有搜索关键词时显示搜索结果 -->
             <div v-if="searchKeyword.trim()" class="space-y-4 p-4">
               <!-- 错误提示 -->
@@ -63,13 +63,13 @@
                 <div
                   class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-3"
                 ></div>
-                正在搜索...
+                {{ $t('searching') }}
               </div>
 
               <!-- 本地联系人搜索结果 -->
               <div v-if="filteredContacts.length > 0" class="space-y-2">
                 <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
-                  本地联系人
+                  {{ $t('localContacts') }}
                 </h3>
                 <div
                   v-for="contact in filteredContacts"
@@ -92,7 +92,9 @@
                         {{ contact.roomName }}
                       </div>
                       <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        群组ID:{{ contact.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') }}
+                        {{ $t('groupId') }}:{{
+                          contact.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2')
+                        }}
                       </div>
                     </div>
                   </div>
@@ -102,7 +104,7 @@
               <!-- 远程群组搜索结果 -->
               <div v-if="remoteGroups.length > 0" class="space-y-2">
                 <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
-                  远程群组
+                  {{ $t('remoteGroups') }}
                 </h3>
                 <div
                   v-for="group in remoteGroups"
@@ -125,8 +127,8 @@
                         {{ group.groupName }}
                       </div>
                       <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        群组ID:{{ group.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') }},
-                        {{ group.memberCount || 0 }} 成员
+                        GroupId:{{ group.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') }},
+                        {{ group.memberCount || 0 }} members
                       </div>
                     </div>
                   </div>
@@ -155,7 +157,7 @@
                     ></path>
                   </svg>
                 </div>
-                <p class="text-center">没有找到相关结果</p>
+                <p class="text-center">{{ $t('noSearchResults') }}</p>
               </div>
             </div>
 
@@ -164,7 +166,7 @@
               <div
                 class="sticky top-0 bg-white dark:bg-gray-800 px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide border-b border-gray-100 dark:border-gray-700"
               >
-                最近联系人
+                {{ $t('recentContacts') }}
               </div>
               <div class="space-y-1">
                 <div
@@ -187,7 +189,9 @@
                       {{ contact.roomName }}
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      群组ID:{{ contact.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') }}
+                      {{ $t('groupId') }}:{{
+                        contact.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2')
+                      }}
                     </div>
                   </div>
                 </div>
@@ -204,7 +208,12 @@
 import { defineComponent, ref, computed, nextTick, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTalkStore } from '@/stores/talk'
+import { useI18n } from 'vue-i18n'
 import ChatIcon from '@/components/ChatIcon/ChatIcon.vue'
+import { router } from '@/router'
+import { useLayoutStore } from '@/stores/layout'
+
+const layout = useLayoutStore()
 
 interface RemoteSearchGroup {
   groupId: string
@@ -226,9 +235,6 @@ interface RemoteSearchResponse {
 
 export default defineComponent({
   name: 'SearchModal',
-  components: {
-    ChatIcon,
-  },
   props: {
     modelValue: {
       type: Boolean,
@@ -238,6 +244,7 @@ export default defineComponent({
   emits: ['update:modelValue', 'select'],
   setup(props, { emit }) {
     const { activeCommunity } = storeToRefs(useTalkStore())
+    const { t } = useI18n()
 
     const searchInput = ref<HTMLInputElement>()
     const searchKeyword = ref('')
@@ -271,10 +278,10 @@ export default defineComponent({
           remoteGroups.value = data.data.list || []
         } else {
           remoteGroups.value = []
-          searchError.value = data.message || '搜索失败'
+          searchError.value = data.message || t('searchError')
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : '搜索失败'
+        const errorMessage = error instanceof Error ? error.message : t('searchError')
         searchError.value = errorMessage
         remoteGroups.value = []
       } finally {
@@ -341,6 +348,10 @@ export default defineComponent({
     // 选择联系人
     const selectContact = (contact: any) => {
       emit('select', contact)
+      layout.$patch({
+        isShowLeftNav: false,
+      })
+      router.push(`/talk/channels/public/${contact?.groupId}`)
       closeModal()
     }
 
@@ -348,14 +359,15 @@ export default defineComponent({
     const selectRemoteGroup = (group: RemoteSearchGroup) => {
       // 转换远程群组数据格式以匹配本地联系人格式
       const remoteContact = {
-        roomId: group.roomId,
-        roomName: group.roomName,
-        roomDesc: group.roomDesc,
+        roomId: group.groupId,
+        roomName: group.groupName,
         memberCount: group.memberCount || 0,
-        ownerUserId: group.ownerUserId,
-        ownerUserInfo: group.ownerUserInfo,
         isRemote: true, // 标记这是远程群组
       }
+      layout.$patch({
+        isShowLeftNav: false,
+      })
+      router.push(`/talk/channels/public/${group?.groupId}`)
       emit('select', remoteContact)
       closeModal()
     }

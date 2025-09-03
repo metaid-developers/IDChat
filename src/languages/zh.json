@@ -1381,5 +1381,13 @@
   "upload_attachment_fail": "Upload attachment fail",
   "retry_join": "请重新执行进群操作",
   "groupId": "群组ID",
-  "members": "成员"
+  "members": "成员",
+  "searchPlaceholder": "搜索群组...",
+  "searching": "正在搜索...",
+  "localContacts": "本地联系人",
+  "remoteGroups": "远程群组",
+  "joinGroup": "加入群组",
+  "noSearchResults": "没有找到相关结果",
+  "recentContacts": "最近联系人",
+  "searchError": "搜索失败"
 }
