@@ -142,8 +142,8 @@ const actions = computed(() => {
   const ShareProtocols = [
     NodeName.SimpleFileGroupChat,
     NodeName.SimpleGroupChat,
-    NodeName.SimpleMsg,
-    NodeName.SimpleFileMsg,
+    // NodeName.SimpleMsg,
+    // NodeName.SimpleFileMsg,
   ]
 
   const hasShareProtocols = ShareProtocols.findIndex(item => {
@@ -176,6 +176,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+              chain:message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -192,6 +193,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+                chain:message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -208,6 +210,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+                chain:message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
