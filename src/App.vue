@@ -61,6 +61,7 @@ import { useConnectionStore } from '@/stores/connection'
 import {completeReload} from '@/utils/util'
 import { useI18n } from 'vue-i18n'
 import WalletMissingModal from './components/ConnectWalletModal/WalletMissingModal.vue'
+import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 const MAX_RETRY_TIME = 5000 // 最大等待时间（毫秒）
 const RETRY_INTERVAL = 100  // 重试间隔（毫秒）
 const rootStore = useRootStore()
@@ -171,7 +172,13 @@ onMounted(async () => {
   // 初始检查
   checkMetalet()
 
+  setTimeout(async() => {
+     const res= await getEcdhPublickey()
+
+ console.log("协商密钥",res)
+
  
+  }, 5000);
 
   onUnmounted(() => {
     

@@ -399,9 +399,9 @@ export const useTalkStore = defineStore('talk', {
 
       if (priviteChannel.length) {
         for (let channel of priviteChannel) {
-          debugger
+          
           const userInfo = await GetUserEcdhPubkeyForPrivateChat(channel.metaId)
-          debugger
+          
           if (userInfo.chatPublicKey) {
             channel.publicKeyStr = userInfo.chatPublicKey
             channel.id = userInfo.metaid
@@ -617,6 +617,7 @@ export const useTalkStore = defineStore('talk', {
       // 如果是私聊，而且路由中的頻道 ID 不存在，则新建会话
       
        const ecdhsStore=useEcdhsStore()
+       const userStore=useUserStore()
 
       if (
         routeCommunityId === '@me' &&
@@ -628,25 +629,44 @@ export const useTalkStore = defineStore('talk', {
         // const metaidInfo = await getUserInfoByMetaId(routeChannelId)
         //
         // const userInfo= await getUserInfoByAddress(metaidInfo?.address)
-       debugger
+       
         const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
         let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
         if (!ecdh) {
-            debugger
+            
             ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
             ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
         }
         const newSession = {
           id: routeChannelId,
           name: userInfo.name,
-          address: userInfo.address,
           publicKeyStr: userInfo.chatPublicKey,
-          avatarImage: userInfo.avatar,
+          avatarImage: userInfo.avatarImage,
           metaId: userInfo.metaid,
           lastMessage: '',
           lastMessageTimestamp: null,
           pastMessages: [],
           newMessages: [],
+          address:userInfo.address,
+          blockHeight:0,
+          chain:'',
+          chatSettingType:0,
+          chatType:0,
+          content:'',
+          createAddress:userStore.last.address,
+          createMetaId:userStore.last.metaid,
+          createUserAddress:userStore.last.address,
+          createUserInfo:userStore.last,
+          createUserMetaId:userStore.last.metaid,
+          deleteStatus:0,
+          groupId:"",
+          index:0,
+          lastMessagePinId:'',
+          timestamp:Date.now(),
+          type:'2',
+          userCount:0,
+          userInfo:userInfo,
+          uuid:""
         }
 
         this.activeCommunityChannels.unshift(newSession)
@@ -657,11 +677,11 @@ export const useTalkStore = defineStore('talk', {
         routeChannelId &&
         this.activeCommunityChannels.some((channel: any) => channel.metaId === routeChannelId)
       ){
-        debugger
+        
           const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
         let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
         if (!ecdh) {
-            debugger
+            
             ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
             ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
         }
@@ -886,20 +906,74 @@ export const useTalkStore = defineStore('talk', {
     },
 
     async handleNewSessionMessage(message: any) {
+      const ecdhsStore=useEcdhsStore()
       const messageMetaId = message.from === this.selfMetaId ? message.to : message.from
-
+      
       const isFromActiveChannel = messageMetaId === this.activeChannelId
-
+      
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
         this._updateReadPointers(message.timestamp, messageMetaId)
+
+        const hasChannelInActiveCommunity= this.activeCommunity?.channels.find((channel)=>{
+          return channel.id == message?.from
+        })
+
+        if(!hasChannelInActiveCommunity){
+           
+        const userInfo = await GetUserEcdhPubkeyForPrivateChat(message.metaId)
+        let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        if (!ecdh) {
+            
+            ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+            ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+        }
+        const newSession = {
+          id: message.from,
+          name: message.fromUserInfo.name,
+          publicKeyStr: message.fromUserInfo.chatPublicKey,
+          avatarImage: message.fromUserInfo.avatarImage,
+          metaId: message.fromUserInfo.metaid,
+          lastMessage: '',
+          
+          lastMessageTimestamp: null,
+          pastMessages: [],
+          newMessages: [],
+          address:message.fromUserInfo.address,
+          blockHeight:0,
+          chain:'',
+          chatSettingType:0,
+          chatType:0,
+          content:message.content,
+          createAddress:message.fromUserInfo.address,
+          createMetaId:message.fromUserInfo.metaid,
+          createUserAddress:message.fromUserInfo.address,
+          createUserInfo:message.fromUserInfo,
+          createUserMetaId:message.fromUserInfo.metaid,
+          deleteStatus:0,
+          groupId:"",
+          index:message.index,
+          lastMessagePinId:message.pinId,
+          timestamp:message.timestamp,
+          type:'2',
+          userCount:0,
+          userInfo:userInfo,
+          uuid:""
+        }
+
+        this.activeCommunityChannels.unshift(newSession)
+        }
+
+         
+
+
 
         this.activeCommunity?.channels?.map((channel: any) => {
           if (channel?.userInfo?.metaid === messageMetaId) {
             channel.newMessages = [message]
           }
         })
-
+        
         try {
           sortByConditionInPlace(
             this.activeCommunity?.channels,
@@ -913,7 +987,8 @@ export const useTalkStore = defineStore('talk', {
         }
       }
       console.log('11111111', this.activeChannel.newMessages, message.txId)
-
+      console.log("this.activeCommunity?.channels",this.activeCommunity?.channels)
+      
       // 去重
       const isDuplicate =
         this.activeChannel.newMessages.some((item: Message) => item.txId === message.txId) ||

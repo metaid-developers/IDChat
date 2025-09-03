@@ -1,10 +1,10 @@
 <template>
   <div
-    class="p-3 flex w-full items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer transition-all duration-200"
+    class="p-3 flex w-full  items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer transition-all duration-200"
     :class="{ 'bg-gray-200 dark:bg-gray-900': isActive }"
     @click="switchChannel"
   >
-    <div class="rounded-3xl w-12 h-12 shrink-0 relative">
+    <div class="rounded-3xl w-12 h-12 shrink-0  relative">
       <!-- <UserAvatar
         :image="session?.avatarImage || session?.userInfo?.avatarImage"
         :meta-id="session?.metaId || session?.createUserMetaId"
@@ -92,6 +92,7 @@ watch(
   () => props.session,
   newSession => {
     if (newSession) {
+      
       // 延迟更新，避免频繁闪烁
       setTimeout(() => {
         debouncedLastMessage.value = computeLastMessage(newSession)
@@ -149,7 +150,8 @@ const computeLastMsgTimestamp = (session: any): number => {
 }
 
 const computeDecryptedMsg = (session: any) => {
-  if (!session.content) {
+  try {
+    if (!session.content && !session?.newMessages?.length && !session?.newMessages[session?.newMessages?.length - 1]?.content) {
     return ''
   }
   let content
@@ -213,6 +215,9 @@ const computeDecryptedMsg = (session: any) => {
   // const otherPublicKeyStr = session.publicKeyStr
 
   // return ecdhDecrypt(session.content, sigStr, otherPublicKeyStr)
+  } catch (error) {
+    return ''
+  }
 }
 
 const decryptedMsg = computed(() => {

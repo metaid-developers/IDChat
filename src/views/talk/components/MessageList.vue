@@ -9,7 +9,7 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
-  <!-- <div v-if="_welComePage">
+  <div v-if="_welComePage">
        <div class="mt-20 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
         <div class="text-lg text-zinc-500 mt-3 break-all">
@@ -28,7 +28,7 @@
           }}</a>
         </div>
       </div>
-  </div> -->
+  </div>
     <div class="" >
       <div class="flex flex-col-reverse space-y-2 space-y-reverse">
         <!-- 群聊 -->

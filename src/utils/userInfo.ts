@@ -705,9 +705,11 @@ export const createOrUpdateUserInfo = async ({
 
 export const createUserPubkey=async ({
   pubkey,
+  pubkeyId,
   options,
 }: {
   pubkey:string
+  pubkeyId?:string,
   options: { feeRate?: number; network?: BtcNetwork; assistDomain?: string }
 }): Promise<any> => {
   const metaDatas: MetaidData[] = []
@@ -715,15 +717,17 @@ export const createUserPubkey=async ({
   const userStore=useUserStore()
   const localUtxo= utxoStore.getUtxo(userStore.last.address)
   const availableUtxo=await getUseableUtxo()
-  
+  const hasPubkey=userStore.last.chatpubkey
   try {
     
   
   if (pubkey) {
+    
+    const path=hasPubkey && pubkeyId ? `${import.meta.env.VITE_ADDRESS_HOST}:@{${pubkeyId}}` : `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`
     metaDatas.push({
-      operation:'create',
+      operation:hasPubkey ? 'modify': 'create',
       body: pubkey,
-      path: `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`,
+      path: path,
       encoding: 'utf-8',
       contentType: 'text/plain',
       flag: 'metaid',

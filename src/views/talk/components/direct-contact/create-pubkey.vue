@@ -1,13 +1,13 @@
 <template>
     <div
-    class="p-3 flex w-full  overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer"
+    class="p-3 flex w-full items-center  overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer"
     :class="{ 'bg-gray-200 dark:bg-gray-900': '' }"
            
   >
-    <div class="text-sm lg:max-w-[230PX]  font-medium  flex items-center justify-between">
+    <div class="text-sm h-16  w-full font-medium  flex items-center ">
         <el-icon  color="#EBA51A" :size="30" class="mr-2  "><WarningFilled /></el-icon>
-       <div class="flex  items-center justify-between">
-         <span class="mr-2 ">{{ $t('approve_private') }}</span>
+       <div class="flex w-full items-center justify-between">
+         <span class="mr-2 ">{{needModifyPubkey ? $t('modify_pubkey') : $t('approve_private') }}</span>
         <div  @click="createPubkeyNode" class="px-1.5 py-1 text-center  text-white bg-[#EBA51A] text-sm rounded-2xl hover:opacity-90">{{ $t('confirm') }}</div>
        </div>
     </div>
@@ -21,21 +21,37 @@ import {createUserPubkey} from '@/utils/userInfo'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
-
+import { useEcdhsStore } from '@/stores/ecdh'
+import {
+  GetUserEcdhPubkeyForPrivateChat,
+} from '@/api/talk'
 // const credentialsStore=useCredentialsStore()
+interface Props {
+  needModifyPubkey: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  needModifyPubkey: false,
+})
+
+const emit = defineEmits(['needModifyPubkey'])
 const userStore=useUserStore()
 const i18n=useI18n()
+const ecdhsStore=useEcdhsStore()
 async function createPubkeyNode() {
     
   try {
+   
    // const credential=credentialsStore.get
     const ecdh=await getEcdhPublickey()
     if(!ecdh.ecdhPubKey){
       return ElMessage.error(`${i18n.t('get_ecdhPubkey_fail')}`)
     }
-    
+    const getChatPublickey= await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+   
     const txid= await createUserPubkey({
         pubkey:ecdh?.ecdhPubKey,
+        pubkeyId:getChatPublickey?.chatPublicKeyId,
         options: {
         feeRate: 1,
         network: 'mainnet',
@@ -43,10 +59,14 @@ async function createPubkeyNode() {
       },
   })
   if(txid){
-       ecdh.insert(ecdh,ecdh?.externalPubKey)
+      // const newEcdh=await getEcdhPublickey()
+      //  ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
        userStore.updateUserInfo({
         chatpubkey:ecdh?.ecdhPubKey//credential.publicKey
     })
+    if(props.needModifyPubkey){
+      emit('needModifyPubkey',false)
+    }
     ElMessage.success(`${i18n.t('privite_chat_success')}`)
   }
  

@@ -535,8 +535,9 @@ const messageAvatarImage = computed(() => {
   if (props.message.from === userStore.last?.metaid) {
     return userStore.last?.avatar
   }
-
-  return activeChannel.value?.avatarImage
+  console.log("activeChannel",activeChannel.value)
+  debugger
+  return activeChannel.value?.userInfo?.avatarImage
 })
 
 const nftPrice = computed(() => {

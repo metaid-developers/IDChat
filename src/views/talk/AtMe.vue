@@ -46,7 +46,7 @@ const talk = useTalkStore()
 const router = useRouter()
 const layout = useLayoutStore()
 const MessageListRef = ref()
-debugger
+
 const { channelId } = route.params
 
 const quote: { val: any } = reactive({ val: undefined })
@@ -60,7 +60,7 @@ function toQuote() {
 provide('Reply', quote)
 onMounted(async () => {
   layout.isShowUserInfo = false
-  debugger
+  
   await talk.initCommunity('@me')
   
   //await talk.initCommunity('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
@@ -70,8 +70,9 @@ onMounted(async () => {
   //   router.push('/talk/channels/public/welcome')
   //   return
   // }
-
+  
   await talk.initChannel('@me', channelId as string)
+  
   console.log("有没有进来这个页面",111111)
   
   await talk.initChannelMessages(talk.selfMetaId)
@@ -83,7 +84,7 @@ onUnmounted(()=>{
   talk.closeReadPointerTimer()
 })
 // onBeforeUnmount(() => {
-//   debugger
+//   
 //   talk.resetCurrentChannel()
 //   talk.saveReadPointers()
 //   talk.closeReadPointerTimer()

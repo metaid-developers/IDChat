@@ -200,7 +200,7 @@ const save = async () => {
       const ecdh=await getEcdhPublickey()
       if(ecdh){
          values.chatpubkey=ecdh?.ecdhPubKey
-         ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+        //  ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
       }
       
     }
@@ -236,6 +236,7 @@ const save = async () => {
         }
       )
     }
+    
     await userStore.setUserInfo(userStore.last!.address)
     console.log('Saving profile changes:', values)
     ElMessage.success('Profile updated successfully!')

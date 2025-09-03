@@ -5,7 +5,7 @@ import { useConnectionStore } from '@/stores/connection'
 import { useLayoutStore } from './layout'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-
+import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 export const useUserStore = defineStore('user', {
   state: () => {
     return {
@@ -100,7 +100,13 @@ export const useUserStore = defineStore('user', {
       }
 
       const userRes = await getUserInfoByAddress(address)
-
+      // debugger
+      // if(!userRes.chatpubkey){
+      //      const res= await getEcdhPublickey()
+      //      if(res.ecdhPubKey){
+      //         userRes.chatpubkey=res.ecdhPubKey
+      //      }
+      // }
       try {
         if (userRes) {
           this.last = userRes

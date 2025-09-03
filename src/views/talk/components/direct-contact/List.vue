@@ -8,13 +8,13 @@
       <!-- <div class="shrink-0 bg-white dark:bg-gray-700 w-22.5 lg:hidden"></div> -->
 
       <div
-        class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch"
+        class="h-full bg-dark-100 max-w-[380PX] w-[380PX] dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch"
       >
         <div class="flex flex-col overflow-y-hidden">
           <!-- 搜索栏 -->
           <DirectContactSearch />
 
-          <CreatePubkey v-if="userStore.isAuthorized && !userStore.last?.chatpubkey" />
+          <CreatePubkey :needModifyPubkey="needModifyPubkey" v-if="userStore.isAuthorized && !userStore.last?.chatpubkey && !needModifyPubkey" />
 
           <!-- 联系人列表 -->
           <div class="overflow-y-auto">
@@ -35,17 +35,18 @@ import { useLayoutStore } from '@/stores/layout'
 import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import { useTalkStore } from '@/stores/talk'
-import { computed } from 'vue'
+import { computed, onMounted,ref } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
 import CreatePubkey from './create-pubkey.vue'
+import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 const layout = useLayoutStore()
 const talkStore = useTalkStore()
 const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
-
+const needModifyPubkey=ref(false)
 
 // 优化key生成策略，避免不必要的重新渲染
 const getSessionKey = (session: any) => {
@@ -54,7 +55,20 @@ const getSessionKey = (session: any) => {
 }
 
 
+
+
 const { activeCommunity } = storeToRefs(useTalkStore())
+
+
+onMounted(async()=>{
+   const pubkey=userStore.last.chatpubkey
+   const ecdh= await getEcdhPublickey()
+   
+    if(pubkey && pubkey !== ecdh.ecdhPubKey){
+      
+      needModifyPubkey.value=true
+    }
+})
 
 // const test=computed(()=>{
 //  return talkStore.activeCommunityChannels

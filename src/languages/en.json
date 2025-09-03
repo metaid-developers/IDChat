@@ -33,7 +33,6 @@
   "Enter Password Remark": "Enter Password Remark",
   "Insufficient balance": "Insufficient balance",
   "Time": "Time",
-
   "To Showbuzz": "To Showbuzz",
   "Talk": {
     "period": ".",
@@ -1378,5 +1377,6 @@
   "get_ecdhPubkey_fail": "Failed to obtain public key",
   "user_private_chat_unsupport": "The user has not enabled the private chat feature yet.",
   "retry_join": "Please re-perform the group entry operation",
-  "get_ecdh_pubey_error": "The necessary parameters for encryption are empty"
+  "get_ecdh_pubey_error": "The necessary parameters for encryption are empty",
+  "modify_pubkey": "You need to modify the chat public key"
 }
