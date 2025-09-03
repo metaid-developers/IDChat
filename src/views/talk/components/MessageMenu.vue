@@ -164,8 +164,9 @@ const actions = computed(() => {
           message.encryption,
           message.protocol
         )
-
+           
         if (containsString(props.message.protocol, NodeName.ShowMsg)) {
+         
           data = {
             communityId: '', // talk.activeCommunityId,
             groupId: talk.activeChannelId,
@@ -176,6 +177,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+              chain:message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -192,6 +194,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+                chain:message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -208,6 +211,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
+                chain:message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,

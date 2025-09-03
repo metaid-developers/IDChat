@@ -936,6 +936,7 @@ declare interface ShareChatMessageData {
     timestamp: number
     txId: string
     pinId:string
+    chain:string
   }
 }
 
