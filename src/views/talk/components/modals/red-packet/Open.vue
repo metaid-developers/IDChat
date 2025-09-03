@@ -198,7 +198,8 @@ const note = computed(() => {
 })
 
 const tryOpenRedPacket = async () => {
-  layout.isShowLoading = true
+  try {
+     layout.isShowLoading = true
   const params: any = {
     groupId: talk.activeChannelId,
     pinId: `${message?.txId}i0`,
@@ -212,14 +213,14 @@ const tryOpenRedPacket = async () => {
     //params.address = user.user?.evmAddress
   }
 
-  await grabRedPacket(params).catch((e)=>{
-   
-    layout.isShowLoading = false
-    return  ElMessage.error(e.toString())
-  })
+  await grabRedPacket(params)
   await sleep(1000)
   layout.isShowLoading = false
   await viewDetails()
+  } catch (error) {
+     layout.isShowLoading = false
+    ElMessage.error((error as any).toString())
+  }
 }
 
 const viewDetails = async () => {
