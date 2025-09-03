@@ -186,6 +186,7 @@
       "you_stake": "You staked"
     },
     "Channel": {
+      "recentContacts": "Recent Contacts",
       "core_members": "core members",
       "team_members": "Group members",
       "join_channel": "joined the channel.",
@@ -203,6 +204,16 @@
       "use_onchain_image": "Use Metafile Image",
       "view_original": "Open original",
       "search": "Search",
+      "searchPlaceholder": "Search groups or contacts",
+      "searching": "Searching groups...",
+      "noSearchResults": "No search results",
+      "localContacts": "Local Contacts",
+      "remoteGroups": "Remote Groups",
+      "joinGroup": "Join",
+      "members": "members",
+      "networkError": "Network error",
+      "searchFailed": "Search failed",
+      "cancel": "Cancel",
       "welcome": "Welcome to",
       "utilities": {
         "invite": "Invite Friends",
@@ -1375,5 +1386,7 @@
   "new_msg_img": "Image",
   "notSupoort_btc_send_repacket": "Temporarily not supporting sending red packets with BTC",
   "upload_attachment_fail": "上传附件失败",
-  "retry_join": "Please re-perform the group entry operation"
+  "retry_join": "Please re-perform the group entry operation",
+  "groupId": "Group ID",
+  "members": "members"
 }

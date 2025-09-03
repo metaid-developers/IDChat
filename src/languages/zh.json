@@ -219,6 +219,7 @@
       "channel_accept_invite": "接受邀请"
     },
     "Channel": {
+      "recentContacts": "最近聯繫人",
       "core_members": "核心成員",
       "team_members": "群组成员",
       "join_channel": "加入了頻道",
@@ -236,6 +237,16 @@
       "use_onchain_image": "鏈上圖片",
       "view_original": "查看原圖",
       "search": "搜索",
+      "searchPlaceholder": "搜索群組或聯系人",
+      "searching": "正在搜索群組...",
+      "noSearchResults": "沒有搜索結果",
+      "localContacts": "本地聯系人",
+      "remoteGroups": "遠程群組",
+      "joinGroup": "加入",
+      "members": "成員",
+      "networkError": "網絡錯誤",
+      "searchFailed": "搜索失敗",
+      "cancel": "取消",
       "welcome": "歡迎來到",
       "utilities": {
         "invite": "邀請好友",
@@ -1368,5 +1379,7 @@
   "new_msg_img": "图片",
   "notSupoort_btc_send_repacket": "暂不支持发送BTC红包",
   "upload_attachment_fail": "Upload attachment fail",
-  "retry_join": "请重新执行进群操作"
+  "retry_join": "请重新执行进群操作",
+  "groupId": "群组ID",
+  "members": "成员"
 }
