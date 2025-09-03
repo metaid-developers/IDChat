@@ -232,7 +232,7 @@ const save = async () => {
         name: 'talkChannel',
         params: {
           communityId: 'public',
-          channelId: '396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
+          channelId:'welcome' //'396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
         },
       })
     }, 1000)

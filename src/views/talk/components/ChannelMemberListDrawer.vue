@@ -395,7 +395,7 @@ watch(
       load()
     }
   },
-  { immediate: true }
+  { immediate: false }
 )
 
 // 监听搜索关键词变化，添加防抖处理

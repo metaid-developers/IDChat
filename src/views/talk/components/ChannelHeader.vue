@@ -40,7 +40,7 @@
           >
             {{
               talkStore.isActiveChannelReserved
-                ? talkStore.activeCommunity?.name || 'kkkk'
+                ? talkStore.activeCommunity?.name 
                 : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || '----'
             }}
           </div>

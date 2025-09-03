@@ -16,7 +16,7 @@
 
       <div
         class="border-dashed border-2 border-gray-200 dark:border-gray-600 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
-        v-if="userStore.isAuthorized && whiteList"
+        v-if="userStore.isAuthorized "
         @click="layout.isShowCreatePublicChannelModal = true"
       >
         <Icon name="plus" class="w-[20PX] h-[20PX]" />
@@ -51,7 +51,7 @@ const handleSearch = () => {
   // 先进行名字搜索
 }
 
-const whiteList = computed(() => {
-  return groupWhiteList.includes(userStore.last?.address)
-})
+// const whiteList = computed(() => {
+//   return groupWhiteList.includes(userStore.last?.address)
+// })
 </script>

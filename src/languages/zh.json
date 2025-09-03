@@ -1353,11 +1353,11 @@
   },
   "link": {
     "metaid": {
-      "group": "点击下方按钮进入测试群聊"
+      "group": "点击下方按钮进入官网用户群"
     }
   },
   "MetaID": {
-    "official_group": "MetaID 链上官方群"
+    "official_group": "加入"
   },
   "chat": {
     "home": {
@@ -1368,5 +1368,8 @@
   "new_msg_img": "图片",
   "notSupoort_btc_send_repacket": "暂不支持发送BTC红包",
   "upload_attachment_fail": "Upload attachment fail",
-  "retry_join": "请重新执行进群操作"
+  "retry_join": "请重新执行进群操作",
+  "welcome": {
+    "desc": "你可以点击“+”号新建群聊，或搜索群名字/id 加入一个公开群聊。 也可以加入官网的用户群获取帮助"
+  }
 }

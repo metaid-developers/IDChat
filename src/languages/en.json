@@ -33,7 +33,6 @@
   "Enter Password Remark": "Enter Password Remark",
   "Insufficient balance": "Insufficient balance",
   "Time": "Time",
-
   "To Showbuzz": "To Showbuzz",
   "Talk": {
     "period": ".",
@@ -1360,11 +1359,11 @@
   "You haven't installed the corresponding wallet yet. Click the button, and we will guide you to the Metalet wallet official website for installation (we recommend the browser extension version).": "You haven't installed the corresponding wallet yet. Click the button, and we will guide you to the Metalet wallet official website for installation (we recommend the browser extension version).",
   "link": {
     "metaid": {
-      "group": "Click the button below to join the test group chat"
+      "group": "Click the button below to join the official user group"
     }
   },
   "MetaID": {
-    "official_group": "MetaID Official On-Chain Group"
+    "official_group": "Join"
   },
   "chat": {
     "home": {
@@ -1375,5 +1374,8 @@
   "new_msg_img": "Image",
   "notSupoort_btc_send_repacket": "Temporarily not supporting sending red packets with BTC",
   "upload_attachment_fail": "上传附件失败",
-  "retry_join": "Please re-perform the group entry operation"
+  "retry_join": "Please re-perform the group entry operation",
+  "welcome": {
+    "desc": "You can click the '+' icon to create a new group chat or search for a group name/ID to join a public chat. You can also join the official user group for assistance."
+  }
 }

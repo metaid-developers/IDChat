@@ -10,7 +10,7 @@
     v-show="!layout.isShowMessagesLoading"
   >
     <div v-if="_welComePage">
-      <div class="mt-20 flex text-center  items-center justify-center flex-col">
+      <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
         <div class="text-lg text-zinc-500 mt-3 break-all">
           A Messaging Service Built on Bitcoin and its Sidechains
@@ -18,7 +18,7 @@
         <div class="text-xl mt-5 text-zinc-600 break-all ">
           Fully Decentralized,Immutable,Uncensorable,and Unhackable
         </div>
-        <div class="flex flex-col mt-5">
+        <!-- <div class="flex flex-col mt-5">
           <div class="font-medium flex flex-row items-center text-lg">
             <span>{{ $t('link.metaid.group') }}</span
             ><el-icon><CaretBottom /></el-icon>
@@ -26,7 +26,7 @@
           <a class="main-border mt-5 text-lg primary p-3" @click="toMetaIdGrop">{{
             $t('MetaID.official_group')
           }}</a>
-        </div>
+        </div> -->
       </div>
     </div>
     <div class="" v-else>
