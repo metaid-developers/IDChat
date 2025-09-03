@@ -1141,11 +1141,15 @@ export const useTalkStore = defineStore('talk', {
       console.log('this.activeChannelType', this.activeChannelType, this.activeChannelId)
 
       let messages
+      let nextTimestamp=0
       if (this.activeChannelType == 'session') {
-        messages = await getPrivateChatMessages({
+        const privateList = await getPrivateChatMessages({
           otherMetaId: this.activeChannelId,
           metaId: selfMetaId,
         })
+        messages=privateList.list
+        nextTimestamp=privateList.nextTimestamp
+
       } else {
         messages = await getChannelMessages({
           groupId: this.activeChannelId,
@@ -1166,6 +1170,10 @@ export const useTalkStore = defineStore('talk', {
       // 优化：使用nextTick来减少对session列表的影响
       await nextTick()
       this.activeChannel.pastMessages = messages
+      if(this.activeChannelType == 'session'){
+        this.activeChannel.lastMessageTimestamp =nextTimestamp
+      }
+      
       this.activeChannel.newMessages = []
 
       // 设置已读指针

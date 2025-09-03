@@ -535,8 +535,7 @@ const messageAvatarImage = computed(() => {
   if (props.message.from === userStore.last?.metaid) {
     return userStore.last?.avatar
   }
-  console.log("activeChannel",activeChannel.value)
-  debugger
+
   return activeChannel.value?.userInfo?.avatarImage
 })
 

@@ -460,7 +460,11 @@ const data:{
     list: PriviteChatMessageItem[] | null
   }
 } = await TalkApi.get(`/private-chat-list?${query}`)
-  return data.data.list ?? []
+  return data.data ?? {
+    list:[],
+    nextTimestamp:0,
+    total:0
+  }
   // if(data.data.list?.length){
   //   for(let item of data.data.list){
   //     if(containsString(item.protocol,NodeName.SimpleGroupLuckyBag)){
