@@ -219,6 +219,8 @@
       "core_members": "核心成员",
       "join_channel": "加入了頻道",
       "leave_channel": "离开了頻道",
+      "remove_user": "用户 {username} 已被管理员移除群聊",
+      "remove_user_with_reason": "用户 {username} 已被管理员移除群聊（原因：{reason}）",
       "come_get_red_envelope": "领取红包",
       "receive_own_red_envelope": "领取了自己的红包",
       "receive_red_envelope": "领取了{sender}的红包",

@@ -223,6 +223,8 @@
       "team_members": "群组成员",
       "join_channel": "加入了頻道",
       "leave_channel": "離開了頻道",
+      "remove_user": "用戶 {username} 已被管理員移除群聊",
+      "remove_user_with_reason": "用戶 {username} 已被管理員移除群聊（原因：{reason}）",
       "come_get_red_envelope": "領取紅包",
       "receive_own_red_envelope": "領取了自己的紅包",
       "receive_red_envelope": "領取了{sender}的紅包",
