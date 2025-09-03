@@ -1,22 +1,21 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
-
-export enum ChatChain{
-  mvc='mvc',
-  btc='btc'
+export enum ChatChain {
+  mvc = 'mvc',
+  btc = 'btc',
 }
 
-export enum ChatType{
-  msg=0,
-  red=1,
-  img=3
+export enum ChatType {
+  msg = 0,
+  red = 1,
+  img = 3,
 }
 
-export enum GrabStatus{
-  grabSuccess=0,
-  grabSuccessAndBroadcastPending=1,
-  broadCastSuccess=2,
-  grabSuccessAndBroadcastFail=3
+export enum GrabStatus {
+  grabSuccess = 0,
+  grabSuccessAndBroadcastPending = 1,
+  broadCastSuccess = 2,
+  grabSuccessAndBroadcastFail = 3,
 }
 
 export enum CollectionSortType {
@@ -311,7 +310,7 @@ export enum CurrentSupportChain {
 }
 
 export enum NodeName {
-  Simplebuzz='simplebuzz',
+  Simplebuzz = 'simplebuzz',
   ETHBinding = 'EVMBinding',
   MetaFile = 'metafile',
   File = 'file',
@@ -325,7 +324,8 @@ export enum NodeName {
   SimpleFileGroupChat = 'simplefilegroupchat',
   SimpleCommunity = 'SimpleCommunity',
   SimpleCommunityJoin = 'simplecommunityjoin',
-  SimpleGroupJoin='simplegroupjoin',
+  SimpleGroupJoin = 'simplegroupjoin',
+  SimpleGroupRemoveUser = 'simplegroupremoveuser',
   SimpleGroupCreate = 'simplegroupcreate',
   ShowMsg = 'showmsg',
   NftIssue = 'NftIssue',
@@ -338,9 +338,9 @@ export enum NodeName {
   FtTransfer = 'FtTransfer',
   FtMerge = 'merge',
   SimpleRedEnvelope = 'Simpleredenvelope',
-  SimpleGroupLuckyBag='simplegroupluckybag',
+  SimpleGroupLuckyBag = 'simplegroupluckybag',
   OpenRedenvelope = 'openredenvelope',
-  SimpleGroupOpenLuckybag='simplegroupopenLuckybag',
+  SimpleGroupOpenLuckybag = 'simplegroupopenLuckybag',
   SimplePublicShare = 'SimplePublicShare',
   LegalSellNft = 'sell_nft',
   Name = 'name',
@@ -430,9 +430,9 @@ export enum ShowControl {
   isShowPasswordModal = 'isShowPasswordModal',
   isShowRequireNftModal = 'isShowRequireNftModal',
   isShowInviteModal = 'isShowInviteModal',
-   isShowChannelInviteModal = 'isShowChannelInviteModal',
+  isShowChannelInviteModal = 'isShowChannelInviteModal',
   isShowAcceptInviteModal = 'isShowAcceptInviteModal',
-  isShowChannelAcceptInviteModal='isShowChannelAcceptInviteModal',
+  isShowChannelAcceptInviteModal = 'isShowChannelAcceptInviteModal',
   isShowChooseMetaNameModal = 'isShowChooseMetaNameModal',
   isShowShareToBuzzModal = 'isShowShareToBuzzModal',
   isShowShareSuccessModal = 'isShowShareSuccessModal',

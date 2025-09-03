@@ -190,6 +190,8 @@
       "team_members": "Group members",
       "join_channel": "joined the channel.",
       "leave_channel": "left the channel.",
+      "remove_user": "User {username} has been removed from the group by admin",
+      "remove_user_with_reason": "User {username} has been removed from the group by admin (Reason: {reason})",
       "come_get_red_envelope": "Grab a Candy Bag!",
       "receive_own_red_envelope": "received a candy bag of your own.",
       "receive_red_envelope": "received a candy bag from {sender}.",
