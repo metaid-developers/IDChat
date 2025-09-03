@@ -22,15 +22,20 @@
       >
         <div v-if="isVisible" class="flex flex-col w-full h-full max-h-[100vh]" @click.stop>
           <!-- 搜索框区域 -->
-          <div class="p-2 border-b border-gray-200 dark:border-gray-600">
+          <div class="p-3 ">
             <div class="flex items-center gap-3">
-              <div class="flex-1 relative">
+              <div
+                class="flex-1 relative bg-white dark:bg-gray-950 grow p-2 rounded-full  flex items-center h-9"
+              >
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Icon name="search" class="w-3.5 h-3.5 text-dark-250" />
+                </span>
                 <input
                   ref="searchInput"
                   v-model="searchKeyword"
                   type="text"
                   :placeholder="$t('searchPlaceholder')"
-                  class="w-full h-10 px-4 pr-10 bg-gray-100 dark:bg-gray-700 rounded-full border-none outline-none text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                  class="dark:bg-gray-950 text-dark-800 dark:text-gray-100 text-sm leading-tight font-normal placeholder-dark-250 outline-0 m-0 w-full pl-6"
                   @input="handleSearch"
                 />
                 <div v-if="isSearching" class="absolute right-3 top-1/2 transform -translate-y-1/2">
