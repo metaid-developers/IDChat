@@ -9,7 +9,7 @@ export const SERVICE_FEE=import.meta.env.VITE_SERVICE_FEE
 
 export const PREFIX_PROTOCOL='/protocols/'
 
-export const ChannelMsg_Size=10
+export const ChannelMsg_Size=20
 
 export const Red_Packet_Min=new Decimal(0.0001).mul(10 ** 8).toNumber()
 

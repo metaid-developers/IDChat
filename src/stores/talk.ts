@@ -1147,7 +1147,7 @@ export const useTalkStore = defineStore('talk', {
           otherMetaId: this.activeChannelId,
           metaId: selfMetaId,
         })
-        messages=privateList.list
+        messages=privateList.list ?? []
         nextTimestamp=privateList.nextTimestamp
 
       } else {

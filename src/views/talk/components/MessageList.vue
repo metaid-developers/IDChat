@@ -307,7 +307,7 @@ const loadMore = async (preTimestamp = 0) => {
   const earliestMessagePosition = earliestMessageElement?.getBoundingClientRect().bottom
 
   let params
-  debugger
+  
   if (earliestMessageTimestamp) {
     params = {
       timestamp: earliestMessageTimestamp,
@@ -326,7 +326,7 @@ const loadMore = async (preTimestamp = 0) => {
   
   
   console.log("talk.activeChannel",talk.activeChannel)
-  debugger
+  
   let items
   let nextTimestamp=0
   if(isSession){
@@ -335,7 +335,7 @@ const loadMore = async (preTimestamp = 0) => {
     metaId: talk.selfMetaId,
     timestamp: params.timestamp ?? '0',
   })
-  items=privateList.list
+  items=privateList.list ?? []
   nextTimestamp=privateList.nextTimestamp
   }else{
      items = await getChannelMessages({
