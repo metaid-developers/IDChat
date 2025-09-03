@@ -63,7 +63,7 @@
     >
       <UserAvatar
         :image="''"
-        :name="alt"
+        :name="props.alt"
         :meta-name="''"
         is-custom
         :class="customClass"
@@ -90,7 +90,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  alt: 'Chat Icon',
+  alt: '',
   customClass: '',
   maxRetries: 3,
 })

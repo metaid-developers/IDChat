@@ -185,6 +185,7 @@
       "you_stake": "You staked"
     },
     "Channel": {
+      "recentContacts": "Recent Contacts",
       "core_members": "core members",
       "team_members": "Group members",
       "join_channel": "joined the channel.",
@@ -202,6 +203,16 @@
       "use_onchain_image": "Use Metafile Image",
       "view_original": "Open original",
       "search": "Search",
+      "searchPlaceholder": "Search groups or contacts",
+      "searching": "Searching groups...",
+      "noSearchResults": "No search results",
+      "localContacts": "Local Contacts",
+      "remoteGroups": "Remote Groups",
+      "joinGroup": "Join",
+      "members": "members",
+      "networkError": "Network error",
+      "searchFailed": "Search failed",
+      "cancel": "Cancel",
       "welcome": "Welcome to",
       "utilities": {
         "invite": "Invite Friends",
@@ -1377,5 +1388,15 @@
   "retry_join": "Please re-perform the group entry operation",
   "welcome": {
     "desc": "You can click the '+' icon to create a new group chat or search for a group name/ID to join a public chat. You can also join the official user group for assistance."
-  }
+  },
+  "groupId": "Group ID",
+  "members": "members",
+  "searchPlaceholder": "Search groups...",
+  "searching": "Searching...",
+  "localContacts": "Local Contacts",
+  "remoteGroups": "Remote Groups",
+  "joinGroup": "Join Group",
+  "noSearchResults": "No search results found",
+  "recentContacts": "Recent Contacts",
+  "searchError": "Search failed"
 }

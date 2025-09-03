@@ -11,6 +11,8 @@
           :placeholder="$t('Talk.Channel.search')"
           :value="keyword"
           @input="handleSearch"
+          @click="openSearchModal"
+          readonly
         />
       </div>
 
@@ -30,25 +32,45 @@
   </div>
 </template>
 
+<script lang="ts">
+import { defineComponent } from 'vue'
+export default defineComponent({
+  name: 'DirectContactSearch',
+})
+</script>
+
 <script lang="ts" setup>
 import { useUserStore } from '@/stores/user'
 import { ref, watch, computed } from 'vue'
 import { useLayoutStore } from '@/stores/layout'
 
-const groupWhiteList = [
-  '1Fw9tW2p6hossLoXXbsX8vjYrCBJyCFLCX',
-  '1JJSRmegmjgth5HLHHjjaCFVoUzSu5iLxP',
-  '16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo',
-  '12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ',
-  '195gtuVbW9DsKPnSZLrt9kdJrQmvrAt7e3',
-]
+interface Emits {
+  (e: 'open-search'): void
+}
+
+const emit = defineEmits<Emits>()
+
+// const groupWhiteList = [
+//   '1Fw9tW2p6hossLoXXbsX8vjYrCBJyCFLCX',
+//   '1JJSRmegmjgth5HLHHjjaCFVoUzSu5iLxP',
+//   '16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo',
+//   '12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ',
+//   '195gtuVbW9DsKPnSZLrt9kdJrQmvrAt7e3',
+// ]
+
 const userStore = useUserStore()
 const layout = useLayoutStore()
+
 const keyword = ref('')
+
 const handleSearch = () => {
   console.log(keyword.value)
-
   // 先进行名字搜索
+}
+
+const openSearchModal = () => {
+  console.log('Search clicked, emitting open-search event')
+  emit('open-search')
 }
 
 // const whiteList = computed(() => {

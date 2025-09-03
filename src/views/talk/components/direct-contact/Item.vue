@@ -45,6 +45,13 @@
   </div>
 </template>
 
+<script lang="ts">
+import { defineComponent } from 'vue'
+export default defineComponent({
+  name: 'DirectContactItem',
+})
+</script>
+
 <script lang="ts" setup>
 import { formatTimestamp, decryptedMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'

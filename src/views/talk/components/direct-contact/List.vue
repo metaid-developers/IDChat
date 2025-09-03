@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-white dark:bg-gray-700 fixed inset-0 fullscreen w-screen z-40 lg:static lg:shrink-0 lg:w-auto"
+    class="bg-white dark:bg-gray-700 fixed inset-0 fullscreen w-screen z-40 lg:relative lg:shrink-0 lg:w-auto"
     :class="[layout.isShowLeftNav ? '' : 'hidden lg:block']"
   >
     <div class="w-full h-full flex">
@@ -11,7 +11,7 @@
 
 
       <div
-        class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch"
+        class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch relative"
       >
       
 
@@ -19,7 +19,7 @@
       
 
           <!-- 搜索栏 -->
-          <DirectContactSearch />
+          <DirectContactSearch @open-search="handleOpenSearchModal" />
 
           <Welcome v-if="!activeCommunity?.channels?.length"></Welcome>
 
@@ -32,6 +32,9 @@
             />
           </div>
         </div>
+
+        <!-- 搜索弹窗 -->
+        <SearchModal v-model="isSearchModalVisible" @select="handleContactSelect" />
       </div>
     </div>
   </div>
@@ -41,18 +44,41 @@
 import { useLayoutStore } from '@/stores/layout'
 import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
+import SearchModal from './SearchModal.vue'
 import { useTalkStore } from '@/stores/talk'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import Welcome from '@/components/Welcome/welcome.vue'
 const layout = useLayoutStore()
 const { activeCommunity } = storeToRefs(useTalkStore())
-  console.log("layout.isShowLeftNav1111",layout.isShowLeftNav)
-const aaa=computed(()=>{
-  console.log("layout.isShowLeftNav1111",layout.isShowLeftNav)
-  return layout.isShowLeftNav
-})
-// const test=computed(()=>{
+
+// 搜索弹窗状态
+const isSearchModalVisible = ref(false)
+
+// 处理搜索模态框打开
+const handleOpenSearchModal = () => {
+  console.log('Opening search modal')
+  isSearchModalVisible.value = true
+}
+
+// 处理联系人选择
+const handleContactSelect = (contact: any) => {
+  console.log('Selected contact:', contact)
+
+  // 如果是远程群组，可能需要特殊处理（比如加入群组）
+  if (contact.isRemote) {
+    console.log('Joining remote group:', contact)
+    // 这里可以添加加入远程群组的逻辑
+    // 例如：调用加入群组的 API
+    // await joinRemoteGroup(contact.groupId)
+  }
+
+  // 切换到选中的频道
+  const talkStore = useTalkStore()
+  if (contact.groupId) {
+    talkStore.activeChannelId = contact.groupId
+  }
+} // const test=computed(()=>{
 //  return talkStore.activeCommunityChannels
 // })
 // console.log("test",test.value)

@@ -661,7 +661,7 @@ const groupLinkInfo = computed(() => {
     const pinId = match[1]
     return {
       pinId,
-      groupName: channelInfo.value?.roomName || `Group ${pinId.slice(0, 8)}...`,
+      groupName: channelInfo.value?.roomName ,
       groupAvatar: channelInfo.value?.roomIcon || '',
       memberCount: channelInfo.value?.memberCount || 0,
       fullUrl: messageContent
