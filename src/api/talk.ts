@@ -246,7 +246,7 @@ export const getAtMeChannels = async (params?: any): Promise<any> => {
 export const getChannels = async ({
   metaId,
   cursor = '0',
-  size = '20',
+  size = '30',
 }: {
   metaId: string
   cursor?: string
@@ -340,20 +340,22 @@ export const getChannelMessages = async ({
     }
   } = await TalkApi.get(`/group-chat-list-v2?${query}`)
 
-  if (data.data.list?.length) {
-    for (let item of data.data.list) {
-      if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
-        const redpackInfo = await getOneRedPacket({
-          groupId: item.groupId,
-          pinId: item.pinId,
-        })
+  // if (data.data.list?.length) {
+  //   for (let item of data.data.list) {
+  //     if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
+  //     getOneRedPacket({
+  //         groupId: item.groupId,
+  //         pinId: item.pinId,
+  //       }).then((redpackInfo)=>{
+  //           if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
+  //         item.claimOver = true
+  //       }
+  //       }).catch((e)=>console.log('e',e))
 
-        if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
-          item.claimOver = true
-        }
-      }
-    }
-  }
+      
+  //     }
+  //   }
+  // }
 
   return data.data.list ?? []
 }

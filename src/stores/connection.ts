@@ -13,6 +13,7 @@ import { useUserStore } from './user'
 import { useRouter, Router } from 'vue-router'
 import { useApprovedStore } from './approved'
 import { useTalkStore } from './talk'
+import { useLayoutStore } from './layout'
 function getWalletAdapter(wallet: Wallet) {
   switch (wallet) {
     case 'metalet':
@@ -247,6 +248,10 @@ export const useConnectionStore = defineStore('connection', {
       const userStore = useUserStore()
       const talkStore = useTalkStore()
       const approvedStore = useApprovedStore()
+      const layout=useLayoutStore()
+       layout.$patch({
+          isShowLeftNav: true,
+          })
       console.log('router', router)
 
       await userStore.clearUserInfo()
@@ -255,7 +260,7 @@ export const useConnectionStore = defineStore('connection', {
       }
       setTimeout(() => {
         talkStore.$patch({ isShowWelcome: false })
-
+       
         router.push({
           name: 'talkChannel',
           params: { communityId: 'public', channelId: 'welcome' }

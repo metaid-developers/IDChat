@@ -21,10 +21,10 @@
           <!-- 搜索栏 -->
           <DirectContactSearch @open-search="handleOpenSearchModal" />
 
-          <Welcome v-if="!activeCommunity?.channels?.length"></Welcome>
+          <Welcome v-show="!activeCommunity?.channels?.length && layout.isShowLeftNav"></Welcome>
 
           <!-- 联系人列表 -->
-          <div class="overflow-y-auto" v-else>
+          <div class="overflow-y-auto" >
             <DirectContactItem
               v-for="session in activeCommunity?.channels ?? []"
               :key="session.timestamp"

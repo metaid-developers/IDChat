@@ -1,19 +1,21 @@
 <template>
 
-<div class="bg-inherit flex items-center">
+<div class="bg-inherit flex items-center" >
      
-    <div class="flex lg:hidden w-full max-w-full  items-center justify-center py-5" v-if="!connectionStore.connected || !credentialsStore.get">
-           <template v-if="!connectionStore.connected">
-    <a class="main-border primary text-center connect-wallet" @click="openConnectionModal">{{
+    <div class="block lg:hidden w-full max-w-full  py-5" v-if="!connectionStore.connected || !credentialsStore.get">
+        <div class="flex items-center justify-center">
+               <template v-if="!connectionStore.connected">
+    <a class="main-border  primary text-center connect-wallet" @click="openConnectionModal">{{
       $t('Login.connectWallet')
     }}</a>
   </template>
 
   <template v-else-if="!credentialsStore.get">
-    <a class="main-border primary text-center connect-wallet" @click="credentialsStore.login()">{{
+    <a class="main-border  primary text-center connect-wallet" @click="credentialsStore.login()">{{
       $t('Login.authorize')
     }}</a>
   </template>
+        </div>
     </div>
 
 
@@ -23,13 +25,13 @@
       <div>
         <div class="font-medium text-sm">{{ $t('welcome.desc') }}</div>
 
-     <div class="flex flex-col mt-5">
+     <div class="flex flex-col items-center  mt-5">
           <div class="font-medium text-sm flex flex-row items-center">
             <span>{{ $t('link.metaid.group') }}</span
             >
             <el-icon><CaretBottom /></el-icon>
           </div>
-          <a class="main-border text-center font-medium cursor-pointer mt-5 text-base primary p-2" @click="toMetaIdGrop">{{
+          <a class="main-border w-[200PX] text-center font-medium cursor-pointer mt-5 text-base primary p-2" @click="toMetaIdGrop">{{
             $t('MetaID.official_group')
           }}</a>
         </div>
@@ -46,10 +48,12 @@ import { useConnectionStore } from '@/stores/connection'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
+import { useLayoutStore } from '@/stores/layout'
 const router=useRouter()
 const connectionStore = useConnectionStore()
 const userStore=useUserStore()
 const credentialsStore = useCredentialsStore()
+
 const { openConnectionModal } = useConnectionModal()
 
 function toMetaIdGrop() {
@@ -73,7 +77,7 @@ function toMetaIdGrop() {
 .connect-wallet {
   padding: 12px 16px;
   cursor: pointer;
-  width: 60%;
+  width: 200px;
   
   margin-right: 18px;
 }

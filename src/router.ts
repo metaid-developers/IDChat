@@ -11,6 +11,7 @@ import { useRootStore } from './stores/root'
 import { useUserStore } from './stores/user'
 import { useTalkStore } from './stores/talk'
 import { GetBandProposalList } from '@/api/strapi'
+import { useLayoutStore } from './stores/layout'
 //import.meta.env.VITE_BASE_URL
 export const routerHistory = createWebHistory()
 export const router = createRouter({
@@ -47,7 +48,7 @@ export const router = createRouter({
       //        const myChannelList=await getChannels({
       //         metaId:userStore.last.metaid
       //         })
-      //         debugger
+      //         
 
       //          if(myChannelList.length){
 
@@ -536,19 +537,26 @@ window._go = go
 //   else next()
 // })
 router.beforeEach(async (to, from, next) => {
+   const layout=useLayoutStore()
+   
   if (to.path === '/') {
     const userStore = useUserStore();
     const talk = useTalkStore();
+   
 
     if (userStore.isAuthorized) {
       const myChannelList = await getChannels({
         metaId: userStore.last.metaid
       });
-
+      
       let channelId;
       if (myChannelList.length) {
+        
         channelId = myChannelList[0].groupId;
+        //layout.$patch({ isShowLeftNav: true })
       } else {
+        
+        layout.$patch({ isShowLeftNav: true })
         channelId = 'welcome';
       }
 
@@ -557,13 +565,22 @@ router.beforeEach(async (to, from, next) => {
         params: { communityId: 'public', channelId }
       });
     } else {
+      layout.$patch({ isShowLeftNav: true })
       next({
         name: 'talkChannel',
         params: { communityId: 'public', channelId: 'welcome' }
       });
     }
+  }else if(to.path == '/talk/channels/public/welcome'){
+   
+    next()
+    layout.$patch({ isShowLeftNav: true })
   } else {
+    
+   
     next();
+    //layout.$patch({ isShowLeftNav: true })
+   
   }
 });
 

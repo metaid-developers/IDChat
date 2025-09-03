@@ -38,7 +38,7 @@
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
-      <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-[160PX]">
+      <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-fit">
         {{ lastMessage }}
       </div>
     </div>
