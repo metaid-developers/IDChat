@@ -13,7 +13,7 @@
       <header class="flex items-center justify-between header">
         <div class="flex items-center gap-2">
           <a class="back" @click="emit('update:modelValue', false)">
-            <el-icon :size="16"><CircleClose /></el-icon>
+            <el-icon :size="16"><CloseBold /></el-icon>
           </a>
           <span class="title truncate max-w-6xl">{{ currentChannelInfo?.roomName || '' }}</span>
         </div>
@@ -213,6 +213,7 @@ import {
   ArrowRight,
   CircleClose,
   Close,
+  CloseBold,
   CopyDocument,
   Edit,
   Link,
