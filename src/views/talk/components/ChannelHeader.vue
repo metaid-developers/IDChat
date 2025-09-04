@@ -3,14 +3,9 @@
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
     <div class="max-w-[50%] flex items-center">
-       <a class="back flex items-center mr-1 lg:hidden"   @click="layout.isShowLeftNav = true">
-               <Icon
-        name="down"
-        class="w-3 h-3 cursor-pointer mx-2 shrink-0 "
-      
-      />
-          </a>
-     
+      <a class="back flex items-center mr-1 lg:hidden" @click="layout.isShowLeftNav = true">
+        <Icon name="down" class="w-3 h-3 cursor-pointer mx-2 shrink-0 " />
+      </a>
 
       <div class="flex shrink-0 items-center">
         <div class=" hidden lg:block" v-if="talkStore.isActiveChannelReserved">
@@ -43,8 +38,8 @@
           >
             {{
               talkStore.isActiveChannelReserved
-                ? talkStore.activeCommunity?.name 
-                : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || '----'
+                ? talkStore.activeCommunity?.name
+                : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || ''
             }}
           </div>
 
@@ -67,7 +62,6 @@
     </div>
     <div class="flex flex-row-reverse items-center justify-between grow">
       <div class="shrink-0 flex items-center">
-      
         <!-- <div class="indicator-container mr-3" v-if="hasWS">
           <div
             class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-lime-500 animate-pulse-glow"
@@ -90,13 +84,13 @@
           </div>
         </div> -->
         <LoginedUserOperate />
-       <div class="ml-1 cursor-pointer ">
-            <Icon
-        name="rignt_bars"
-        class="w-[24PX] h-[20PX] text-[#303133] dark:text-gray-100 mx-2 shrink-0 "
-         @click="handleChannelNameClick"
-      />
-       </div>
+        <div class="ml-1 cursor-pointer ">
+          <Icon
+            name="rignt_bars"
+            class="w-[24PX] h-[20PX] text-[#303133] dark:text-gray-100 mx-2 shrink-0 "
+            @click="handleChannelNameClick"
+          />
+        </div>
       </div>
 
       <div
@@ -300,32 +294,29 @@ const handleChannelNameClick = () => {
   animation-play-state: paused;
 }
 
- .back {
-    width: 24px;
-    height: 24px;
-    text-align: center;
-    line-height: 24px;
-    position: relative;
-    z-index: 2;
-    cursor: pointer;
-  
-    
+.back {
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
 
+  .icon {
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+    transform: rotate(90deg);
+  }
+
+  &:hover {
     .icon {
-      width: 12px;
-      height: 12px;
-      display: inline-block;
-      transform: rotate(90deg);
-    }
-
-    &:hover {
-      .icon {
-        &:deep(use) {
-          stroke: var(--themeBtnTextColor);
-          stroke-width: 2px;
-        }
+      &:deep(use) {
+        stroke: var(--themeBtnTextColor);
+        stroke-width: 2px;
       }
     }
   }
-
+}
 </style>

@@ -391,7 +391,7 @@ const handleLeave = async () => {
     ElMessage.success('Left channel successfully')
     emit('update:modelValue', false)
     talkStore.fetchChannels()
-    window.location.reload()
+    window.location.href = `/`
   } catch (error) {
     ElMessage.error(error.message || 'Failed to leave channel')
   }

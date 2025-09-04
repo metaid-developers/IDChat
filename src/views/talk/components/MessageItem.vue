@@ -210,7 +210,9 @@
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <div class="text-dark-800 dark:text-gray-100 font-medium text-base truncate">
+                  <div
+                    class="text-dark-800 dark:text-gray-100 font-medium text-base truncate max-w-[200px]"
+                  >
                     {{ groupLinkInfo.groupName || 'Group Chat' }}
                   </div>
                   <div class="text-dark-400 dark:text-gray-400 text-sm">
