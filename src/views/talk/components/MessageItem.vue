@@ -241,9 +241,9 @@
           <div
             class="text-sm  text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
-              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
               msgChain == ChatChain.btc && 'btc-item',
+              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
+              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-if="translateStatus === 'showing'"
           >
@@ -256,9 +256,9 @@
           <div
             class="text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
-              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
               msgChain == ChatChain.btc && 'btc-item',
+              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
+              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else
             v-html="
