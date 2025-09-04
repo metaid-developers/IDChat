@@ -13,13 +13,14 @@
       <header class="flex items-center justify-between header">
         <div class="flex items-center gap-2">
           <a class="back" @click="emit('update:modelValue', false)">
-            <Icon name="down" />
+            <el-icon :size="16"><CircleClose /></el-icon>
           </a>
           <span class="title truncate max-w-6xl">{{ currentChannelInfo?.roomName || '' }}</span>
         </div>
 
         <el-icon
           class="cursor-pointer"
+          :size="16"
           v-if="isCurrentUserCreator"
           @click="openEditChannelInfoDrawer"
           ><Edit
@@ -724,14 +725,9 @@ header {
   z-index: 10;
 
   .back {
-    width: 24px;
-    height: 24px;
-    text-align: center;
-    line-height: 24px;
-    position: relative;
-    z-index: 2;
     cursor: pointer;
-
+    display: flex;
+    align-items: center;
     .icon {
       width: 12px;
       height: 12px;
