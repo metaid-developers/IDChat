@@ -2,13 +2,10 @@
   <div
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
-    <div class="max-w-[50%] flex items-center">
-       <a class="back flex items-center mr-1 lg:hidden"   @click="layout.isShowLeftNav = true">
-               <Icon
-        name="down"
-        class="w-3 h-3 cursor-pointer mx-2 shrink-0 "
-      
-      />
+    <div class="max-w-[50%] flex items-center justify-center ">
+       <a class="mt-1 text-center  lg:hidden"   @click="layout.isShowLeftNav = true">
+     
+      <el-icon class="w-3 h-3 cursor-pointerv mx-2 shrink-0"><Back /></el-icon>
           </a>
      
 
@@ -90,10 +87,11 @@
           </div>
         </div> -->
         <LoginedUserOperate />
-       <div class="ml-1 cursor-pointer ">
+       <div class="ml-1 cursor-pointer " v-if="userStore.isAuthorized">
             <Icon
-        name="rignt_bars"
-        class="w-[24PX] h-[20PX] text-[#303133] dark:text-gray-100 mx-2 shrink-0 "
+        name="right_bars_2"
+       
+        class="w-[24PX] h-[20PX]  mx-2 shrink-0 "
          @click="handleChannelNameClick"
       />
        </div>
@@ -193,9 +191,11 @@ import { useRoute } from 'vue-router'
 import { getOneChannel } from '@/api/talk'
 import { Channel } from '@/@types/talk'
 import { ChatChain } from '@/enum'
-
+import { useUserStore } from '@/stores/user'
+import { Back } from '@element-plus/icons-vue'
 const talkStore = useTalkStore()
 const layout = useLayoutStore()
+const userStore=useUserStore()
 const WS = useWsStore()
 const route = useRoute()
 const currentChannelId = ref(route.params?.channelId || '')

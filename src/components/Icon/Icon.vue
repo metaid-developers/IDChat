@@ -24,6 +24,7 @@ const iconClass = computed(() => {
 })
 const symbolId = computed(() => `#${props.prefix}-${props.name}`)
 const fillColor = computed(() => {
+  
   if (props.color) return props.color
   if (props.useColorClass) return 'currentColor'
 

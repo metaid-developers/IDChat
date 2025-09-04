@@ -302,9 +302,9 @@ export default ({ mode, command }) => {
         plugins: [nodePolyfills()],
         output: {
           sourcemap: isProduction ? false : 'inline',
-        //    assetFileNames: 'chat/assets/[name].[hash].[ext]',
-        //    chunkFileNames: 'chat/assets/[name].[hash].js',
-        // entryFileNames: 'chat/assets/[name].[hash].js'
+          chunkFileNames: 'assets/[name].[hash].js',
+          entryFileNames: 'assets/[name].[hash].js',
+     
         },
       },
       commonjsOptions: {

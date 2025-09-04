@@ -12,8 +12,9 @@
     <div class="wrap relative">
       <header class="flex items-center justify-between header">
         <div class="flex items-center gap-2">
-          <a class="back" @click="emit('update:modelValue', false)">
-            <Icon name="down" />
+          <a class="mt-1 cursor-pointer" @click="emit('update:modelValue', false)">
+            <el-icon><ArrowRight /></el-icon>
+            <!-- <Icon name="down" /> -->
           </a>
           <span class="title truncate max-w-6xl">{{ currentChannelInfo?.roomName || '' }}</span>
         </div>
