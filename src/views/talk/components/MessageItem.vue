@@ -216,12 +216,17 @@
                   <div class="text-dark-400 dark:text-gray-400 text-sm">
                     {{ props.message.userInfo?.name || 'Someone' }} invites you to join this group
                   </div>
-                  <div
-                    v-if="groupLinkInfo.memberCount > 0"
-                    class="text-dark-400 dark:text-gray-400 text-xs mt-1"
-                  >
-                    {{ groupLinkInfo.memberCount }} members
-                  </div>
+                </div>
+              </div>
+              <div class="flex gap-4 items-center">
+                <div class="text-dark-400 dark:text-gray-400 text-xs mt-1 truncate max-w-[150px]">
+                  creator: {{ groupLinkInfo.creator }}
+                </div>
+                <div
+                  v-if="groupLinkInfo.memberCount > 0"
+                  class="text-dark-400 dark:text-gray-400 text-xs mt-1"
+                >
+                  members: {{ groupLinkInfo.memberCount }}
                 </div>
               </div>
 
@@ -663,8 +668,9 @@ const groupLinkInfo = computed(() => {
       pinId,
       groupName: channelInfo.value?.roomName ,
       groupAvatar: channelInfo.value?.roomIcon || '',
-      memberCount: channelInfo.value?.memberCount || 0,
-      fullUrl: messageContent
+      memberCount: channelInfo.value?.userCount || 0,
+      fullUrl: messageContent,
+      creator:channelInfo.value?.createUserInfo?.name || '',
     }
   }
 
@@ -673,6 +679,7 @@ const groupLinkInfo = computed(() => {
     groupName: 'Group Chat',
     groupAvatar: '',
     memberCount: 0,
+    creator: '',
     fullUrl: messageContent
   }
 })
