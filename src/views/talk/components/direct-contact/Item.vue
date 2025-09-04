@@ -1,6 +1,6 @@
 <template>
   <div
-    class="p-3 flex w-full items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer"
+    class="p-3 flex w-full max-w-[100vw] items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer"
     :class="{ 'bg-gray-200 dark:bg-gray-900': isActive }"
     @click="switchChannel"
   >
@@ -23,7 +23,7 @@
           :meta-name="contact?.metaName"
           :no-tag="true"
           class="mr-2"
-          :text-class="'font-medium dark:text-gray-100 max-w-[96PX]'"
+          :text-class="'font-medium dark:text-gray-100 max-w-[200px] truncate'"
         />
 
         <div class="shrink-0  text-dark-250 dark:text-gray-400 text-xs">
@@ -38,7 +38,7 @@
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
-      <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-fit">
+      <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-[200px]">
         {{ lastMessage }}
       </div>
     </div>
