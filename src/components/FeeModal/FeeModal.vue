@@ -66,6 +66,17 @@
             >
               <div class="fee-label">Customize</div>
               <div class="flex items-center gap-1">
+                <!-- <el-input-number
+                  v-if="selectedChain === 'btc' && selectedBTCFeeType === 'customizeFee'"
+                  class="fee-input"
+                  placeholder="Custom fee"
+                  @click.stop
+                  v-model="customBTCValue"
+                  :min="0.3"
+                  :max="10"
+                  :size="'small'"
+                  :controls="false"
+                /> -->
                 <input
                   v-if="selectedChain === 'btc' && selectedBTCFeeType === 'customizeFee'"
                   v-model="customBTCValue"
@@ -73,6 +84,7 @@
                   class="fee-input"
                   placeholder="Custom fee"
                   @click.stop
+                  :min="0.3"
                 />
                 <div v-else class="fee-value">{{ chainStore.state.btc.customizeFee }}</div>
                 <div class="fee-time">sat/vB</div>
@@ -210,6 +222,10 @@ const handleConfirm = () => {
   if (selectedChain.value === 'btc') {
     chainStore.setBtcFeeType(selectedBTCFeeType.value)
     if (selectedBTCFeeType.value === 'customizeFee') {
+      if(customBTCValue.value < 0.3){
+       ElMessage.error('BTC custom fee must be at least 0.3 sat/vB')
+       customBTCValue.value=0.3
+      }
       chainStore.setBtcCustomizeFee(customBTCValue.value)
     }
     chainStore.setBtcFeeType(selectedBTCFeeType.value)
