@@ -13,8 +13,8 @@
         <div class="flex flex-col overflow-y-hidden">
           <!-- 搜索栏 -->
           <DirectContactSearch />
-
-          <CreatePubkey :needModifyPubkey="needModifyPubkey" v-if="userStore.isAuthorized && !userStore.last?.chatpubkey && !needModifyPubkey" />
+          <!--&& !userStore.last?.chatpubkey && !needModifyPubkey-->
+          <CreatePubkey v-model:needModifyPubkey="needModifyPubkey" v-if="userStore.isAuthorized" />
 
           <!-- 联系人列表 -->
           <div class="overflow-y-auto">
@@ -42,6 +42,7 @@ import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
 import CreatePubkey from './create-pubkey.vue'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { watch } from 'fs'
 const layout = useLayoutStore()
 const talkStore = useTalkStore()
 const credentialsStore = useCredentialsStore()
@@ -55,12 +56,11 @@ const getSessionKey = (session: any) => {
 }
 
 
-
-
 const { activeCommunity } = storeToRefs(useTalkStore())
 
 
 onMounted(async()=>{
+
    const pubkey=userStore.last.chatpubkey
    const ecdh= await getEcdhPublickey()
    

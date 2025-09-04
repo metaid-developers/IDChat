@@ -34,12 +34,13 @@ const props = withDefaults(defineProps<Props>(), {
   needModifyPubkey: false,
 })
 
-const emit = defineEmits(['needModifyPubkey'])
+const emit = defineEmits(['update:needModifyPubkey'])
 const userStore=useUserStore()
 const i18n=useI18n()
 const ecdhsStore=useEcdhsStore()
 async function createPubkeyNode() {
-    
+  
+ 
   try {
    
    // const credential=credentialsStore.get
@@ -65,7 +66,7 @@ async function createPubkeyNode() {
         chatpubkey:ecdh?.ecdhPubKey//credential.publicKey
     })
     if(props.needModifyPubkey){
-      emit('needModifyPubkey',false)
+      emit('update:needModifyPubkey',false)
     }
     ElMessage.success(`${i18n.t('privite_chat_success')}`)
   }

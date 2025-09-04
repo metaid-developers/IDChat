@@ -275,13 +275,15 @@ export const getChannels = async ({
     (res) => {
       
      if(res.data.list){
-       const list= res.data.list.map((channel: any) => {
-        channel.id = channel.groupId
+      const list=[]
+      
+      for(let channel of res.data.list){
+         channel.id = channel.groupId
         channel.name = channel.roomName
         channel.uuid = channel.id // 用于key,不修改
         if(Number(channel.type) == 2){
-          
-          if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
+          if(channel?.userInfo){
+               if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
             
                 getEcdhPublickey(channel.userInfo.chatPublicKey).then((ecdh)=>{
                   
@@ -289,10 +291,18 @@ export const getChannels = async ({
                 })
               
           }
+          }else{
+            
+            continue
+          }
+       
           
         }
-        return channel
-      })
+        list.push(channel) 
+      }
+      //  const list= res.data.list.map((channel: any) => {
+       
+      // })
 
       return list.sort((pre,next)=>next.timestamp - pre.timestamp)
      }else{
