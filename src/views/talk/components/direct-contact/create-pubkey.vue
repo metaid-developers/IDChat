@@ -4,7 +4,7 @@
     :class="{ 'bg-gray-200 dark:bg-gray-900': '' }"
            
   >
-    <div class="text-sm h-16  w-full font-medium  flex items-center ">
+    <div class="text-sm h-12  w-full font-medium  flex items-center ">
         <el-icon  color="#EBA51A" :size="30" class="mr-2  "><WarningFilled /></el-icon>
        <div class="flex w-full items-center justify-between">
          <span class="mr-2 ">{{needModifyPubkey ? $t('modify_pubkey') : $t('approve_private') }}</span>

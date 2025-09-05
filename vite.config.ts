@@ -302,9 +302,9 @@ export default ({ mode, command }) => {
         plugins: [nodePolyfills()],
         output: {
           sourcemap: isProduction ? false : 'inline',
-          chunkFileNames: 'assets/[name].[hash].js',
-          entryFileNames: 'assets/[name].[hash].js',
-     
+          // chunkFileNames: 'assets/[name].[hash].js',
+          // entryFileNames: 'assets/[name].[hash].js',
+          
         },
       },
       commonjsOptions: {

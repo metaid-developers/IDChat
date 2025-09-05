@@ -5,7 +5,7 @@
     <div class="max-w-[50%] flex items-center justify-center ">
        <a class="mt-1 text-center  lg:hidden"   @click="layout.isShowLeftNav = true">
      
-      <el-icon class="w-3 h-3 cursor-pointerv mx-2 shrink-0"><Back /></el-icon>
+      <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
           </a>
      
 

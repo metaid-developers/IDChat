@@ -5,21 +5,23 @@
     @click="switchChannel"
   >
     <div class="rounded-3xl w-12 h-12 shrink-0  relative">
-      <!-- <UserAvatar
+   
+      <ChatIcon
+         v-if="session?.groupId"
+        :src="session?.roomIcon"
+        :alt="session?.name"
+       
+        :customClass="'w-12 h-12 rounded-full'"
+      />
+         <UserAvatar
+      v-else
         :image="session?.avatarImage || session?.userInfo?.avatarImage"
         :meta-id="session?.metaId || session?.createUserMetaId"
         :name="session?.name"
         :meta-name="''"
         :is-custom="session?.groupId ? true : false"
         class="w-12 h-12 shrink-0 select-none"
-        :disabled="true" /> -->
-      <ChatIcon
-        :src="session?.roomIcon || session?.avatarImage || session?.userInfo?.avatarImage"
-        :alt="session?.name"
-        :avatarType="avatarType "
-        :is-custom="session?.groupId ? true : false"
-        :customClass="'w-12 h-12 shrink-0 select-none'"
-      />
+        :disabled="true" />
       <div
         class="flex items-center justify-center absolute top-[-3px] right-0 rounded-full w-4 h-4 bg-red-500"
         v-if="talk.hasUnreadMessagesOfChannel(session?.groupId || session?.id)"
@@ -48,8 +50,10 @@
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
-      <div class="text-xs text-dark-300 dark:text-gray-400 truncate max-w-fit">
-        {{ lastMessage }}
+      <div class="text-xs flex items-center truncate max-w-fit">
+        
+        <div v-if="!isPrivateChat && lastMessage" class="text-dark-800 dark:text-gray-500 font-medium"><UserName :name="lastMessageUsername" :meta-name="''" />&nbsp;:&nbsp;</div>
+        <span class="text-dark-300 dark:text-gray-400 "> {{ lastMessage }}</span>
       </div>
     </div>
   </div>
@@ -92,7 +96,9 @@ console.log('props.session3333333', props.session)
 
 // 添加防抖机制来减少闪烁
 const debouncedLastMessage = ref('')
+const debouncedLastMessageUserName=ref('')
 const debouncedLastMsgTimestamp = ref(0)
+const debouncedChannelType=ref(false)
 
 // 使用防抖更新显示内容
 watch(
@@ -103,7 +109,11 @@ watch(
       // 延迟更新，避免频繁闪烁
       setTimeout(() => {
         debouncedLastMessage.value = computeLastMessage(newSession)
+       
         debouncedLastMsgTimestamp.value = computeLastMsgTimestamp(newSession)
+        debouncedChannelType.value=computeChannelType(newSession)
+          debouncedLastMessageUserName.value=computeLastMessageUserName(newSession)
+
       }, 200)
     }
   },
@@ -137,6 +147,14 @@ const lastMessage = computed<string>(() => {
   return debouncedLastMessage.value
 })
 
+const lastMessageUsername=computed<string>(() => {
+  return debouncedLastMessageUserName.value
+})
+
+const isPrivateChat = computed(() => {
+  return debouncedChannelType.value
+})
+
 const lastMsgTimestamp = computed(() => {
   return debouncedLastMsgTimestamp.value
 })
@@ -149,6 +167,20 @@ const computeLastMessage = (session: any): string => {
 
   return parseTextMessage(computeDecryptedMsg(session))
 }
+
+const computeLastMessageUserName = (session: any): string => {
+    if(session?.newMessages?.length){
+     return session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name
+    }else{
+     return session.userInfo?.name
+    }
+     
+}
+
+const computeChannelType = (session: any): boolean => {
+ return Number(session?.type) == 2 ? true : false
+}
+
 
 const computeLastMsgTimestamp = (session: any): number => {
   if (session?.newMessages?.length) {

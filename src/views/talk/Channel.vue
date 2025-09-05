@@ -102,6 +102,10 @@ function init(communityId: string, channelId: string) {
       // return initGuestMode(communityId)
     }
 
+   
+
+   
+
     talk.checkChannelMembership(communityId, channelId).then(async (isMember: boolean) => {
       if (!isMember) {
         await talk.inviteChannel(channelId)
@@ -152,6 +156,7 @@ watch(
 
 // 解析 communityId 为 metaName 的情况
 async function resolve(communityId: string, channelId: string) {
+  
   // init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
   if (isPublicChannel(communityId)) {
     init(communityId, channelId)

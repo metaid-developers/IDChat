@@ -323,6 +323,7 @@ export const router = createRouter({
           path: ':channelId',
           name: 'talkChannel',
           component: () => import('@/views/talk/components/ChannelBody.vue'),
+          // meta: {  keepAlive: true },
         },
       ],
     },
@@ -573,8 +574,32 @@ router.beforeEach(async (to, from, next) => {
       });
     }
   }else if(to.path == '/talk/channels/public/welcome'){
+       const userStore = useUserStore();
+       
+      if (userStore.isAuthorized) {
+      const myChannelList = await getChannels({
+        metaId: userStore.last.metaid
+      });
+      
+      let channelId;
+      if (myChannelList.length) {
+        
+        channelId = myChannelList[0].groupId;
+        next({
+        name: 'talkChannel',
+        params: { communityId: 'public', channelId }
+        });
+        //layout.$patch({ isShowLeftNav: true })
+      } else {
+        
+        layout.$patch({ isShowLeftNav: true })
+        channelId = 'welcome';
+        next()
+      }
+    }else{
+       next()
+    }
    
-    next()
     layout.$patch({ isShowLeftNav: true })
   } else {
     

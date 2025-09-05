@@ -750,6 +750,7 @@ export const useTalkStore = defineStore('talk', {
         this._updateReadPointers(message.timestamp, messageMetaId)
         this.activeCommunity?.channels?.map((channel: any) => {
           if (channel.id === messageMetaId) {
+            
             channel.newMessages = [message]
           }
         })
@@ -836,7 +837,7 @@ export const useTalkStore = defineStore('talk', {
 
         return
       }
-
+      
       this.activeChannel.newMessages.push(message)
 
       try {

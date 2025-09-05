@@ -3,11 +3,15 @@
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
     <div class="max-w-[60%] flex items-center">
-      <Icon
+      <!-- <Icon
         name="bars"
         class="w-6 h-6 text-dark-800 dark:text-gray-100 shrink-0 lg:hidden mr-2"
         @click="layout.isShowLeftNav = true"
-      />
+      /> -->
+      <a class="mt-1 text-center lg:hidden" @click="layout.isShowLeftNav = true">
+     
+      <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
+      </a>
 
       <div class="flex shrink-0 items-center">
         <UserAvatar
@@ -56,13 +60,13 @@ import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOpera
 import { useTalkStore } from '@/stores/talk'
 import { computed } from 'vue'
 import { useUserStore } from '@/stores/user'
-
+import { Back } from '@element-plus/icons-vue'
 const talkStore = useTalkStore()
 const userStore = useUserStore()
 const layout = useLayoutStore()
 const activeChannel = computed(() => talkStore.activeChannel)
 const activeChannelId=computed(() => talkStore.activeChannel && talkStore.activeChannel.groupId)
-console.log("activeChannel11111111111",activeChannel.value)
+
 
 const shortenMetaId = (id: string) => {
   return id.substring(0, 6) + '...' + id.substring(id.length - 6)
