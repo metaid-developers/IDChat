@@ -12,8 +12,9 @@
     <div class="wrap relative">
       <header class="flex items-center justify-between header">
         <div class="flex items-center gap-2">
-          <a class="back" @click="emit('update:modelValue', false)">
-            <Icon name="down" />
+          <a class="mt-1 cursor-pointer" @click="emit('update:modelValue', false)">
+            <el-icon><ArrowRight /></el-icon>
+            <!-- <Icon name="down" /> -->
           </a>
           <span class="title truncate max-w-6xl">{{ currentChannelInfo?.roomName || '' }}</span>
         </div>
@@ -64,6 +65,13 @@
           /> -->
           <div class=" text-xl font-medium text-dark-800 dark:text-gray-100 mt-5">
             {{ currentChannelInfo?.roomName || '' }}
+          </div>
+          <div
+            class="flex gap-2 items-center cursor-pointer text-sm font-medium text-dark-600 dark:text-gray-400 mt-2"
+            @click="copyGroupId"
+          >
+            GroupId: {{ currentChannelInfo?.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') || ''
+            }}<el-icon><CopyDocument /></el-icon>
           </div>
           <div class="mt-4">
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true"
@@ -201,7 +209,16 @@ import { useRoute } from 'vue-router'
 import { getChannelMembers, searchChannelMembers } from '@/api/talk'
 import { ElMessage } from 'element-plus'
 import copy from 'copy-to-clipboard'
-import { ArrowRight, CircleClose, Close, Edit, Link, Remove, Search } from '@element-plus/icons-vue'
+import {
+  ArrowRight,
+  CircleClose,
+  Close,
+  CopyDocument,
+  Edit,
+  Link,
+  Remove,
+  Search,
+} from '@element-plus/icons-vue'
 import { metafile } from '@/utils/filters'
 import { NodeName } from '@/enum'
 import { createSinglePin } from '@/utils/pin'
@@ -286,6 +303,11 @@ const currentLink = computed(() => {
 
 const copyLink = () => {
   copy(currentLink.value)
+  ElMessage.success('Copied')
+}
+
+const copyGroupId = () => {
+  copy(currentChannelInfo.value?.groupId || '')
   ElMessage.success('Copied')
 }
 

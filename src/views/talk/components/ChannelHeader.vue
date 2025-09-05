@@ -2,12 +2,12 @@
   <div
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
-    <div class="max-w-[50%] flex items-center">
-      <Icon
-        name="bars"
-        class="w-6 h-6 text-dark-800 dark:text-gray-100 mx-2 shrink-0 lg:hidden"
-        @click="layout.isShowLeftNav = true"
-      />
+    <div class="max-w-[50%] flex items-center justify-center ">
+       <a class="mt-1 text-center  lg:hidden"   @click="layout.isShowLeftNav = true">
+     
+      <el-icon class="w-3 h-3 cursor-pointerv mx-2 shrink-0"><Back /></el-icon>
+          </a>
+     
 
       <div class="flex shrink-0 items-center">
         <div class=" hidden lg:block" v-if="talkStore.isActiveChannelReserved">
@@ -40,7 +40,7 @@
           >
             {{
               talkStore.isActiveChannelReserved
-                ? talkStore.activeCommunity?.name || 'kkkk'
+                ? talkStore.activeCommunity?.name 
                 : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || '----'
             }}
           </div>
@@ -64,7 +64,8 @@
     </div>
     <div class="flex flex-row-reverse items-center justify-between grow">
       <div class="shrink-0 flex items-center">
-        <div class="indicator-container mr-3" v-if="hasWS">
+      
+        <!-- <div class="indicator-container mr-3" v-if="hasWS">
           <div
             class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-lime-500 animate-pulse-glow"
           >
@@ -84,8 +85,16 @@
               style="animation-delay: 0.2s"
             ></span>
           </div>
-        </div>
+        </div> -->
         <LoginedUserOperate />
+       <div class="ml-1 cursor-pointer " v-if="userStore.isAuthorized">
+            <Icon
+        name="right_bars_2"
+       
+        class="w-[24PX] h-[20PX]  mx-2 shrink-0 "
+         @click="handleChannelNameClick"
+      />
+       </div>
       </div>
 
       <div
@@ -182,9 +191,11 @@ import { useRoute, useRouter } from 'vue-router'
 import {getOneChannel} from '@/api/talk'
 import { Channel } from '@/@types/talk'
 import { ChatChain } from '@/enum'
-
+import { useUserStore } from '@/stores/user'
+import { Back } from '@element-plus/icons-vue'
 const talkStore = useTalkStore()
 const layout = useLayoutStore()
+const userStore=useUserStore()
 const WS = useWsStore()
 const route=useRoute()
 const router=useRouter()
@@ -312,4 +323,33 @@ const handleChannelNameClick = () => {
 .indicator-container:hover .animate-pulse-glow {
   animation-play-state: paused;
 }
+
+ .back {
+    width: 24px;
+    height: 24px;
+    text-align: center;
+    line-height: 24px;
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+  
+    
+
+    .icon {
+      width: 12px;
+      height: 12px;
+      display: inline-block;
+      transform: rotate(90deg);
+    }
+
+    &:hover {
+      .icon {
+        &:deep(use) {
+          stroke: var(--themeBtnTextColor);
+          stroke-width: 2px;
+        }
+      }
+    }
+  }
+
 </style>

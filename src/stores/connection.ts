@@ -14,6 +14,7 @@ import { useRouter, Router } from 'vue-router'
 import { useApprovedStore } from './approved'
 import { useTalkStore } from './talk'
 import { useEcdhsStore } from './ecdh'
+import { useLayoutStore } from './layout'
 function getWalletAdapter(wallet: Wallet) {
   switch (wallet) {
     case 'metalet':
@@ -259,7 +260,7 @@ export const useConnectionStore = defineStore('connection', {
       }
       setTimeout(() => {
         talkStore.$patch({ isShowWelcome: false })
-
+       
         router.push({
           name: 'talkChannel',
           params: { communityId: 'public', channelId: 'welcome' }

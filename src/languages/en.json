@@ -185,10 +185,13 @@
       "you_stake": "You staked"
     },
     "Channel": {
+      "recentContacts": "Recent Contacts",
       "core_members": "core members",
       "team_members": "Group members",
       "join_channel": "joined the channel.",
       "leave_channel": "left the channel.",
+      "remove_user": "User {username} has been removed from the group by admin",
+      "remove_user_with_reason": "User {username} has been removed from the group by admin (Reason: {reason})",
       "come_get_red_envelope": "Grab a Candy Bag!",
       "receive_own_red_envelope": "received a candy bag of your own.",
       "receive_red_envelope": "received a candy bag from {sender}.",
@@ -200,6 +203,16 @@
       "use_onchain_image": "Use Metafile Image",
       "view_original": "Open original",
       "search": "Search",
+      "searchPlaceholder": "Search groups or contacts",
+      "searching": "Searching groups...",
+      "noSearchResults": "No search results",
+      "localContacts": "Local Contacts",
+      "remoteGroups": "Remote Groups",
+      "joinGroup": "Join",
+      "members": "members",
+      "networkError": "Network error",
+      "searchFailed": "Search failed",
+      "cancel": "Cancel",
       "welcome": "Welcome to",
       "utilities": {
         "invite": "Invite Friends",
@@ -1357,11 +1370,11 @@
   "You haven't installed the corresponding wallet yet. Click the button, and we will guide you to the Metalet wallet official website for installation (we recommend the browser extension version).": "You haven't installed the corresponding wallet yet. Click the button, and we will guide you to the Metalet wallet official website for installation (we recommend the browser extension version).",
   "link": {
     "metaid": {
-      "group": "Click the button below to join the test group chat"
+      "group": "Click the button below to join the official user group"
     }
   },
   "MetaID": {
-    "official_group": "MetaID Official On-Chain Group"
+    "official_group": "Join"
   },
   "chat": {
     "home": {
@@ -1376,7 +1389,21 @@
   "approve_private": "You need to enable private chat",
   "get_ecdhPubkey_fail": "Failed to obtain public key",
   "user_private_chat_unsupport": "The user has not enabled the private chat feature yet.",
-  "retry_join": "Please re-perform the group entry operation",
   "get_ecdh_pubey_error": "The necessary parameters for encryption are empty",
-  "modify_pubkey": "You need to modify the chat public key"
+  "modify_pubkey": "You need to modify the chat public key",
+  "retry_join": "Please re-perform the group entry operation",
+  "welcome": {
+    "desc": "You can click the '+' icon to create a new group chat or search for a group name/ID to join a public chat. You can also join the official user group for assistance."
+  },
+  "groupId": "Group ID",
+  "members": "members",
+  "searchPlaceholder": "Search groups...",
+  "searching": "Searching...",
+  "localContacts": "Local Contacts",
+  "remoteGroups": "Remote Groups",
+  "joinGroup": "Join Group",
+  "noSearchResults": "No search results found",
+  "recentContacts": "Recent Contacts",
+  "searchError": "Search failed",
+  "self_private_chat_unsupport": "You have not activated the private chat function yet. Please activate it before proceeding"
 }

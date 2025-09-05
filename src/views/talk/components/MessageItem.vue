@@ -91,6 +91,21 @@
         >
           {{ $t('Talk.Channel.leave_channel') }}
         </div>
+        <div
+          class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs"
+          v-else-if="isGroupRemoveUserAction"
+        >
+          {{
+            removeUserInfo?.reason
+              ? $t('Talk.Channel.remove_user_with_reason', {
+                  username: removeUserInfo.username,
+                  reason: removeUserInfo.reason,
+                })
+              : $t('Talk.Channel.remove_user', {
+                  username: removeUserInfo?.username,
+                })
+          }}
+        </div>
 
         <div class="w-full" v-else-if="isNftEmoji">
           <ChatImage
@@ -584,6 +599,49 @@ const isGroupJoinAction = computed(() =>
 const isGroupLeaveAction = computed(() =>
   containsString(props.message.protocol, 'SimpleGroupLeave')
 )
+const isGroupRemoveUserAction = computed(() =>
+  containsString(props.message.protocol, NodeName.SimpleGroupRemoveUser)
+)
+
+// 解析移除用户信息
+const removeUserInfo = computed(() => {
+  if (!isGroupRemoveUserAction.value) return null
+
+  const content = props.message.content
+  // 从内容中提取用户ID: "User {metaId} was removed from the group"
+  const userIdMatch = content.match(/User \{([^}]+)\} was removed/)
+  const userMetaId = userIdMatch ? userIdMatch[1] : null
+
+  // 检查是否有原因信息（可能在params字段或内容的其他部分）
+  let reason = ''
+  try {
+    // 尝试解析 params 或其他字段中的原因信息
+    if (props.message.params) {
+      const parsedParams = JSON.parse(props.message.params)
+      if (parsedParams.reason) {
+        reason = parsedParams.reason
+      }
+    }
+  } catch (e) {
+    // 如果解析失败，尝试从content中提取原因
+    const reasonMatch = content.match(/\(reason:\s*([^)]+)\)/i)
+    if (reasonMatch) {
+      reason = reasonMatch[1].trim()
+    }
+  }
+
+  // 尝试获取用户名称，默认使用截取的metaId
+  let username = userMetaId?.slice(0, 8) || 'Unknown User'
+
+  // 这里可以后续扩展：通过API查询用户信息获取真实用户名
+  // 目前先使用截取的metaId作为显示名称
+
+  return {
+    userMetaId,
+    username,
+    reason: reason.trim()
+  }
+})
 const isNftEmoji = computed(() => containsString(props.message.protocol, 'SimpleEmojiGroupChat'))
 const isImage = computed(() => containsString(props.message.protocol, NodeName.SimpleFileGroupChat))
 const isGiveawayRedPacket = computed(() =>
@@ -629,7 +687,7 @@ const groupLinkInfo = computed(() => {
     const pinId = match[1]
     return {
       pinId,
-      groupName: channelInfo.value?.roomName || `Group ${pinId.slice(0, 8)}...`,
+      groupName: channelInfo.value?.roomName ,
       groupAvatar: channelInfo.value?.roomIcon || '',
       memberCount: channelInfo.value?.memberCount || 0,
       fullUrl: messageContent

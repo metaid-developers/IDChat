@@ -219,10 +219,13 @@
       "channel_accept_invite": "接受邀请"
     },
     "Channel": {
+      "recentContacts": "最近聯繫人",
       "core_members": "核心成員",
       "team_members": "群组成员",
       "join_channel": "加入了頻道",
       "leave_channel": "離開了頻道",
+      "remove_user": "用戶 {username} 已被管理員移除群聊",
+      "remove_user_with_reason": "用戶 {username} 已被管理員移除群聊（原因：{reason}）",
       "come_get_red_envelope": "領取紅包",
       "receive_own_red_envelope": "領取了自己的紅包",
       "receive_red_envelope": "領取了{sender}的紅包",
@@ -234,6 +237,16 @@
       "use_onchain_image": "鏈上圖片",
       "view_original": "查看原圖",
       "search": "搜索",
+      "searchPlaceholder": "搜索群組或聯系人",
+      "searching": "正在搜索群組...",
+      "noSearchResults": "沒有搜索結果",
+      "localContacts": "本地聯系人",
+      "remoteGroups": "遠程群組",
+      "joinGroup": "加入",
+      "members": "成員",
+      "networkError": "網絡錯誤",
+      "searchFailed": "搜索失敗",
+      "cancel": "取消",
       "welcome": "歡迎來到",
       "utilities": {
         "invite": "邀請好友",
@@ -1351,11 +1364,11 @@
   },
   "link": {
     "metaid": {
-      "group": "点击下方按钮进入测试群聊"
+      "group": "点击下方按钮进入官网用户群"
     }
   },
   "MetaID": {
-    "official_group": "MetaID 链上官方群"
+    "official_group": "加入"
   },
   "chat": {
     "home": {
@@ -1370,7 +1383,21 @@
   "approve_private": "需要你授权开通私聊功能",
   "get_ecdhPubkey_fail": "获取公钥失败",
   "user_private_chat_unsupport": "该用户尚未开通私聊功能",
-  "retry_join": "请重新执行进群操作",
   "get_ecdh_pubey_error": "获取加密必要参数为空",
-  "modify_pubkey": "你需要更改聊天公钥"
+  "modify_pubkey": "你需要更改聊天公钥",
+  "retry_join": "请重新执行进群操作",
+  "welcome": {
+    "desc": "你可以点击“+”号新建群聊，或搜索群名字/id 加入一个公开群聊。 也可以加入官网的用户群获取帮助"
+  },
+  "groupId": "群组ID",
+  "members": "成员",
+  "searchPlaceholder": "搜索群组...",
+  "searching": "正在搜索...",
+  "localContacts": "本地联系人",
+  "remoteGroups": "远程群组",
+  "joinGroup": "加入群组",
+  "noSearchResults": "没有找到相关结果",
+  "recentContacts": "最近联系人",
+  "searchError": "搜索失败",
+  "self_private_chat_unsupport": "你暂未开通私聊功能，请开通过再操作"
 }

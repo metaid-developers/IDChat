@@ -26,8 +26,8 @@ interface ImportMetaEnv {
   VITE_DotWallet_ENV: string
   VITE_AppName: string
   VITE_NET_WORK: Network
+  VITE_CHAT_API: string
 }
-
 
 interface ImportMeta {
   readonly env: ImportMetaEnv
