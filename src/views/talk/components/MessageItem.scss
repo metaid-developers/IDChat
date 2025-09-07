@@ -1,4 +1,6 @@
-.btc-item {
-  background: linear-gradient(113deg, #fff6e6 -12%, #e5bc77 103%);
-  color: #5a4015;
+.not-mine {
+  &.btc-item {
+    background: linear-gradient(113deg, #fff6e6 -12%, #e5bc77 103%);
+    color: #5a4015;
+  }
 }

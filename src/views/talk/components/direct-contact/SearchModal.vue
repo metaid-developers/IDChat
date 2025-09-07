@@ -9,7 +9,7 @@
   >
     <div
       v-if="isVisible"
-      class="absolute inset-0 bg-white dark:bg-gray-800 z-50 flex flex-col"
+      class="absolute inset-0 bg-white dark:bg-gray-800 z-50 flex flex-col max-w-[100vw]"
       @click="closeModal"
     >
       <Transition
@@ -43,7 +43,7 @@
                 </div>
               </div>
               <button
-                class="px-4 py-2 text-blue-500 hover:text-blue-600 font-medium text-sm"
+                class="px-4 py-2 text-primary hover:text-primary-dark font-medium text-sm"
                 @click="closeModal"
               >
                 {{ $t('cancel') }}

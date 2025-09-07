@@ -40,8 +40,8 @@
           >
             {{
               talkStore.isActiveChannelReserved
-                ? talkStore.activeCommunity?.name 
-                : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || '----'
+                ? talkStore.activeCommunity?.name
+                : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || ''
             }}
           </div>
 
@@ -64,7 +64,6 @@
     </div>
     <div class="flex flex-row-reverse items-center justify-between grow">
       <div class="shrink-0 flex items-center">
-      
         <!-- <div class="indicator-container mr-3" v-if="hasWS">
           <div
             class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-lime-500 animate-pulse-glow"
@@ -324,32 +323,29 @@ const handleChannelNameClick = () => {
   animation-play-state: paused;
 }
 
- .back {
-    width: 24px;
-    height: 24px;
-    text-align: center;
-    line-height: 24px;
-    position: relative;
-    z-index: 2;
-    cursor: pointer;
-  
-    
+.back {
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
 
+  .icon {
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+    transform: rotate(90deg);
+  }
+
+  &:hover {
     .icon {
-      width: 12px;
-      height: 12px;
-      display: inline-block;
-      transform: rotate(90deg);
-    }
-
-    &:hover {
-      .icon {
-        &:deep(use) {
-          stroke: var(--themeBtnTextColor);
-          stroke-width: 2px;
-        }
+      &:deep(use) {
+        stroke: var(--themeBtnTextColor);
+        stroke-width: 2px;
       }
     }
   }
-
+}
 </style>

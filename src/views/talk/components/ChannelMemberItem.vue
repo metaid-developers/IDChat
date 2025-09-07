@@ -38,7 +38,7 @@
         width="220"
         :icon="InfoFilled"
         icon-color="red"
-        title="Are you sure to delete this?"
+        :title="`Are you sure to remove this user ${member.userInfo.name}?`"
         @cancel="onCancel"
         @confirm="onConfirm"
         v-if="isCurrentUserCreator"

@@ -12,15 +12,15 @@
     <div class="wrap relative">
       <header class="flex items-center justify-between header">
         <div class="flex items-center gap-2">
-          <a class="mt-1 cursor-pointer" @click="emit('update:modelValue', false)">
-            <el-icon><ArrowRight /></el-icon>
-            <!-- <Icon name="down" /> -->
+          <a class="back" @click="emit('update:modelValue', false)">
+            <el-icon :size="16"><CloseBold /></el-icon>
           </a>
           <span class="title truncate max-w-6xl">{{ currentChannelInfo?.roomName || '' }}</span>
         </div>
 
         <el-icon
           class="cursor-pointer"
+          :size="16"
           v-if="isCurrentUserCreator"
           @click="openEditChannelInfoDrawer"
           ><Edit
@@ -213,6 +213,7 @@ import {
   ArrowRight,
   CircleClose,
   Close,
+  CloseBold,
   CopyDocument,
   Edit,
   Link,
@@ -388,7 +389,7 @@ const handleLeave = async () => {
     ElMessage.success('Left channel successfully')
     emit('update:modelValue', false)
     talkStore.fetchChannels()
-    window.location.reload()
+    window.location.href = `/`
   } catch (error) {
     ElMessage.error(error.message || 'Failed to leave channel')
   }
@@ -728,14 +729,9 @@ header {
   z-index: 10;
 
   .back {
-    width: 24px;
-    height: 24px;
-    text-align: center;
-    line-height: 24px;
-    position: relative;
-    z-index: 2;
     cursor: pointer;
-
+    display: flex;
+    align-items: center;
     .icon {
       width: 12px;
       height: 12px;
