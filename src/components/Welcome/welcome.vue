@@ -21,7 +21,7 @@
 
 
   <template v-else>
-      <div class=" flex flex-col items-center justify-center px-3 py-6 ">
+      <div v-if="layoutStore.showJoinView" class=" flex flex-col items-center justify-center px-3 py-6 ">
       <div>
         <div class="font-medium text-sm">{{ $t('welcome.desc') }}</div>
 
@@ -49,11 +49,12 @@ import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
+
 const router=useRouter()
 const connectionStore = useConnectionStore()
 const userStore=useUserStore()
 const credentialsStore = useCredentialsStore()
-
+const layoutStore=useLayoutStore()
 const { openConnectionModal } = useConnectionModal()
 
 function toMetaIdGrop() {

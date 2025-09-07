@@ -291,7 +291,7 @@ import { useUserStore } from '@/stores/user'
 import { useConnectionStore } from '@/stores/connection'
 import { FileToAttachmentItem, compressImage,atobToHex } from '@/utils/util'
 import {useCredentialsStore} from '@/stores/credentials'
-import { encrypt, ecdhEncrypt,ecdhDecrypt } from '@/utils/crypto'
+import { encrypt, ecdhEncrypt,ecdhDecrypt,ecdhEncryptForPrivateImg } from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
 import { ChannelType, MessageType, ChatChain } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
@@ -457,31 +457,26 @@ const trySendImage = async () => {
   const hexedFiles = await FileToAttachmentItem(image)
   
   const attachments = [hexedFiles]
+  debugger
 
-  // if(talk.activeChannelType == ChannelType.Session){
-  //   debugger
+  if(talk.activeChannelType == ChannelType.Session){
+    debugger
 
-  //   if(!talk.activeChannel?.publicKeyStr){
-  //     return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
-  //   }
-  //   let ecdh= ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+    if(!talk.activeChannel?.publicKeyStr){
+      return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
+    }
+    let ecdh= ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+    if(!ecdh){
+      ecdh=await getEcdhPublickey(talk.activeChannel.publicKeyStr)
+      ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+    }
+
+     console.log("contentcontentcontent2222222",attachments[0].data)
+     debugger
+    const sharedSecret=ecdh?.sharedSecret//atobToHex(credential!.signature)
+    attachments[0].data = ecdhEncryptForPrivateImg(attachments[0].data, sharedSecret)
     
-  //   if(!ecdh){
-  //     ecdh=await getEcdhPublickey(talk.activeChannel.publicKeyStr)
-  //     ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
-  //   }
-  //   //const 
- 
-  //   const sharedSecret=ecdh?.sharedSecret//atobToHex(credential!.signature)
-  //   // credentialsStore.update(sigStr)
-  //   //const otherPublicKeyStr =talk.activeChannel.publicKeyStr
-  
-  //   const originalAttacthment=attachments[0].data
-
-  //   attachments[0].data = ecdhEncrypt(attachments[0].data, sharedSecret)
-  //    console.log("ecdhDecrypt",ecdhDecrypt( attachments[0].data,sharedSecret) == originalAttacthment)
-  //    debugger
-  // }
+  }
 
   
 

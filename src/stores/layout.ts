@@ -6,8 +6,11 @@ export const useLayoutStore = defineStore('layout', {
   state: () => {
     return {
       isShowLeftNav: false,
+      showJoinView:false,
+      showWelcomeDescView:false,
       isShowPublishBuzz: false,
       isShowCreateCommunityModal: false,
+
       isShowCreatePublicChannelModal: false,
       isShowCreateConsensualChannelModal: false,
       isShowCreateGeneralChannelModal: false,

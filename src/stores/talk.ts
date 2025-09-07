@@ -56,7 +56,7 @@ export const useTalkStore = defineStore('talk', {
 
       activeCommunityId: '' as string,
       activeChannelId: '' as string,
-
+      
       generalChannels: [
         {
           id: 'announcements',

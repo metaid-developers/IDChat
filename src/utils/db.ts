@@ -2,6 +2,21 @@ import axios from 'axios'
 import Dexie, { Table } from 'dexie'
 import { reject } from 'lodash'
 import { metafile, metafile as tranformMetafile } from './filters'
+import {
+  getImgData,
+  hexToBlob,
+  getFileDataFromUrl,
+  blobToHex,
+  readRawData,
+  arrayBufferToHex,
+  arrayBufferToString,
+  getImageBufferAsString,
+} from '@/utils/util'
+import { useEcdhsStore } from '@/stores/ecdh'
+import { getEcdhPublickey } from '@/wallet-adapters/metalet'
+import { ecdhDecrypt, decryptToBlob } from '@/utils/crypto'
+import { waitForDebugger } from 'inspector'
+import { GenesisItem } from '@/@types/common'
 export interface MetafileSchems {
   txId?: string
   data?: Blob
@@ -29,39 +44,86 @@ export class DBClass extends Dexie {
     return txId
   }
 
-  getMetaFileData(metafile: string, width = 235) {
+  getMetaFileData(
+    metafile: string,
+    width = 235,
+    isPrivateChat: boolean = false,
+    chatPubkeyForDecrypt: string = ''
+  ) {
     return new Promise<{
       txId: string
       data: Blob
     }>(async resolve => {
       try {
-        
         const txId = this.getMetaFileTxId(metafile)
         const fileUrl =
           width !== -1
             ? tranformMetafile(metafile, width)
             : `${import.meta.env.VITE_AppImgApi}/metafile/${txId}`
-        const result = await axios.get(fileUrl, { responseType: 'blob' })
-        if (result.status === 200) {
-          resolve({
-            txId,
-            data: result.data,
-          })
+        if (isPrivateChat && chatPubkeyForDecrypt) {
+          debugger
+          const ecdhsStore = useEcdhsStore()
+          const result = await getFileDataFromUrl(fileUrl)
+          if (result) {
+            let ecdh = ecdhsStore.getEcdh(chatPubkeyForDecrypt)
+            if (!ecdh) {
+              ecdh = await getEcdhPublickey(chatPubkeyForDecrypt)
+              if (ecdh) {
+                ecdhsStore.insert(ecdh, ecdh.externalPubKey)
+              }
+            }
+
+            if (ecdh && ecdh.sharedSecret) {
+              const decryptRes = decryptToBlob(result, ecdh.sharedSecret)
+
+              if (decryptRes) {
+                resolve({
+                  txId,
+                  data: decryptRes,
+                })
+              } else {
+                console.error('图片解密失败')
+                reject(new Error('图片解密失败'))
+              }
+            } else {
+              console.error('ECDH密钥获取失败')
+              reject(new Error('ECDH密钥获取失败'))
+            }
+          }
+        } else {
+          const result = await axios.get(fileUrl, { responseType: 'blob' })
+
+          if (result.status === 200) {
+            resolve({
+              txId,
+              data: result.data,
+            })
+          }
         }
       } catch (error) {
-        reject(error)
+        reject(error as Error)
       }
     })
   }
 
-  addMetaFileData(metafile: string, width: number) {
+  addMetaFileData(
+    metafile: string,
+    width: number,
+    isPrivateChat?: boolean,
+    chatPubkeyForDecrypt?: string
+  ) {
     return new Promise<string>(async resolve => {
-      
-      const result = await this.getMetaFileData(metafile, width).catch(() => {
-
+      debugger
+      const result = await this.getMetaFileData(
+        metafile,
+        width,
+        isPrivateChat,
+        chatPubkeyForDecrypt
+      ).catch(() => {
+        debugger
         resolve('')
       })
-      
+      debugger
       if (result) {
         const params: MetafileSchems = {
           txId: result.txId,
@@ -79,7 +141,13 @@ export class DBClass extends Dexie {
     })
   }
 
-  getMetaFile(metafileTxId: string, width = 235, type: 'metafile' | 'metaId' = 'metafile') {
+  getMetaFile(
+    metafileTxId: string,
+    width = 235,
+    type: 'metafile' | 'metaId' = 'metafile',
+    isPrivateChat = false,
+    chatPubkeyForDecrypt = ''
+  ) {
     return new Promise<string>(async resolve => {
       if (!metafileTxId) {
         resolve('')
@@ -96,7 +164,7 @@ export class DBClass extends Dexie {
         // 普通txId
         const txId = this.getMetaFileTxId(metafileTxId)
         const file = await this.metafiles.get(txId)
-        
+
         if (file) {
           this.metafiles.update(txId, { latestTime: new Date().getTime() })
           // 存在数据库
@@ -108,7 +176,12 @@ export class DBClass extends Dexie {
               resolve(URL.createObjectURL(file.data))
             } else {
               // 不存在原图， 则存原图且先去获取图片
-              const res = await this.updateMetaFileData(txId, width)
+              const res = await this.updateMetaFileData(
+                txId,
+                width,
+                isPrivateChat,
+                chatPubkeyForDecrypt
+              )
               if (res) {
                 resolve(res)
               } else {
@@ -122,7 +195,12 @@ export class DBClass extends Dexie {
               resolve(URL.createObjectURL(file.thumbnail))
             } else {
               // 不存在略索取， 则存缩略图且获取图片
-              const res = await this.updateMetaFileData(txId, width)
+              const res = await this.updateMetaFileData(
+                txId,
+                width,
+                isPrivateChat,
+                chatPubkeyForDecrypt
+              )
               if (res) {
                 resolve(res)
               } else {
@@ -144,18 +222,28 @@ export class DBClass extends Dexie {
             }
           }
         } else {
-          
+          debugger
           // 不存在数据库
-          const res = await this.addMetaFileData(txId, width)
+          const res = await this.addMetaFileData(txId, width, isPrivateChat, chatPubkeyForDecrypt)
           resolve(res)
         }
       }
     })
   }
 
-  updateMetaFileData(metafile: string, width = 235) {
+  updateMetaFileData(
+    metafile: string,
+    width = 235,
+    isPrivateChat: boolean = false,
+    chatPubkeyForDecrypt: string = ''
+  ) {
     return new Promise<string>(async resolve => {
-      const result = await this.getMetaFileData(metafile, width)
+      const result = await this.getMetaFileData(
+        metafile,
+        width,
+        isPrivateChat,
+        chatPubkeyForDecrypt
+      )
       const params: MetafileSchems = {
         txId: result.txId,
       }

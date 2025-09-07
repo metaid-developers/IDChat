@@ -555,10 +555,12 @@ router.beforeEach(async (to, from, next) => {
       if (myChannelList.length) {
         
         channelId = myChannelList[0].groupId;
+        layout.$patch({showJoinView:false})
         //layout.$patch({ isShowLeftNav: true })
       } else {
         
         layout.$patch({ isShowLeftNav: true })
+        layout.$patch({showJoinView:true})
         channelId = 'welcome';
       }
 
@@ -568,6 +570,8 @@ router.beforeEach(async (to, from, next) => {
       });
     } else {
       layout.$patch({ isShowLeftNav: true })
+      layout.$patch({showJoinView:false})
+      layout.$patch({showWelcomeDescView:true})
       next({
         name: 'talkChannel',
         params: { communityId: 'public', channelId: 'welcome' }
@@ -585,6 +589,7 @@ router.beforeEach(async (to, from, next) => {
       if (myChannelList.length) {
         
         channelId = myChannelList[0].groupId;
+        layout.$patch({showJoinView:false})
         next({
         name: 'talkChannel',
         params: { communityId: 'public', channelId }
@@ -593,10 +598,14 @@ router.beforeEach(async (to, from, next) => {
       } else {
         
         layout.$patch({ isShowLeftNav: true })
+        layout.$patch({showJoinView:true})
+        layout.$patch({showWelcomeDescView:true})
         channelId = 'welcome';
         next()
       }
     }else{
+      layout.$patch({showJoinView:false})
+      layout.$patch({showWelcomeDescView:true})
        next()
     }
    

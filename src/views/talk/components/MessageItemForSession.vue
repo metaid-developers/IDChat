@@ -282,7 +282,7 @@
             :class="[message.error && 'opacity-50']"
             @click="previewImage"
           >
-            <Image :src="decryptedImageMessage" customClass="rounded py-0.5 object-scale-down" />
+            <Image :src="decryptedImageMessage" :isPrivateChat="true" :chatPubkeyForDecrypt="chatPubkeyForDecrypt"  customClass="rounded py-0.5 object-scale-down" />
           </div>
           <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
             <Icon
@@ -387,6 +387,7 @@ import { NodeName } from '@/enum'
 import MessageItemQuote from './MessageItemQuote.vue'
 import { containsString } from '@/utils/util'
 import type { PriviteChatMessageItem } from '@/@types/common'
+import { isPrivate } from 'tiny-secp256k1'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 
@@ -435,6 +436,10 @@ const tryResend = async () => {
   props.message.error = false
   await jobs.resend(props.message.timestamp)
 }
+
+const chatPubkeyForDecrypt=computed(()=>{
+  return talkStore.activeChannel.publicKeyStr//props.message?.userInfo?.chatPublicKey
+})
 
 const decryptedImageMessage = computed(() => {
   console.log("props.message.content",props.message)

@@ -72,8 +72,8 @@ import { email } from './reg'
 import zlib from 'zlib'
 import { string } from 'yup'
 import { MetaletWallet } from './wallet/Metalet-wallet'
-
-import md5 from "md5";
+import { enc, AES, mode, pad, MD5, SHA256 } from 'crypto-js'
+import md5 from 'md5'
 import mvc from 'mvc-lib'
 const emojiReg = /[\u{1F601}-\u{1F64F}\u{2702}-\u{27B0}\u{1F680}-\u{1F6C0}\u{1F170}-\u{1F251}\u{1F600}-\u{1F636}\u{1F681}-\u{1F6C5}\u{1F30D}-\u{1F567}]/gu
 const oricalUrl = [
@@ -84,34 +84,236 @@ const oricalUrl = [
   'https://witnessonchain.com/v1/chain-info/mvc',
 ]
 
-
 export type ResultArray = {
-  src: string;
-  dst: string;
-}[];
+  src: string
+  dst: string
+}[]
 
 type TransResult = {
-  from: string;
-  to: string;
-  trans_result: ResultArray;
-  error_code: number;
-};
-
-type TransQuery = {
-  q: string;
-  from: string;
-  to: string;
-  appid: string;
-  salt: string;
-  sign: string;
-};
-
-function isChinese(text:string) {
-    return /^[\u4e00-\u9fa5]+$/.test(text);
+  from: string
+  to: string
+  trans_result: ResultArray
+  error_code: number
 }
 
-function isEnglish(text:string) {
-    return /^[a-zA-Z\s]+$/.test(text);
+type TransQuery = {
+  q: string
+  from: string
+  to: string
+  appid: string
+  salt: string
+  sign: string
+}
+
+function base64ToHex(base64: string) {
+  // 将base64解码为二进制字符串
+  const binary = atob(base64)
+  let hex = ''
+
+  // 将每个字符转换为十六进制
+  for (let i = 0; i < binary.length; i++) {
+    const charCode = binary.charCodeAt(i)
+    // 将字符代码转换为两位十六进制，不足两位前面补零
+    hex += charCode.toString(16).padStart(2, '0')
+  }
+
+  return hex
+}
+
+function uint8ArrayToBase64(uint8Array: Uint8Array) {
+  let binary = ''
+  const len = uint8Array.byteLength
+
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(uint8Array[i])
+  }
+  debugger
+  return btoa(binary)
+}
+
+export async function getFileDataFromUrl(fileUrl: string): Promise<ArrayBuffer> {
+  const response = await fetch(fileUrl)
+  const arrayBuffer = await response.arrayBuffer()
+  
+ 
+  return arrayBuffer
+}
+
+function arrayBufferToHexString(arrayBuffer: ArrayBuffer): string {
+  const uint8Array = new Uint8Array(arrayBuffer)
+  let hexString = ''
+
+  for (let i = 0; i < uint8Array.length; i++) {
+    const hex = uint8Array[i].toString(16).padStart(2, '0')
+    hexString += hex
+
+    // 可选：每2个字节添加空格，提高可读性
+    if ((i + 1) % 2 === 0) {
+      hexString += ' '
+    }
+
+    // 可选：每16个字节换行
+    if ((i + 1) % 16 === 0) {
+      hexString += '\n'
+    }
+  }
+
+  return hexString
+}
+
+/**
+ * ArrayBuffer转Base64字符串
+ */
+function arrayBufferToBase64String(arrayBuffer: ArrayBuffer): string {
+  const uint8Array = new Uint8Array(arrayBuffer)
+  let binaryString = ''
+
+  for (let i = 0; i < uint8Array.length; i++) {
+    binaryString += String.fromCharCode(uint8Array[i])
+  }
+
+  return btoa(binaryString)
+}
+
+function arrayBufferToBinaryString(arrayBuffer: ArrayBuffer): string {
+  const uint8Array = new Uint8Array(arrayBuffer)
+  let binaryString = ''
+
+  for (let i = 0; i < uint8Array.length; i++) {
+    const binary = uint8Array[i].toString(2).padStart(8, '0')
+    binaryString += binary
+  }
+
+  return binaryString
+}
+
+export async function getImageBufferAsString(
+  imageUrl: string,
+  encoding: 'hex' | 'base64' | 'binary' = 'base64'
+): Promise<string> {
+  try {
+    // 获取图片的ArrayBuffer
+    const response = await axios.get(imageUrl, {
+      responseType: 'arraybuffer',
+    })
+
+    const arrayBuffer = response.data
+
+    // 根据编码格式转换为字符串
+    switch (encoding) {
+      case 'hex':
+        return arrayBufferToHexString(arrayBuffer)
+
+      case 'base64':
+        return arrayBufferToBase64String(arrayBuffer)
+
+      case 'binary':
+        return arrayBufferToBinaryString(arrayBuffer)
+
+      default:
+        throw new Error(`不支持的编码格式: ${encoding}`)
+    }
+  } catch (error) {
+    console.error('获取图片数据失败:', error)
+    throw new Error(`无法获取图片: ${error.message}`)
+  }
+}
+
+export async function getImgData(picPath: string) {
+  try {
+    debugger
+    const res = await fetch(picPath)
+    const result = await res.arrayBuffer()
+    const data = new Uint8Array(result)
+    // 使用 reduce 方法提高性能
+    return Array.from(data).reduce((hex, byte) => hex + byte.toString(16).padStart(2, '0'), '')
+
+    //return data
+  } catch (error) {
+    throw new Error((error as any).messsage)
+  }
+}
+
+// 从Blob中读取原始数据
+export async function readRawData(blob: Blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.addEventListener('loadend', () => {
+      // reader.result 包含ArrayBuffer形式的原始数据
+      resolve(reader.result)
+    })
+
+    reader.addEventListener('error', reject)
+
+    // 将Blob读取为ArrayBuffer
+    reader.readAsArrayBuffer(blob)
+  })
+}
+
+export function arrayBufferToString(arrayBuffer: any, encoding = 'hex') {
+  try {
+    const decoder = new TextDecoder(encoding)
+    return decoder.decode(arrayBuffer)
+  } catch (error) {
+    console.error('解码失败:', error)
+    throw new Error(`不支持的编码格式: ${encoding}`)
+  }
+}
+// 将ArrayBuffer转换为十六进制字符串
+export function arrayBufferToHex(buffer: any) {
+  const view = new Uint8Array(buffer)
+  let hex = ''
+
+  for (let i = 0; i < view.length; i++) {
+    const value = view[i].toString(16).padStart(2, '0')
+    hex += value + ' '
+
+    // 每16字节换行
+    if ((i + 1) % 16 === 0) {
+      hex += '\n'
+    }
+  }
+
+  return hex
+}
+
+export function bufferToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+export async function blobToHex(blob: Blob) {
+  const arrayBuffer = await blob.arrayBuffer()
+  const uint8Array = new Uint8Array(arrayBuffer)
+  let hexString = ''
+
+  for (let i = 0; i < uint8Array.length; i++) {
+    const hex = uint8Array[i].toString(16).padStart(2, '0')
+    hexString += hex
+  }
+
+  return hexString
+}
+
+export function hexToBlob(hexString: string, mimeType: string = 'application/octet-stream'): Blob {
+  // 将十六进制字符串转换为字节数组
+  const byteArray = new Uint8Array(hexString.length / 2)
+
+  for (let i = 0; i < hexString.length; i += 2) {
+    byteArray[i / 2] = parseInt(hexString.substr(i, 2), 16)
+  }
+
+  return new Blob([byteArray], { type: mimeType })
+}
+
+function isChinese(text: string) {
+  return /^[\u4e00-\u9fa5]+$/.test(text)
+}
+
+function isEnglish(text: string) {
+  return /^[a-zA-Z\s]+$/.test(text)
 }
 
 export async function fetchTranlateResult({
@@ -119,46 +321,41 @@ export async function fetchTranlateResult({
   from,
   to,
 }: {
-  sourceText: string;
-  from: "zh" | "en";
-  to: "zh" | "en";
+  sourceText: string
+  from: 'zh' | 'en'
+  to: 'zh' | 'en'
 }): Promise<TransResult | undefined> {
-  const lang=i18n.global.locale.value
+  const lang = i18n.global.locale.value
 
-  if(lang == 'en'){
+  if (lang == 'en') {
     from = 'zh'
     to = 'en'
-  }else{
+  } else {
     from = 'en'
     to = 'zh'
   }
-  
-  
-  const salt = new Date().getTime().toString();
+
+  const salt = new Date().getTime().toString()
   const queryParams: TransQuery = {
     q: sourceText,
     from,
     to,
-    appid: "20191010000340428",
+    appid: '20191010000340428',
     salt,
-    sign: md5("20191010000340428" + sourceText + salt + "08cmCzBLrp1l_fKQ9TL6"),
-  };
+    sign: md5('20191010000340428' + sourceText + salt + '08cmCzBLrp1l_fKQ9TL6'),
+  }
   // const url = `https://fanyi-api.baidu.com/api/trans/vip/translate`;
-  const url = `https://api.metaid.io/baidufanyi/api/trans/vip/translate`;
+  const url = `https://api.metaid.io/baidufanyi/api/trans/vip/translate`
   // const url = `/api/trans/vip/translate`;
 
   try {
-    const data = await axios
-      .get(url, { params: queryParams })  
-      .then((res) => res.data);
-    return data;
+    const data = await axios.get(url, { params: queryParams }).then(res => res.data)
+    return data
   } catch (error) {
-    console.error(error);
-    return undefined;
+    console.error(error)
+    return undefined
   }
 }
-
-
 
 export function randomString() {
   return Math.random()
@@ -166,11 +363,11 @@ export function randomString() {
     .replace('.', '')
 }
 
-export function containsString(protocol:string, searchProtocol:string) {
-    // 创建一个正则表达式，匹配传入的字符串
-    // 使用 'RegExp' 构造函数，并转义特殊字符
-    const regex = new RegExp(searchProtocol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    return regex.test(protocol);
+export function containsString(protocol: string, searchProtocol: string) {
+  // 创建一个正则表达式，匹配传入的字符串
+  // 使用 'RegExp' 构造函数，并转义特殊字符
+  const regex = new RegExp(searchProtocol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  return regex.test(protocol)
 }
 
 export function getTimestampInSeconds() {
@@ -574,7 +771,6 @@ export function isTabarPage(routeName: any) {
 }
 
 export function toUrl(url: string | undefined) {
-  
   if (!url) return
   try {
     const Url = new URL(url!)
@@ -607,15 +803,18 @@ export async function downloadFile(url: string, name = 'file') {
   }
 }
 
-export function atobToHex(str:string){
+export function atobToHex(str: string) {
   const binaryString = atob(str)
-  let hexString = '';
-for (let i = 0; i < binaryString.length; i++) {
-    const hex = binaryString.charCodeAt(i).toString(16).padStart(2, '0');
-    hexString += hex;
-}
+  let hexString = ''
+  for (let i = 0; i < binaryString.length; i++) {
+    const hex = binaryString
+      .charCodeAt(i)
+      .toString(16)
+      .padStart(2, '0')
+    hexString += hex
+  }
 
-return hexString
+  return hexString
 }
 
 export function completeReload() {
@@ -1033,15 +1232,13 @@ export function FileToAttachmentItem(file: File, encrypt: IsEncrypt = IsEncrypt.
     }
     // 分块读取，防止内存溢出，这里设置为20MB,可以根据实际情况进行配置
     const chunkSize = 20 * 1024 * 1024
-    const uint8Array = new Uint8Array(file.size);
+    const uint8Array = new Uint8Array(file.size)
     let hex = '' // 二进制
     const sha256Algo = CryptoJs.algo.SHA256.create()
 
     for (let index = 0; index < file.size; index += chunkSize) {
       await readResult(file.slice(index, index + chunkSize))
     }
-
-  
 
     resolve({
       data: hex,
@@ -1055,52 +1252,49 @@ export function FileToAttachmentItem(file: File, encrypt: IsEncrypt = IsEncrypt.
   })
 }
 
-
-export function hexToUint8Array(hexString:string) {
+export function hexToUint8Array(hexString: string) {
   // 移除可能存在的空格或前缀（如0x）
-  hexString = hexString.replace(/^0x|\s/g, '');
+  hexString = hexString.replace(/^0x|\s/g, '')
 
   // 确保长度为偶数
   if (hexString.length % 2 !== 0) {
-    throw new Error('Hex string must have an even length');
+    throw new Error('Hex string must have an even length')
   }
 
-  const length = hexString.length / 2;
-  const array = new Uint8Array(length);
+  const length = hexString.length / 2
+  const array = new Uint8Array(length)
 
   for (let i = 0; i < length; i++) {
-    const byteHex = hexString.substr(i * 2, 2);
-    array[i] = parseInt(byteHex, 16);
+    const byteHex = hexString.substr(i * 2, 2)
+    array[i] = parseInt(byteHex, 16)
   }
 
-  return array;
+  return array
 }
 
-export function hexToBase64(hexString:string) {
-    // 移除可能存在的空格和前缀
-    const cleanHex = hexString.replace(/\s/g, '').replace(/^0x/, '');
-    
-    // 验证是否为有效的十六进制字符串
-    if (!/^[0-9A-Fa-f]*$/.test(cleanHex)) {
-        throw new Error('Invalid hexadecimal string');
-    }
-    
-    // 确保十六进制字符串长度为偶数
-    const paddedHex = cleanHex.length % 2 === 0 ? cleanHex : '0' + cleanHex;
-    
-    // 将十六进制字符串转换为字节数组
-    const byteArray = [];
-    for (let i = 0; i < paddedHex.length; i += 2) {
-        byteArray.push(parseInt(paddedHex.substr(i, 2), 16));
-    }
-    
-    // 将字节数组转换为二进制字符串
-    const binaryString = byteArray.map(byte => 
-        String.fromCharCode(byte)
-    ).join('');
-    
-    // 使用btoa函数将二进制字符串转换为Base64
-    return btoa(binaryString);
+export function hexToBase64(hexString: string) {
+  // 移除可能存在的空格和前缀
+  const cleanHex = hexString.replace(/\s/g, '').replace(/^0x/, '')
+
+  // 验证是否为有效的十六进制字符串
+  if (!/^[0-9A-Fa-f]*$/.test(cleanHex)) {
+    throw new Error('Invalid hexadecimal string')
+  }
+
+  // 确保十六进制字符串长度为偶数
+  const paddedHex = cleanHex.length % 2 === 0 ? cleanHex : '0' + cleanHex
+
+  // 将十六进制字符串转换为字节数组
+  const byteArray = []
+  for (let i = 0; i < paddedHex.length; i += 2) {
+    byteArray.push(parseInt(paddedHex.substr(i, 2), 16))
+  }
+
+  // 将字节数组转换为二进制字符串
+  const binaryString = byteArray.map(byte => String.fromCharCode(byte)).join('')
+
+  // 使用btoa函数将二进制字符串转换为Base64
+  return btoa(binaryString)
 }
 
 // 降 AttachmentItem， 转为具有占位符 的 数组
@@ -1137,9 +1331,9 @@ export function copy(
   })
 }
 
-export async function tx(e:Event,txId: string | undefined) {
+export async function tx(e: Event, txId: string | undefined) {
   if (!txId) return
-  
+
   e.preventDefault()
   const chainInfoRes = await GetTxChainInfo(txId)
   const chain =
@@ -1941,7 +2135,6 @@ export function getAccountUserInfo(account: string) {
 }
 
 export function getBalance(params: { chain: Chains }) {
-  
   return new Promise<number>(async (resolve, reject) => {
     const userStore = useUserStore()
     const isBtLink = params.chain === Chains.BSV || params.chain === Chains.MVC
@@ -1969,8 +2162,7 @@ export function getBalance(params: { chain: Chains }) {
       //  BSV 沒有測試網
       resolve(0)
     } else {
-      
-      const res = await GetBalance( _params.address ).catch(error => reject(error))
+      const res = await GetBalance(_params.address).catch(error => reject(error))
       resolve(res!)
     }
   })

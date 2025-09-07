@@ -89,6 +89,7 @@ import { useRouter } from 'vue-router'
 import { Camera } from '@element-plus/icons-vue'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
+import { useLayoutStore } from '@/stores/layout'
 const props = defineProps<{
   modelValue: boolean
 }>()
@@ -104,6 +105,7 @@ const imageUrl = ref('')
 const currentAvatar = ref<string>(DefaultAvatar)
 const imgRaw = ref<File | null>(null)
 const loading = ref(false)
+const layoutStore=useLayoutStore()
 
 watch(
   () => userStore.last?.avatar,
@@ -242,6 +244,7 @@ const save = async () => {
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
     setTimeout(() => {
+      layoutStore.$patch({showJoinView:true})
       router.push({
         name: 'talkChannel',
         params: {
