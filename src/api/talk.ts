@@ -352,7 +352,6 @@ export const getChannelMessages = async ({
   //       }
   //       }).catch((e)=>console.log('e',e))
 
-      
   //     }
   //   }
   // }
@@ -496,4 +495,15 @@ export const GetCommunityAnnouncements = (params: {
 }> => {
   const { communityId, ..._params } = params
   return TalkApi.get('/community/' + communityId + '/announcements', { params: _params })
+}
+
+export const generateLuckyBagCode = async (): Promise<{
+  code: number
+  data: {
+    code: string
+    luckyBagAddress: string
+    timestamp: number
+  }
+}> => {
+  return TalkApi.get('/generate-lucky-bag-code')
 }

@@ -43,6 +43,8 @@ import { useChainStore } from '@/stores/chain'
 import { Red_Packet_Min, Red_Packet_Max } from '@/data/constants'
 import { createPin } from './userInfo'
 import { createPinWithBtc } from './pin'
+import { generateLuckyBagCode } from '@/api/talk'
+import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -288,7 +290,7 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 // }
 
 const nicerAmount = (amount: number, unit: string) => {
-  if (unit == 'Space') {
+  if (unit == 'Space' || unit == 'BTC') {
     return new Decimal(amount).mul(10 ** 8).toNumber()
   } else {
     return amount
@@ -392,19 +394,33 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   // }
 
   // 货币🧧：使用正态分布算法分配
-  const minSats = Red_Packet_Min // 最小红包金额
+  const chainStore = useChainStore()
+  const isBtcChain = chainStore.state.currentChain === 'btc'
+
+  // 根据链设置不同的最小红包金额
+  const minSats = isBtcChain ? BTC_MIN_PER_PACKET_SATS : Red_Packet_Min // BTC最小546聪，其他链0.0001 Space = 10000聪
   const totalAmount = nicerAmount(amount, unit)
 
   // 确保最小金额合理
   if (totalAmount < minSats * quantity) {
-    const currentMinSats = unit == 'Space' ? new Decimal(minSats).div(10 ** 8).toNumber() : minSats
+    let currentMinSats
+    if (unit === 'Space') {
+      currentMinSats = new Decimal(minSats).div(10 ** 8).toNumber()
+    } else if (unit === 'BTC') {
+      currentMinSats = new Decimal(minSats).div(10 ** 8).toNumber()
+    } else if (unit === 'Sats') {
+      currentMinSats = minSats
+    } else {
+      currentMinSats = minSats
+    }
+
     throw new Error(
       `总金额 ${amount} 不足以分配 ${quantity} 个红包（每个至少 ${currentMinSats} ${unit}）`
     )
   }
 
   const redPackets = []
-  const initIndex = 2
+  const initIndex = isBtcChain ? 1 : 2
 
   // 正态分布算法参数
   const mean = totalAmount / quantity // 平均值
@@ -505,13 +521,21 @@ const _redistributeEvenly = (amounts: number[], totalAmount: number, minSats: nu
 
 export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string) => {
   // 1.1 构建红包地址
+  const luckyBagCode = await generateLuckyBagCode()
+  if (luckyBagCode.code !== 0) {
+    ElMessage.error(luckyBagCode.message || 'Generate lucky bag code failed')
+    return
+  }
+  const { code, luckyBagAddress: address, timestamp: createTime } = luckyBagCode.data
   const buildTx = useBulidTx()
-  const code = realRandomString(6)
+  const chainStore = useChainStore()
+  // const code = realRandomString(6)
   const subId = channelId.substring(0, 12)
-  const createTime = Date.now()
-  const key = `${subId.toLocaleLowerCase()}${code.toLocaleLowerCase()}${createTime}`
+  // const createTime = Date.now()
+  // const key = `${subId.toLocaleLowerCase()}${code.toLocaleLowerCase()}${createTime}`
   const net = import.meta.env.VITE_NET_WORK || 'mainnet'
-  const { addressStr: address } = buildCryptoInfo(key, net)
+  // const { addressStr: address } = buildCryptoInfo(key, net);
+  // const address = luckyBagAddress
 
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000
@@ -524,6 +548,8 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
 
   // 2. 构建数据载体
   const dataCarrier: any = {
+    domain: import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
+    luckyBagAddress: address,
     createTime,
     groupId: channelId,
     img: '',
@@ -535,7 +561,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     count: form.quantity,
     metaid: selfMetaId,
     payList: redPackets,
-    type: 'space',
+    type: chainStore.state.currentChain === 'btc' ? 'btc' : 'space', // 根据当前链设置类型
     requireType: '',
     requireTickId: '',
     requireCollectionId: '',
@@ -570,7 +596,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     console.log({ res })
   } catch (err) {
     console.log(err)
-    ElMessage.error('Failed')
+    ElMessage.error(typeof err === 'string' ? err : err.message || 'Failed')
   }
 }
 

@@ -32,6 +32,10 @@ export type MetaidData = {
   encoding?: BufferEncoding
   revealAddr?: string
   flag?: 'metaid'
+  outputs?: {
+    address: string
+    value: number
+  }[]
 }
 export type InscribeData = Omit<MetaidData, 'revealAddr'>
 export type InscriptionRequest = {
@@ -87,6 +91,7 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
       flag: inp?.flag,
       version: '1.0.0',
       encoding,
+      outputs: inp.outputs || [],
     }
   })
 

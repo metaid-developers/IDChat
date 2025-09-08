@@ -345,6 +345,12 @@
       "total_explain": "紅包總金額應當滿足超過每份1000聰，且總金額不超過1000萬聰，也不超過您的錢包餘額。",
       "amount_each": "每份金額",
       "amount_each_explain": "每份紅包的金額應當超過1000聰。",
+      "btc_fee_rate_too_high": "你所選擇的費率過高，請設置到0.3～3範圍",
+      "btc_fee_rate_too_low": "你所選擇的費率過低，請設置到0.3～3範圍",
+      "btc_total_amount_too_small": "BTC紅包總金額不能小於0.000015 BTC（1500聰）",
+      "btc_total_amount_too_large": "BTC紅包總金額不能超過0.1 BTC（10000000聰）",
+      "btc_avg_amount_too_small": "BTC紅包平均金額不能小於0.000005 BTC（500聰）",
+      "btc_avg_amount_too_large": "BTC紅包平均金額不能超過0.001 BTC（100000聰）",
       "choose_nft": "選擇 NFT……",
       "dont_have_permission": "您沒有權限在本頻道中發送消息。",
       "compress": "壓縮"

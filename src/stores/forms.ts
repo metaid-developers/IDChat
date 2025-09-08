@@ -19,9 +19,18 @@ import { SHA256 } from 'crypto-es/lib/sha256.js'
 import Decimal from 'decimal.js-light'
 import { useChainStore } from './chain'
 import i18n from '@/utils/i18n'
+import { ElMessage } from 'element-plus'
 
 const MIN = new Decimal(0.0001).mul(10 ** 8).toNumber()
 const MAX = new Decimal(10).mul(10 ** 8).toNumber()
+
+// BTC红包特殊限制
+const BTC_MIN_TOTAL_SATS = 1500 // 0.000015 BTC
+const BTC_MAX_TOTAL_SATS = 10000000 // 0.1 BTC
+export const BTC_MIN_PER_PACKET_SATS = 546 // 0.000005 BTC
+const BTC_MAX_PER_PACKET_SATS = 100000 // 0.001 BTC
+const BTC_MIN_QUANTITY = 3
+const BTC_MAX_QUANTITY = 100
 
 export const useCommunityFormStore = defineStore('communityForm', {
   state: () => {
@@ -312,16 +321,31 @@ export const usePasswordFormStore = defineStore('passwordForm', {
 
 export const useRedPacketFormStore = defineStore('redPacketForm', {
   state: () => {
-    // 从 localStorage 读取之前保存的设置
-    const savedSettings = localStorage.getItem('redPacketFormSettings')
-    const defaultSettings = {
-      amount: 0.1,
-      each: 0.05,
-      unit: 'Space' as 'Sats' | 'Space',
-      quantity: 2,
-      message: '',
-      type: RedPacketDistributeType.Random,
-    }
+    const chainStore = useChainStore()
+    const currentChain = chainStore.state.currentChain
+
+    // 为不同链分别读取设置
+    const savedSettings = localStorage.getItem(`redPacketFormSettings_${currentChain}`)
+
+    // 根据当前链设置不同的默认值
+    const isBtcChain = currentChain === 'btc'
+    const defaultSettings = isBtcChain
+      ? {
+          amount: 0.00003, // 0.00003 BTC = 3000 sats
+          each: 0.00001, // 0.00001 BTC = 1000 sats
+          unit: 'BTC' as 'Sats' | 'Space' | 'BTC',
+          quantity: 3,
+          message: '',
+          type: RedPacketDistributeType.Random,
+        }
+      : {
+          amount: 0.1,
+          each: 0.05,
+          unit: 'Space' as 'Sats' | 'Space' | 'BTC',
+          quantity: 2,
+          message: '',
+          type: RedPacketDistributeType.Random,
+        }
 
     let settings = defaultSettings
     if (savedSettings) {
@@ -336,7 +360,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     return {
       amount: settings.amount as number | '',
       each: settings.each as number,
-      unit: settings.unit as 'Sats' | 'Space',
+      unit: settings.unit as 'Sats' | 'Space' | 'BTC',
       quantity: settings.quantity,
       message: settings.message,
       type: settings.type,
@@ -380,6 +404,12 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
   actions: {
     // 保存当前设置到 localStorage
     saveSettings() {
+      const chainStore = useChainStore()
+      const currentChain = chainStore.state.currentChain
+
+      // 使用链特定的键保存设置
+      const storageKey = `redPacketFormSettings_${currentChain}`
+
       const settings = {
         amount: this.amount,
         each: this.each,
@@ -388,15 +418,82 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
         message: this.message,
         type: this.type,
       }
-      localStorage.setItem('redPacketFormSettings', JSON.stringify(settings))
+
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(settings))
+      } catch (e) {
+        console.warn('Failed to save red packet settings:', e)
+      }
+    },
+
+    // 加载链特定的设置
+    loadSettings() {
+      const chainStore = useChainStore()
+      const currentChain = chainStore.state.currentChain
+
+      // 为不同链分别读取设置
+      const storageKey = `redPacketFormSettings_${currentChain}`
+      const savedSettings = localStorage.getItem(storageKey)
+
+      // 根据当前链设置不同的默认值
+      const isBtcChain = currentChain === 'btc'
+      const defaultSettings = isBtcChain
+        ? {
+            amount: 0.00003, // 0.00003 BTC = 3000 sats
+            each: 0.00001, // 0.00001 BTC = 1000 sats
+            unit: 'BTC' as 'Sats' | 'Space' | 'BTC',
+            quantity: 3,
+            message: '',
+            type: RedPacketDistributeType.Random,
+          }
+        : {
+            amount: 0.1,
+            each: 0.05,
+            unit: 'Space' as 'Sats' | 'Space' | 'BTC',
+            quantity: 2,
+            message: '',
+            type: RedPacketDistributeType.Random,
+          }
+
+      let settings = defaultSettings
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings)
+          settings = { ...defaultSettings, ...parsed }
+        } catch (e) {
+          console.warn('Failed to parse saved red packet settings:', e)
+        }
+      }
+
+      // 更新状态
+      this.amount = settings.amount
+      this.each = settings.each
+      this.unit = settings.unit
+      this.quantity = settings.quantity
+      this.message = settings.message
+      this.type = settings.type
     },
 
     validateQuantity() {
-      if (this.quantity < 1) {
-        this.quantity = 1
-      }
-      if (this.quantity > 100) {
-        this.quantity = 100
+      const chainStore = useChainStore()
+      const isBtcChain = chainStore.state.currentChain === 'btc'
+
+      if (isBtcChain) {
+        // BTC红包特殊限制
+        if (this.quantity < BTC_MIN_QUANTITY) {
+          this.quantity = BTC_MIN_QUANTITY
+        }
+        if (this.quantity > BTC_MAX_QUANTITY) {
+          this.quantity = BTC_MAX_QUANTITY
+        }
+      } else {
+        // 其他链的默认限制
+        if (this.quantity < 1) {
+          this.quantity = 1
+        }
+        if (this.quantity > 100) {
+          this.quantity = 100
+        }
       }
 
       // 金额校验
@@ -405,33 +502,89 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       }
     },
     validateAmount() {
-      // 每个人最少 1000 sat（0.00001 Space）
-      const min = MIN
-      const max = MAX
+      const chainStore = useChainStore()
+      const isBtcChain = chainStore.state.currentChain === 'btc'
 
-      if (this.unit == 'Sats') {
-        const minAmount = min * this.quantity
-        const maxAmount = max // 2 Space = 200_000_000 sat
-        if (+this.amount < minAmount) {
-          this.amount = minAmount
-        }
-        if (+this.amount > maxAmount) {
-          this.amount = maxAmount
+      if (isBtcChain) {
+        // BTC红包特殊限制
+        if (this.unit === 'BTC') {
+          // BTC单位验证
+          const minTotalBtc = BTC_MIN_TOTAL_SATS / 100000000 // 转换为BTC
+          const maxTotalBtc = BTC_MAX_TOTAL_SATS / 100000000 // 转换为BTC
+
+          if (+this.amount < minTotalBtc) {
+            this.amount = minTotalBtc
+            ElMessage.warning('BTC紅包總金額不能小於0.000015 BTC（1500聰）')
+          }
+          if (+this.amount > maxTotalBtc) {
+            this.amount = maxTotalBtc
+            ElMessage.warning('BTC紅包總金額不能超過0.1 BTC（10000000聰）')
+          }
+
+          // 检查平均单红包金额限制
+          const avgPerPacket = +this.amount / this.quantity
+          const minAvgBtc = BTC_MIN_PER_PACKET_SATS / 100000000
+          const maxAvgBtc = BTC_MAX_PER_PACKET_SATS / 100000000
+
+          if (avgPerPacket < minAvgBtc) {
+            this.amount = minAvgBtc * this.quantity
+            ElMessage.warning('BTC紅包平均金額不能小於0.000005 BTC（500聰）')
+          }
+          if (avgPerPacket > maxAvgBtc) {
+            this.amount = maxAvgBtc * this.quantity
+            ElMessage.warning('BTC紅包平均金額不能超過0.001 BTC（100000聰）')
+          }
+        } else if (this.unit === 'Sats') {
+          // 聪单位验证
+          if (+this.amount < BTC_MIN_TOTAL_SATS) {
+            this.amount = BTC_MIN_TOTAL_SATS
+            ElMessage.warning('BTC紅包總金額不能小於1500聰')
+          }
+          if (+this.amount > BTC_MAX_TOTAL_SATS) {
+            this.amount = BTC_MAX_TOTAL_SATS
+            ElMessage.warning('BTC紅包總金額不能超過10000000聰')
+          }
+
+          // 检查平均单红包金额限制
+          const avgPerPacket = +this.amount / this.quantity
+          if (avgPerPacket < BTC_MIN_PER_PACKET_SATS) {
+            this.amount = BTC_MIN_PER_PACKET_SATS * this.quantity
+            ElMessage.warning('BTC紅包平均金額不能小於500聰')
+          }
+          if (avgPerPacket > BTC_MAX_PER_PACKET_SATS) {
+            this.amount = BTC_MAX_PER_PACKET_SATS * this.quantity
+            ElMessage.warning('BTC紅包平均金額不能超過100000聰')
+          }
         }
       } else {
-        const minAmount = new Decimal(min)
-          .div(10 ** 8)
-          .mul(this.quantity)
-          .toNumber()
-        const maxAmount = new Decimal(max)
-          .div(10 ** 8)
-          .mul(this.quantity)
-          .toNumber() // 2 Space = 200_000_000 sat
-        if (+this.amount < minAmount) {
-          this.amount = minAmount
-        }
-        if (+this.amount > maxAmount) {
-          this.amount = maxAmount
+        // 其他链的默认验证逻辑
+        const min = MIN
+        const max = MAX
+
+        if (this.unit == 'Sats') {
+          const minAmount = min * this.quantity
+          const maxAmount = max // 2 Space = 200_000_000 sat
+          if (+this.amount < minAmount) {
+            this.amount = minAmount
+          }
+          if (+this.amount > maxAmount) {
+            this.amount = maxAmount
+          }
+        } else {
+          const minAmount = new Decimal(min)
+            .div(10 ** 8)
+            .mul(this.quantity)
+            .toNumber()
+          const maxAmount = new Decimal(max)
+            .div(10 ** 8)
+            .mul(this.quantity)
+            .toNumber() // 2 Space = 200_000_000 sat
+          if (+this.amount < minAmount) {
+            this.amount = minAmount
+          }
+          if (+this.amount > maxAmount) {
+            this.amount = maxAmount
+          }
         }
       }
     },
@@ -460,10 +613,28 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     },
 
     reset() {
-      // 重置 nft 和 chain，但保留其他设置
-      this.message = ''
+      const chainStore = useChainStore()
+      const isBtcChain = chainStore.state.currentChain === 'btc'
+
+      // 重置 nft 和 chain
       this.nft = null
       this.chain = null
+      this.message = ''
+
+      // 根据当前链设置不同的默认值
+      if (isBtcChain) {
+        this.amount = 0.00003
+        this.each = 0.00001
+        this.unit = 'BTC'
+        this.quantity = 3
+        this.type = RedPacketDistributeType.Random
+      } else {
+        this.amount = 0.1
+        this.each = 0.05
+        this.unit = 'Space'
+        this.quantity = 2
+        this.type = RedPacketDistributeType.Random
+      }
     },
 
     async submit() {
@@ -471,10 +642,20 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       const user = useUserStore()
       const layout = useLayoutStore()
       const chainStore = useChainStore()
-      if (chainStore.state.currentChain == 'btc') {
-        return ElMessage.error(`${i18n.global.t('notSupoort_btc_send_repacket')}`)
-      }
+
       if (!this.isFinished) return
+
+      // BTC红包特殊验证
+      if (chainStore.state.currentChain === 'btc') {
+        // 验证费率
+        const currentFeeRate = chainStore.btcFeeRate()
+        if (currentFeeRate > 3) {
+          return ElMessage.error('你所选择的费率过高，请设置到0.3～3范围')
+        }
+        if (currentFeeRate < 0.3) {
+          return ElMessage.error('你所选择的费率过低，请设置到0.3～3范围')
+        }
+      }
 
       // 保存当前设置
       this.saveSettings()

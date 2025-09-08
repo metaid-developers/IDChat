@@ -10,11 +10,7 @@
     <template #body>
       <TabGroup>
         <TabList class="w-full bg-dark-100 dark:bg-gray-900 rounded-xl text-base flex font-medium">
-             <Tab
-           
-          >
-          
-          </Tab>
+          <Tab> </Tab>
           <!-- <Tab
             class="w-full py-3 capitalize border-2 outline-0 rounded-xl transition-[background-color] duration-150"
             :class="[
@@ -40,7 +36,6 @@
         </TabList>
 
         <TabPanels>
-       
           <TabPanel class="">
             <form @submit.prevent="form.submit">
               <!-- 数量 -->
@@ -90,7 +85,8 @@
                     <div class="absolute right-0 z-10">
                       <Menu as="div" class="relative inline-block">
                         <div class="">
-                          <MenuButton v-slot="{ scope }"
+                          <MenuButton
+                            v-slot="{ scope }"
                             class="text-base flex items-center font-medium px-3 py-1 outline-0"
                             @click="isShowSelectTokenModal = !isShowSelectTokenModal"
                           >
@@ -111,10 +107,19 @@
                             class="absolute flex flex-col p-2 bg-white right-0 translate-y-[20PX] rounded-xl shadow-lg z-50 main-border still w-36  dark:!bg-gray-700"
                           >
                             <MenuItem v-slot="{ active }">
-                              <button class="p-2" type="button" @click="triggleUnit">{{ currentUnit == 'Space' ? 'Sats' : 'Space' }}</button>
+                              <button class="p-2" type="button" @click="triggleUnit">
+                                {{
+                                  chainStore.state.currentChain === 'btc'
+                                    ? currentUnit == 'BTC'
+                                      ? 'Sats'
+                                      : 'BTC'
+                                    : currentUnit == 'Space'
+                                    ? 'Sats'
+                                    : 'Space'
+                                }}
+                              </button>
                             </MenuItem>
-                          
-                          
+
                             <!-- <MenuItem v-slot="{ active }">
                             <button class="p-2">MC</button>
                           </MenuItem>
@@ -147,9 +152,7 @@
 
               <div class="w-full">
                 <button
-
-                  class="main-border uppercase font-medium text-base w-full py-3 "
-                  :class="[chainStore.state.currentChain == 'btc' ? 'disabled' : 'primary']"
+                  class="main-border uppercase font-medium text-base w-full py-3 primary"
                   @click="form.submit"
                 >
                   {{ $t('Talk.Input.send') }}
@@ -230,7 +233,9 @@
                           class="absolute p-2 bg-white right-0 translate-y-[20PX] rounded-xl shadow-lg z-50 main-border still w-36 dark:!bg-gray-700"
                         >
                           <MenuItem v-slot="{ active }">
-                            <button class="p-2" type="button" @click="triggleUnit">{{ currentUnit == 'Space' ? 'Sats' : 'Space' }}</button>
+                            <button class="p-2" type="button" @click="triggleUnit">
+                              {{ currentUnit == 'Space' ? 'Sats' : 'Space' }}
+                            </button>
                           </MenuItem>
                           <!-- <MenuItem v-slot="{ active }">
                             <button class="p-2">MC</button>
@@ -473,6 +478,7 @@ import Cat from '@/assets/images/cat.svg?url'
 import DogWalking from '@/assets/images/dog_walking.svg?url'
 import ETH from '@/assets/images/eth.png'
 import MVC from '@/assets/images/icon_mvc.png'
+import BTC from '@/assets/images/btc.png'
 import POLYGON from '@/assets/svg/polygon.svg?url'
 
 import { useLayoutStore } from '@/stores/layout'
@@ -485,9 +491,18 @@ import { useChainStore } from '@/stores/chain'
 
 const layout = useLayoutStore()
 const userStore = useUserStore()
-const isShowSelectTokenModal=ref(false)
-const chainStore=useChainStore()
-const currentUnit=ref('Space')
+const isShowSelectTokenModal = ref(false)
+const chainStore = useChainStore()
+const form = useRedPacketFormStore()
+
+// 根据form.unit初始化currentUnit，支持所有三种单位
+const currentUnit = ref<'BTC' | 'Space' | 'Sats'>(
+  form.unit === 'BTC' || form.unit === 'Space' || form.unit === 'Sats'
+    ? form.unit
+    : chainStore.state.currentChain === 'btc'
+    ? 'BTC'
+    : 'Space'
+)
 
 const activeTab = ref('redPacket')
 const changeTab = (tab: string) => {
@@ -503,9 +518,6 @@ const changeTab = (tab: string) => {
   }
 }
 
-
-
-const form = useRedPacketFormStore()
 /** 验证 */
 const normalSchema = object({
   quantity: number()
@@ -530,9 +542,9 @@ const { errors } = useForm({
 const chains = ref([
   {
     id: 1,
-    name: import.meta.env.VITE_ETH_CHAIN,
+    name: import.meta.env.VITE_ETH_CHAIN || 'ETH',
     icon: ETH,
-    value: import.meta.env.VITE_ETH_CHAIN,
+    value: import.meta.env.VITE_ETH_CHAIN || 'eth',
   },
   {
     id: 2,
@@ -542,68 +554,47 @@ const chains = ref([
   },
   {
     id: 3,
-    name: import.meta.env.VITE_POLYGON_CHAIN,
+    name: 'BTC',
+    icon: BTC,
+    value: 'btc' as Chains,
+  },
+  {
+    id: 4,
+    name: import.meta.env.VITE_POLYGON_CHAIN || 'POLYGON',
     icon: POLYGON,
-    value: import.meta.env.VITE_POLYGON_CHAIN,
+    value: import.meta.env.VITE_POLYGON_CHAIN || 'polygon',
   },
 ])
 const selectedChain = ref(chains.value[0])
 
 const nftSeries: Ref<any[]> = ref([])
 const fetching = ref(false)
-// const fetchNftSeries = async () => {
-//   let selfAddress: string
-//   switch (selectedChain.value.value) {
-//     case 'mvc':
-//       selfAddress = userStore.user!.address
-//       break
-//     case 'eth':
-//       selfAddress = userStore.user?.evmAddress as string
-//       break
-//     case 'goerli':
-//       selfAddress = userStore.user?.evmAddress as string
-//       break
-//     case 'polygon':
-//       selfAddress = userStore.user?.evmAddress as string
-//       break
-//     case 'mumbai':
-//       selfAddress = userStore.user?.evmAddress as string
-//       break
-//     default:
-//       selfAddress = userStore.user!.address
-//       break
-//   }
 
-//   // 如无对应地址，则不执行请求
-//   if (!selfAddress) return
-
-//   const {
-//     data: {
-//       results: { items: _nfts },
-//     },
-//   } = await GetNFTs({
-//     address: selfAddress,
-//     chain: selectedChain.value.value,
-//     page: 1,
-//     pageSize: 100,
-//   })
-//   nftSeries.value = _nfts
-// }
-// watchEffect(async () => {
-//   await showLoading(fetchNftSeries, fetching)
-// })
-const triggleUnit=()=>{
-  if(currentUnit.value == 'Space'){
-    currentUnit.value= 'Sats'
-    form.unit='Sats'
-     form.amount=new Decimal(form.amount).mul(10 ** 8).toNumber()
-  }else{
-    currentUnit.value= 'Space'
-    form.unit='Space'
-    form.amount=new Decimal(form.amount).div(10 ** 8).toNumber()
+const triggleUnit = () => {
+  if (chainStore.state.currentChain === 'btc') {
+    // BTC链的单位切换
+    if (currentUnit.value == 'BTC') {
+      currentUnit.value = 'Sats'
+      form.unit = 'Sats'
+      form.amount = new Decimal(form.amount).mul(10 ** 8).toNumber()
+    } else {
+      currentUnit.value = 'BTC'
+      form.unit = 'BTC'
+      form.amount = new Decimal(form.amount).div(10 ** 8).toNumber()
+    }
+  } else {
+    // 其他链的单位切换
+    if (currentUnit.value == 'Space') {
+      currentUnit.value = 'Sats'
+      form.unit = 'Sats'
+      form.amount = new Decimal(form.amount).mul(10 ** 8).toNumber()
+    } else {
+      currentUnit.value = 'Space'
+      form.unit = 'Space'
+      form.amount = new Decimal(form.amount).div(10 ** 8).toNumber()
+    }
   }
 }
-
 
 const selectNft = (nft: any) => {
   form.nft = nft
@@ -620,6 +611,35 @@ watch(
     }
   }
 )
+
+// 监听链切换，重新加载对应链的设置
+watch(
+  () => chainStore.state.currentChain,
+  newChain => {
+    // 加载对应链的设置
+    form.loadSettings()
+
+    // 更新UI状态
+    if (newChain === 'btc') {
+      currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'BTC'
+    } else {
+      currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'Space'
+    }
+  },
+  { immediate: true } // 立即执行一次
+)
+
+// 在组件挂载时确保加载正确的设置
+onMounted(() => {
+  form.loadSettings()
+
+  // 更新currentUnit以匹配form.unit
+  if (chainStore.state.currentChain === 'btc') {
+    currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'BTC'
+  } else {
+    currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'Space'
+  }
+})
 
 // onMounted(() => {
 //   if (userStore.user?.evmAddress) {

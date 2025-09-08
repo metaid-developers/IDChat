@@ -237,14 +237,20 @@ import { useTalkStore } from '@/stores/talk'
 import { GetNFT } from '@/api/aggregation'
 import { nftSeries } from '@/utils/series'
 import Decimal from 'decimal.js-light'
-import { toMvcScan } from '@/utils/util'
+// import { toMvcScan } from '@/utils/util'
 import { GrabStatus } from '@/enum'
 const layout = useLayoutStore()
 const modals = useModalsStore()
 const talk = useTalkStore()
 const i18n = useI18n()
 const requireNft = ref()
-
+const toMvcScan = (txId: string) => {
+  if (redPacketResult.type == 'btc') {
+    window.open(`https://mempool.space/tx/${txId}`, '_blank')
+  } else {
+    window.open(`https://mvcscan.com/tx/${txId}`, '_blank')
+  }
+}
 const closeModal = () => {
   modals.redPacketResult = null
   layout.isShowRedPacketResultModal = false
@@ -260,6 +266,10 @@ const draws = computed(() => {
   return (redPacketResult?.payList || []).filter(
     (item: any) => item.used === true || item.isWithdraw === true
   )
+})
+
+const unit = computed(() => {
+  return redPacketResult?.type?.toUpperCase() || 'SPACE'
 })
 const sortedDraws = computed(() => {
   return draws.value.sort((a: any, b: any) => b.timestamp - a.timestamp)
@@ -315,7 +325,7 @@ const nicerAmountWithUnit = (amount: string) => {
 
   return {
     amount: amountNumber,
-    unit: 'SPACE',
+    unit: unit.value,
   }
 }
 
