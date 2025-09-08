@@ -30,6 +30,13 @@
 
     <div class="flex flex-col items-stretch grow space-y-1 overflow-x-hidden">
       <div class="flex relative items-baseline justify-between self-stretch">
+        <div class="flex items-center justify-start">
+            <Icon
+        name="group_chat"
+        v-if="!isPrivateChat"
+        class="w-[20PX] h-[15PX] mr-1 shrink-0 text-gray-500 "
+         
+      />
         <UserName
           :name="contact.name"
           :meta-name="contact?.metaName"
@@ -37,6 +44,7 @@
           class="mr-2"
           :text-class="'font-medium dark:text-gray-100 max-w-[200px] truncate'"
         />
+        </div>
 
         <div class="shrink-0  text-dark-250 dark:text-gray-400 text-xs">
           {{
@@ -120,9 +128,7 @@ watch(
   { immediate: true, deep: true }
 )
 
-const avatarType=computed(()=>{
-  return Number(props.session.type) == 2 ? ChannelType.Session : ChannelType.Group
-})
+
 
 const contact = computed<any>(() => {
   let contactSide = 'from'

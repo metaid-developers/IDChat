@@ -556,6 +556,7 @@ router.beforeEach(async (to, from, next) => {
         
         channelId = myChannelList[0].groupId;
         layout.$patch({showJoinView:false})
+           layout.$patch({showWelcomeDescView:false})
         //layout.$patch({ isShowLeftNav: true })
       } else {
         
@@ -589,6 +590,7 @@ router.beforeEach(async (to, from, next) => {
       if (myChannelList.length) {
         
         channelId = myChannelList[0].groupId;
+        layout.$patch({showWelcomeDescView:false})
         layout.$patch({showJoinView:false})
         next({
         name: 'talkChannel',

@@ -15,7 +15,7 @@ import {
 import { useEcdhsStore } from '@/stores/ecdh'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { ecdhDecrypt, decryptToBlob } from '@/utils/crypto'
-import { waitForDebugger } from 'inspector'
+import { waitFor } from 'inspector'
 import { GenesisItem } from '@/@types/common'
 export interface MetafileSchems {
   txId?: string
@@ -61,7 +61,7 @@ export class DBClass extends Dexie {
             ? tranformMetafile(metafile, width)
             : `${import.meta.env.VITE_AppImgApi}/metafile/${txId}`
         if (isPrivateChat && chatPubkeyForDecrypt) {
-          debugger
+          
           const ecdhsStore = useEcdhsStore()
           const result = await getFileDataFromUrl(fileUrl)
           if (result) {
@@ -113,17 +113,17 @@ export class DBClass extends Dexie {
     chatPubkeyForDecrypt?: string
   ) {
     return new Promise<string>(async resolve => {
-      debugger
+      
       const result = await this.getMetaFileData(
         metafile,
         width,
         isPrivateChat,
         chatPubkeyForDecrypt
       ).catch(() => {
-        debugger
+        
         resolve('')
       })
-      debugger
+      
       if (result) {
         const params: MetafileSchems = {
           txId: result.txId,
@@ -222,7 +222,7 @@ export class DBClass extends Dexie {
             }
           }
         } else {
-          debugger
+          
           // 不存在数据库
           const res = await this.addMetaFileData(txId, width, isPrivateChat, chatPubkeyForDecrypt)
           resolve(res)

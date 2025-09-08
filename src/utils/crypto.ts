@@ -201,6 +201,7 @@ export function ecdhEncrypt(message: string, secretKey: string,): string {
 
 export function ecdhEncryptForPrivateImg(message: string, secretKey: string): string {
   // 将hex字符串转换为WordArray
+  
   const messageWordArray = enc.Hex.parse(message)
   const secretKeyWordArray = enc.Hex.parse(secretKey)
 

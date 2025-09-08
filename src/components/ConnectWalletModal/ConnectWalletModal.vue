@@ -198,6 +198,7 @@ import {
   getAllChannels
 } from '@/api/talk'
 import { useApprovedStore } from '@/stores/approved'
+import { useLayoutStore } from '@/stores/layout'
 
 
 const rootStore = useRootStore()
@@ -208,7 +209,7 @@ const connectionStore = useConnectionStore()
 const approvedStore=useApprovedStore()
 const { isConnectionModalOpen, closeConnectionModal, setMissingWallet } =
   useConnectionModal()
-
+const layout=useLayoutStore()
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -1169,6 +1170,7 @@ async function connectMetalet() {
     // })
 
       newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
+      layout.$patch({showJoinView:true})
     }
     router.push({
         name: 'talkChannel',

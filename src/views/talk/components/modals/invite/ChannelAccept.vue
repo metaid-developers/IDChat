@@ -114,6 +114,7 @@ const tryJoinChannel = async () => {
   await sleep(1000)
 
   talk.communityStatus = 'invited'
+  layout.$patch({showJoinView:false})
   window.location.reload()
  } catch (error) {
    talk.invitingChannel = null

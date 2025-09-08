@@ -127,7 +127,7 @@ function uint8ArrayToBase64(uint8Array: Uint8Array) {
   for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(uint8Array[i])
   }
-  debugger
+  
   return btoa(binary)
 }
 
@@ -221,7 +221,7 @@ export async function getImageBufferAsString(
 
 export async function getImgData(picPath: string) {
   try {
-    debugger
+    
     const res = await fetch(picPath)
     const result = await res.arrayBuffer()
     const data = new Uint8Array(result)

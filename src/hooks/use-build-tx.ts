@@ -253,8 +253,8 @@ export const useBulidTx = createGlobalState(() => {
     
    
       if(attachments && attachments.length){
-          console.log("asdasdzxczxc",hexToUint8Array(attachments[0].data))
-             debugger
+       
+             
        const fileRes= await createMvcFile({
           body:chainStore.state.currentChain == 'btc' ? hexToBase64(attachments[0].data) : hexToUint8Array(attachments[0].data),
           mime:attachments[0].fileType,

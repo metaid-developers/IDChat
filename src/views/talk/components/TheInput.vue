@@ -457,10 +457,10 @@ const trySendImage = async () => {
   const hexedFiles = await FileToAttachmentItem(image)
   
   const attachments = [hexedFiles]
-  debugger
+  
 
   if(talk.activeChannelType == ChannelType.Session){
-    debugger
+    
 
     if(!talk.activeChannel?.publicKeyStr){
       return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
@@ -472,7 +472,7 @@ const trySendImage = async () => {
     }
 
      console.log("contentcontentcontent2222222",attachments[0].data)
-     debugger
+     
     const sharedSecret=ecdh?.sharedSecret//atobToHex(credential!.signature)
     attachments[0].data = ecdhEncryptForPrivateImg(attachments[0].data, sharedSecret)
     
