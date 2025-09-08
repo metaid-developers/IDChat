@@ -180,7 +180,7 @@
 
 <script lang="ts" setup>
 import { ref, watch, defineProps, defineEmits } from 'vue'
-import { ElDialog } from 'element-plus'
+import { ElDialog, ElMessage } from 'element-plus'
 import { useChainStore, type ChainFeeData } from '@/stores/chain'
 
 const props = defineProps<{
@@ -222,9 +222,9 @@ const handleConfirm = () => {
   if (selectedChain.value === 'btc') {
     chainStore.setBtcFeeType(selectedBTCFeeType.value)
     if (selectedBTCFeeType.value === 'customizeFee') {
-      if(customBTCValue.value < 0.3){
-       ElMessage.error('BTC custom fee must be at least 0.3 sat/vB')
-       customBTCValue.value=0.3
+      if(customBTCValue.value < 1){
+       ElMessage.error('BTC custom fee must be at least 1 sat/vB')
+       customBTCValue.value=1
       }
       chainStore.setBtcCustomizeFee(customBTCValue.value)
     }
