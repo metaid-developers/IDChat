@@ -122,18 +122,32 @@
                       class="rounded-3xl w-12 h-12 shrink-0 relative bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
                     >
                       <ChatIcon
-                        :src="group?.groupIcon || ''"
-                        :alt="group?.groupName"
+                        :src="group?.groupIcon || group?.avatar || ''"
+                        :alt="group?.groupName || group?.userName"
                         :customClass="'w-12 h-12 rounded-full'"
                       />
                     </div>
                     <div class="flex flex-col grow overflow-hidden">
                       <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {{ group.groupName }}
+                        <Icon
+                          name="group_chat"
+                          class="w-4 h-4 inline-block mr-1 text-gray-500 dark:text-gray-400 "
+                          v-if="group.type === 'group'"
+                        ></Icon
+                        >{{ group.groupName || group.userName }}
                       </div>
-                      <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div
+                        class="text-xs text-gray-500 dark:text-gray-400 truncate"
+                        v-if="group.type === 'group'"
+                      >
                         GroupId:{{ group.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') }},
                         {{ group.memberCount || 0 }} members
+                      </div>
+                      <div
+                        class="text-xs text-gray-500 dark:text-gray-400 truncate"
+                        v-if="group.type === 'user'"
+                      >
+                        MetaID:{{ group?.metaId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') }},
                       </div>
                     </div>
                   </div>
@@ -226,6 +240,13 @@ interface RemoteSearchGroup {
   memberCount: number
   groupIcon?: string
   pinId: string
+  address?: string
+  avatar?: string
+  avatarId?: string
+  metaId?: string
+  timestamp?: string
+  type: 'user' | 'group'
+  userName?: string
 }
 
 interface RemoteSearchResponse {
@@ -273,9 +294,9 @@ export default defineComponent({
         isSearching.value = true
 
         const response = await fetch(
-          `${import.meta.env.VITE_CHAT_API}/group-chat/search-groups?query=${encodeURIComponent(
-            searchValue
-          )}`
+          `${
+            import.meta.env.VITE_CHAT_API
+          }/group-chat/search-groups-and-users?query=${encodeURIComponent(searchValue)}`
         )
         const data = await response.json()
 
@@ -368,11 +389,18 @@ export default defineComponent({
         roomName: group.groupName,
         memberCount: group.memberCount || 0,
         isRemote: true, // 标记这是远程群组
+        metaId: group.metaId,
+        type: group.type,
       }
       layout.$patch({
         isShowLeftNav: false,
       })
-      router.push(`/talk/channels/public/${group?.groupId}`)
+      if (group.type === 'user') {
+        router.push(`/talk/@me/${group.metaId}`)
+      } else {
+        router.push(`/talk/channels/public/${group?.groupId}`)
+      }
+
       emit('select', remoteContact)
       closeModal()
     }
