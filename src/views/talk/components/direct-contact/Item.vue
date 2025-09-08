@@ -30,11 +30,12 @@
 
     <div class="flex flex-col items-stretch grow space-y-1 overflow-x-hidden">
       <div class="flex relative items-baseline justify-between self-stretch">
-        <div class="flex items-center justify-start">
+        <div class="flex items-center justify-center">
+        
             <Icon
-        name="group_chat"
-        v-if="!isPrivateChat"
-        class="w-[20PX] h-[15PX] mr-1 shrink-0 text-gray-500 "
+        name="group_chat_1"
+         v-show="!contact.isPrivateChat"
+        class="w-[20PX] h-[15PX] mr-1 shrink-0 text-gray-500 dark:text-white"
          
       />
         <UserName
@@ -58,10 +59,12 @@
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
-      <div class="text-xs flex items-center truncate max-w-fit">
+      <div class="text-xs flex items-center truncate max-w-fit ">
         
-        <div v-if="!isPrivateChat && lastMessage" class="text-dark-800 dark:text-gray-500 font-medium"><UserName :name="lastMessageUsername" :meta-name="''" />&nbsp;:&nbsp;</div>
-        <span class="text-dark-300 dark:text-gray-400 "> {{ lastMessage }}</span>
+        <div v-if="!contact.isPrivateChat && lastMessage" class="text-dark-800 dark:text-gray-500 font-medium"><UserName :name="lastMessageUsername" :meta-name="''" />&nbsp;:&nbsp;</div>
+        
+        <span v-if="!lastMessage">&nbsp;</span>
+        <span v-else class="text-dark-300 dark:text-gray-400 "> {{ lastMessage || '' }}</span>
       </div>
     </div>
   </div>
@@ -106,23 +109,29 @@ console.log('props.session3333333', props.session)
 const debouncedLastMessage = ref('')
 const debouncedLastMessageUserName=ref('')
 const debouncedLastMsgTimestamp = ref(0)
-const debouncedChannelType=ref(false)
-
+//const debouncedChannelType=ref(true)
+//const initBlank=ref(true)
 // 使用防抖更新显示内容
 watch(
   () => props.session,
   newSession => {
     if (newSession) {
-      
+       //initBlank.value=false
       // 延迟更新，避免频繁闪烁
-      setTimeout(() => {
-        debouncedLastMessage.value = computeLastMessage(newSession)
+   
+        nextTick(()=>{
+             //debouncedChannelType.value=computeChannelType(newSession)
+             setTimeout(() => {
+            
+                    debouncedLastMessage.value = computeLastMessage(newSession)
        
         debouncedLastMsgTimestamp.value = computeLastMsgTimestamp(newSession)
-        debouncedChannelType.value=computeChannelType(newSession)
+       
           debouncedLastMessageUserName.value=computeLastMessageUserName(newSession)
-
+             
       }, 200)
+     
+        })
     }
   },
   { immediate: true, deep: true }
@@ -132,7 +141,7 @@ watch(
 
 const contact = computed<any>(() => {
   let contactSide = 'from'
-
+  console.log("props.sessionprops.session1212121212121333",props.session)
   if (userStore.last) {
     const selfMetaId = userStore.last.metaid
     if (props.session.from === selfMetaId || props.session.userInfo?.metaid === selfMetaId) {
@@ -146,20 +155,21 @@ const contact = computed<any>(() => {
     metaId: props.session.id || props.session.userInfo?.metaid || props.session.createUserMetaId,
     lastMessage: props.session.lastMessage,
     lastMessageTimestamp: props.session.lastMessageTimestamp,
+    isPrivateChat:Number(props.session.type) == 2 ? true : false
   }
 })
 
 const lastMessage = computed<string>(() => {
-  return debouncedLastMessage.value
+  return debouncedLastMessage.value || ''
 })
 
 const lastMessageUsername=computed<string>(() => {
   return debouncedLastMessageUserName.value
 })
 
-const isPrivateChat = computed(() => {
-  return debouncedChannelType.value
-})
+// const isPrivateChat = computed(() => {
+//   return debouncedChannelType.value
+// })
 
 const lastMsgTimestamp = computed(() => {
   return debouncedLastMsgTimestamp.value
@@ -183,9 +193,9 @@ const computeLastMessageUserName = (session: any): string => {
      
 }
 
-const computeChannelType = (session: any): boolean => {
- return Number(session?.type) == 2 ? true : false
-}
+// const computeChannelType = (session: any): boolean => {
+//  return Number(session?.type) !== 2 ? false : true
+// }
 
 
 const computeLastMsgTimestamp = (session: any): number => {

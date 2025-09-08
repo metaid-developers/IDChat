@@ -267,6 +267,7 @@ function getDatas(isCover = false) {
           for (let i = 0; i < res!.length; i++) {
             if (typeof res[i].creator === 'string' && !users.some(item => item.address === res[i]!.creator)){
               getUserInfoByAddress(res[i]!.creator).then(user => {
+                
                 users.push(user)
               })
             }

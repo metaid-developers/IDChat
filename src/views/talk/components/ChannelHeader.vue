@@ -86,13 +86,27 @@
           </div>
         </div> -->
         <LoginedUserOperate />
-       <div class="ml-1 cursor-pointer " v-if="userStore.isAuthorized">
-            <Icon
-        name="right_bars_2"
+       <div class="ml-1 cursor-pointer " v-if="userStore.isAuthorized" @click="handleChannelNameClick">
+              <Icon
+              v-if="rootStore.theme == 'light'"
+        name="right_bars_4"
        
         class="w-[24PX] h-[20PX]  mx-2 shrink-0 "
-         @click="handleChannelNameClick"
+       
+         
       />
+
+             <Icon
+            v-else
+        name="right_bars_5"
+       
+        class="w-[24PX] h-[20PX]  mx-2 shrink-0 "
+       
+         
+      />
+       
+     
+      
        </div>
       </div>
 
@@ -182,7 +196,7 @@ import { ref, computed, onMounted, reactive, watch } from 'vue'
 
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
-import { isMobile } from '@/stores/root'
+import { isMobile, useRootStore } from '@/stores/root'
 
 import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
 import { useWsStore } from '@/stores/ws_new'
@@ -192,13 +206,17 @@ import { Channel } from '@/@types/talk'
 import { ChatChain } from '@/enum'
 import { useUserStore } from '@/stores/user'
 import { Back } from '@element-plus/icons-vue'
+import lightBar from '@/assets/images/lightBar.png'
+import darkBar from '@/assets/images/darkBar.png'
+
+
 const talkStore = useTalkStore()
 const layout = useLayoutStore()
 const userStore=useUserStore()
 const WS = useWsStore()
 const route=useRoute()
 const router=useRouter()
-
+const rootStore = useRootStore()
 const currentChannelId=ref(route.params?.channelId || '')
 
 const currentChannel: { val: Channel | Object } = reactive({

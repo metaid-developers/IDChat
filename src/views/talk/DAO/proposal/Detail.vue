@@ -2002,6 +2002,7 @@ function getDetail() {
 
       if (!createUser.val && typeof proposal.val!.creator === 'string') {
         getUserInfoByAddress(proposal.val!.creator).then(user => {
+          
           createUser.val = user
         })
       }
@@ -2042,6 +2043,7 @@ function getDatas(isCover = false) {
             for (let i = 0; i < res.length; i++) {
               if (!recordsUserInfo.some(item => item.address === res[i].address)) {
                 getUserInfoByAddress(res[i].address).then(user => {
+                  
                   recordsUserInfo.push(user)
                 })
               }

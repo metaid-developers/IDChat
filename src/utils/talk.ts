@@ -958,12 +958,13 @@ export const tryCreateNode = async (node: {
   body:any
   timestamp:number
   externalEncryption?:'0' | '1' | '2'
+  fileEncryption?:'0' | '2' | '2'
   attachments?:AttachmentItem[]
 }, mockId: string) => {
   const jobs = useJobsStore()
   const talk = useTalkStore()
   const buildTx=useBulidTx()
-   const {protocol,body,timestamp:timeStamp,attachments,externalEncryption}=node
+   const {protocol,body,timestamp:timeStamp,attachments,externalEncryption,fileEncryption}=node
   try {
     // const nodeRes = await sdk.createBrfcChildNode(node)
     const nodeRes = await buildTx.createShowMsg({
@@ -971,6 +972,7 @@ export const tryCreateNode = async (node: {
       body,
       attachments,
       externalEncryption,
+      fileEncryption,
       isBroadcast:true
     })
 
@@ -1266,11 +1268,11 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const fileType = file.fileType.split('/')[1]
   // 1.5 encrypt
   const encrypt = 'aes'
-  const externalEncryption = channelType == ChannelType.Group ?  '0' : '1'
+  const externalEncryption ='0' //channelType == ChannelType.Group ?  '0' : '1'
   
   // const attachment =attachments//'metafile://$[0]'
 
-  const dataCarrier: any = {
+  const dataCarrier: any =  messageDto.channelType === ChannelType.Group ? {
     timestamp,
     encrypt,
     fileType,
@@ -1278,17 +1280,27 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     nickName,
     attachment: '',
     replyPin: reply ? `${reply.txId}i0` : '',
+  } : {
+    timestamp,
+    encrypt,
+    fileType,
+    to: channelId,
+    nickName,
+    attachment: '',
+    replyPin: reply ? `${reply.txId}i0` : '',
   }
 
-  if (messageDto.channelType !== ChannelType.Group) {
-    dataCarrier.to = channelId
-  }
+  
+
+  // if (messageDto.channelType !== ChannelType.Group) {
+  //   dataCarrier.to = channelId
+  // }
 
   const nodeName =
     messageDto.channelType === ChannelType.Group
       ? NodeName.SimpleFileGroupChat
       : NodeName.SimpleFileMsg
-
+  const fileEncryption = messageDto.channelType === ChannelType.Group ? '0' : '1'
   // 2. 构建节点参数
   const node = {
     protocol: nodeName,
@@ -1297,6 +1309,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     attachments,
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
     externalEncryption,
+    fileEncryption
   }
 
   // 2.5. mock发送

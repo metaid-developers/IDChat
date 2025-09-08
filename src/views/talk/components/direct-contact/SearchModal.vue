@@ -231,7 +231,11 @@ import { useI18n } from 'vue-i18n'
 import ChatIcon from '@/components/ChatIcon/ChatIcon.vue'
 import { router } from '@/router'
 import { useLayoutStore } from '@/stores/layout'
-
+import {
+  GetUserEcdhPubkeyForPrivateChat,
+} from '@/api/talk'
+import { useEcdhsStore } from '@/stores/ecdh'
+import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 const layout = useLayoutStore()
 
 interface RemoteSearchGroup {
@@ -277,7 +281,8 @@ export default defineComponent({
     const remoteGroups = ref<RemoteSearchGroup[]>([])
     const isSearching = ref(false)
     const searchError = ref('')
-
+    const i18n=useI18n()
+    const ecdhsStore=useEcdhsStore()
     const isVisible = computed({
       get: () => props.modelValue,
       set: value => emit('update:modelValue', value),
@@ -395,8 +400,28 @@ export default defineComponent({
       layout.$patch({
         isShowLeftNav: false,
       })
-      if (group.type === 'user') {
+      if(group.type === 'user') {
+        GetUserEcdhPubkeyForPrivateChat(group?.metaId).then((userInfo)=>{
+          if(!userInfo.chatPublicKey){
+             return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
+          }
+
+          let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        if (!ecdh) {
+            
+             getEcdhPublickey(userInfo.chatPublicKey).then((res)=>{
+           
+               ecdhsStore.insert(res, res?.externalPubKey)
+                 return router.push(`/talk/@me/${group.metaId}`)
+            })
+           
+        }
+
         router.push(`/talk/@me/${group.metaId}`)
+
+     
+        })
+        
       } else {
         router.push(`/talk/channels/public/${group?.groupId}`)
       }
@@ -423,6 +448,8 @@ export default defineComponent({
       selectContact,
       selectRemoteGroup,
       closeModal,
+       i18n,
+     ecdhsStore
     }
   },
 })

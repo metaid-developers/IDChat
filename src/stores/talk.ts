@@ -11,6 +11,7 @@ import {
   getOneChannel,
   getChannelMembers,
   GetUserEcdhPubkeyForPrivateChat,
+  BatchGetUsersEcdhPubkeyForPrivateChat
 } from '@/api/talk'
 
 import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName } from '@/enum'
@@ -398,21 +399,45 @@ export const useTalkStore = defineStore('talk', {
       })
 
       if (priviteChannel.length) {
+
+
+        const userMetaIdList=[]
+       
         for (let channel of priviteChannel) {
+          userMetaIdList.push(channel.metaId)
+        
+          //const userInfo = await GetUserEcdhPubkeyForPrivateChat(channel.metaId)
           
-          const userInfo = await GetUserEcdhPubkeyForPrivateChat(channel.metaId)
-          
-          if (userInfo.chatPublicKey) {
-            channel.publicKeyStr = userInfo.chatPublicKey
-            channel.id = userInfo.metaid
-            let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
+          // if (userInfo.chatPublicKey) {
+          //   channel.publicKeyStr = userInfo.chatPublicKey
+          //   channel.id = userInfo.metaid
+          //   let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
+
+          //   if (!ecdh) {
+          //     ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+          //     ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+          //   }
+          // }
+        }
+       const userInfoList= await BatchGetUsersEcdhPubkeyForPrivateChat({
+          metaIds:userMetaIdList
+        })
+
+       
+          for(let i=0;userInfoList.length && i<userInfoList.length;i++){
+             if (userInfoList[i].chatPublicKey) {
+            priviteChannel[i].publicKeyStr = userInfoList[i].chatPublicKey
+            priviteChannel[i].id = userInfoList[i].metaid
+            let ecdh = ecdhsStore.getEcdh(userInfoList[i].chatPublicKey)
 
             if (!ecdh) {
-              ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+              ecdh = await getEcdhPublickey(userInfoList[i].chatPublicKey)
               ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
             }
           }
-        }
+          }
+        
+        
       }
 
       //const channels = [...publicChannel]
@@ -629,6 +654,9 @@ export const useTalkStore = defineStore('talk', {
         // const metaidInfo = await getUserInfoByMetaId(routeChannelId)
         //
         // const userInfo= await getUserInfoByAddress(metaidInfo?.address)
+
+
+
        
         const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
         let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
@@ -678,13 +706,26 @@ export const useTalkStore = defineStore('talk', {
         this.activeCommunityChannels.some((channel: any) => channel.metaId === routeChannelId)
       ){
         
-          const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
+         const currentChannel= this.activeCommunityChannels.find((channel: any) => channel.metaId === routeChannelId)
+        if(currentChannel && currentChannel.publicKeyStr){
+            
+        let ecdh= ecdhsStore.getEcdh(currentChannel.publicKeyStr)
+        if (!ecdh) {
+            
+            ecdh = await getEcdhPublickey(currentChannel.publicKeyStr)
+            ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+        }
+        }else{
+             const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
         let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
         if (!ecdh) {
             
             ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
             ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
         }
+        }
+
+       
       }
       
 
@@ -1016,13 +1057,19 @@ export const useTalkStore = defineStore('talk', {
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
-            mockMessage.data.content = message.content || message.data?.content
+            if(mockMessage.data){
+               mockMessage.data.content = message.content || message.data?.content
+            }
+           
           })
         } else {
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
-            mockMessage.data.content = message.content || message.data?.content
+                if(mockMessage.data){
+               mockMessage.data.content = message.content || message.data?.content
+            }
+            //mockMessage.data.content = message.content || message.data?.content
             delete mockMessage.isMock
           })
         }

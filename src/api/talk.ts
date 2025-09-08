@@ -649,6 +649,46 @@ export const GetUserEcdhPubkeyForPrivateChat=(metaId:string):Promise<{
   })
 }
 
+export const BatchGetUsersEcdhPubkeyForPrivateChat=(params:{
+  metaIds?:string[],
+  addresses?:string[]
+}):Promise<Array<{
+    metaid:string,
+    name:string,
+    avatar:string,
+    avatarImage:string,
+    chatPublicKey:string,
+    chatPublicKeyId:string,
+    address:string
+}>>=>{
+  //const query =new URLSearchParams({metaId}).toString() 
+  params=params || {}
+  return TalkApi.post(`/batch-user-info`,params).then(res => {
+     if(res?.code == 0){
+      let list=[]
+      if(res.data.list?.length){
+        
+        for(let user of res.data.list){
+          list.push({
+            ...user.userInfo,
+            address:user.address
+          })
+        }
+       
+      }
+      return list
+       //return {...res.data.userInfo,address:res.data.address}
+     }else if(res?.code == 1){
+      return []
+      //throw new Error(res?.message)
+     }
+   
+  }).catch((e)=>{
+    
+   return []
+  })
+}
+
 // 获取某个頻道的引用公告列表
 export const GetCommunityAnnouncements = (params: {
   communityId: string

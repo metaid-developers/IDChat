@@ -73,6 +73,7 @@ export const useBulidTx = createGlobalState(() => {
       
 
       if(chainStore.state.currentChain === 'btc'){
+        
         const inscribeDataArray=[]
         
         if(SerialTransactions.length){
@@ -91,6 +92,7 @@ export const useBulidTx = createGlobalState(() => {
           inscribeDataArray,
           options,
         })
+        
         if(txIDs.status == "canceled"){
           return null
         }
@@ -242,10 +244,11 @@ export const useBulidTx = createGlobalState(() => {
     protocol:string,
     isBroadcast:boolean,
     externalEncryption?:'0' | '1' | '2'
+    fileEncryption?:'0' | '1' | '2',
     attachments?:AttachmentItem[]
     
   })=>{
-    const {body,protocol,isBroadcast,attachments,externalEncryption}=params
+    const {body,protocol,isBroadcast,attachments,externalEncryption,fileEncryption}=params
     
      const chainStore=useChainStore()
     let SerialTransactions=[]
@@ -258,8 +261,8 @@ export const useBulidTx = createGlobalState(() => {
        const fileRes= await createMvcFile({
           body:chainStore.state.currentChain == 'btc' ? hexToBase64(attachments[0].data) : hexToUint8Array(attachments[0].data),
           mime:attachments[0].fileType,
-          encryption:externalEncryption,
-          isBroadcast:false
+          encryption:fileEncryption,
+          isBroadcast:chainStore.state.currentChain == 'btc' ? true :false
        })
 
        
@@ -272,14 +275,18 @@ export const useBulidTx = createGlobalState(() => {
        
         return null
        }
-
+       
        if(fileRes?.pinRes?.revealTxIds?.length){
+        
         body.attachment=`metafile://${fileRes.pinRes.revealTxIds[0]}i0`
         SerialTransactions=[fileRes.metaidData]
        }else if(fileRes?.txid){
         body.attachment=`metafile://${fileRes.txid}i0`
         SerialTransactions=fileRes?.transactions
         
+       }else if(fileRes){
+         body.attachment=`metafile://${fileRes}i0`
+         
        }else{
         ElMessage.error(i18n.global.t('upload_attachment_fail'))
         return null
@@ -409,6 +416,7 @@ export const useBulidTx = createGlobalState(() => {
             const rawTx=pinRes.revealTxsHex[0]
             const transaction = bitcoin.Transaction.fromHex(rawTx);
             const txid = transaction.getId();
+            
           //pinRes?.revealTxIds?.push()
             pinRes.revealTxIds=[txid]
             
@@ -424,7 +432,9 @@ export const useBulidTx = createGlobalState(() => {
       }
       if(pinRes?.txids?.length){
         return pinRes?.txids[0]
-      }else{
+      }else if(pinRes?.revealTxIds?.length){
+        return pinRes?.revealTxIds[0]
+      } else{
         return null
       }
    

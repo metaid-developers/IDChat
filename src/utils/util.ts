@@ -132,11 +132,19 @@ function uint8ArrayToBase64(uint8Array: Uint8Array) {
 }
 
 export async function getFileDataFromUrl(fileUrl: string): Promise<ArrayBuffer> {
-  const response = await fetch(fileUrl)
+  try {
+    
+    const response = await fetch(fileUrl)
+
+  
   const arrayBuffer = await response.arrayBuffer()
   
  
+ 
   return arrayBuffer
+  } catch (error) {
+    
+  }
 }
 
 function arrayBufferToHexString(arrayBuffer: ArrayBuffer): string {

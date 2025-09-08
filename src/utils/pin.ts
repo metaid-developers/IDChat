@@ -74,6 +74,7 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
   }
 }): Promise<InscribeResultForIfBroadcasting[T]> {
   const address = await window.metaidwallet.btc.getAddress()
+  
   const metaidDataList: MetaidData[] = inscribeDataArray.map(inp => {
     const contentType = inp?.contentType ?? 'text/plain'
     const encoding = inp?.encoding ?? 'utf-8'
@@ -115,7 +116,7 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
       noBroadcast: options?.noBroadcast !== 'no',
     },
   })
-
+  
   console.log('inscrible res', res)
 
   return res

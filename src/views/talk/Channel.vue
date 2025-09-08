@@ -148,6 +148,7 @@ const { communityId, channelId } = route.params as { communityId: string; channe
 watch(
   () => route.params,
   (newVal, oldVal) => {
+    
     if (newVal.channelId != oldVal.channelId) {
       resolve(newVal.communityId as string, newVal.channelId as string)
     }
@@ -158,6 +159,9 @@ watch(
 async function resolve(communityId: string, channelId: string) {
   
   // init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
+
+  
+
   if (isPublicChannel(communityId)) {
     init(communityId, channelId)
     // init(communityId)

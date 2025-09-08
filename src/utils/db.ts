@@ -56,6 +56,8 @@ export class DBClass extends Dexie {
     }>(async resolve => {
       try {
         const txId = this.getMetaFileTxId(metafile)
+      
+        
         const fileUrl =
           width !== -1
             ? tranformMetafile(metafile, width)
@@ -113,7 +115,9 @@ export class DBClass extends Dexie {
     chatPubkeyForDecrypt?: string
   ) {
     return new Promise<string>(async resolve => {
+       
       
+  
       const result = await this.getMetaFileData(
         metafile,
         width,
@@ -237,6 +241,7 @@ export class DBClass extends Dexie {
     isPrivateChat: boolean = false,
     chatPubkeyForDecrypt: string = ''
   ) {
+    
     return new Promise<string>(async resolve => {
       const result = await this.getMetaFileData(
         metafile,
