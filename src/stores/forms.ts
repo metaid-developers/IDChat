@@ -27,7 +27,7 @@ const MAX = new Decimal(10).mul(10 ** 8).toNumber()
 // BTC红包特殊限制
 const BTC_MIN_TOTAL_SATS = 1500 // 0.000015 BTC
 const BTC_MAX_TOTAL_SATS = 10000000 // 0.1 BTC
-export const BTC_MIN_PER_PACKET_SATS = 546 // 0.000005 BTC
+export const BTC_MIN_PER_PACKET_SATS = 800 // 0.000008 BTC
 const BTC_MAX_PER_PACKET_SATS = 100000 // 0.001 BTC
 const BTC_MIN_QUANTITY = 3
 const BTC_MAX_QUANTITY = 100
@@ -528,32 +528,32 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
 
           if (avgPerPacket < minAvgBtc) {
             this.amount = minAvgBtc * this.quantity
-            ElMessage.warning('BTC紅包平均金額不能小於0.000005 BTC（500聰）')
+            // ElMessage.warning('BTC紅包平均金額不能小於0.000005 BTC（500聰）')
           }
           if (avgPerPacket > maxAvgBtc) {
             this.amount = maxAvgBtc * this.quantity
-            ElMessage.warning('BTC紅包平均金額不能超過0.001 BTC（100000聰）')
+            // ElMessage.warning('BTC紅包平均金額不能超過0.001 BTC（100000聰）')
           }
         } else if (this.unit === 'Sats') {
           // 聪单位验证
           if (+this.amount < BTC_MIN_TOTAL_SATS) {
             this.amount = BTC_MIN_TOTAL_SATS
-            ElMessage.warning('BTC紅包總金額不能小於1500聰')
+            // ElMessage.warning('BTC紅包總金額不能小於1500聰')
           }
           if (+this.amount > BTC_MAX_TOTAL_SATS) {
             this.amount = BTC_MAX_TOTAL_SATS
-            ElMessage.warning('BTC紅包總金額不能超過10000000聰')
+            // ElMessage.warning('BTC紅包總金額不能超過10000000聰')
           }
 
           // 检查平均单红包金额限制
           const avgPerPacket = +this.amount / this.quantity
           if (avgPerPacket < BTC_MIN_PER_PACKET_SATS) {
             this.amount = BTC_MIN_PER_PACKET_SATS * this.quantity
-            ElMessage.warning('BTC紅包平均金額不能小於500聰')
+            // ElMessage.warning('BTC紅包平均金額不能小於500聰')
           }
           if (avgPerPacket > BTC_MAX_PER_PACKET_SATS) {
             this.amount = BTC_MAX_PER_PACKET_SATS * this.quantity
-            ElMessage.warning('BTC紅包平均金額不能超過100000聰')
+            // ElMessage.warning('BTC紅包平均金額不能超過100000聰')
           }
         }
       } else {
@@ -650,10 +650,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
         // 验证费率
         const currentFeeRate = chainStore.btcFeeRate()
         if (currentFeeRate > 3) {
-          return ElMessage.error('你所选择的费率过高，请设置到0.3～3范围')
+          return ElMessage.error('你所选择的费率过高，请设置到1～3范围')
         }
-        if (currentFeeRate < 0.3) {
-          return ElMessage.error('你所选择的费率过低，请设置到0.3～3范围')
+        if (currentFeeRate < 1) {
+          return ElMessage.error('你所选择的费率过低，请设置到1～3范围')
         }
       }
 
