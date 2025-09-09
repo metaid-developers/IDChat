@@ -1399,5 +1399,6 @@
   "noSearchResults": "没有找到相关结果",
   "recentContacts": "最近联系人",
   "searchError": "搜索失败",
-  "self_private_chat_unsupport": "你暂未开通私聊功能，请开通过再操作"
+  "self_private_chat_unsupport": "你暂未开通私聊功能，请开通过再操作",
+  "user_private_chat_metaid_error": "缺小必要的MetaID参数"
 }

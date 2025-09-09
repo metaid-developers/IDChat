@@ -1405,5 +1405,6 @@
   "noSearchResults": "No search results found",
   "recentContacts": "Recent Contacts",
   "searchError": "Search failed",
-  "self_private_chat_unsupport": "You have not activated the private chat function yet. Please activate it before proceeding"
+  "self_private_chat_unsupport": "You have not activated the private chat function yet. Please activate it before proceeding",
+  "user_private_chat_metaid_error": "Required MetaID parameter is missing"
 }

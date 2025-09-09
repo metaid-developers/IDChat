@@ -10,6 +10,8 @@
           class=" h-3/5 flex items-center"
           customClass="w-full rounded-md object-scale-down"
           :width="-1"
+          :isPrivateChat="isPrivateChat" 
+          :chatPubkeyForDecrypt="chatPubkeyForDecrypt"
         />
         <div class="mt-2">
           <span
@@ -27,7 +29,17 @@
 <script lang="ts" setup>
 import { metafile } from '@/utils/filters'
 
-const props = defineProps(['src'])
+// const props = defineProps(['src'])
+interface Props {
+  src: string
+  isPrivateChat?:boolean
+  chatPubkeyForDecrypt?:string
+}
+const props = withDefaults(defineProps<Props>(), {
+    src:'',
+  isPrivateChat:false,
+  chatPubkeyForDecrypt:''
+})
 
 const openOriginal = () => {
   const src = metafile(props.src, -1)

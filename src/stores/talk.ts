@@ -31,6 +31,7 @@ import { useCredentialsStore } from './credentials'
 import { useEcdhsStore } from './ecdh'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { nextTick } from 'vue'
+import i18n from '@/utils/i18n'
 function sortByConditionInPlace(array, conditionFn) {
   // console.log("arrray11111111111111111111",array)
   array.sort((a, b) => {
@@ -353,6 +354,29 @@ export const useTalkStore = defineStore('talk', {
   },
 
   actions: {
+
+    async checkUserOpenPrivate(metaid:string){
+         
+      
+      if(metaid == this.selfMetaId){
+         const userStore = useUserStore()
+        if(!userStore.last?.chatpubkey){
+          
+            return false
+        }else{
+           return false
+        }
+      }else{
+        const userInfo = await GetUserEcdhPubkeyForPrivateChat(metaid)
+        if(!userInfo.chatPublicKey){
+         //ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
+            return false
+        }else{
+          return true
+        }
+      }
+    },
+
     async fetchCommunities() {
       if (!this.selfMetaId) return
 

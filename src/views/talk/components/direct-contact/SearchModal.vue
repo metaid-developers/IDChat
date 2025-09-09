@@ -127,14 +127,16 @@
                         :customClass="'w-12 h-12 rounded-full'"
                       />
                     </div>
-                    <div class="flex flex-col grow overflow-hidden">
-                      <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <div class="flex  flex-col grow overflow-hidden">
+                      <div class="text-sm font-medium text-gray-900 dark:text-gray-100  truncate">
                         <Icon
                           name="group_chat"
                           class="w-4 h-4 inline-block mr-1 text-gray-500 dark:text-gray-400 "
                           v-if="group.type === 'group'"
                         ></Icon
-                        >{{ group.groupName || group.userName }}
+                        ><span class="truncate w-[95%]">
+                          {{ group.groupName || group.userName }}
+                        </span>
                       </div>
                       <div
                         class="text-xs text-gray-500 dark:text-gray-400 truncate"
@@ -401,26 +403,27 @@ export default defineComponent({
         isShowLeftNav: false,
       })
       if(group.type === 'user') {
-        GetUserEcdhPubkeyForPrivateChat(group?.metaId).then((userInfo)=>{
-          if(!userInfo.chatPublicKey){
-             return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
-          }
-
-          let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
-        if (!ecdh) {
-            
-             getEcdhPublickey(userInfo.chatPublicKey).then((res)=>{
-           
-               ecdhsStore.insert(res, res?.externalPubKey)
-                 return router.push(`/talk/@me/${group.metaId}`)
-            })
-           
-        }
-
         router.push(`/talk/@me/${group.metaId}`)
+        // GetUserEcdhPubkeyForPrivateChat(group?.metaId).then((userInfo)=>{
+        //   if(!userInfo.chatPublicKey){
+        //      return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
+        //   }
+
+        //   let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        // if (!ecdh) {
+            
+        //      getEcdhPublickey(userInfo.chatPublicKey).then((res)=>{
+           
+        //        ecdhsStore.insert(res, res?.externalPubKey)
+        //          return router.push(`/talk/@me/${group.metaId}`)
+        //     })
+           
+        // }
+
+        
 
      
-        })
+        // })
         
       } else {
         router.push(`/talk/channels/public/${group?.groupId}`)

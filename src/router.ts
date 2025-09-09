@@ -175,6 +175,30 @@ export const router = createRouter({
       name: 'talkAtMe',
       component: () => import('@/views/talk/AtMe.vue'),
       meta: { isAuth: true },
+      beforeEnter:async(to,from,next)=>{
+        const userStore=useUserStore()
+        const talk=useTalkStore()
+        const {channelId} = to.params
+        if(channelId){
+           const toUserCanPrivate= await talk.checkUserOpenPrivate(channelId as string)
+           if(!toUserCanPrivate){
+              ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
+              next('/')
+           }
+        }else{
+           ElMessage.error(`${i18n.global.t('user_private_chat_metaid_error')}`)
+              next('/')
+        }
+
+        if(!userStore.last?.chatpubkey){
+           ElMessage.error(`${i18n.global.t('self_private_chat_unsupport')}`)
+          
+           next('/')
+        }
+       
+        next()
+
+      }
     },
 
     // .meta解析

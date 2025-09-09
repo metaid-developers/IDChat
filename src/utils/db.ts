@@ -55,13 +55,15 @@ export class DBClass extends Dexie {
       data: Blob
     }>(async resolve => {
       try {
+        
         const txId = this.getMetaFileTxId(metafile)
       
         
         const fileUrl =
           width !== -1
             ? tranformMetafile(metafile, width)
-            : `${import.meta.env.VITE_AppImgApi}/metafile/${txId}`
+            : `${import.meta.env.VITE_MAN_API}/content/${txId}`
+            
         if (isPrivateChat && chatPubkeyForDecrypt) {
           
           const ecdhsStore = useEcdhsStore()
@@ -153,6 +155,7 @@ export class DBClass extends Dexie {
     chatPubkeyForDecrypt = ''
   ) {
     return new Promise<string>(async resolve => {
+      
       if (!metafileTxId) {
         resolve('')
       } else if (
@@ -172,7 +175,7 @@ export class DBClass extends Dexie {
         if (file) {
           this.metafiles.update(txId, { latestTime: new Date().getTime() })
           // 存在数据库
-
+          
           // 原图
           if (width === -1) {
             // 存在原图
@@ -243,6 +246,7 @@ export class DBClass extends Dexie {
   ) {
     
     return new Promise<string>(async resolve => {
+      
       const result = await this.getMetaFileData(
         metafile,
         width,

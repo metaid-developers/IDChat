@@ -62,8 +62,17 @@
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100'"
           />
-          <div class="text-dark-300 dark:text-gray-400 text-xs shrink-0 whitespace-nowrap">
+          <div class=" text-xs shrink-0 inline-flex gap-1 whitespace-nowrap"
+          :class="[
+              msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
+            ]"
+          >
             {{ formatTimestamp(message.timestamp, i18n) }}
+             <img
+              :src="btcIcon"
+              class="chain-icon-menu w-[16px] h-[16px]"
+              v-if="msgChain == ChatChain.btc"
+            />
           </div>
         </div>
 
@@ -293,13 +302,7 @@
           <Teleport to="body" v-if="isImage && showImagePreview">
             <TalkImagePreview
               v-if="showImagePreview"
-              :src="decryptedMessage(
-            message.content,
-           message.encryption,
-            message.protocol,
-            message.isMock,
-            true
-          )"
+              :src="message.content" :isPrivateChat="true" :chatPubkeyForDecrypt="chatPubkeyForDecrypt"
               @close="showImagePreview = false"
             />
           </Teleport>
@@ -333,7 +336,8 @@
           <div
             class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
+              msgChain == ChatChain.btc && 'btc-item',
+              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-if="translateStatus === 'showing'"
@@ -347,7 +351,9 @@
           <div
             class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'bg-white dark:bg-gray-700',
+                msgChain == ChatChain.btc && 'btc-item',
+              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
+           
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else
@@ -383,11 +389,12 @@ import { formatTimestamp, decryptedMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import { useJobsStore } from '@/stores/jobs'
-import { NodeName } from '@/enum'
+import { NodeName,ChatChain } from '@/enum'
 import MessageItemQuote from './MessageItemQuote.vue'
 import { containsString } from '@/utils/util'
 import type { PriviteChatMessageItem } from '@/@types/common'
-import { isPrivate } from 'tiny-secp256k1'
+import btcIcon from '@/assets/images/btc.png'
+import { DB } from '@/utils/db'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 
@@ -414,6 +421,10 @@ const senderName = computed(() => {
   }
 
   return activeChannel.value?.name
+})
+
+const msgChain = computed(() => {
+  return props.message.chain
 })
 
 const senderMetaName = computed(() => {
@@ -456,6 +467,15 @@ const decryptedImageMessage = computed(() => {
 
 
 })
+
+const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string)=>{
+  try {
+    const res=await  DB.getMetaFileData(content, 235,true,chatPubkeyForDecrypt)
+   return URL.createObjectURL(res.data)
+  } catch (error) {
+    
+  }
+}
 
 // const decryptedMessage = computed(() => {
 //   // 处理mock的图片消息
@@ -587,6 +607,13 @@ const isNftBuy = computed(() => containsString(props.message.protocol, NodeName.
     left: 0;
     top: 0;
     background: var(--color-primary);
+  }
+}
+
+.not-mine {
+  &.btc-item {
+    background: linear-gradient(113deg, #fff6e6 -12%, #e5bc77 103%);
+    color: #5a4015;
   }
 }
 </style>

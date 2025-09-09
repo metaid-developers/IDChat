@@ -61,10 +61,10 @@
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
       <div class="text-xs flex items-center truncate max-w-fit ">
         
-        <div v-if="!contact.isPrivateChat && lastMessage" class="text-dark-800 dark:text-gray-500 font-medium"><UserName :name="lastMessageUsername" :meta-name="''" />&nbsp;:&nbsp;</div>
+        <div v-if="!contact.isPrivateChat && lastMessage" class="text-dark-800  dark:text-gray-500 font-medium"><UserName :name="lastMessageUsername" :meta-name="''" />&nbsp;:&nbsp;</div>
         
         <span v-if="!lastMessage">&nbsp;</span>
-        <span v-else class="text-dark-300 dark:text-gray-400 "> {{ lastMessage || '' }}</span>
+        <span v-else class="text-dark-300 dark:text-gray-400 truncate"> {{ lastMessage || '' }}</span>
       </div>
     </div>
   </div>
