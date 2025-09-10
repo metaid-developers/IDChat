@@ -424,9 +424,9 @@ const translatedContent = ref('')
 
 
 function toPrivateChat(message:ChatMessageItem){
-  if(message.userInfo.metaid == userStore.last.metaid){
-     return 
-  }
+  // if(message.userInfo.metaid == userStore.last.metaid){
+  //    return 
+  // }
   if(!userStore.last?.chatpubkey){
      return ElMessage.error(`${i18n.t('self_private_chat_unsupport')}`)
   }

@@ -566,6 +566,7 @@ router.beforeEach(async (to, from, next) => {
    const layout=useLayoutStore()
    
   if (to.path === '/') {
+    
     const userStore = useUserStore();
     const talk = useTalkStore();
    
@@ -581,7 +582,7 @@ router.beforeEach(async (to, from, next) => {
         channelId = myChannelList[0].groupId;
         layout.$patch({showJoinView:false})
            layout.$patch({showWelcomeDescView:false})
-        //layout.$patch({ isShowLeftNav: true })
+        layout.$patch({ isShowLeftNav: true })
       } else {
         
         layout.$patch({ isShowLeftNav: true })
@@ -620,7 +621,7 @@ router.beforeEach(async (to, from, next) => {
         name: 'talkChannel',
         params: { communityId: 'public', channelId }
         });
-        //layout.$patch({ isShowLeftNav: true })
+        layout.$patch({ isShowLeftNav: true })
       } else {
         
         layout.$patch({ isShowLeftNav: true })
@@ -636,6 +637,8 @@ router.beforeEach(async (to, from, next) => {
     }
    
     layout.$patch({ isShowLeftNav: true })
+    
+     next()
   } else {
     
    

@@ -364,7 +364,7 @@ export const useTalkStore = defineStore('talk', {
           
             return false
         }else{
-           return false
+           return true
         }
       }else{
         const userInfo = await GetUserEcdhPubkeyForPrivateChat(metaid)
@@ -1381,6 +1381,34 @@ export const useTalkStore = defineStore('talk', {
       }
 
       this.activeChannel.newMessages.push(message)
+    },
+
+    updateMessage(message: any,txid:string) {
+      console.log('this.activeChannel333333333333333', this.activeChannel)
+      if (!this.activeChannel) return
+      if (!this.activeChannel.newMessages) {
+        this.activeChannel.newMessages = []
+      }
+      console.log('message', message)
+
+      //const isSession = Number(message.type) == 2 ? true : false
+      // if (isSession) {
+      //   sortByConditionInPlace(this.activeCommunity?.channels, channel => channel?.id == message.to)
+      //   console.log('this.activeChannel333333333333333', this.activeChannel)
+      // } else {
+      //   sortByConditionInPlace(
+      //     this.activeCommunity?.channels,
+      //     channel => channel?.groupId == message.groupId
+      //   )
+      // }
+     this.activeChannel.newMessages = this.activeChannel.newMessages.map((item:any)=>{
+        if(item.mockId == message.mockId){
+          item.txId=txid
+        }
+
+        return item
+      })
+      //this.activeChannel.newMessages.push(message)
     },
 
     removeMessage(mockId: string) {

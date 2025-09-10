@@ -978,9 +978,15 @@ export const tryCreateNode = async (node: {
 
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
+    
     if (nodeRes === null) {
       talk.removeMessage(mockId)
+    }else{
+      return nodeRes
     }
+
+    
+    
   } catch (error) {
     const timestamp = timeStamp
     jobs?.node && jobs?.nodes.push({ node, timestamp })
@@ -1204,7 +1210,11 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     type:2
   
   }
-  talkStore.addMessage(mockMessage)
+
+  // if(to !== userStore.last.metaid){
+  //   talkStore.addMessage(mockMessage)
+  // }
+   talkStore.addMessage(mockMessage)
   
   // 3. 发送节点
   // const sdk = userStore.showWallet
@@ -1213,10 +1223,18 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   // return '1'
    try {
     const tryRes = await tryCreateNode(node, mockId)
-
+    
+    
+    
     if (tryRes === false) {
       talkStore.addRetryList({ ...messageDto, mockId })
     } else {
+      if(tryRes?.txids?.length || tryRes?.revealTxIds?.length){
+      if(to === userStore.last.metaid){
+      const txId =(tryRes?.txids && tryRes?.txids[0]) || (tryRes?.revealTxIds && tryRes?.revealTxIds[0])
+      talkStore.updateMessage(mockMessage,txId)
+      }
+      }
       talkStore.removeRetryList(mockId)
       return '1'
     }
@@ -1339,18 +1357,41 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     replyInfo: reply,
     type:messageDto.channelType === ChannelType.Group ? 1 : 2
   }
-  talkStore.addMessage(mockMessage)
+
+  // if(messageDto.channelType == ChannelType.Group || channelId !== userStore.last.metaid ){
+    
+  //     talkStore.addMessage(mockMessage)
+  // }
+
+   talkStore.addMessage(mockMessage)
+
+
 
   // 3. 发送节点
   // const sdk = userStore.showWallet
   try {
     const tryRes = await tryCreateNode(node, mockId)
-    if (!tryRes) {
+      if (tryRes === false) {
       talkStore.addRetryList({ ...messageDto, mockId })
     } else {
+      if(tryRes?.txids?.length || tryRes?.revealTxIds?.length){
+        
+      if(channelId === userStore.last.metaid ){
+      const txId =(tryRes?.txids && tryRes?.txids[1]) || (tryRes?.revealTxIds && tryRes?.revealTxIds[0])
+      talkStore.updateMessage(mockMessage,txId)
+      }
+      }
       talkStore.removeRetryList(mockId)
-      return
+      return '1'
     }
+
+
+    // if (!tryRes) {
+    //   talkStore.addRetryList({ ...messageDto, mockId })
+    // } else {
+    //   talkStore.removeRetryList(mockId)
+    //   return
+    // }
   } catch (error) {
     talkStore.addRetryList({ ...messageDto, mockId })
   }
