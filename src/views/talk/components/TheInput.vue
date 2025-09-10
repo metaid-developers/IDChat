@@ -394,11 +394,11 @@ const openImageUploader = (close: Function) => {
 }
 
 const openRedPackDialog = () => {
-  if (chainStore.state.currentChain == ChatChain.btc) {
-    return ElMessage.error(`${i18n.t('notSupoort_btc_send_repacket')}`)
-  } else {
-    layout.isShowRedPacketModal = true
-  }
+  // if (chainStore.state.currentChain == ChatChain.btc) {
+  //   return ElMessage.error(`${i18n.t('notSupoort_btc_send_repacket')}`)
+  // } else {
+  layout.isShowRedPacketModal = true
+  // }
 }
 
 const handleImageChange = (e: Event) => {
