@@ -153,7 +153,9 @@
           ref="theTextBox"
           :placeholder="
             $t('Talk.Channel.message_to', {
-              channel: talk?.activeChannelSymbol + (talk.activeChannel?.name || activeChannel?.userInfo?.name || ''),
+              channel:
+                talk?.activeChannelSymbol +
+                (talk.activeChannel?.name || activeChannel?.userInfo?.name || ''),
             })
           "
           v-model="chatInput"
@@ -289,9 +291,9 @@ import { ElMessage, ElPopover } from 'element-plus'
 import { sendMessage, validateTextMessage, isImage, isFileTooLarge } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useConnectionStore } from '@/stores/connection'
-import { FileToAttachmentItem, compressImage,atobToHex } from '@/utils/util'
-import {useCredentialsStore} from '@/stores/credentials'
-import { encrypt, ecdhEncrypt,ecdhDecrypt,ecdhEncryptForPrivateImg } from '@/utils/crypto'
+import { FileToAttachmentItem, compressImage, atobToHex } from '@/utils/util'
+import { useCredentialsStore } from '@/stores/credentials'
+import { encrypt, ecdhEncrypt, ecdhDecrypt, ecdhEncryptForPrivateImg } from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
 import { ChannelType, MessageType, ChatChain } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
@@ -302,7 +304,7 @@ import Decimal from 'decimal.js-light'
 import { router } from '@/router'
 import { useChainStore } from '@/stores/chain'
 import { useI18n } from 'vue-i18n'
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
 interface Props {
   quote?: any
@@ -318,7 +320,7 @@ const showStickersBox = ref(false)
 const spaceNotEnoughFlag = ref(false)
 const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
-const ecdhsStore=useEcdhsStore()
+const ecdhsStore = useEcdhsStore()
 const hasInput = computed(() => chatInput.value.length > 0)
 
 /** 输入框样式 */
@@ -380,13 +382,11 @@ const useCompression = ref(true)
 
 const hasImage = computed(() => imageFile.value !== null)
 
-
-const activeChannel=computed(()=>{
-  return  talk.activeChannel
+const activeChannel = computed(() => {
+  return talk.activeChannel
 })
 
-console.log('talk.activeChannel22222',activeChannel)
-
+console.log('talk.activeChannel22222', activeChannel)
 
 const openImageUploader = (close: Function) => {
   imageUploader.value?.click()
@@ -394,11 +394,11 @@ const openImageUploader = (close: Function) => {
 }
 
 const openRedPackDialog = () => {
-  if (chainStore.state.currentChain == ChatChain.btc) {
-    return ElMessage.error(`${i18n.t('notSupoort_btc_send_repacket')}`)
-  } else {
-    layout.isShowRedPacketModal = true
-  }
+  // if (chainStore.state.currentChain == ChatChain.btc) {
+  //   return ElMessage.error(`${i18n.t('notSupoort_btc_send_repacket')}`)
+  // } else {
+  layout.isShowRedPacketModal = true
+  // }
 }
 
 const handleImageChange = (e: Event) => {
@@ -455,39 +455,33 @@ const trySendImage = async () => {
   console.log('size', image.size / 1024, 'KB')
 
   const hexedFiles = await FileToAttachmentItem(image)
-  
+
   const attachments = [hexedFiles]
-  
 
-  if(talk.activeChannelType == ChannelType.Session){
-    
-
-    if(!talk.activeChannel?.publicKeyStr){
+  if (talk.activeChannelType == ChannelType.Session) {
+    if (!talk.activeChannel?.publicKeyStr) {
       return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
     }
-    let ecdh= ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
-    if(!ecdh){
-      ecdh=await getEcdhPublickey(talk.activeChannel.publicKeyStr)
-      ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+    let ecdh = ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+    if (!ecdh) {
+      ecdh = await getEcdhPublickey(talk.activeChannel.publicKeyStr)
+      ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
     }
 
-     console.log("contentcontentcontent2222222",attachments[0].data)
-     
-    const sharedSecret=ecdh?.sharedSecret//atobToHex(credential!.signature)
-    attachments[0].data = ecdhEncryptForPrivateImg(attachments[0].data, sharedSecret)
-    
-  }
+    console.log('contentcontentcontent2222222', attachments[0].data)
 
-  
+    const sharedSecret = ecdh?.sharedSecret //atobToHex(credential!.signature)
+    attachments[0].data = ecdhEncryptForPrivateImg(attachments[0].data, sharedSecret)
+  }
 
   // clone，用于填充mock信息
   const originalFileUrl = imagePreviewUrl.value
   deleteImage()
-  
+
   const messageDto = {
     type: MessageType.Image,
     channelId: talk.activeChannel.id,
-    groupId:talk.activeChannelType == ChannelType.Session ? '' : talk?.activeCommunity?.id || '',
+    groupId: talk.activeChannelType == ChannelType.Session ? '' : talk?.activeCommunity?.id || '',
     userName: userStore.last?.name!,
     attachments,
     content: '',
@@ -496,7 +490,7 @@ const trySendImage = async () => {
     reply: props.quote,
   }
   console.log('props.quote', props.quote)
-  
+
   emit('update:quote', undefined)
   await sendMessage(messageDto)
 }
@@ -581,7 +575,7 @@ const checkSpaceBalance = () => {
 
 const trySendText = async (e: any) => {
   isSending.value = true
-  
+
   // 去除首尾空格
   chatInput.value = chatInput.value.trim()
   if (!validateTextMessage(chatInput.value)) return
@@ -614,41 +608,40 @@ const trySendText = async (e: any) => {
     //
     // const privateKeyStr = privateKey.toHex()
     //const credential=credentialsStore.getByAddress(connectionStore.last.address)
-    if(!talk.activeChannel?.publicKeyStr){
+    if (!talk.activeChannel?.publicKeyStr) {
       return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
     }
-    let ecdh= ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
-    
-    if(!ecdh){
-      ecdh=await getEcdhPublickey(talk.activeChannel.publicKeyStr)
-      ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+    let ecdh = ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+
+    if (!ecdh) {
+      ecdh = await getEcdhPublickey(talk.activeChannel.publicKeyStr)
+      ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
     }
-    //const 
- 
-    const sharedSecret=ecdh?.sharedSecret//atobToHex(credential!.signature)
+    //const
+
+    const sharedSecret = ecdh?.sharedSecret //atobToHex(credential!.signature)
     // credentialsStore.update(sigStr)
     //const otherPublicKeyStr =talk.activeChannel.publicKeyStr
-  
+
     console.log(chatInput.value, sharedSecret)
 
     content = ecdhEncrypt(chatInput.value, sharedSecret)
-    
-    console.log("ecdhDecrypt",ecdhDecrypt(content,sharedSecret))
-    
+
+    console.log('ecdhDecrypt', ecdhDecrypt(content, sharedSecret))
   }
 
   chatInput.value = ''
-  console.log("talk.activeChannel.id",talk.activeChannel.id)
-  
+  console.log('talk.activeChannel.id', talk.activeChannel.id)
+
   const messageDto = {
     content,
     type: MessageType.Text,
-    channelId:talk.activeChannel.id  ,
+    channelId: talk.activeChannel.id,
     userName: userStore.last?.name || '',
     channelType: talk.activeChannelType as ChannelType,
     reply: props.quote,
   }
-  
+
   console.log('props.quote', props.quote)
 
   emit('update:quote', undefined)

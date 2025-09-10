@@ -49,6 +49,10 @@ export type MetaIdData = {
   contentType?: string
   encryption?:Encryption
   encoding: BufferEncoding
+  outputs?:{
+    address:string,
+    value:number
+  }[]
 }
 
 export const useBulidTx = createGlobalState(() => {
@@ -73,7 +77,15 @@ export const useBulidTx = createGlobalState(() => {
       
 
       if(chainStore.state.currentChain === 'btc'){
-        
+        if(payTo.length){
+           metaidData.outputs=[];
+          for(let item of payTo){
+            metaidData.outputs.push({
+              address:item.address,
+              value:item.amount,
+            })
+          }
+        }
         const inscribeDataArray=[]
         
         if(SerialTransactions.length){
@@ -85,8 +97,10 @@ export const useBulidTx = createGlobalState(() => {
         const options={
           noBroadcast:isBroadcast === true ? 'no' : 'yes',
           feeRate:chainStore.btcFeeRate(),
-          network:'mainnet'
+          network:'mainnet',
+          outputs:[]
         }
+        
         
        const txIDs= await createPinWithBtc({
           inscribeDataArray,
@@ -185,8 +199,9 @@ export const useBulidTx = createGlobalState(() => {
       
 
     } catch (error) {
-      ElMessage.error((error as any).message)
-      throw new Error((error as any).message)
+      console.log("error",error)
+      // ElMessage.error((error as any).message)
+      throw new Error(typeof error === "string" ? error : (error as any).message)
     }
   }
 
@@ -381,8 +396,9 @@ export const useBulidTx = createGlobalState(() => {
       return pinRes
 
     } catch (error) {
-     
-      throw new Error(error as any)
+      // console.log("error",error)
+
+      throw new Error(typeof error === "string" ? error : (error as any).message)
     }
   }
 

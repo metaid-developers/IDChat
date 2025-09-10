@@ -2,6 +2,7 @@ import { Chains } from '@/enum'
 import ETH from '@/assets/images/eth.png'
 import MVC from '@/assets/images/icon_mvc.png'
 import BSV from '@/assets/images/bsv.png'
+import BTC from '@/assets/images/btc.png'
 import POLYGON from '@/assets/svg/polygon.svg?url'
 
 export default [
@@ -29,6 +30,17 @@ export default [
   },
   {
     id: 3,
+    key: 'btc',
+    name: 'BTC',
+    coinName: 'BTC',
+    icon: BTC,
+    value: 'btc' as Chains,
+    precision: 8,
+    minUnit: 'sat',
+    unit: 'btc',
+  },
+  {
+    id: 4,
     key: 'polygon',
     name: import.meta.env.VITE_POLYGON_CHAIN,
     coinName: 'MATIC',
@@ -39,7 +51,7 @@ export default [
     unit: 'matic',
   },
   {
-    id: 2,
+    id: 5,
     key: 'bsv',
     name: 'BSV',
     coinName: 'BSV',
