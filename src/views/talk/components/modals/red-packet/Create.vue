@@ -666,7 +666,7 @@ const confirmPayment = async () => {
     chain: 'btc',
     network: 'mainnet',
   })
-  console.log('Broadcasting commit transaction:', payment.value?.commitTxHex, payment.value)
+
   await broadcastToApi({
     txHex: payment.value?.revealTxHex[0] || '',
     chain: 'btc',
