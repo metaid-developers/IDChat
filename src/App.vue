@@ -62,6 +62,15 @@ import {completeReload} from '@/utils/util'
 import { useI18n } from 'vue-i18n'
 import WalletMissingModal from './components/ConnectWalletModal/WalletMissingModal.vue'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { sleep } from '@/utils/util'
+import { useConnectionModal } from '@/hooks/use-connection-modal'
+import {
+  getChannels,
+} from '@/api/talk'
+import { ElMessage } from 'element-plus'
+import { useLayoutStore } from './stores/layout'
+const { closeConnectionModal } =
+  useConnectionModal()
 const MAX_RETRY_TIME = 5000 // 最大等待时间（毫秒）
 const RETRY_INTERVAL = 100  // 重试间隔（毫秒）
 const rootStore = useRootStore()
@@ -72,6 +81,7 @@ const router = useRouter()
 const isNetworkChanging = ref(false)
 const i18n = useI18n()
 const accountInterval=ref()
+const layout=useLayoutStore()
 const routeKey = (route: any) => {
   if (route.params.communityId) return route.params.communityId
   return route.fullPath
@@ -129,6 +139,71 @@ const metaletNetworkChangedHandler = (network: Network) => {
 }
 
 
+async function connectMetalet() {
+
+
+ 
+    const connection = await connectionStore.connect('metalet').catch((err) => {
+    ElMessage.warning({
+      message: err.message,
+      type: 'warning',
+    })
+  })
+    if (connection?.status === 'connected') {
+    await credentialsStore.login()
+    
+  
+    
+    
+    await sleep(300)
+
+  
+
+    const channelId=route.params.channelId
+    const communityId=route.params.communityId
+
+
+    if(channelId && channelId !== 'welcome'){
+      router.push({
+        name: 'talkChannel',
+        params:{
+          communityId:communityId,
+          channelId:channelId
+        }
+      })
+     setTimeout(() => {
+       window.location.reload()
+     }, 2000);
+    }else{
+    let newChannelId
+    const myChannelList= await getChannels({
+      metaId:userStore.last.metaid
+    })
+
+    if(myChannelList.length){
+
+      newChannelId=myChannelList[0].groupId
+
+    }else{
+   
+      newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
+      layout.$patch({showJoinView:true})
+    }
+    router.push({
+        name: 'talkChannel',
+        params:{
+          communityId:'public',
+          channelId:newChannelId
+        }
+      })
+    }
+
+
+  }
+
+}
+
+
 
 onMounted(async () => {
   let retryCount = 0
@@ -155,8 +230,36 @@ onMounted(async () => {
     if (window.metaidwallet) {
 
       try {
-         window.metaidwallet.on('accountsChanged', metaletAccountsChangedHandler)
-         window.metaidwallet.on('networkChanged', metaletNetworkChangedHandler)
+         window.metaidwallet?.on('accountsChanged', metaletAccountsChangedHandler)
+         window.metaidwallet?.on('networkChanged', metaletNetworkChangedHandler)
+
+  window.metaidwallet?.on('LoginSuccess',async(data)=>{
+    
+      console.log("调用成功",data)
+      ElMessage.success(connectionStore.last.status)
+
+    
+  if(rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized ){
+       await connectMetalet()
+
+  }
+  
+
+  })
+
+   window.metaidwallet?.on('Logout',async(data)=>{
+    
+      console.log("退出登录成功",data)
+  if(rootStore.isWebView && connectionStore.last.status == 'connected' && userStore.isAuthorized ){
+        await connectionStore.disconnect(router)
+        closeConnectionModal()
+  
+  }
+  
+
+  })
+
+
       } catch (err) {
         console.error('Failed to setup Metalet listeners:', err)
       }
@@ -172,13 +275,7 @@ onMounted(async () => {
   // 初始检查
   checkMetalet()
 
-  setTimeout(async() => {
-     const res= await getEcdhPublickey()
 
- console.log("协商密钥",res)
-
- 
-  }, 5000);
 
   onUnmounted(() => {
     
@@ -198,6 +295,14 @@ onBeforeUnmount(async() => {
   window.metaidwallet.removeListener(
     'networkChanged',
     metaletNetworkChangedHandler,
+  )
+
+   window.metaidwallet?.removeListener(
+    'LoginSuccess'
+  )
+
+   window.metaidwallet?.removeListener(
+    'Logout'
   )
 
   clearInterval(accountInterval.value)

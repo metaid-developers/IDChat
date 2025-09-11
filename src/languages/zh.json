@@ -1406,5 +1406,11 @@
   "recentContacts": "最近联系人",
   "searchError": "搜索失败",
   "self_private_chat_unsupport": "你暂未开通私聊功能，请开通过再操作",
-  "user_private_chat_metaid_error": "缺小必要的MetaID参数"
+  "user_private_chat_metaid_error": "缺小必要的MetaID参数",
+  "download": {
+    "downloading": "正在下载图片...",
+    "success": "图片下载成功",
+    "failed": "图片下载失败",
+    "error": "下载过程中发生错误"
+  }
 }

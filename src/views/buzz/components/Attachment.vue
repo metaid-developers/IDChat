@@ -79,7 +79,7 @@
                 name="download"
                 class="icon-warp"
                 @click.stop="
-                  downloadFile($filters.metafile(typeof item === 'string' ? item : item.url))
+                  downloadImage($filters.metafile(typeof item === 'string' ? item : item.url))
                 "
               ></Icon>
 
@@ -188,7 +188,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { router } from '@/router'
 import { AttachmentItem } from '@/@types/hd-wallet'
 import MusicIcon from '@/assets/icons/music.svg?url'
-import { downloadFile } from '@/utils/util'
+import { downloadFile ,downloadImage} from '@/utils/util'
 import { GetMetaFile, GetNFT } from '@/api/aggregation'
 import CardVue from '@/components/Card/Card.vue'
 import NFTCoverVue from '@/components/NFTCover/NFTCover.vue'

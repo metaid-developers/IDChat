@@ -2,10 +2,10 @@
 
 <div class="bg-inherit flex items-center" >
      
-    <div class="block lg:hidden w-full max-w-full  py-5" v-if="!connectionStore.connected || !credentialsStore.get">
+    <div class="block lg:hidden w-full max-w-full  py-5" v-if="(!connectionStore.connected || !credentialsStore.get) && !rootStore.isWebView">
         <div class="flex items-center justify-center">
                <template v-if="!connectionStore.connected">
-    <a class="main-border  primary text-center connect-wallet" @click="openConnectionModal">{{
+    <a  class="main-border  primary text-center connect-wallet" @click="openConnectionModal">{{
       $t('Login.connectWallet')
     }}</a>
   </template>
@@ -49,8 +49,10 @@ import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
+import { useRootStore } from '@/stores/root'
 
 const router=useRouter()
+const rootStore=useRootStore()
 const connectionStore = useConnectionStore()
 const userStore=useUserStore()
 const credentialsStore = useCredentialsStore()

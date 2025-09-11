@@ -65,16 +65,7 @@ export function aesEncrypt(message: string, secretKeyStr: string) {
 //   return messageBytes.toString(enc.Utf8)
 // }
 
-export function ecdhDecrypt(message: string, secretKey: string): string {
 
- try {
-   const messageBytes = AES.decrypt(message, secretKey)
-  
-  return messageBytes.toString(enc.Utf8)
- } catch (error) {
-  
- }
-}
 
 
 
@@ -193,8 +184,24 @@ function isLikelyBase64(str: string): boolean {
 
 
 
-export function ecdhEncrypt(message: string, secretKey: string,): string {
+export function ecdhEncrypt(message: string, secretKey: string): string {
+
+
   return AES.encrypt(message, secretKey).toString()
+
+}
+
+export function ecdhDecrypt(message: string, secretKey: string): string {
+
+ try {
+
+   const messageBytes = AES.decrypt(message, secretKey)
+    
+    return messageBytes.toString(enc.Utf8) 
+  
+ } catch (error) {
+  return ''
+ }
 }
 
 

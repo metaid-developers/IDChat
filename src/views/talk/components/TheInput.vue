@@ -626,8 +626,10 @@ const trySendText = async (e: any) => {
     console.log(chatInput.value, sharedSecret)
 
     content = ecdhEncrypt(chatInput.value, sharedSecret)
-
+    
     console.log('ecdhDecrypt', ecdhDecrypt(content, sharedSecret))
+      
+    
   }
 
   chatInput.value = ''

@@ -564,7 +564,12 @@ window._go = go
 // })
 router.beforeEach(async (to, from, next) => {
    const layout=useLayoutStore()
-   
+  const rootStore=useRootStore()
+
+  rootStore.checkWebViewBridge()
+
+
+
   if (to.path === '/') {
     
     const userStore = useUserStore();

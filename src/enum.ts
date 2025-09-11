@@ -9,6 +9,7 @@ export enum ChatType {
   msg = 0,
   red = 1,
   img = 3,
+  groupRed = 23
 }
 
 export enum GrabStatus {

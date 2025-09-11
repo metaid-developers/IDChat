@@ -24,6 +24,7 @@ interface UTXO {
 interface Window {
   bitcoinjs: BitcoinJs
   ecpair: ECPairFactory
+  WebViewBridge:any
   unisat: any
   unisat: {
     requestAccounts: () => Promise<string[]>

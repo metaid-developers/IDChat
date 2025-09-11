@@ -1406,5 +1406,11 @@
   "recentContacts": "Recent Contacts",
   "searchError": "Search failed",
   "self_private_chat_unsupport": "You have not activated the private chat function yet. Please activate it before proceeding",
-  "user_private_chat_metaid_error": "Required MetaID parameter is missing"
+  "user_private_chat_metaid_error": "Required MetaID parameter is missing",
+  "download": {
+    "downloading": "Downloading image...",
+    "success": "Image downloaded successfully",
+    "failed": "Image download failed",
+    "error": "An error occurred during download"
+  }
 }

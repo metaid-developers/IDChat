@@ -127,24 +127,18 @@ function uint8ArrayToBase64(uint8Array: Uint8Array) {
   for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(uint8Array[i])
   }
-  
+
   return btoa(binary)
 }
 
 export async function getFileDataFromUrl(fileUrl: string): Promise<ArrayBuffer> {
   try {
-    
     const response = await fetch(fileUrl)
 
-  
-  const arrayBuffer = await response.arrayBuffer()
-  
- 
- 
-  return arrayBuffer
-  } catch (error) {
-    
-  }
+    const arrayBuffer = await response.arrayBuffer()
+
+    return arrayBuffer
+  } catch (error) {}
 }
 
 function arrayBufferToHexString(arrayBuffer: ArrayBuffer): string {
@@ -229,7 +223,6 @@ export async function getImageBufferAsString(
 
 export async function getImgData(picPath: string) {
   try {
-    
     const res = await fetch(picPath)
     const result = await res.arrayBuffer()
     const data = new Uint8Array(result)
@@ -2220,4 +2213,74 @@ export function changeSymbol(symbol: string) {
   } else {
     return symbol
   }
+}
+
+/**
+ * 下载图片函数
+ * @param imageUrl 图片URL
+ * @param filename 文件名（可选，默认为时间戳）
+ * @returns Promise<void>
+ */
+export async function downloadImage(imageUrl: string, filename?: string): Promise<void> {
+  return new Promise(async (resolve, reject) => {
+    let loadingInstance: any = null
+
+    try {
+      // 显示loading状态
+      loadingInstance = openLoading({
+        text: i18n.global.t('download.downloading'),
+        lock: true,
+        background: 'rgba(0,0,0,0.3)',
+      })
+
+      // 获取图片数据
+      const response = await fetch(imageUrl)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const blob = await response.blob()
+
+      // 生成文件名
+      const timestamp = new Date().getTime()
+      const fileExtension = blob.type.split('/')[1] || 'jpg'
+      const finalFilename = filename || `image_${timestamp}.${fileExtension}`
+
+      // 创建下载链接
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = finalFilename
+      link.style.display = 'none'
+
+      // 添加到DOM并触发下载
+      document.body.appendChild(link)
+      link.click()
+
+      // 清理
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      // 关闭loading
+      if (loadingInstance) {
+        loadingInstance.close()
+      }
+
+      // 显示成功提示
+      ElMessage.success(i18n.global.t('download.success'))
+
+      resolve()
+    } catch (error) {
+      // 关闭loading
+      if (loadingInstance) {
+        loadingInstance.close()
+      }
+
+      // 显示错误提示
+      ElMessage.error(i18n.global.t('download.failed'))
+      console.error('Download image error:', error)
+
+      reject(error)
+    }
+  })
 }

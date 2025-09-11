@@ -85,7 +85,7 @@ import DefaultAvatar from '@/assets/images/default_user.png'
 import { DB } from '@/utils/db'
 import { image2Attach, compressImage } from '@/lib/file'
 import { createOrUpdateUserInfo, getMVCRewards } from '@/utils/userInfo'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Camera } from '@element-plus/icons-vue'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
@@ -96,6 +96,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 const router = useRouter()
+const route=useRoute()
 const ecdhsStore=useEcdhsStore()
 const userStore = useUserStore()
 const avatarPreview = ref<string>('')
@@ -245,13 +246,18 @@ const save = async () => {
     emit('update:modelValue', false)
     setTimeout(() => {
       layoutStore.$patch({showJoinView:true})
-      router.push({
+    
+      if(route.name !== 'talkAtMe'){
+         router.push({
         name: 'talkChannel',
         params: {
           communityId: 'public',
           channelId:'welcome' //'396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
         },
       })
+      }
+
+     
     }, 1000)
   } catch (error) {
     console.error('Failed to save profile changes:', error)

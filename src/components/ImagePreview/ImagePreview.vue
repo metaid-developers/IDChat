@@ -15,8 +15,8 @@
 import Viewer from 'viewerjs'
 import 'viewerjs/dist/viewer.min.css'
 import { nextTick, onMounted, ref, watch } from 'vue'
-import { isApp } from '@/stores/root'
-import { checkAppHasMethod, downloadFile, urlToBase64 } from '@/utils/util'
+import { isAndroid,isIOS } from '@/stores/root'
+import { checkAppHasMethod, downloadFile, urlToBase64,downloadImage } from '@/utils/util'
 import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized } from 'vue-router'
 import { useImagePreview } from '@/stores/imagePreview'
 
@@ -53,11 +53,13 @@ watch(
             download: async function() {
               // @ts-ignore
               let url: string = viewer.image.src
-              if (isApp) {
+              if (isAndroid || isIOS) {
                 url = await urlToBase64(url)
+                
               }
+              
               // @ts-ignore
-              downloadFile(url, viewer.image.alt)
+              downloadImage(url, viewer.image.alt)
             },
           },
         })

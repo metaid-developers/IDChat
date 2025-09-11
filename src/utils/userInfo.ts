@@ -14,6 +14,7 @@ export type Transaction = {
 // Add global interface augmentation for window.metaidwallet
 declare global {
   interface Window {
+    WebViewBridge:any
     metaidwallet: {
       getAddress: () => Promise<string>
       getUtxos: () => Promise<any[]>

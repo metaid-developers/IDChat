@@ -10,13 +10,13 @@
     <img class="metanameLogo" :src="MetaNameLogo" alt="" />
   </a> -->
 
-  <template v-if="!connectionStore.connected">
+  <template v-if="!connectionStore.connected && !rootStore.isWebView">
     <a class="main-border primary connect-wallet" @click="openConnectionModal">{{
       $t('Login.connectWallet')
     }}</a>
   </template>
 
-  <template v-else-if="!credentialsStore.get">
+  <template v-else-if="!credentialsStore.get && !rootStore.isWebView">
     <a class="main-border primary connect-wallet" @click="credentialsStore.login()">{{
       $t('Login.authorize')
     }}</a>
@@ -167,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { isMobile } from '@/stores/root'
+import { isMobile, useRootStore } from '@/stores/root'
 import { useUserStore } from '@/stores/user'
 import { useChainStore } from '@/stores/chain'
 import { ElDropdown } from 'element-plus'
@@ -190,7 +190,7 @@ const { openConnectionModal } = useConnectionModal()
 
 const connectionStore = useConnectionStore()
 const credentialsStore = useCredentialsStore()
-
+const rootStore=useRootStore()
 const i18n = useI18n()
 const userStore = useUserStore()
 const chainStore = useChainStore()
@@ -287,13 +287,18 @@ const userOperates = computed(() => {
         layout.isShowProfileEditModal = true
       },
     })
-    result.push({
+
+    if(!rootStore.isWebView){
+        result.push({
       name: i18n.t('UserOperate.logout'),
       icon: 'logout',
       func: async () => {
         await connectionStore.disconnect(router)
       },
     })
+    }
+    
+  
   }
 
   return result

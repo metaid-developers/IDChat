@@ -17,7 +17,7 @@
       v-else
         :image="session?.avatarImage || session?.userInfo?.avatarImage"
         :meta-id="session?.metaId || session?.createUserMetaId"
-        :name="session?.name"
+        :name="session?.name || session?.userInfo?.metaid.slice(0,6)"
         :meta-name="''"
         :is-custom="session?.groupId ? true : false"
         class="w-12 h-12 shrink-0 select-none"
@@ -39,7 +39,7 @@
          
       />
         <UserName
-          :name="contact.name"
+          :name="contact?.name || contact.metaId.slice(0,6)"
           :meta-name="contact?.metaName"
           :no-tag="true"
           class="mr-2"
@@ -148,7 +148,7 @@ const contact = computed<any>(() => {
       contactSide = 'to'
     }
   }
-
+  
   return {
     name: props.session.name || props.session.userInfo?.name || props.session[`${contactSide}Name`],
     metaName: props.session[`${contactSide}UserInfo`]?.metaName || '',
@@ -188,7 +188,7 @@ const computeLastMessageUserName = (session: any): string => {
     if(session?.newMessages?.length){
      return session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name
     }else{
-     return session.userInfo?.name
+     return session.userInfo?.name || session.userInfo?.metaid.slice(0,6)
     }
      
 }
@@ -244,7 +244,11 @@ const computeDecryptedMsg = (session: any) => {
         secretKeyStr,
         publicKeyStr
       )
+    case ChatType.groupRed:
+       
+      return `🧧 ${content}`
     case ChatType.red:
+      
       return `🧧 ${content.replace(':', '')}`
     case ChatType.img:
       console.log('有没有进来')

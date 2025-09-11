@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { GetCertMetaIdList } from '@/api/aggregation'
 import i18n from '@/utils/i18n'
 import { GetCertifiedMetaId } from '@/api/strapi'
-
+import { ElMessage } from 'element-plus'
 export interface SignBaseInfo {
   userType: SignUserType
   areaCode: string
@@ -39,6 +39,7 @@ interface RootState {
   myBlackList?: string[]
   metaletWhiteProtocolList: NodeName[]
   bandProposalList: string[]
+  isWebView:boolean
 }
 
 const UA = window.navigator.userAgent.toLowerCase()
@@ -120,6 +121,7 @@ export const useRootStore = defineStore('root', {
         '2bf3f5ebd0e194ed47b150ac4ceafbaad4f1e126',
         '05f0850d892f47a3e15ae97adda25ab68eb85578',
       ],
+      isWebView:false
 
       // showDiffLang:
       //   localStorage.getItem('showDiffLang') && Number(localStorage.getItem('showDiffLang')),
@@ -206,6 +208,26 @@ export const useRootStore = defineStore('root', {
         }
       })
     },
+
+    checkWebViewBridge():boolean{
+      if(isIOS || isAndroid){
+        if (window?.navigator) {  
+          const userAgent=window?.navigator?.userAgent || ''
+        if(userAgent == 'IDChat-iOS' || userAgent == 'IDChat-Android'){
+          this.isWebView=true
+          console.log("当前环境是app webview")
+          return true
+             }else{
+               return false
+             }
+        
+        }else{
+          return false
+        }
+      }else{
+        return false
+      }
+    }
   },
 })
 
