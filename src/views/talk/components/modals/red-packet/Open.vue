@@ -38,7 +38,12 @@
                 >
                   <template v-if="canOpen">
                     <div
-                      class="w-full lg:w-114 h-60 bg-gradient-to-tr from-[#CBFDE4] to-[#FCEDCE] rounded-t-3xl shadow-md flex flex-col items-center justify-start overflow-x-hidden group-hover:-skew-x-3 group-hover:shadow-xl duration-300 origin-top"
+                      class="w-full lg:w-114 h-60 bg-gradient-to-tr rounded-t-3xl shadow-md flex flex-col items-center justify-start overflow-x-hidden group-hover:-skew-x-3 group-hover:shadow-xl duration-300 origin-top"
+                      :class="[
+                        msgChain === 'mvc'
+                          ? 'from-[#CBFDE4] to-[#FCEDCE]'
+                          : 'from-[#FFF9E7] via-[#FFC86D] to-[#F7A088]',
+                      ]"
                     >
                       <UserAvatar
                         :meta-id="message.userInfo?.metaid"
@@ -47,7 +52,7 @@
                         class="w-15 h-15 rounded-2xl bg-amber-200 mt-7.5"
                         :disabled="true"
                       />
-                      <div class="mt-3 text-sm text-dark-300 capitalize">
+                      <div class="mt-3 text-sm capitalize dark:text-dark-800 ">
                         {{ $t('Talk.Modals.red_packet') }}
                       </div>
                       <div
@@ -58,18 +63,31 @@
                     </div>
                     <div class="w-full flex items-stretch justify-center grow relative">
                       <div
-                        class="absolute top-0 w-28 h-28 rounded-full gift-button-gradient flex items-center justify-center text-dark-800 text-xl capitalize -translate-y-1/2 border-2 border-b-5 border-solid border-dark-300 shadow-xl box-content font-medium group-hover:-translate-y-[53%] group-hover:skew-x-1 origin-bottom duration-300 cursor-pointer hover:text-amber-500 hover:shadow-amber-300/40 hover:border-amber-300"
+                        class="absolute top-0 w-28 h-28 rounded-full gift-button-gradient flex items-center justify-center text-dark-800 text-xl capitalize -translate-y-1/2 border-2 border-b-5 border-solid border-dark-300 shadow-xl box-content font-medium group-hover:-translate-y-[53%] group-hover:skew-x-1 origin-bottom duration-300 cursor-pointer hover:text-amber-500 hover:shadow-[#5A4015]-300/40 hover:border-[#5A4015]-300"
                         @click="tryOpenRedPacket"
                       >
-                        {{ $t('Talk.Modals.receive') }}
+                        <img :src="msgChain === 'mvc' ? MvcImg : BtcImg" al="" />
+                        <!-- {{ $t('Talk.Modals.receive') }} -->
                       </div>
-                      <div class="w-15 bg-gradient-to-br from-[#F5FFE4] to-[#FCEDCE]"></div>
+                      <div
+                        class="w-15 bg-gradient-to-br from-[#F5FFE4] to-[#FCEDCE]"
+                        :class="[
+                          msgChain === 'btc'
+                            ? 'from-[#FFE0AD]  to-[#FFEFD0]'
+                            : 'from-[#F5FFE4] to-[#FCEDCE]',
+                        ]"
+                      ></div>
                     </div>
                   </template>
 
                   <template v-else>
                     <div
                       class="self-stretch h-15 bg-gradient-to-tr from-[#CBFDE4] to-[#FCEDCE] rounded-t-3xl"
+                      :class="[
+                        msgChain === 'btc'
+                          ? 'from-[#FFE0AD]  to-[#FFEFD0]'
+                          : 'from-[#CBFDE4] to-[#FCEDCE]',
+                      ]"
                     ></div>
 
                     <UserAvatar
@@ -137,6 +155,8 @@
 import { useLayoutStore } from '@/stores/layout'
 import { Dialog, DialogPanel, TransitionRoot, TransitionChild } from '@headlessui/vue'
 import GiftRibbonImg from '@/assets/images/gift_ribbon.svg?url'
+import MvcImg from '@/assets/images/mvc_gift.svg?url'
+import BtcImg from '@/assets/images/btc_gift.svg?url'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getOneRedPacket, getRedPacketRemains, grabRedPacket } from '@/api/talk'
@@ -157,9 +177,13 @@ const user = useUserStore()
 const remains = ref([])
 const requireNft = ref()
 
-console.log('message',message)
+console.log('message', message, { ...modals.openRedPacket.message })
 const redPacket = computed(() => {
   return modals.openRedPacket.redPacketInfo
+})
+
+const msgChain = computed(() => {
+  return message.chain
 })
 
 const distributeType = computed(() => {
@@ -167,7 +191,6 @@ const distributeType = computed(() => {
 })
 
 const canOpen = computed(() => {
-  
   if (distributeType.value === RedPacketDistributeType.Random) {
     return remains.value.length > 0
   }
@@ -199,26 +222,26 @@ const note = computed(() => {
 
 const tryOpenRedPacket = async () => {
   try {
-     layout.isShowLoading = true
-  const params: any = {
-    groupId: talk.activeChannelId,
-    pinId: `${message?.txId}i0`,
-    metaId: talk.selfMetaId,
-    address:talk.selfAddress
-  }
-  const redPacketType = redPacket.value?.requireType
-  if (redPacketType === '2') {
-    // params.address = talk.selfAddress
-  } else if (redPacketType === '2001' || redPacketType === '2002') {
-    //params.address = user.user?.evmAddress
-  }
+    layout.isShowLoading = true
+    const params: any = {
+      groupId: talk.activeChannelId,
+      pinId: `${message?.txId}i0`,
+      metaId: talk.selfMetaId,
+      address: talk.selfAddress,
+    }
+    const redPacketType = redPacket.value?.requireType
+    if (redPacketType === '2') {
+      // params.address = talk.selfAddress
+    } else if (redPacketType === '2001' || redPacketType === '2002') {
+      //params.address = user.user?.evmAddress
+    }
 
-  await grabRedPacket(params)
-  await sleep(1000)
-  layout.isShowLoading = false
-  await viewDetails()
+    await grabRedPacket(params)
+    await sleep(1000)
+    layout.isShowLoading = false
+    await viewDetails()
   } catch (error) {
-     layout.isShowLoading = false
+    layout.isShowLoading = false
     ElMessage.error((error as any).toString())
   }
 }
@@ -230,9 +253,9 @@ const viewDetails = async () => {
     groupId: talk.activeChannelId,
     pinId: `${message?.txId}i0`,
   })
-  
+
   modals.redPacketResult = redPacketInfo
-  
+
   modals.openRedPacket = null
   layout.isShowRedPacketOpenModal = false
   layout.isShowRedPacketResultModal = true
@@ -254,10 +277,9 @@ onMounted(async () => {
   if (redPacketType === '2') {
     params.address = talk.selfAddress
   } else if (redPacketType === '2001' || redPacketType === '2002') {
-   // params.address = user.user?.evmAddress
+    // params.address = user.user?.evmAddress
   }
   getRedPacketRemains(params).then(res => {
-    
     remains.value = res.unused
     console.log('remains', remains.value)
   })
@@ -295,13 +317,8 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .gift-button-gradient {
-  background: linear-gradient(
-    221deg,
-    #faedcf 9%,
-    #eef6e3 36%,
-    #eee8e2 70%,
-    #cefde8 90%,
-    #d2fae7 90%
-  );
+  background: linear-gradient(221deg, #faecd4 9%, #f0d5a8 36%, #f0d5a8 70%, #f0d5a8 90%);
+  border: 2px solid #5a4015;
+  box-shadow: 0px 4px 0px 0px #5a4015;
 }
 </style>

@@ -59,12 +59,18 @@
                     {{ note }}
                   </div>
 
-                  <div class="mt-5 flex items-end space-x-1">
+                  <div class="mt-5 flex items-end space-x-1" v-if="myDraw">
                     <div class="text-4xl font-bold tracking-tight">
-                      {{ nicerAmountWithUnit(redPacketResult?.amount || '0').amount }}
+                      {{ nicerAmountWithUnit(myDraw?.amount || '0').amount }}
                     </div>
                     <div class="text-sm">
-                      {{ nicerAmountWithUnit(redPacketResult?.amount || '0').unit }}
+                      {{ nicerAmountWithUnit(myDraw?.amount || '0').unit }}
+                    </div>
+                  </div>
+                  <div class="mt-2 flex items-end space-x-1">
+                    <div class="text-sm">
+                      (total:{{ nicerAmountWithUnit(redPacketResult?.amount || '0').amount }}
+                      {{ nicerAmountWithUnit(redPacketResult?.amount || '0').unit }})
                     </div>
                   </div>
                   <!-- <div class="mt-2 text-sm text-dark-300 font-bold font-sans">
@@ -328,6 +334,10 @@ const nicerAmountWithUnit = (amount: string) => {
     unit: unit.value,
   }
 }
+
+const myDraw = computed(() => {
+  return draws.value.find((item: any) => item.gradMetaId === talk.selfMetaId)
+})
 
 onMounted(async () => {
   const requireType = redPacketResult?.requireType

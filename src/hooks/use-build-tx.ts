@@ -14,12 +14,13 @@ import {hexToUint8Array,hexToBase64} from '@/utils/util'
 import { getInitUtxo } from "@/api/metaso";
 import {useUtxosStore} from '@/stores/useable-utxo'
 import {createPinWithAsset} from '@/utils/userInfo'
-import { createPinWithBtc,InscribeResultForIfBroadcasting } from "@/utils/pin";
+import { createPinWithBtc,InscribeResultForIfBroadcasting, InscribeResultForNoBroadcast } from "@/utils/pin";
 import { useChainStore } from '@/stores/chain';
  import *  as bitcoin from 'bitcoinjs-lib'
  import * as ecc from 'tiny-secp256k1'
 import { initEccLib } from 'bitcoinjs-lib'
 import i18n from '@/utils/i18n'
+import { useLayoutStore } from '@/stores/layout';
 export enum MetaFlag{
  metaid='metaid',
   testid='testid'
@@ -68,15 +69,15 @@ export const useBulidTx = createGlobalState(() => {
     }))
   // actions
   const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
-    
-    const chainStore=useChainStore()
-    
+
+    const layoutStore=useLayoutStore()
+
 
 
     try {
       
 
-      if(chainStore.state.currentChain === 'btc'){
+      if(layoutStore.selectedRedPacketType === 'btc'){
         if(payTo.length){
            metaidData.outputs=[];
           for(let item of payTo){
@@ -93,16 +94,15 @@ export const useBulidTx = createGlobalState(() => {
           inscribeDataArray.push(...SerialTransactions)
         }
         inscribeDataArray.push(metaidData)
-       
-        const options={
-          noBroadcast:isBroadcast === true ? 'no' : 'yes',
-          feeRate:chainStore.btcFeeRate(),
-          network:'mainnet',
-          outputs:[]
-        }
-        
-        
-       const txIDs= await createPinWithBtc({
+       const options={
+         noBroadcast:'yes',
+         feeRate:1,
+         network:'mainnet',
+         outputs:[]
+       }
+
+
+       const txIDs :InscribeResultForNoBroadcast= await createPinWithBtc({
           inscribeDataArray,
           options,
         })
@@ -112,8 +112,14 @@ export const useBulidTx = createGlobalState(() => {
         }
         console.log("txIDs",txIDs)
         
-        
-         return txIDs
+        return {
+          status:'ready_to_broadcast',
+          commitCost:txIDs.commitCost,
+          revealCost:txIDs.revealCost,
+          commitTxHex: txIDs.commitTxHex,
+          revealTxsHex: txIDs.revealTxsHex,
+        }
+        //  return txIDs
       }else{
          const transactions=[] 
        const pinTxComposer = new TxComposer()
@@ -164,6 +170,7 @@ export const useBulidTx = createGlobalState(() => {
           const {payedTransactions:payTx}= await connectionStore.adapter.smallPay({
           transactions:transactions,
           hasMetaid:true,
+          feeb:1
           
         })
         payedTransactions=payTx
@@ -172,6 +179,7 @@ export const useBulidTx = createGlobalState(() => {
           const {payedTransactions:payTx}= await connectionStore.adapter.pay({
           transactions:transactions,
           hasMetaid:true,
+          feeb:1
           
         })
 

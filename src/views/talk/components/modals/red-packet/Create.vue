@@ -37,7 +37,9 @@
 
         <TabPanels>
           <TabPanel class="">
-            <form @submit.prevent="form.submit">
+            <form @submit.prevent="() => {}">
+              <!-- 红包类型显示 -->
+
               <!-- 数量 -->
               <div class="my-7.5 flex flex-col space-y-5 text-base">
                 <div class="grid grid-cols-4 gap-2 items-center">
@@ -109,7 +111,7 @@
                             <MenuItem v-slot="{ active }">
                               <button class="p-2" type="button" @click="triggleUnit">
                                 {{
-                                  chainStore.state.currentChain === 'btc'
+                                  layout.selectedRedPacketType === 'btc'
                                     ? currentUnit == 'BTC'
                                       ? 'Sats'
                                       : 'BTC'
@@ -153,7 +155,7 @@
               <div class="w-full">
                 <button
                   class="main-border uppercase font-medium text-base w-full py-3 primary"
-                  @click="form.submit"
+                  @click="submit"
                 >
                   {{ $t('Talk.Input.send') }}
                 </button>
@@ -317,7 +319,7 @@
                 :class="{
                   'faded still text-dark-300 dark:!text-gray-400 dark:!bg-gray-700': !form.isFinished,
                 }"
-                @click="form.submit"
+                @click="submit"
                 :disabled="!form.isFinished"
               >
                 {{ $t('Talk.Input.send') }}
@@ -448,6 +450,14 @@
       </div>
     </template>
   </BaseModal>
+
+  <!-- Payment Confirmation Modal -->
+  <PaymentConfirmModal
+    v-model="showPayment"
+    :payment="payment"
+    @confirm="confirmPayment"
+    @cancel="cancelPayment"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -473,7 +483,10 @@ import { ref, watch, Ref, watchEffect, onMounted } from 'vue'
 import { object, number } from 'yup'
 import { useForm } from 'vee-validate'
 import { Chains, RedPacketDistributeType, ShowControl } from '@/enum'
+// @ts-ignore
 import BaseModal from '../BaseModal.vue'
+// @ts-ignore
+import PaymentConfirmModal from './PaymentConfirmModal.vue'
 import Cat from '@/assets/images/cat.svg?url'
 import DogWalking from '@/assets/images/dog_walking.svg?url'
 import ETH from '@/assets/images/eth.png'
@@ -488,13 +501,22 @@ import { GetNFTs } from '@/api/aggregation'
 import { showLoading } from '@/utils/util'
 import Decimal from 'decimal.js-light'
 import { useChainStore } from '@/stores/chain'
+import { broadcastToApi } from '@/utils/userInfo'
 
 const layout = useLayoutStore()
 const userStore = useUserStore()
 const isShowSelectTokenModal = ref(false)
 const chainStore = useChainStore()
 const form = useRedPacketFormStore()
-
+const showPayment = ref(false)
+const payment = ref<{
+  total: number
+  gas: number
+  serviceFee: number
+  unit: string
+  commitTxHex: string
+  revealTxHex: string[]
+} | null>(null)
 // 根据form.unit初始化currentUnit，支持所有三种单位
 const currentUnit = ref<'BTC' | 'Space' | 'Sats'>(
   form.unit === 'BTC' || form.unit === 'Space' || form.unit === 'Sats'
@@ -542,9 +564,9 @@ const { errors } = useForm({
 const chains = ref([
   {
     id: 1,
-    name: import.meta.env.VITE_ETH_CHAIN || 'ETH',
+    name: (import.meta.env as any).VITE_ETH_CHAIN || 'ETH',
     icon: ETH,
-    value: import.meta.env.VITE_ETH_CHAIN || 'eth',
+    value: (import.meta.env as any).VITE_ETH_CHAIN || 'eth',
   },
   {
     id: 2,
@@ -560,9 +582,9 @@ const chains = ref([
   },
   {
     id: 4,
-    name: import.meta.env.VITE_POLYGON_CHAIN || 'POLYGON',
+    name: (import.meta.env as any).VITE_POLYGON_CHAIN || 'POLYGON',
     icon: POLYGON,
-    value: import.meta.env.VITE_POLYGON_CHAIN || 'polygon',
+    value: (import.meta.env as any).VITE_POLYGON_CHAIN || 'polygon',
   },
 ])
 const selectedChain = ref(chains.value[0])
@@ -571,8 +593,9 @@ const nftSeries: Ref<any[]> = ref([])
 const fetching = ref(false)
 
 const triggleUnit = () => {
-  if (chainStore.state.currentChain === 'btc') {
-    // BTC链的单位切换
+  // 根据红包类型而不是gas链来切换单位
+  if (layout.selectedRedPacketType === 'btc') {
+    // BTC红包的单位切换
     if (currentUnit.value == 'BTC') {
       currentUnit.value = 'Sats'
       form.unit = 'Sats'
@@ -583,7 +606,7 @@ const triggleUnit = () => {
       form.amount = new Decimal(form.amount).div(10 ** 8).toNumber()
     }
   } else {
-    // 其他链的单位切换
+    // MVC红包的单位切换
     if (currentUnit.value == 'Space') {
       currentUnit.value = 'Sats'
       form.unit = 'Sats'
@@ -612,34 +635,101 @@ watch(
   }
 )
 
-// 监听链切换，重新加载对应链的设置
+const submit = async () => {
+  const ret = (await form.submit()) as any
+  if (ret && ret.status === 'ready_to_broadcast') {
+    layout.isShowLoading = false
+    showPayment.value = true
+    const commitCost = parseFloat(ret.commitCost) || 0
+    const revealCost = parseFloat(ret.revealCost) || 0
+    const totalCost = commitCost + revealCost
+    payment.value = {
+      total: new Decimal(form.amount).toNumber() + new Decimal(totalCost).div(10 ** 8).toNumber(),
+      gas: new Decimal(totalCost).div(10 ** 8).toNumber(),
+      serviceFee: 0,
+      commitTxHex: ret.commitTxHex,
+      revealTxHex: ret.revealTxsHex,
+      unit: layout.selectedRedPacketType === 'btc' ? 'BTC' : 'Space',
+    }
+  } else {
+    layout.isShowRedPacketModal = false
+    layout.isShowLoading = false
+    form.reset()
+  }
+}
+
+const confirmPayment = async () => {
+  // 这里添加确认支付的逻辑
+  layout.isShowLoading = true
+  await broadcastToApi({
+    txHex: payment.value?.commitTxHex || '',
+    chain: 'btc',
+    network: 'mainnet',
+  })
+  console.log('Broadcasting commit transaction:', payment.value?.commitTxHex, payment.value)
+  await broadcastToApi({
+    txHex: payment.value?.revealTxHex[0] || '',
+    chain: 'btc',
+    network: 'mainnet',
+  })
+  // const [...revealTxIds] = await Promise.all([
+  //   ...payment.value?.revealTxHex.map(rawTx =>
+  //     broadcastToApi({
+  //       txHex: rawTx,
+  //       chain: 'btc',
+  //       network: 'mainnet',
+  //     })
+  //   ),
+  // ])
+  showPayment.value = false
+  layout.isShowRedPacketModal = false
+  layout.isShowLoading = false
+  form.reset()
+}
+
+const cancelPayment = () => {
+  showPayment.value = false
+  layout.isShowLoading = false
+}
+
+// 监听红包类型变化，独立于gas链
 watch(
-  () => chainStore.state.currentChain,
-  newChain => {
-    // 加载对应链的设置
+  () => layout.selectedRedPacketType,
+  newType => {
+    // 根据红包类型设置form的当前链类型，用于验证和逻辑处理
+    form.currentRedPacketType = newType
     form.loadSettings()
 
     // 更新UI状态
-    if (newChain === 'btc') {
+    if (newType === 'btc') {
       currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'BTC'
     } else {
       currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'Space'
     }
   },
-  { immediate: true } // 立即执行一次
+  { immediate: true }
 )
 
-// 在组件挂载时确保加载正确的设置
-onMounted(() => {
-  form.loadSettings()
+// 监听链切换（gas链），不影响红包类型
+// watch(
+//   () => chainStore.state.currentChain,
+//   newChain => {
+//     // gas链变化不影响红包类型，只影响gas费用计算
+//     console.log('Gas chain changed to:', newChain)
+//   }
+// )
 
-  // 更新currentUnit以匹配form.unit
-  if (chainStore.state.currentChain === 'btc') {
-    currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'BTC'
-  } else {
-    currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'Space'
-  }
-})
+// // 在组件挂载时确保加载正确的设置
+// onMounted(() => {
+//   form.loadSettings()
+
+//   // 更新currentUnit以匹配form.unit
+//   if (chainStore.state.currentChain === 'btc') {
+//     currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'BTC'
+//   } else {
+//     currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'Space'
+//   }
+// })
 
 // onMounted(() => {
 //   if (userStore.user?.evmAddress) {
