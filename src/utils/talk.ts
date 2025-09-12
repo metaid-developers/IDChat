@@ -46,6 +46,7 @@ import { createPin } from './userInfo'
 import { createPinWithBtc } from './pin'
 import { generateLuckyBagCode } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
+import { useLayoutStore } from '@/stores/layout'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -395,8 +396,8 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   // }
 
   // 货币🧧：使用正态分布算法分配
-  const chainStore = useChainStore()
-  const isBtcChain = chainStore.state.currentChain === 'btc'
+  const layoutStore = useLayoutStore()
+  const isBtcChain = layoutStore.selectedRedPacketType === 'btc'
 
   // 根据链设置不同的最小红包金额
   const minSats = isBtcChain ? BTC_MIN_PER_PACKET_SATS : Red_Packet_Min // BTC最小546聪，其他链0.0001 Space = 10000聪
@@ -529,7 +530,6 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   }
   const { code, luckyBagAddress: address, timestamp: createTime } = luckyBagCode.data
   const buildTx = useBulidTx()
-  const chainStore = useChainStore()
 
   // const code = realRandomString(6)
   const subId = channelId.substring(0, 12)
