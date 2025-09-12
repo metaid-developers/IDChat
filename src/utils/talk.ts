@@ -547,6 +547,8 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
 
   console.table(redPackets)
   console.log({ form })
+  const layoutStore = useLayoutStore()
+  const isBtcChain = layoutStore.selectedRedPacketType === 'btc'
 
   // 2. 构建数据载体
   const dataCarrier: any = {
@@ -563,7 +565,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     count: form.quantity,
     metaid: selfMetaId,
     payList: redPackets,
-    type: form.currentRedPacketType, // 'btc' | 'space'
+    type: isBtcChain ? 'btc' : 'space',
     feeRate: 1,
     requireType: '',
     requireTickId: '',

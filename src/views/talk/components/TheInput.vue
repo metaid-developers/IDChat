@@ -294,7 +294,7 @@
     >
       <div
         v-if="showRedPacketActionSheet"
-        class="fixed inset-0 z-50 flex items-end justify-center  bg-black bg-opacity-50"
+        class="fixed inset-0 z-50 flex items-end justify-center  bg-black bg-opacity-50 md:items-center"
         @click="closeActionSheet"
       >
         <transition
@@ -307,7 +307,7 @@
         >
           <div
             v-if="showRedPacketActionSheet"
-            class="w-full max-w-xs sm:max-w-xs md:w-96 bg-white dark:bg-gray-800 rounded-t-xl shadow-xl transform"
+            class="w-full max-w-xs sm:max-w-xs md:w-96 bg-white dark:bg-gray-800 rounded-t-xl shadow-xl transform md:rounded-xl"
             @click.stop
           >
             <!-- Options -->
