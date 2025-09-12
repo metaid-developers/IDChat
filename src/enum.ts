@@ -421,6 +421,7 @@ export enum GroupChannelType {
 export enum ShowControl {
   isShowCreateCommunityModal = 'isShowCreateCommunityModal',
   isShowCreatePublicChannelModal = 'isShowCreatePublicChannelModal',
+  isShowCreateGroupTypeModal = 'isShowCreateGroupTypeModal',
   isShowCreateConsensualChannelModal = 'isShowCreateConsensualChannelModal',
   isShowCreateGeneralChannelModal = 'isShowCreateGeneralChannelModal',
   isShowCreateDaoModal = 'isShowCreateDaoModal',

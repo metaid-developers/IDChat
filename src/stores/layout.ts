@@ -10,7 +10,7 @@ export const useLayoutStore = defineStore('layout', {
       showWelcomeDescView: false,
       isShowPublishBuzz: false,
       isShowCreateCommunityModal: false,
-
+      isShowCreateGroupTypeModal: false,
       isShowCreatePublicChannelModal: false,
       isShowCreateConsensualChannelModal: false,
       isShowCreateGeneralChannelModal: false,
