@@ -1292,7 +1292,7 @@ const _uploadImage = async (file: File, sdk: SDK) => {
   }
 
   const newNode = await sdk.createBrfcChildNode(node)
-ß  if (!newNode) return { metafileUri: null }
+ if (!newNode) return { metafileUri: null }
 
   const txId = newNode.txId
   const metafileUri = 'metafile://' + txId + '.' + fileType
