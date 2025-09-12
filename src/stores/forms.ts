@@ -366,6 +366,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       type: settings.type,
       nft: null as any,
       chain: null as any,
+      currentRedPacketType: 'mvc' as 'btc' | 'mvc', // 当前红包类型，独立于gas链
     }
   },
 
@@ -402,13 +403,11 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
   },
 
   actions: {
-    // 保存当前设置到 localStorage
+    // 根据红包类型保存设置到 localStorage（独立于gas链）
     saveSettings() {
-      const chainStore = useChainStore()
-      const currentChain = chainStore.state.currentChain
-
-      // 使用链特定的键保存设置
-      const storageKey = `redPacketFormSettings_${currentChain}`
+      // 使用红包类型而不是gas链来保存设置
+      const redPacketType = this.currentRedPacketType
+      const storageKey = `redPacketFormSettings_${redPacketType}`
 
       const settings = {
         amount: this.amount,
@@ -426,18 +425,18 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       }
     },
 
-    // 加载链特定的设置
+    // 根据红包类型加载特定的设置（独立于gas链）
     loadSettings() {
-      const chainStore = useChainStore()
-      const currentChain = chainStore.state.currentChain
+      // 使用红包类型而不是gas链来加载设置
+      const redPacketType = this.currentRedPacketType
 
-      // 为不同链分别读取设置
-      const storageKey = `redPacketFormSettings_${currentChain}`
+      // 为不同红包类型分别读取设置
+      const storageKey = `redPacketFormSettings_${redPacketType}`
       const savedSettings = localStorage.getItem(storageKey)
 
-      // 根据当前链设置不同的默认值
-      const isBtcChain = currentChain === 'btc'
-      const defaultSettings = isBtcChain
+      // 根据红包类型设置不同的默认值
+      const isBtcRedPacket = redPacketType === 'btc'
+      const defaultSettings = isBtcRedPacket
         ? {
             amount: 0.00003, // 0.00003 BTC = 3000 sats
             each: 0.00001, // 0.00001 BTC = 1000 sats
@@ -475,10 +474,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     },
 
     validateQuantity() {
-      const chainStore = useChainStore()
-      const isBtcChain = chainStore.state.currentChain === 'btc'
+      // 根据红包类型而不是gas链来验证
+      const isBtcRedPacket = this.currentRedPacketType === 'btc'
 
-      if (isBtcChain) {
+      if (isBtcRedPacket) {
         // BTC红包特殊限制
         if (this.quantity < BTC_MIN_QUANTITY) {
           this.quantity = BTC_MIN_QUANTITY
@@ -487,7 +486,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           this.quantity = BTC_MAX_QUANTITY
         }
       } else {
-        // 其他链的默认限制
+        // 其他类型红包的默认限制
         if (this.quantity < 1) {
           this.quantity = 1
         }
@@ -502,10 +501,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       }
     },
     validateAmount() {
-      const chainStore = useChainStore()
-      const isBtcChain = chainStore.state.currentChain === 'btc'
+      // 根据红包类型而不是gas链来验证
+      const isBtcRedPacket = this.currentRedPacketType === 'btc'
 
-      if (isBtcChain) {
+      if (isBtcRedPacket) {
         // BTC红包特殊限制
         if (this.unit === 'BTC') {
           // BTC单位验证
@@ -646,23 +645,16 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       if (!this.isFinished) return
 
       // BTC红包特殊验证
-      if (chainStore.state.currentChain === 'btc') {
-        // 验证费率
-        const currentFeeRate = chainStore.btcFeeRate()
-        if (currentFeeRate > 3) {
-          return ElMessage.error('你所选择的费率过高，请设置到1～3范围')
-        }
-        if (currentFeeRate < 1) {
-          return ElMessage.error('你所选择的费率过低，请设置到1～3范围')
-        }
-      }
+      // if (chainStore.state.currentChain === 'btc') {
+      //   // 费率设为固定值1，不需要验证范围
+      //   // 用户选择的链就是要发送的红包类型
+      // }
 
       // 保存当前设置
       this.saveSettings()
 
-      layout.isShowRedPacketModal = false
       layout.isShowLoading = true
-      await giveRedPacket(
+      const ret = await giveRedPacket(
         {
           amount: this.amount,
           message: this.message,
@@ -676,8 +668,8 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
         talk.activeChannelId,
         talk.selfMetaId
       )
-      layout.isShowLoading = false
-      this.reset()
+      console.log('giveRedPacket ret', ret)
+      return ret
     },
   },
 })

@@ -281,12 +281,77 @@
   >
     {{ $t('Talk.Input.dont_have_permission') }}
   </div>
+
+  <!-- Apple Style Action Sheet -->
+  <Teleport to="body">
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="showRedPacketActionSheet"
+        class="fixed inset-0 z-50 flex items-end justify-center  bg-black bg-opacity-50"
+        @click="closeActionSheet"
+      >
+        <transition
+          enter-active-class="transition duration-300 ease-out"
+          enter-from-class="transform translate-y-full opacity-0"
+          enter-to-class="transform translate-y-0 opacity-100"
+          leave-active-class="transition duration-200 ease-in"
+          leave-from-class="transform translate-y-0 opacity-100"
+          leave-to-class="transform translate-y-full opacity-0"
+        >
+          <div
+            v-if="showRedPacketActionSheet"
+            class="w-full max-w-xs sm:max-w-xs md:w-96 bg-white dark:bg-gray-800 rounded-t-xl shadow-xl transform"
+            @click.stop
+          >
+            <!-- Options -->
+            <div class="px-2 py-2">
+              <!-- MVC Red Packet -->
+              <button
+                @click="selectRedPacketType('mvc')"
+                class="w-full flex items-center px-4 py-4 justify-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors duration-200 active:scale-95"
+              >
+                <h4 class="text-lg text-center font-medium text-gray-900 dark:text-gray-100">
+                  SPACE {{ $t('Talk.Modals.red_packet') }}
+                </h4>
+              </button>
+              <!-- BTC Red Packet -->
+              <button
+                @click="selectRedPacketType('btc')"
+                class="w-full flex text-center items-center px-4 py-4 justify-center hover:bg-gray-50 dark:hover:bg-gray-700  rounded-t-xl transition-colors duration-200 active:scale-95"
+              >
+                <h4 class="text-lg  font-medium text-gray-900 dark:text-gray-100">
+                  BTC {{ $t('Talk.Modals.red_packet') }}
+                </h4>
+              </button>
+            </div>
+
+            <!-- Cancel Button -->
+            <div class="px-2 pb-2">
+              <button
+                @click="closeActionSheet"
+                class="w-full py-4 text-center text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors duration-200 active:scale-95"
+              >
+                {{ $t('cancel') }}
+              </button>
+            </div>
+          </div>
+        </transition>
+      </div>
+    </transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, toRaw, Ref } from 'vue'
 import { Popover, PopoverButton, PopoverPanel, TransitionRoot } from '@headlessui/vue'
-import { ElMessage, ElPopover } from 'element-plus'
+import { ElMessage, ElPopover, ElMessageBox } from 'element-plus'
 
 import { sendMessage, validateTextMessage, isImage, isFileTooLarge } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
@@ -317,6 +382,7 @@ const i18n = useI18n()
 const chainStore = useChainStore()
 const showMoreCommandsBox = ref(false)
 const showStickersBox = ref(false)
+const showRedPacketActionSheet = ref(false)
 const spaceNotEnoughFlag = ref(false)
 const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
@@ -394,11 +460,18 @@ const openImageUploader = (close: Function) => {
 }
 
 const openRedPackDialog = () => {
-  // if (chainStore.state.currentChain == ChatChain.btc) {
-  //   return ElMessage.error(`${i18n.t('notSupoort_btc_send_repacket')}`)
-  // } else {
+  showRedPacketActionSheet.value = true
+}
+
+const selectRedPacketType = (type: 'btc' | 'mvc') => {
+  showRedPacketActionSheet.value = false
+  // 设置红包类型，但不改变gas链选择
+  layout.selectedRedPacketType = type
   layout.isShowRedPacketModal = true
-  // }
+}
+
+const closeActionSheet = () => {
+  showRedPacketActionSheet.value = false
 }
 
 const handleImageChange = (e: Event) => {

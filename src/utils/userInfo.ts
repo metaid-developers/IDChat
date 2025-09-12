@@ -4,7 +4,7 @@ import { isNil } from 'lodash'
 import axios from 'axios'
 import { useUtxosStore } from '@/stores/useable-utxo'
 import { InscriptionRequest } from './pin'
-import {getUseableUtxo} from '@/wallet-adapters/metalet'
+import { getUseableUtxo } from '@/wallet-adapters/metalet'
 import { useUserStore } from '@/stores/user'
 export type Transaction = {
   txComposer: TxComposer
@@ -29,15 +29,17 @@ declare global {
           data: InscriptionRequest
           options?: { noBroadcast: boolean }
         }): Promise<any>
-      },
-      common:{
-      ecdh:(params:{externalPubKey:string})=> Promise<{
-      externalPubKey: string
-      sharedSecret:string
-      ecdhPubKey:string
-      creatorPubkey: string
-    }>,
-    }
+      }
+      common: {
+        ecdh: (params: {
+          externalPubKey: string
+        }) => Promise<{
+          externalPubKey: string
+          sharedSecret: string
+          ecdhPubKey: string
+          creatorPubkey: string
+        }>
+      }
     }
   }
 }
@@ -274,13 +276,15 @@ export const createPinWithAsset = async (
     }),
   })
   const commitData = await commitRes.json()
-  if(commitData.code == 1 && !commitData.data){
-    throw new Error(JSON.stringify({
-      state:commitData.code,
-      message:commitData.message
-    }))
+  if (commitData.code == 1 && !commitData.data) {
+    throw new Error(
+      JSON.stringify({
+        state: commitData.code,
+        message: commitData.message,
+      })
+    )
   }
-  
+
   return {
     txid: commitData.data.txId,
     utxo: {
@@ -398,13 +402,15 @@ const pay = async ({
 export async function broadcastToApi({
   txHex,
   network,
+  chain = 'mvc',
 }: {
   txHex: string
   network: BtcNetwork
+  chain?: 'mvc' | 'btc'
 }): Promise<{ txid: string }> {
   const { data: txid, message } = await axios
     .post('https://www.metalet.space/wallet-api/v3/tx/broadcast', {
-      chain: 'mvc',
+      chain: chain,
       net: network,
       rawTx: txHex,
     })
@@ -538,14 +544,14 @@ export const createOrUpdateUserInfo = async ({
     bio?: string
     avatar?: string
     background?: string
-    chatpubkey?:string
+    chatpubkey?: string
   }
   oldUserData: {
     nameId: string
     bioId?: string
     avatarId?: string
     backgroundId?: string
-     chatpubkey?:string
+    chatpubkey?: string
   }
   options: { feeRate?: number; network?: BtcNetwork; assistDomain?: string }
 }): Promise<{
@@ -594,20 +600,17 @@ export const createOrUpdateUserInfo = async ({
     })
   }
 
-    if (userData.chatpubkey) {
-      
-      if(!oldUserData.chatpubkey){
-            metaDatas.push({
-            operation:'create',
-            body: userData.chatpubkey,
-            path: `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`,
-            encoding: 'utf-8',
-            contentType: 'text/plain',
-            flag: 'metaid',
-            })
-            
-      }
-
+  if (userData.chatpubkey) {
+    if (!oldUserData.chatpubkey) {
+      metaDatas.push({
+        operation: 'create',
+        body: userData.chatpubkey,
+        path: `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`,
+        encoding: 'utf-8',
+        contentType: 'text/plain',
+        flag: 'metaid',
+      })
+    }
   }
   if (metaDatas.length === 0) {
     throw new Error('No user data provided to create user info')
@@ -662,7 +665,7 @@ export const createOrUpdateUserInfo = async ({
     bioRes: undefined,
     avatarRes: undefined,
     backgroundRes: undefined,
-    chatpubkeyRes:undefined
+    chatpubkeyRes: undefined,
   }
   type ResKey = 'nameRes' | 'bioRes' | 'avatarRes' | 'backgroundRes' | 'chatpubkeyRes'
   const userInfos: {
@@ -703,96 +706,91 @@ export const createOrUpdateUserInfo = async ({
   return ret
 }
 
-
-export const createUserPubkey=async ({
+export const createUserPubkey = async ({
   pubkey,
   pubkeyId,
   options,
 }: {
-  pubkey:string
-  pubkeyId?:string,
+  pubkey: string
+  pubkeyId?: string
   options: { feeRate?: number; network?: BtcNetwork; assistDomain?: string }
 }): Promise<any> => {
   const metaDatas: MetaidData[] = []
   const utxoStore = useUtxosStore()
-  const userStore=useUserStore()
-  const localUtxo= utxoStore.getUtxo(userStore.last.address)
-  const availableUtxo=await getUseableUtxo()
-  const hasPubkey=userStore.last.chatpubkey
+  const userStore = useUserStore()
+  const localUtxo = utxoStore.getUtxo(userStore.last.address)
+  const availableUtxo = await getUseableUtxo()
+  const hasPubkey = userStore.last.chatpubkey
   try {
-    
-  
-  if (pubkey) {
-    
-    const path=hasPubkey && pubkeyId ? `${import.meta.env.VITE_ADDRESS_HOST}:@{${pubkeyId}}` : `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`
-    metaDatas.push({
-      operation:hasPubkey ? 'modify': 'create',
-      body: pubkey,
-      path: path,
-      encoding: 'utf-8',
-      contentType: 'text/plain',
-      flag: 'metaid',
-    })
-  }else{
-     throw new Error('No Publickey provided to create user info')
-  }
-
-  if (metaDatas.length === 0) {
-    throw new Error('No user data provided to publickey')
-  }
-  let _transactions: Transaction[] = []
-  let _txids: string[] = []
-  if(options.assistDomain  && availableUtxo.length) {
-    
-    for (let i = 0; i < metaDatas.length; i++) {
-      const metaData = metaDatas[i]
-      const { transactions, txid, txids } = await createPin(metaData, {
-        network: options?.network ?? 'testnet',
-        signMessage: 'create User Info',
-        serialAction: i === metaDatas.length - 1 ? 'finish' : 'combo',
-        transactions: [..._transactions],
-        feeRate: options?.feeRate,
+    if (pubkey) {
+      const path =
+        hasPubkey && pubkeyId
+          ? `${import.meta.env.VITE_ADDRESS_HOST}:@{${pubkeyId}}`
+          : `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`
+      metaDatas.push({
+        operation: hasPubkey ? 'modify' : 'create',
+        body: pubkey,
+        path: path,
+        encoding: 'utf-8',
+        contentType: 'text/plain',
+        flag: 'metaid',
       })
-      _transactions = transactions as Transaction[]
-      if (txids) {
-        _txids = txids
-      }
-       return _txids[0]
+    } else {
+      throw new Error('No Publickey provided to create user info')
     }
-  }else if (options.assistDomain  && localUtxo) {
-   
-    let utxo: {
-      txid: string
-      outIndex: number
-      value: number
-      address: string
-    }=localUtxo
-     
-    for (let i = 0; i < metaDatas.length; i++) {
-      const metaData = metaDatas[i]
-      const _options: any = {
-        network: options?.network ?? 'testnet',
-        signMessage: 'create User Info',
-        serialAction: 'finish',
-        assistDomain: options.assistDomain as string,
-      }
-      if (utxo) {
-        _options.utxo = utxo
-      }
-      const { txid, utxo: _utxo } = await createPinWithAsset(metaData, _options)
-      utxo = _utxo
-      utxoStore.insert(utxo, utxo.address)
 
-      if (txid) {
-        _txids.push(txid)
-      }
-      return _txids[0]
+    if (metaDatas.length === 0) {
+      throw new Error('No user data provided to publickey')
     }
-  }else{
-   throw new Error('No available UTXO')
-  }
- 
- 
+    let _transactions: Transaction[] = []
+    let _txids: string[] = []
+    if (options.assistDomain && availableUtxo.length) {
+      for (let i = 0; i < metaDatas.length; i++) {
+        const metaData = metaDatas[i]
+        const { transactions, txid, txids } = await createPin(metaData, {
+          network: options?.network ?? 'testnet',
+          signMessage: 'create User Info',
+          serialAction: i === metaDatas.length - 1 ? 'finish' : 'combo',
+          transactions: [..._transactions],
+          feeRate: options?.feeRate,
+        })
+        _transactions = transactions as Transaction[]
+        if (txids) {
+          _txids = txids
+        }
+        return _txids[0]
+      }
+    } else if (options.assistDomain && localUtxo) {
+      let utxo: {
+        txid: string
+        outIndex: number
+        value: number
+        address: string
+      } = localUtxo
+
+      for (let i = 0; i < metaDatas.length; i++) {
+        const metaData = metaDatas[i]
+        const _options: any = {
+          network: options?.network ?? 'testnet',
+          signMessage: 'create User Info',
+          serialAction: 'finish',
+          assistDomain: options.assistDomain as string,
+        }
+        if (utxo) {
+          _options.utxo = utxo
+        }
+        const { txid, utxo: _utxo } = await createPinWithAsset(metaData, _options)
+        utxo = _utxo
+        utxoStore.insert(utxo, utxo.address)
+
+        if (txid) {
+          _txids.push(txid)
+        }
+        return _txids[0]
+      }
+    } else {
+      throw new Error('No available UTXO')
+    }
   } catch (error) {
     throw new Error(`${(error as any).toString()}`)
   }

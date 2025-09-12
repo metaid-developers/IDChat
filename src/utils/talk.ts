@@ -530,6 +530,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   const { code, luckyBagAddress: address, timestamp: createTime } = luckyBagCode.data
   const buildTx = useBulidTx()
   const chainStore = useChainStore()
+
   // const code = realRandomString(6)
   const subId = channelId.substring(0, 12)
   // const createTime = Date.now()
@@ -562,7 +563,8 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     count: form.quantity,
     metaid: selfMetaId,
     payList: redPackets,
-    type: chainStore.state.currentChain === 'btc' ? 'btc' : 'space', // 根据当前链设置类型
+    type: form.currentRedPacketType, // 'btc' | 'space'
+    feeRate: 1,
     requireType: '',
     requireTickId: '',
     requireCollectionId: '',
@@ -595,6 +597,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     const res = await buildTx.createRedPacket(node)
 
     console.log({ res })
+    return res
   } catch (err) {
     console.log(err)
     ElMessage.error(typeof err === 'string' ? err : err.message || 'Failed')
@@ -977,20 +980,28 @@ export const validateTextMessage = (message: string) => {
   return message.length > 0 && message.length <= 5000
 }
 
-
-
-export const tryCreateNode = async (node: {
-  protocol:string
-  body:any
-  timestamp:number
-  externalEncryption?:'0' | '1' | '2'
-  fileEncryption?:'0' | '2' | '2'
-  attachments?:AttachmentItem[]
-}, mockId: string) => {
+export const tryCreateNode = async (
+  node: {
+    protocol: string
+    body: any
+    timestamp: number
+    externalEncryption?: '0' | '1' | '2'
+    fileEncryption?: '0' | '2' | '2'
+    attachments?: AttachmentItem[]
+  },
+  mockId: string
+) => {
   const jobs = useJobsStore()
   const talk = useTalkStore()
-  const buildTx=useBulidTx()
-   const {protocol,body,timestamp:timeStamp,attachments,externalEncryption,fileEncryption}=node
+  const buildTx = useBulidTx()
+  const {
+    protocol,
+    body,
+    timestamp: timeStamp,
+    attachments,
+    externalEncryption,
+    fileEncryption,
+  } = node
   try {
     // const nodeRes = await sdk.createBrfcChildNode(node)
     const nodeRes = await buildTx.createShowMsg({
@@ -999,7 +1010,7 @@ export const tryCreateNode = async (node: {
       attachments,
       externalEncryption,
       fileEncryption,
-      isBroadcast:true
+      isBroadcast: true,
     })
 
     // 取消支付的情况下，删除mock消息
@@ -1122,7 +1133,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
           userInfo: reply.userInfo,
         }
       : undefined,
-    type:1
+    type: 1,
   }
   talkStore.addMessage(mockMessage)
 
@@ -1146,9 +1157,9 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
   const chainStore = useChainStore()
-  
+
   const { content, channelId: to, reply } = messageDto
-  
+
   // 1. 构建协议数据
   // 1.1 to: done
   // 1.2 timestamp
@@ -1158,7 +1169,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const contentType = 'text/plain'
   // 1.5 encrypt
   const encrypt = 'ecdh'
-  const externalEncryption='0'
+  const externalEncryption = '0'
   const dataCarrier = {
     to,
     timestamp,
@@ -1167,14 +1178,13 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     encrypt,
     replyPin: reply ? `${reply.txId}i0` : '',
   }
-  
 
   // 2. 构建节点参数
   const node = {
     protocol: NodeName.SimpleMsg,
     body: dataCarrier,
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
-    externalEncryption
+    externalEncryption,
   }
 
   // 2.5. mock发送
@@ -1209,7 +1219,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     content,
     mockId,
     nodeName: NodeName.SimpleMsg,
-    chatType:ChatType.msg,
+    chatType: ChatType.msg,
     dataType: 'text/plain',
     data: dataCarrier,
     chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
@@ -1218,7 +1228,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     avatarImage: userStore.last?.avatar || '',
     fromAvatarImage: userStore.last?.avatar || '',
     metaId: userStore.last?.metaid || 'undefined',
-    address:userStore.last?.address,
+    address: userStore.last?.address,
     from: userStore.last?.metaid,
     nickName: userStore.last?.name || '',
     fromName: userStore.last?.name || '',
@@ -1226,28 +1236,23 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     fromUserInfo: userStore.last || {},
     timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
     txId: '',
-   
+
     encryption: encrypt,
     externalEncryption,
     isMock: true,
     to,
     replyInfo: reply,
     protocol: NodeName.SimpleMsg,
-    type:2
-  
+    type: 2,
   }
+  talkStore.addMessage(mockMessage)
 
-  // if(to !== userStore.last.metaid){
-  //   talkStore.addMessage(mockMessage)
-  // }
-   talkStore.addMessage(mockMessage)
-  
   // 3. 发送节点
   // const sdk = userStore.showWallet
   // await tryCreateNode(node, mockId)
 
   // return '1'
-   try {
+  try {
     const tryRes = await tryCreateNode(node, mockId)
     
     
@@ -1287,7 +1292,7 @@ const _uploadImage = async (file: File, sdk: SDK) => {
   }
 
   const newNode = await sdk.createBrfcChildNode(node)
-  if (!newNode) return { metafileUri: null }
+ß  if (!newNode) return { metafileUri: null }
 
   const txId = newNode.txId
   const metafileUri = 'metafile://' + txId + '.' + fileType
@@ -1300,7 +1305,15 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const talkStore = useTalkStore()
   const chainStore = useChainStore()
 
-  const { channelId, groupId, userName: nickName, attachments, originalFileUrl, reply,channelType } = messageDto
+  const {
+    channelId,
+    groupId,
+    userName: nickName,
+    attachments,
+    originalFileUrl,
+    reply,
+    channelType,
+  } = messageDto
 
   // 1. 构建协议数据
   // 1.1 groupId: done
@@ -1312,29 +1325,30 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   const fileType = file.fileType.split('/')[1]
   // 1.5 encrypt
   const encrypt = 'aes'
-  const externalEncryption ='0' //channelType == ChannelType.Group ?  '0' : '1'
-  
+  const externalEncryption = '0' //channelType == ChannelType.Group ?  '0' : '1'
+
   // const attachment =attachments//'metafile://$[0]'
 
-  const dataCarrier: any =  messageDto.channelType === ChannelType.Group ? {
-    timestamp,
-    encrypt,
-    fileType,
-    groupId: channelId,
-    nickName,
-    attachment: '',
-    replyPin: reply ? `${reply.txId}i0` : '',
-  } : {
-    timestamp,
-    encrypt,
-    fileType,
-    to: channelId,
-    nickName,
-    attachment: '',
-    replyPin: reply ? `${reply.txId}i0` : '',
-  }
-
-  
+  const dataCarrier: any =
+    messageDto.channelType === ChannelType.Group
+      ? {
+          timestamp,
+          encrypt,
+          fileType,
+          groupId: channelId,
+          nickName,
+          attachment: '',
+          replyPin: reply ? `${reply.txId}i0` : '',
+        }
+      : {
+          timestamp,
+          encrypt,
+          fileType,
+          to: channelId,
+          nickName,
+          attachment: '',
+          replyPin: reply ? `${reply.txId}i0` : '',
+        }
 
   // if (messageDto.channelType !== ChannelType.Group) {
   //   dataCarrier.to = channelId
@@ -1353,7 +1367,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     attachments,
     timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
     externalEncryption,
-    fileEncryption
+    fileEncryption,
   }
 
   // 2.5. mock发送
@@ -1381,7 +1395,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     externalEncryption,
     isMock: true,
     replyInfo: reply,
-    type:messageDto.channelType === ChannelType.Group ? 1 : 2
+    type: messageDto.channelType === ChannelType.Group ? 1 : 2,
   }
 
   // if(messageDto.channelType == ChannelType.Group || channelId !== userStore.last.metaid ){
@@ -1665,10 +1679,9 @@ export function decryptedMessage(
   isMock = false,
   isSession = false, // 是否私聊
   secretKeyStr = '',
-  publicKeyStr='' //私聊获取协商密钥使用
+  publicKeyStr = '' //私聊获取协商密钥使用
 ) {
-
-  if(!content) return
+  if (!content) return
   const talk = useTalkStore()
 
   if (encryption === '0') {
@@ -1684,19 +1697,18 @@ export function decryptedMessage(
   }
 
   if (isSession) {
-    
     if (!talk.activeChannel) return ''
     // const credentialsStore = useCredentialsStore()
     // const connectionStore = useConnectionStore()
-     const ecdhsStore=useEcdhsStore()
+    const ecdhsStore = useEcdhsStore()
     // console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
-    const ecdhPubkey=publicKeyStr ? publicKeyStr : talk.activeChannel.publicKeyStr
-    let ecdh= ecdhsStore.getEcdh(ecdhPubkey)
-    
+    const ecdhPubkey = publicKeyStr ? publicKeyStr : talk.activeChannel.publicKeyStr
+    let ecdh = ecdhsStore.getEcdh(ecdhPubkey)
+
     try {
-      const sharedSecret=ecdh?.sharedSecret
-   
-    return ecdhDecrypt(content, sharedSecret)
+      const sharedSecret = ecdh?.sharedSecret
+
+      return ecdhDecrypt(content, sharedSecret)
     } catch (error) {
       throw new Error((error as any).toString())
     }

@@ -15,7 +15,12 @@
         :message-id="messageId"
         :parsed="
           parseTextMessage(
-            decryptedMessage(message?.content, message?.encryption, message?.protocol, message?.isMock)
+            decryptedMessage(
+              message?.content,
+              message?.encryption,
+              message?.protocol,
+              message?.isMock
+            )
           )
         "
         v-model:translateStatus="translateStatus"
@@ -167,12 +172,19 @@
             @click="handleOpenRedPacket"
           >
             <div
-              class="rounded-xl p-4 flex space-x-2 bg-gradient-to-br from-[#FFE8D2] via-[#FFF1B9] to-[#FEFFE3] items-center"
+              class="rounded-xl p-4 flex space-x-2 bg-gradient-to-br  items-center"
               :class="[
                 hasRedPacketReceived ? 'origin-top -skew-x-12 dark:-skew-x-6 shadow-md' : 'shadow',
+                msgChain == ChatChain.btc
+                  ? 'from-[#FFD897] via-[#FFD897] to-[#FFE9C5]'
+                  : 'from-[#FFE8D2] via-[#FFF1B9] to-[#FEFFE3]',
               ]"
             >
-              <img :src="giftImage" class="h-12 w-12" loading="lazy" />
+              <img
+                :src="msgChain == ChatChain.btc ? giftBtcImage : giftMvcImage"
+                class="h-12 w-12"
+                loading="lazy"
+              />
               <div class="">
                 <div class="text-dark-800 text-base font-medium">
                   {{ $t('Talk.Channel.come_get_red_envelope') }}
@@ -322,6 +334,8 @@ import { formatTimestamp, decryptedMessage, sendMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import giftImage from '@/assets/images/gift.svg?url'
+import giftBtcImage from '@/assets/images/gift_btc.svg?url'
+import giftMvcImage from '@/assets/images/gift_mvc.svg?url'
 import { useLayoutStore } from '@/stores/layout'
 import { useModalsStore } from '@/stores/modals'
 import { useJobsStore } from '@/stores/jobs'
@@ -454,9 +468,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  
+
   if (longPressTimer.value) {
-    
+
     clearTimeout(longPressTimer.value)
     longPressTimer.value = null
   }
