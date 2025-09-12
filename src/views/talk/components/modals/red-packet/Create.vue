@@ -79,6 +79,7 @@
                   <div class="col-span-3 relative flex items-center">
                     <input
                       type="number"
+                      step="any"
                       placeholder="0"
                       class="main-border w-full p-4 outline-0 faded-switch still dark:bg-gray-700"
                       v-model="form.amount"
