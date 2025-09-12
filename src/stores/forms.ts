@@ -25,9 +25,9 @@ const MIN = new Decimal(0.0001).mul(10 ** 8).toNumber()
 const MAX = new Decimal(10).mul(10 ** 8).toNumber()
 
 // BTC红包特殊限制
-const BTC_MIN_TOTAL_SATS = 1500 // 0.000015 BTC
+const BTC_MIN_TOTAL_SATS = 2730 // 0.000015 BTC
 const BTC_MAX_TOTAL_SATS = 10000000 // 0.1 BTC
-export const BTC_MIN_PER_PACKET_SATS = 800 // 0.000008 BTC
+export const BTC_MIN_PER_PACKET_SATS = 910 // 0.000008 BTC
 const BTC_MAX_PER_PACKET_SATS = 100000 // 0.001 BTC
 const BTC_MIN_QUANTITY = 3
 const BTC_MAX_QUANTITY = 100
@@ -513,11 +513,11 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
 
           if (+this.amount < minTotalBtc) {
             this.amount = minTotalBtc
-            ElMessage.warning('BTC紅包總金額不能小於0.000015 BTC（1500聰）')
+            // ElMessage.warning('BTC紅包總金額不能小於0.000015 BTC（1500聰）')
           }
           if (+this.amount > maxTotalBtc) {
             this.amount = maxTotalBtc
-            ElMessage.warning('BTC紅包總金額不能超過0.1 BTC（10000000聰）')
+            // ElMessage.warning('BTC紅包總金額不能超過0.1 BTC（10000000聰）')
           }
 
           // 检查平均单红包金额限制
