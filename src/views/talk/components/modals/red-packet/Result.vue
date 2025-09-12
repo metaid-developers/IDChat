@@ -61,16 +61,18 @@
 
                   <div class="mt-5 flex items-end space-x-1" v-if="myDraw">
                     <div class="text-4xl font-bold tracking-tight">
-                      {{ nicerAmountWithUnit(myDraw?.amount || '0').amount }}
+                      {{ nicerAmountWithUnit(myDraw?.luckyAmount || '0').amount }}
                     </div>
                     <div class="text-sm">
-                      {{ nicerAmountWithUnit(myDraw?.amount || '0').unit }}
+                      {{ nicerAmountWithUnit(myDraw?.luckyAmount || '0').unit }}
                     </div>
                   </div>
                   <div class="mt-2 flex items-end space-x-1">
                     <div class="text-sm">
-                      (total:{{ nicerAmountWithUnit(redPacketResult?.amount || '0').amount }}
-                      {{ nicerAmountWithUnit(redPacketResult?.amount || '0').unit }})
+                      (total:{{
+                        nicerAmountWithUnit(redPacketResult?.luckyTotalAmount || '0').amount
+                      }}
+                      {{ nicerAmountWithUnit(redPacketResult?.luckyTotalAmount || '0').unit }})
                     </div>
                   </div>
                   <!-- <div class="mt-2 text-sm text-dark-300 font-bold font-sans">
@@ -123,9 +125,9 @@
                         <!-- 移动端：金额单独一行 -->
                         <div class=" text-sm text-dark-800 font-medium text-right">
                           <span class="whitespace-nowrap">
-                            {{ nicerAmountWithUnit(draw.amount).amount }}
+                            {{ nicerAmountWithUnit(draw.luckyAmount).amount }}
                             <span class="text-xs text-dark-400">{{
-                              nicerAmountWithUnit(draw.amount).unit
+                              nicerAmountWithUnit(draw.luckyAmount).unit
                             }}</span>
                           </span>
                         </div>
@@ -133,7 +135,7 @@
                         <!-- 移动端：标签和按钮一行 -->
                         <div class="flex  items-center space-x-1 justify-end">
                           <span
-                            v-if="draw.amount >= luckiestAmount"
+                            v-if="draw.luckyAmount >= luckiestAmount"
                             class="bg-amber-400 text-white rounded px-0.5 py-0.5 whitespace-nowrap text-xxs"
                           >
                             {{ $t('Talk.Modals.lucky') }}
@@ -162,13 +164,13 @@
                           class="hidden  text-sm text-dark-800 font-medium items-center space-x-1"
                         >
                           <span class="whitespace-nowrap">
-                            {{ nicerAmountWithUnit(draw.amount).amount }}
+                            {{ nicerAmountWithUnit(draw.luckyAmount).amount }}
                             <span class="text-xs text-dark-400">{{
-                              nicerAmountWithUnit(draw.amount).unit
+                              nicerAmountWithUnit(draw.luckyAmount).unit
                             }}</span>
                           </span>
                           <span
-                            v-if="draw.amount >= luckiestAmount"
+                            v-if="draw.luckyAmount >= luckiestAmount"
                             class="bg-amber-400 text-white rounded px-1 py-0.5 whitespace-nowrap text-xxs"
                           >
                             {{ $t('Talk.Modals.lucky') }}
@@ -281,7 +283,7 @@ const sortedDraws = computed(() => {
   return draws.value.sort((a: any, b: any) => b.timestamp - a.timestamp)
 })
 const luckiestAmount = computed(() => {
-  const amount = Math.max(...draws.value.map((item: any) => Number(item.amount)))
+  const amount = Math.max(...draws.value.map((item: any) => Number(item.luckyAmount)))
   return amount
 })
 

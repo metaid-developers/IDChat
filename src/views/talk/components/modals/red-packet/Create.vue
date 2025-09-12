@@ -642,7 +642,7 @@ const submit = async () => {
     showPayment.value = true
     const commitCost = parseFloat(ret.commitCost) || 0
     const revealCost = parseFloat(ret.revealCost) || 0
-    const totalCost = commitCost + revealCost
+    const totalCost = commitCost + revealCost + 210 * form.quantity
     payment.value = {
       total: new Decimal(form.amount).toNumber() + new Decimal(totalCost).div(10 ** 8).toNumber(),
       gas: new Decimal(totalCost).div(10 ** 8).toNumber(),

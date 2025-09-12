@@ -401,7 +401,7 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
 
   // 根据链设置不同的最小红包金额
   const minSats = isBtcChain ? BTC_MIN_PER_PACKET_SATS : Red_Packet_Min // BTC最小546聪，其他链0.0001 Space = 10000聪
-  const totalAmount = nicerAmount(amount, unit)
+  const totalAmount = nicerAmount(amount, unit) + 210 * quantity * 1 // 预留每个红包210聪的矿工费
 
   // 确保最小金额合理
   if (totalAmount < minSats * quantity) {
@@ -541,7 +541,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
 
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000
-  const amountInSat = nicerAmount(form.amount, form.unit) // 现在直接使用sat为单位
+  const amountInSat = nicerAmount(form.amount, form.unit) + 210 * form.quantity // 现在直接使用sat为单位
 
   const redPackets = _putIntoRedPackets(form, address)
 
