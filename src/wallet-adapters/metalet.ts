@@ -49,9 +49,18 @@ export const metaletConnect: () => Promise<connectRes> = async () => {
 
 export const getMvcAddress = async () => {
   checkMetalet()
-   const connectionStore=useConnectionStore()
+  
   const addressRes = await window.metaidwallet.getAddress()
   const address = checkMetaletStatus(addressRes, 'get address')
+  return address
+}
+
+
+export const getBtcAddress = async () => {
+  checkMetalet()
+  
+  const addressRes = await window.metaidwallet.btc.getAddress()
+  const address = checkMetaletStatus(addressRes, 'get btc address')
   return address
 }
 

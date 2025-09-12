@@ -83,6 +83,7 @@ export const useConnectionStore = defineStore('connection', {
         // initPsbt: () => Psbt
         getMvcBalance: () => Promise<any>
         getMvcAddress: () => Promise<string>
+        getBtcAddress: () => Promise<string>
         pay:(toPayTransactions:{
         transations:Array<{
         txComposer: string

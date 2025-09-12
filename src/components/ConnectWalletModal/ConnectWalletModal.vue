@@ -1131,6 +1131,8 @@ async function connectMetalet() {
        closeConnectionModal()
       return
     }
+
+    
     
     
 
@@ -1263,6 +1265,19 @@ async function connectMetalet() {
   // }
 
   //metalet-SDK实例化
+   rootStore.checkBtcAddressSameAsMvc().then().catch((err)=>{
+          
+            ElMessage.warning({
+              message:i18n.t('btcSameAsMvcError'),
+              type: 'warning',
+              })
+              setTimeout(() => {
+                 connectionStore.disconnect(router)
+              }, 3000);
+            
+        })
+
+
 }
 
 async function connectWalletConnect(isUpdate: boolean = false) {

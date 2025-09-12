@@ -1412,5 +1412,6 @@
     "success": "图片下载成功",
     "failed": "图片下载失败",
     "error": "下载过程中发生错误"
-  }
+  },
+  "btcSameAsMvcError": "Metalet BTC当前地址与MVC地址不一致，请切换BTC地址与MVC地址一致后再进行使用"
 }

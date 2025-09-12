@@ -1412,5 +1412,6 @@
     "success": "Image downloaded successfully",
     "failed": "Image download failed",
     "error": "An error occurred during download"
-  }
+  },
+  "btcSameAsMvcError": "The current Metalet BTC address does not match the MVC address. Please switch to a BTC address that matches the MVC address before proceeding"
 }

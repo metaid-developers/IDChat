@@ -4,6 +4,8 @@ import { GetCertMetaIdList } from '@/api/aggregation'
 import i18n from '@/utils/i18n'
 import { GetCertifiedMetaId } from '@/api/strapi'
 import { ElMessage } from 'element-plus'
+import { useConnectionStore } from './connection'
+import { useUserStore } from './user'
 export interface SignBaseInfo {
   userType: SignUserType
   areaCode: string
@@ -152,6 +154,18 @@ export const useRootStore = defineStore('root', {
     //   this.showDiffLang = payload
     //   localStorage.setItem('showDiffLang', String(payload))
     // },
+
+    async checkBtcAddressSameAsMvc(){
+      const connectionStore=useConnectionStore()
+      const userStore=useUserStore()
+      const mvcAddress= userStore.last.address
+      const btcAddress= await connectionStore.adapter.getBtcAddress()
+      if(mvcAddress && btcAddress && mvcAddress !== btcAddress){
+       
+        throw new Error(`${i18n.global.t('btcSameAsMvcError')}`)
+      }
+    },
+
 
     refreshData(payload: boolean) {
       this.isRereshData = payload

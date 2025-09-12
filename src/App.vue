@@ -69,6 +69,7 @@ import {
 } from '@/api/talk'
 import { ElMessage } from 'element-plus'
 import { useLayoutStore } from './stores/layout'
+import { settings } from 'cluster'
 const { closeConnectionModal } =
   useConnectionModal()
 const MAX_RETRY_TIME = 5000 // 最大等待时间（毫秒）
@@ -222,9 +223,28 @@ onMounted(async () => {
               })
       }
         })
+
+       
    
     }
   },5 * 1000)
+
+
+  if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
+      rootStore.checkBtcAddressSameAsMvc().then().catch((err)=>{
+          
+            ElMessage.warning({
+              message:i18n.t('btcSameAsMvcError'),
+              type: 'warning',
+              })
+              setTimeout(() => {
+                 connectionStore.disconnect(router)
+              }, 3000);
+            
+        })
+
+  }
+
 
   const checkMetalet = async () => {
     if (window.metaidwallet) {
