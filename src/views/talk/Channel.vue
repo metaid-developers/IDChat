@@ -41,6 +41,7 @@
     <!-- <NoMetaNameModal v-if="layout.isShowNoMetaNameModal" /> -->
     <leaveCommunityModal v-if="layout.isShowLeaveCommunityModal" />
     <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
+    <CreateGroupTypeModal v-if="layout.isShowCreateGroupTypeModal" />
   </div>
 </template>
 
@@ -75,6 +76,7 @@ import NoMetaNameModal from './components/modals/community/NoMetaName.vue'
 import leaveCommunityModal from './components/modals/community/Leave.vue'
 import DirectContactList from './components/direct-contact/List.vue'
 import CreatePublicChannelModal from './components/modals/CreatePublicChannelModal.vue'
+import CreateGroupTypeModal from './components/modals/CreateGroupTypeModal.vue'
 import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
 

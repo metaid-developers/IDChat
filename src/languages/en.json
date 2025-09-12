@@ -285,7 +285,8 @@
       "edit_consensual_channel": "Edit Pass Channel",
       "announcements": "Announcements",
       "topics": "Topics",
-      "DAO": "DAO"
+      "DAO": "DAO",
+      "create_broadcast_channel": "Create Group Type"
     },
     "Input": {
       "nft_stickers": "NFT Emoji",
@@ -1412,5 +1413,7 @@
     "success": "Image downloaded successfully",
     "failed": "Image download failed",
     "error": "An error occurred during download"
-  }
+  },
+  "channel_type_public": "Public Group Chat",
+  "channel_type_broadcast": "Broadcast Group"
 }

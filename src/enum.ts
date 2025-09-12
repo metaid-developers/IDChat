@@ -1,5 +1,11 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
+
+export enum CreateGroupType{
+  public='public',
+  broadcast='broadcast',
+}
+
 export enum ChatChain {
   mvc = 'mvc',
   btc = 'btc',
@@ -392,6 +398,7 @@ export const enum CommunityJoinAction {
 export const enum ChannelPublicityType {
   Public = '1',
   Private = '2',
+  Broadcast = '3',
 }
 
 export enum MessageType {
@@ -408,6 +415,7 @@ export enum ChannelType {
 
 export enum GroupChannelType {
   PublicText = 'publicText',
+  Broadcast = 'broadcast',
   Password = 'password',
   NFT = 'NFT',
   FT = 'FT',

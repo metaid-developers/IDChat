@@ -319,7 +319,8 @@
       "general_channels": "功能頻道",
       "announcements": "公告",
       "topics": "話題",
-      "DAO": "DAO"
+      "DAO": "DAO",
+      "create_broadcast_channel": "创建群组类型"
     },
     "Input": {
       "nft_stickers": "NFT表情",
