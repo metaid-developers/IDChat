@@ -563,7 +563,7 @@ export const createOrUpdateUserInfo = async ({
     metaDatas.push({
       operation: oldUserData.nameId ? 'modify' : 'create',
       body: userData.name,
-      path: oldUserData.nameId ? `@{${oldUserData.nameId}}` : '/info/name',
+      path: oldUserData.nameId ? `@${oldUserData.nameId}` : '/info/name',
       encoding: 'utf-8',
       contentType: 'text/plain',
       flag: 'metaid',
@@ -573,7 +573,7 @@ export const createOrUpdateUserInfo = async ({
     metaDatas.push({
       operation: oldUserData.bioId ? 'modify' : 'create',
       body: userData.bio,
-      path: oldUserData.bioId ? `@{${oldUserData.bioId}}` : '/info/bio',
+      path: oldUserData.bioId ? `@${oldUserData.bioId}` : '/info/bio',
       encoding: 'utf-8',
       contentType: 'text/plain',
       flag: 'metaid',
@@ -583,7 +583,7 @@ export const createOrUpdateUserInfo = async ({
     metaDatas.push({
       operation: oldUserData.avatarId ? 'modify' : 'create',
       body: userData.avatar,
-      path: oldUserData.avatarId ? `@{${oldUserData.avatarId}}` : '/info/avatar',
+      path: oldUserData.avatarId ? `@${oldUserData.avatarId}` : '/info/avatar',
       encoding: 'base64',
       contentType: 'image/jpeg;binary',
       flag: 'metaid',
@@ -593,7 +593,7 @@ export const createOrUpdateUserInfo = async ({
     metaDatas.push({
       operation: oldUserData.backgroundId ? 'modify' : 'create',
       body: userData.background,
-      path: oldUserData.backgroundId ? `@{${oldUserData.backgroundId}}` : '/info/background',
+      path: oldUserData.backgroundId ? `@${oldUserData.backgroundId}` : '/info/background',
       encoding: 'base64',
       contentType: 'image/jpeg;binary',
       flag: 'metaid',
