@@ -8,7 +8,7 @@ import {  NodeName } from '@/enum'
 import type { PriviteChatMessageItem } from '@/@types/common'
 import { useEcdhsStore } from '@/stores/ecdh'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
-
+export const TESTGROUPID='525b620f60330de2a6943e49d98dc12a4f56444219335c8e9278e8905cd3a094i0'
 
 
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
@@ -563,7 +563,8 @@ export const getOneRedPacket = async (params: any): Promise<any> => {
   // const pinId = params.pinId
   //const query = params.address ? new URLSearchParams({ address: params.address }).toString() : ''
   const query = new URLSearchParams(params).toString()
-  return TalkApi.get(`/lucky-bag-info?${query}`).then(async res => {
+  const path= params.groupId===TESTGROUPID?'/lucky-bag-info-v2':'/lucky-bag-info'
+  return TalkApi.get(`${path}?${query}`).then(async res => {
     //   if(res.data.payList.length){
     //     for(let user of res.data.payList){
 
@@ -584,13 +585,14 @@ export const getRedPacketRemains = async (params: {
   groupId: string
   pinId: string
 }): Promise<any> => {
+  const path = params.groupId===TESTGROUPID?'/lucky-bag-unused-info-v2':'/lucky-bag-unused-info'
   const query = new URLSearchParams(params).toString()
   // return axios.get(`http://47.83.198.218:7568/group-chat/lucky-bag-unused-info?${query}`).then((res)=>{
   //   console.log("res",res)
   //   
   //   return res.data.data
   // })
-  return TalkApi.get(`/lucky-bag-unused-info?${query}`).then(res => {
+  return TalkApi.get(`${path}?${query}`).then(res => {
     return res.data
   })
 }
@@ -610,7 +612,8 @@ export const grabRedPacket = async (params: {
   //   
   //   return res.data.data
   // })
-  return TalkApi.post(`/grab-lucky-bag`, params)
+  const path = params.groupId===TESTGROUPID?'/grab-lucky-bag-v2':'/grab-lucky-bag'
+  return TalkApi.post(`${path}`, params)
     .then(res => {
       if (res?.code == 0) {
         return res.data
