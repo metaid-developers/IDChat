@@ -70,6 +70,151 @@ export const useBulidTx = createGlobalState(() => {
   // actions
   const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
 
+    const chainStore=useChainStore()
+
+
+
+    try {
+      
+
+      if(chainStore.state.currentChain === 'btc'){
+        if(payTo.length){
+           metaidData.outputs=[];
+          for(let item of payTo){
+            metaidData.outputs.push({
+              address:item.address,
+              value:item.amount,
+            })
+          }
+        }
+        const inscribeDataArray=[]
+        
+        if(SerialTransactions.length){
+          
+          inscribeDataArray.push(...SerialTransactions)
+        }
+        inscribeDataArray.push(metaidData)
+       const options={
+         noBroadcast:isBroadcast?'no':'yes',
+         feeRate:1,
+         network:'mainnet',
+         outputs:[]
+       }
+
+
+       const txIDs= await createPinWithBtc({
+          inscribeDataArray,
+          options,
+        })
+        
+        if(txIDs.status == "canceled"){
+          return null
+        }
+        // console.log("txIDs",txIDs)
+        
+        // return {
+        //   status:'ready_to_broadcast',
+        //   commitCost:txIDs.commitCost,
+        //   revealCost:txIDs.revealCost,
+        //   commitTxHex: txIDs.commitTxHex,
+        //   revealTxsHex: txIDs.revealTxsHex,
+        // }
+         return txIDs
+      }else{
+         const transactions=[] 
+       const pinTxComposer = new TxComposer()
+        pinTxComposer.appendP2PKHOutput({
+        address: address.value,
+        satoshis: 1,
+        })
+        const pinScript = createScriptForMvc(metaidData)
+        
+        pinTxComposer.appendOpReturnOutput(pinScript)
+        
+        if(payTo.length){
+          for(let item of payTo){
+                pinTxComposer.appendP2PKHOutput({
+                address:new mvc.Address(item.address,import.meta.env.VITE_NET_WORK),
+                satoshis: item.amount,
+                })
+          }
+        }
+
+
+        // if(needService){
+        // pinTxComposer.appendP2PKHOutput({
+        // address: new mvc.Address(SERVICE_ADDRESS,import.meta.env.VITE_NET_WORK),
+        // satoshis: SERVICE_FEE,
+        // })
+        // }
+        
+        if(SerialTransactions.length){
+          transactions.push(...SerialTransactions)
+        }
+
+        transactions.push({
+        txComposer: pinTxComposer.serialize(),
+        message: 'Create Pin',
+        })
+
+        if(!isBroadcast){
+         return{
+            txid:pinTxComposer.getTxId(),
+            transactions:transactions
+         }
+        }
+        
+
+       let payedTransactions
+       if(needSmallpay){
+          const {payedTransactions:payTx}= await connectionStore.adapter.smallPay({
+          transactions:transactions,
+          hasMetaid:true,
+          feeb:1
+          
+        })
+        payedTransactions=payTx
+
+       }else{
+          const {payedTransactions:payTx}= await connectionStore.adapter.pay({
+          transactions:transactions,
+          hasMetaid:true,
+          feeb:1
+          
+        })
+
+         payedTransactions=payTx
+       }
+        
+      
+
+        
+        
+        if(!payedTransactions){
+          return null
+        }
+        
+        const txIDs=await txBroadcast(payedTransactions,isBroadcast)
+        console.log("txIDs",txIDs)
+        
+        
+        return txIDs
+
+      }
+
+
+
+      
+
+    } catch (error) {
+      console.log("error",error)
+      // ElMessage.error((error as any).message)
+      throw new Error(typeof error === "string" ? error : (error as any).message)
+    }
+  }
+
+  const createRedPacketPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
+
     const layoutStore=useLayoutStore()
 
 
@@ -399,7 +544,7 @@ export const useBulidTx = createGlobalState(() => {
          throw new Error(``)
       }
       
-      const pinRes= await createPin(metaidData,isBroadcast,false,payTo)
+      const pinRes= await createRedPacketPin(metaidData,isBroadcast,false,payTo)
       
       return pinRes
 
