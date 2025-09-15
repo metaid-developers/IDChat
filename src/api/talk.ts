@@ -15,13 +15,12 @@ const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
   responseHandel: response => {
     return new Promise((resolve, reject) => {
       if (response?.data && typeof response.data?.code === 'number') {
+        
+        
         if (response.data.code === 0) {
           resolve(response.data)
         } else {
-          reject({
-            code: response.data.code,
-            message: response.data.message,
-          })
+         resolve(response.data)
         }
       } else {
         resolve(response.data)
@@ -29,6 +28,8 @@ const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
     })
   },
 }).request
+
+
 
 const seedFakeMetaName = (item: any) => {
   // 以50%的几率随机塞进metaName
@@ -616,12 +617,15 @@ export const grabRedPacket = async (params: {
   return TalkApi.post(`${path}`, params)
     .then(res => {
       if (res?.code == 0) {
+      
         return res.data
-      } else if (res?.code == 1) {
-        throw new Error(res?.message)
+      } else {
+        throw new Error(res.data)
+        
       }
     })
     .catch(e => {
+      
       throw new Error(e.message)
     })
 }

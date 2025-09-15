@@ -66,7 +66,9 @@ import { sleep } from '@/utils/util'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import {
   getChannels,
+  GetUserEcdhPubkeyForPrivateChat
 } from '@/api/talk'
+
 import { ElMessage } from 'element-plus'
 import { useLayoutStore } from './stores/layout'
 import { settings } from 'cluster'
@@ -262,7 +264,19 @@ onMounted(async () => {
   if(rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized ){
        await connectMetalet()
 
+       if(!userStore.last.chatpubkey){
+           const ecdhRes= await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+        if(ecdhRes?.chatPublicKey ){
+          userStore.updateUserInfo({
+            chatpubkey:ecdhRes?.chatPublicKey
+          })
+
+
+
   }
+       }
+      }
+   
   
 
   })

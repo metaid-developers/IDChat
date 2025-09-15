@@ -241,6 +241,7 @@ const tryOpenRedPacket = async () => {
     layout.isShowLoading = false
     await viewDetails()
   } catch (error) {
+    
     layout.isShowLoading = false
     ElMessage.error((error as any).toString())
   }
