@@ -13,7 +13,7 @@
               class="main-border p-3 text-base text-dark-800 dark:text-gray-100 still cursor-text col-span-3 !select-all  truncate"
               id="inviteLink"
             >
-              {{ talk.inviteLink }}
+              {{ layout.inviteLink }}
             </div>
 
             <button
@@ -62,6 +62,7 @@ import BaseModal from '../BaseModal.vue'
 import { useLayoutStore } from '@/stores/layout'
 import { ref } from 'vue'
 import { useTalkStore } from '@/stores/talk'
+import copy from 'copy-to-clipboard'
 
 const layout = useLayoutStore()
 const talk = useTalkStore()
@@ -72,65 +73,8 @@ const reset = () => {
   talk.inviteLink = ''
 }
 
-const selectLink = () => {
-  return
-  const range = document.createRange()
-  const selection = window.getSelection()
-  const link = document.getElementById('inviteLink') as HTMLElement
-
-  range.selectNodeContents(link)
-  selection?.removeAllRanges()
-  selection?.addRange(range)
-}
-
 const copyInviteLink = () => {
-  if (!navigator.clipboard) {
-    fallbackCopy()
-  } else {
-    navigator.clipboard.writeText(talk.inviteLink)
-  }
-
+  copy(layout.inviteLink || '')
   isCopied.value = true
-}
-
-const fallbackCopy = () => {
-  const isIos = navigator.userAgent.match(/ipad|iphone/i)
-  const textarea = document.createElement('textarea')
-
-  // create textarea
-  textarea.value = talk.inviteLink
-
-  // ios will zoom in on the input if the font-size is < 16px
-  textarea.style.fontSize = '20PX'
-  document.body.appendChild(textarea)
-
-  // select text
-  if (isIos) {
-    const range = document.createRange()
-    range.selectNodeContents(textarea)
-
-    const selection = window.getSelection() as Selection
-    selection.removeAllRanges()
-    selection.addRange(range)
-    textarea.setSelectionRange(0, 999999)
-  } else {
-    textarea.select()
-  }
-
-  // copy selection
-  document.execCommand('copy')
-
-  // cleanup
-  document.body.removeChild(textarea)
-}
-
-const shareToBuzz = () => {
-  layout[ShowControl.isShowInviteModal] = false
-  layout[ShowControl.isShowShareToBuzzModal] = true
-}
-
-const makeCard = () => {
-  layout[ShowControl.isShowInviteModal] = false
-  layout[ShowControl.isShowCommunityCardModal] = true
 }
 </script>

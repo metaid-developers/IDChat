@@ -7,29 +7,25 @@
       <!-- 占位 -->
       <!-- <div class="shrink-0 bg-white dark:bg-gray-700 w-22.5 lg:hidden"></div> -->
 
-     
-
-
       <div
         class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch relative"
       >
-      
-
         <div class="flex lg:w-[364PX] flex-col overflow-y-hidden">
-      
-
           <!-- 搜索栏 -->
-         
+
           <!---->
-       
+
           <DirectContactSearch @open-search="handleOpenSearchModal" />
-             <CreatePubkey v-model:needModifyPubkey="needModifyPubkey" v-if="userStore.isAuthorized && !userStore.last?.chatpubkey && !needModifyPubkey" />
-          <Welcome v-show="!activeCommunity?.channels?.length && layout.isShowLeftNav"></Welcome>
+          <CreatePubkey
+            v-model:needModifyPubkey="needModifyPubkey"
+            v-if="userStore.isAuthorized && !userStore.last?.chatpubkey && !needModifyPubkey"
+          />
+          <Welcome v-show="!allChannels?.length && layout.isShowLeftNav"></Welcome>
 
           <!-- 联系人列表 -->
-          <div class="overflow-y-auto" >
+          <div class="overflow-y-auto" v-show="userStore.isAuthorized">
             <DirectContactItem
-              v-for="session in talkStore.activeCommunityChannels"
+              v-for="session in allChannels"
               :key="getSessionKey(session)"
               :session="session"
             />
@@ -49,20 +45,29 @@ import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import SearchModal from './SearchModal.vue'
 import { useTalkStore } from '@/stores/talk'
-import { computed, onMounted,ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
 import CreatePubkey from './create-pubkey.vue'
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 
 import Welcome from '@/components/Welcome/welcome.vue'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 const layout = useLayoutStore()
 const talkStore = useTalkStore()
 const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
-const needModifyPubkey=ref(false)
+const needModifyPubkey = ref(false)
+const { allChannels } = storeToRefs(useSimpleTalkStore())
+
+console.log('🚀 简化聊天列表组件加载', allChannels.value)
+
+setTimeout(() => {
+  console.log('talkStore', allChannels.value)
+}, 2000)
+// console.log('talkStore', simpleTalkStore.allChannels)
 
 // 优化key生成策略，避免不必要的重新渲染
 const getSessionKey = (session: any) => {
@@ -70,19 +75,14 @@ const getSessionKey = (session: any) => {
   return session.id || session.groupId || session.metaId || session.timestamp
 }
 
+onMounted(async () => {
+  const pubkey = userStore.last.chatpubkey
+  const ecdh = await getEcdhPublickey()
+  await useSimpleTalkStore().init()
 
-const { activeCommunity } = storeToRefs(useTalkStore())
-
-
-onMounted(async()=>{
-
-   const pubkey=userStore.last.chatpubkey
-   const ecdh= await getEcdhPublickey()
-   
-    if(pubkey && pubkey !== ecdh.ecdhPubKey){
-      
-      needModifyPubkey.value=true
-    }
+  if (pubkey && pubkey !== ecdh.ecdhPubKey) {
+    needModifyPubkey.value = true
+  }
 })
 
 // const test=computed(()=>{

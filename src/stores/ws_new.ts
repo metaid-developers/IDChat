@@ -2,21 +2,20 @@ import { defineStore } from 'pinia'
 import { useJobsStore } from './jobs'
 import { useTalkStore } from './talk'
 import { useUserStore } from './user'
-import {SocketIOClient} from '@/lib/socket'
+import { SocketIOClient } from '@/lib/socket'
 import { disconnect } from 'process'
+import { useSimpleTalkStore } from './simple-talk'
 interface MessageData {
-  message: string;
-  timestamp: number;
-  [key: string]: any;
+  message: string
+  timestamp: number
+  [key: string]: any
 }
 
 interface SocketConfig {
-  url: string;
-  path: string;
-  metaid: string;
+  url: string
+  path: string
+  metaid: string
 }
-
-
 
 export const useWsStore = defineStore('ws', {
   state: () => {
@@ -40,37 +39,31 @@ export const useWsStore = defineStore('ws', {
 
   actions: {
     async init() {
-      
       const selfMetaId = this.selfMetaId
       if (!selfMetaId) return
-        const config: SocketConfig = {
+      const config: SocketConfig = {
         url: `${import.meta.env.VITE_SHOW_NOW_WS}`,
         path: '/socket-test/socket.io',
-        metaid: selfMetaId
-        };
-        this.ws=new SocketIOClient(config);
-        // this.ws=client
-         this.ws.connect();
-         
-        setTimeout(() => {
-          if (this.ws?.isConnected()) {
-            // console.log("Hello from TypeScript client!")
+        metaid: selfMetaId,
+      }
+      this.ws = new SocketIOClient(config)
+      // this.ws=client
+      this.ws.connect()
+
+      setTimeout(() => {
+        if (this.ws?.isConnected()) {
+          // console.log("Hello from TypeScript client!")
           //client.sendMessage('Hello from TypeScript client!');
-          }
-          }, 2000);
+        }
+      }, 2000)
 
-         
+      // const socket=client.getSocket()
 
-
-        // const socket=client.getSocket()
-    
-        
-
-      // 
+      //
       // const socket=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
       //       query:{
       //         metaid:selfMetaId,
-             
+
       //       },
       //     path:'/socket-test/socket.io',
       //      reconnection: true,
@@ -80,17 +73,17 @@ export const useWsStore = defineStore('ws', {
       //     randomizationFactor: 0.5,
       //      timeout: 20000,
       //     transports: ['websocket', 'polling'],
-      // }) 
+      // })
       // // const wsUri = `${import.meta.env.VITE_SHOW_NOW_HOST.replace(
       // //   // 将.space换成.io
       // //   '.space',
       // //   '.io'
       // // ).replace('https://', 'wss://')}/ws-service?metaId=${selfMetaId}`
       // this.ws =socket //new WebSocket(wsUri)
-      
+
       // //this.wsHeartBeatTimer = this._createHeartBeatTimer()
       // socket.on('connect', () => {
-      //   
+      //
       // console.log('Socket.io connected successfully', socket.id);
       // });
       // socket.on('connect_error', (error) => {
@@ -99,7 +92,7 @@ export const useWsStore = defineStore('ws', {
       // socket.on('message', this._handleReceivedMessage)
     },
 
-    disconnect(){
+    disconnect() {
       this.ws?.disconnect()
     },
 
@@ -112,44 +105,63 @@ export const useWsStore = defineStore('ws', {
     //   this.ws = null
     // },
     //MessageEvent
-    async _handleReceivedMessage(data:MessageData) {
-      
+    async _handleReceivedMessage(data: MessageData) {
       const talk = useTalkStore()
       const jobsStore = useJobsStore()
+      const simpleTalkStore = useSimpleTalkStore()
       // event.data
       const messageWrapper = JSON.parse(data)
       switch (messageWrapper.M) {
         case 'WS_SERVER_NOTIFY_GROUP_CHAT':
-          
           await talk.handleNewGroupMessage(messageWrapper.D)
-          
+          console.log('收到新消息', messageWrapper.D)
+          await simpleTalkStore.addMessage({
+            channelId: messageWrapper.D.groupId,
+            content: messageWrapper.D.content,
+            id: messageWrapper.D.pinId,
+            sender: messageWrapper.D.userInfo.metaid,
+            senderName: messageWrapper.D.userInfo.name,
+            timestamp: messageWrapper.D.timestamp,
+            senderAvatar: messageWrapper.D.userInfo.avatarImage,
+            type: messageWrapper.D.chatType,
+          })
+
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_PRIVATE_CHAT':
-          
           await talk.handleNewSessionMessage(messageWrapper.D)
+          console.log('收到新消息', messageWrapper.D)
+          await simpleTalkStore.addMessage({
+            channelId: messageWrapper.D.userInfo.metaid,
+            content: messageWrapper.D.content,
+            id: messageWrapper.D.pinId,
+            sender: messageWrapper.D.fromUserInfo.metaid,
+            senderName: messageWrapper.D.fromUserInfo.name,
+            timestamp: messageWrapper.D.timestamp,
+            senderAvatar: messageWrapper.D.fromUserInfo.avatarImage,
+            type: messageWrapper.D.chatType,
+            senderChatPublicKey: messageWrapper.D.fromUserInfo.chatPublicKey,
+          })
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_TX_TASK':
-          
           await jobsStore.handleWsMessage(messageWrapper.D)
           return
-          default:
+        default:
           break
-          
       }
     },
     //wsUri: string
     // _createHeartBeatTimer() {
     //   return setInterval(() => {
-    
+
     //     // if (this.ws?.readyState === WebSocket.CONNECTING) {
     //     //   return
     //     // }
     //     if(this.ws?.connected){
     //       return
     //     }
-            
+
     //     if (this.ws?.connected === false) {
     //       // this.ws = new WebSocket(wsUri)
     //        const selfMetaId = this.selfMetaId
@@ -157,7 +169,7 @@ export const useWsStore = defineStore('ws', {
     //       const socket=io(`${import.meta.env.VITE_SHOW_NOW_WS}/`,{
     //       query:{
     //           "metaid":selfMetaId,
-             
+
     //         },
     //       path:'/socket-test/socket.io',
     //       // reconnection: true,
@@ -167,10 +179,10 @@ export const useWsStore = defineStore('ws', {
     //       // randomizationFactor: 0.5,
     //       // timeout: 20000,
     //       // transports: ['websocket', 'polling'],
-    //   }) 
+    //   })
     //   this.ws=socket
     //     }
-    //   //   
+    //   //
     //   //   if (this.ws?.readyState === WebSocket.CLOSING || this.ws?.readyState === WebSocket.CLOSED) {
     //   //     // this.ws = new WebSocket(wsUri)
     //   //      const selfMetaId = this.selfMetaId
@@ -183,18 +195,18 @@ export const useWsStore = defineStore('ws', {
     //   //     randomizationFactor: 0.5,
     //   //     timeout: 20000,
     //   //     transports: ['websocket', 'polling'],
-    //   // }) 
+    //   // })
     //   //   }
 
     //     if(!this.ws){
-          
+
     //       //this.ws = new WebSocket(wsUri)
     //     const selfMetaId = this.selfMetaId
     //     if (!selfMetaId) return
     //       this.ws=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
     //         query:{
     //           metaid:selfMetaId,
-             
+
     //         },
     //       path:'/socket-test/socket.io',
     //       reconnection: true,
@@ -204,7 +216,7 @@ export const useWsStore = defineStore('ws', {
     //       randomizationFactor: 0.5,
     //       timeout: 20000,
     //       transports: ['websocket', 'polling'],
-    //   }) 
+    //   })
     //     }
 
     //     const heartBeat = {

@@ -290,7 +290,9 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  return talkStore?.activeCommunity?.channels?.find(item => item?.groupId === route.params.channelId || item?.metaId == route.params.channelId)
+  return talkStore?.activeCommunity?.channels?.find(
+    item => item?.groupId === route.params.channelId || item?.metaId == route.params.channelId
+  )
 })
 
 // 判断当前用户是否是频道创建者
@@ -557,14 +559,12 @@ onUnmounted(() => {
 })
 
 async function getMoreMember() {
-
- 
-  if (!currentChannelInfo.value || loading.value || searchKey.value.trim()) {
+  if (!props.modelValue || !currentChannelInfo.value || loading.value || searchKey.value.trim()) {
     return
   }
 
-  const isSession=Number(currentChannelInfo.value?.type) === 2 ? true : false
-  if(isSession) return
+  const isSession = Number(currentChannelInfo.value?.type) === 2 ? true : false
+  if (isSession) return
 
   loading.value = true
 

@@ -3,60 +3,62 @@
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
     <div class="max-w-[50%] flex items-center justify-center ">
-       <a class="mt-1 text-center  lg:hidden"   @click="layout.isShowLeftNav = true">
-     
-      <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
-          </a>
-     
+      <a class="mt-1 text-center  lg:hidden" @click="layout.isShowLeftNav = true">
+        <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
+      </a>
 
       <div class="flex shrink-0 items-center">
-        <div class=" hidden lg:block" v-if="talkStore.isActiveChannelReserved">
-          <!-- 图标：仅保留頻道拥有 -->
-          <Image
-            v-if="talkStore.activeCommunity?.icon"
-            :src="talkStore.activeCommunity.icon"
-            :customClass="'!w-8 !h-8 rounded-2xl object-cover object-center mr-2'"
-          />
+        <div class=" hidden lg:block" v-if="activeChannel?.type === 'private'">
+          <div class="flex shrink-0 items-center">
+            <UserAvatar
+              :image="activeChannel?.avatar || ''"
+              :meta-id="activeChannel?.id"
+              :name="activeChannel?.name"
+              :meta-name="''"
+              class="w-8 h-8 shrink-0 select-none hidden lg:block mr-2"
+              :disabled="true"
+            />
+            <div
+              class="leading-tight no-wrap grow whitespace-nowrap truncate pr-2 max-w-[35vw] lg:max-w-[600PX]"
+              @click="layout.isShowUserInfo = !layout.isShowUserInfo"
+            >
+              <UserName :name="activeChannel?.name" :meta-name="''" :text-class="'!text-base'" />
+              <!-- {{ activeChannel?.name }} -->
+            </div>
+          </div>
         </div>
 
         <!-- 功能頻道头 -->
-        <div class="" v-if="talkStore.isActiveChannelGeneral && talkStore.activeChannel?.nameKey">
+        <!-- <div class="" v-if="talkStore.isActiveChannelGeneral && talkStore.activeChannel?.nameKey">
           {{
             talkStore.activeChannel.id === 'DAO' && talkStore.activeCommunity?.dao
               ? talkStore.activeCommunity?.dao.daoName
               : $t(talkStore.activeChannel.nameKey)
           }}
-        </div>
+        </div> -->
 
         <template v-else>
           <div
-            class="min-w-4 min-h-2 "
+            class="min-w-4 min-h-2 text-dark-800 dark:text-white"
             :class="[
-              talkStore.isActiveChannelReserved ? metaNameClass : 'text-dark-800 dark:text-white',
-              'text-base leading-tight no-wrap grow whitespace-nowrap truncate mr-2 max-w-[40vw] lg:max-w-[600PX]',
-              isMobile ? 'cursor-pointer' : '',
+              {
+                'text-base leading-tight no-wrap grow whitespace-nowrap truncate mr-2 max-w-[40vw] lg:max-w-[600PX]': true,
+                'cursor-pointer': isMobile,
+              },
             ]"
             @click="handleChannelNameClick"
           >
-            {{
-              talkStore.isActiveChannelReserved
-                ? talkStore.activeCommunity?.name
-                : talkStore.activeChannel?.name || talkStore.activeCommunity?.name || ''
-            }}
+            {{ activeChannel?.name }}
           </div>
 
-          <template v-if="talkStore.activeChannel?.name && !talkStore.isActiveChannelReserved">
+          <template v-if="activeChannel?.type === 'group'">
             <div
               class="border-r border-solid border-dark-300 dark:border-gray-400 hidden lg:block"
             ></div>
             <div
               class="text-base leading-tight no-wrap grow whitespace-nowrap text-dark-300 dark:text-gray-400 px-2 hidden lg:block capitalize"
             >
-              {{
-                talkStore.isActiveChannelPublic
-                  ? $t('Talk.Channel.public_channel')
-                  : $t('Talk.Channel.private_channel')
-              }}
+              {{ $t('Talk.Channel.public_channel') }}
             </div>
           </template>
         </template>
@@ -86,40 +88,28 @@
           </div>
         </div> -->
         <LoginedUserOperate />
-       <div class="ml-1 cursor-pointer " v-if="userStore.isAuthorized" @click="handleChannelNameClick">
-              <Icon
-              v-if="rootStore.theme == 'light'"
-        name="right_bars_4"
-       
-        class="w-[24PX] h-[20PX]  mx-2 shrink-0 "
-       
-         
-      />
+        <div
+          class="ml-1 cursor-pointer "
+          v-if="userStore.isAuthorized && activeChannel?.type === 'group'"
+          @click="handleChannelNameClick"
+        >
+          <Icon
+            v-if="rootStore.theme == 'light'"
+            name="right_bars_4"
+            class="w-[24PX] h-[20PX]  mx-2 shrink-0 "
+          />
 
-             <Icon
-            v-else
-        name="right_bars_5"
-       
-        class="w-[24PX] h-[20PX]  mx-2 shrink-0 "
-       
-         
-      />
-       
-     
-      
-       </div>
+          <Icon v-else name="right_bars_5" class="w-[24PX] h-[20PX]  mx-2 shrink-0 " />
+        </div>
       </div>
 
-      <div
-        class="ml-1 hidden lg:flex lg:items-center group"
-        v-if="!talkStore.isActiveChannelGeneral && talkStore.activeChannel?.id"
-      >
+      <div class="ml-1 hidden lg:flex lg:items-center group" v-if="activeChannel?.type === 'group'">
         <div
           class="text-xs text-dark-300 dark:text-gray-400 bg-dark-100 dark:bg-gray-800 px-3 py-1 rounded"
         >
-          {{ shortenMetaId(talkStore.activeChannel.id) }}
+          {{ shortenMetaId(activeChannel.id) }}
         </div>
-        <button
+        <!-- <button
           class=" w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
         >
           <Icon
@@ -127,7 +117,7 @@
             class="w-3 h-3 p-1 box-content text-gray-500  cursor-pointer"
             @click="goCheckTxId(currentChannel.val?.txId, currentChannel.val?.chain)"
           />
-        </button>
+        </button> -->
 
         <button
           class="mr-5 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
@@ -201,23 +191,25 @@ import { isMobile, useRootStore } from '@/stores/root'
 import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
 import { useWsStore } from '@/stores/ws_new'
 import { useRoute, useRouter } from 'vue-router'
-import {getOneChannel} from '@/api/talk'
+import { getOneChannel } from '@/api/talk'
 import { Channel } from '@/@types/talk'
 import { ChatChain } from '@/enum'
 import { useUserStore } from '@/stores/user'
 import { Back } from '@element-plus/icons-vue'
 import lightBar from '@/assets/images/lightBar.png'
 import darkBar from '@/assets/images/darkBar.png'
-
+import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { storeToRefs } from 'pinia'
 
 const talkStore = useTalkStore()
+const { activeChannel } = storeToRefs(useSimpleTalkStore())
 const layout = useLayoutStore()
-const userStore=useUserStore()
+const userStore = useUserStore()
 const WS = useWsStore()
-const route=useRoute()
-const router=useRouter()
+const route = useRoute()
+const router = useRouter()
 const rootStore = useRootStore()
-const currentChannelId=ref(route.params?.channelId || '')
+const currentChannelId = ref(route.params?.channelId || '')
 
 const currentChannel: { val: Channel | Object } = reactive({
   val: {},
@@ -227,62 +219,42 @@ const hasWS = computed(() => {
   return !!WS?.ws
 })
 
-const isAtMe=computed(()=>{
-
-  return  route.name == 'talkAtMe'
+const isAtMe = computed(() => {
+  return route.name == 'talkAtMe'
 })
 
-watch(()=>route.params,(newVal)=>{
-  
-  if(newVal){
-    currentChannelId.value=newVal.channelId as string
-    if(isAtMe.value){
-      return
-    }
-    
-    getOneChannel(currentChannelId.value as string).then((res)=>{
-    currentChannel.val=res
-})
-  }
-}
-)
+// watch(
+//   () => route.params,
+//   newVal => {
+//     if (newVal) {
+//       currentChannelId.value = newVal.channelId as string
+//       if (isAtMe.value) {
+//         return
+//       }
 
-getOneChannel(currentChannelId.value as string).then(res => {
-  currentChannel.val = res
-})
+//       getOneChannel(currentChannelId.value as string).then(res => {
+//         currentChannel.val = res
+//       })
+//     }
+//   }
+// )
 
-  if(!isAtMe.value){
-    
-      getOneChannel(currentChannelId.value as string).then((res)=>{
+// getOneChannel(currentChannelId.value as string).then(res => {
+//   currentChannel.val = res
+// })
 
-    currentChannel.val=res
-})
-    }
-
-
-
-
-
-
+// if (!isAtMe.value) {
+//   getOneChannel(currentChannelId.value as string).then(res => {
+//     currentChannel.val = res
+//   })
+// }
 
 const shortenMetaId = (id: string) => {
   return id.substring(0, 6) + '...' + id.substring(id.length - 6)
 }
 
-const createCommunity = () => {
-  console.log('createCommunity')
-}
-
-const metaNameClass = computed(() => {
-  return talkStore.activeCommunitySymbolInfo.suffix === 'eth' ? 'meta-name ens' : 'meta-name'
-})
-
 const popInvite = () => {
-  talkStore.inviteLink = `${location.origin}/talk/channels/${talkStore.activeCommunitySymbol}/${talkStore.activeChannelId}`
-  talkStore.invitingChannel = {
-    community: talkStore.activeCommunity,
-    channel: talkStore.activeChannel,
-  }
+  layout.inviteLink = `${location.origin}/talk/channels/public/${activeChannel.value?.id}`
   layout.isShowInviteModal = true
 }
 
