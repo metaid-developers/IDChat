@@ -106,7 +106,6 @@ export const useWsStore = defineStore('ws', {
     // },
     //MessageEvent
     async _handleReceivedMessage(data: MessageData) {
-      const talk = useTalkStore()
       const jobsStore = useJobsStore()
       const simpleTalkStore = useSimpleTalkStore()
       // event.data

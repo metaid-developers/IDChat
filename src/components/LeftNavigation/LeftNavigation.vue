@@ -121,7 +121,6 @@ import { useI18n } from 'vue-i18n'
 import { useWsStore } from '@/stores/ws_new'
 import { Community } from '@/@types/talk'
 const layout = useLayoutStore()
-const talk = useTalkStore()
 const ws = useWsStore()
 
 const userStore = useUserStore()

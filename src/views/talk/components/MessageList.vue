@@ -432,7 +432,7 @@ const hasTooFewMessages = computed(() => {
 
 const scrollToMessagesBottom = async () => {
   if (unReadCount.value > 0) {
-    await simpleTalk.loadNewestMessages()
+    await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
     await nextTick()
     await sleep(100)
     listContainer.value.scrollTop = 0

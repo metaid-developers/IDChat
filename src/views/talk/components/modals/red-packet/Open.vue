@@ -166,13 +166,14 @@ import { debounce, sleep } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
 import { RedPacketDistributeType } from '@/enum'
 import { GetNFT } from '@/api/aggregation'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 
 const layout = useLayoutStore()
 const modals = useModalsStore()
 
 const message = modals.openRedPacket?.message
 const i18n = useI18n()
-const talk = useTalkStore()
+const simpleTalk = useSimpleTalkStore()
 const user = useUserStore()
 const remains = ref([])
 const requireNft = ref()
@@ -224,10 +225,10 @@ const tryOpenRedPacket = async () => {
   try {
     layout.isShowLoading = true
     const params: any = {
-      groupId: talk.activeChannelId,
+      groupId: simpleTalk.activeChannelId,
       pinId: `${message?.txId}i0`,
-      metaId: talk.selfMetaId,
-      address: talk.selfAddress,
+      metaId: simpleTalk.selfMetaId,
+      address: simpleTalk.selfAddress,
     }
     const redPacketType = redPacket.value?.requireType
     if (redPacketType === '2') {
@@ -247,10 +248,10 @@ const tryOpenRedPacket = async () => {
 }
 
 const viewDetails = async () => {
-  talk.addReceivedRedPacketId(message?.txId)
+  simpleTalk.addReceivedRedPacketId(message?.txId)
 
   const redPacketInfo = await getOneRedPacket({
-    groupId: talk.activeChannelId,
+    groupId: simpleTalk.activeChannelId,
     pinId: `${message?.txId}i0`,
   })
 
@@ -267,7 +268,7 @@ const closeModal = () => {
 }
 
 onMounted(async () => {
-  const groupId = talk.activeChannelId
+  const groupId = simpleTalk.activeChannelId
   const pinId = `${message?.txId}i0`
   const params: any = {
     groupId,
@@ -275,7 +276,7 @@ onMounted(async () => {
   }
   const redPacketType = redPacket.value?.requireType
   if (redPacketType === '2') {
-    params.address = talk.selfAddress
+    params.address = simpleTalk.selfAddress
   } else if (redPacketType === '2001' || redPacketType === '2002') {
     // params.address = user.user?.evmAddress
   }

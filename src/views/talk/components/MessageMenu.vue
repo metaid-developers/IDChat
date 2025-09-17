@@ -35,6 +35,7 @@ import { isMobile } from '@/stores/root'
 import { ElMessage } from 'element-plus'
 import BTC from '@/assets/images/btc.png'
 import MVC from '@/assets/images/icon_mvc.png'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 const i18n = useI18n()
 
 const props = defineProps([
@@ -52,11 +53,11 @@ const emit = defineEmits<{
   (e: 'toBuzz', data: ShareChatMessageData): void
 }>()
 
-const talk = useTalkStore()
+const simpleTalk = useSimpleTalkStore()
 
 // 使用全局状态管理菜单显示
 const showMenu = computed(() => {
-  return isMobile ? talk.activeMessageMenuId === props.messageId : false
+  return isMobile ? simpleTalk.activeMessageMenuId === props.messageId : false
 })
 
 const isText = computed(
@@ -167,8 +168,8 @@ const actions = computed(() => {
 
         if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
           data = {
-            communityId: '', // talk.activeCommunityId,
-            groupId: talk.activeChannelId,
+            communityId: '', // simpleTalk.activeCommunityId,
+            groupId: simpleTalk.activeChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -176,7 +177,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
-              chain:message.chain || 'mvc',
+              chain: message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -185,7 +186,7 @@ const actions = computed(() => {
         } else if (containsString(props.message.protocol, NodeName.SimpleFileGroupChat)) {
           data = {
             communityId: '', // talk.activeCommunityId,
-            groupId: talk.activeChannelId,
+            groupId: simpleTalk.activeChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -193,7 +194,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
-                chain:message.chain || 'mvc',
+              chain: message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -202,7 +203,7 @@ const actions = computed(() => {
         } else {
           data = {
             communityId: '', // talk.activeCommunityId,
-            groupId: talk.activeChannelId,
+            groupId: simpleTalk.activeChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -210,7 +211,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
-                chain:message.chain || 'mvc',
+              chain: message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -294,7 +295,7 @@ const handleButtonClick = (event: MouseEvent, action: any) => {
   }
 
   // 立即关闭菜单
-  talk.clearActiveMessageMenu()
+  simpleTalk.clearActiveMessageMenu()
 }
 
 // 处理动作点击（保留，但不再使用）
@@ -309,12 +310,11 @@ const handleAction = (action: any) => {
   }
 
   // 立即关闭菜单
-  talk.clearActiveMessageMenu()
+  simpleTalk.clearActiveMessageMenu()
 }
 
 // 移除事件监听器
 onUnmounted(() => {
-  
   // 不再需要移除全局点击监听器
 })
 </script>
