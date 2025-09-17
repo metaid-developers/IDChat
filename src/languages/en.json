@@ -1413,5 +1413,6 @@
     "failed": "Image download failed",
     "error": "An error occurred during download"
   },
-  "btcSameAsMvcError": "The current Metalet BTC address does not match the MVC address. Please switch to a BTC address that matches the MVC address before proceeding"
+  "btcSameAsMvcError": "The current Metalet BTC address does not match the MVC address. Please switch to a BTC address that matches the MVC address before proceeding",
+  "redpack_claim_over": "The redpacket has been claimed over"
 }

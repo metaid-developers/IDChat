@@ -243,7 +243,8 @@ const tryOpenRedPacket = async () => {
   } catch (error) {
     
     layout.isShowLoading = false
-    ElMessage.error((error as any).toString())
+    layout.isShowRedPacketOpenModal=false
+    ElMessage.error(`${i18n.t('redpack_claim_over')}`)
   }
 }
 

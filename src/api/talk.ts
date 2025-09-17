@@ -14,6 +14,11 @@ export const TESTGROUPID='525b620f60330de2a6943e49d98dc12a4f56444219335c8e9278e8
 const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
   responseHandel: response => {
     return new Promise((resolve, reject) => {
+      if(response?.status && response?.status == 500){
+        reject(response.data)
+        return
+      }
+
       if (response?.data && typeof response.data?.code === 'number') {
         
         
@@ -27,6 +32,11 @@ const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
       }
     })
   },
+  errorHandel:((error)=>{
+    return new Promise((resolve,reject)=>{
+      reject(error)
+    })
+  })
 }).request
 
 
@@ -617,7 +627,7 @@ export const grabRedPacket = async (params: {
   return TalkApi.post(`${path}`, params)
     .then(res => {
       if (res?.code == 0) {
-      
+       
         return res.data
       } else {
         throw new Error(res.data)
