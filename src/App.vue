@@ -257,10 +257,7 @@ onMounted(async () => {
 
   window.metaidwallet?.on('LoginSuccess',async(data)=>{
     
-      console.log("调用成功",data)
-      ElMessage.success(connectionStore.last.status)
 
-    
   if(rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized ){
        await connectMetalet()
 
