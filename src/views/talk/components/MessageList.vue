@@ -29,7 +29,12 @@
         </div> -->
       </div>
   </div>
+   <div class="broadcast-nav" v-if="talk.activeChannel?.subChannels?.length">
+    <BroadcastChannelNav></BroadcastChannelNav>
+
+   </div>
     <div class="" >
+     
       <div class="flex flex-col-reverse space-y-2 space-y-reverse">
         <!-- 群聊 -->
         <template v-if="talk.activeChannelType === 'group'">
@@ -146,6 +151,7 @@ import { useRouter } from 'vue-router'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
+import BroadcastChannelNav from './direct-contact/broadcast-channel-nav.vue'
 const user = useUserStore()
 const talk = useTalkStore()
 const layout = useLayoutStore()

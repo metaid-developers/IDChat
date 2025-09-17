@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <BaseModal
     v-model="layout[ShowControl.isShowCreateGroupTypeModal]"
     :extraCloseEvent="form.reset"
@@ -46,27 +46,7 @@
             </div>
           </div>
 
-          <!-- <div class="mt-6">
-            <SwitchGroup>
-              <div class="flex items-center gap-x-3">
-                <Switch
-                  v-model="form.adminOnly"
-                  :class="form.adminOnly ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-900'"
-                  class="relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
-                >
-                  <span
-                    aria-hidden="true"
-                    :class="form.adminOnly ? 'translate-x-6' : 'translate-x-0'"
-                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-600 shadow-lg ring-0 transition duration-200 ease-in-out"
-                  ></span>
-                </Switch>
-
-                <SwitchLabel class="text-dark-400 dark:text-gray-200 text-sm">
-                  {{ $t('Talk.Modals.admin_only') }}
-                </SwitchLabel>
-              </div>
-            </SwitchGroup>
-          </div> -->
+        
         </div>
 
         <div class="flex items-end justify-end grow lg:mt-8">
@@ -84,9 +64,9 @@
       </div>
     </template>
   </BaseModal>
-</template>
+</template> -->
 
-<script lang="ts" setup>
+<!-- <script lang="ts" setup>
 import { ChannelPublicityType, GroupChannelType } from '@/enum'
 import { useChannelFormStore } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
@@ -127,4 +107,4 @@ function createChannel(type:CreateGroupType){
 }
 
 
-</script>
+</script> -->

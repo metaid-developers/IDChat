@@ -20,6 +20,11 @@
       :key="($route.params.channelId as string)"
     />
 
+     <SubChannelDrawer
+      v-model="layout.isShowSubChannelDrawer"
+      :key="1"
+    />
+
     <!-- modals -->
     <PasswordModal v-if="layout.isShowPasswordModal" />
     <RequireNftModal v-if="layout.isShowRequireNftModal" />
@@ -41,7 +46,8 @@
     <!-- <NoMetaNameModal v-if="layout.isShowNoMetaNameModal" /> -->
     <leaveCommunityModal v-if="layout.isShowLeaveCommunityModal" />
     <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
-    <CreateGroupTypeModal v-if="layout.isShowCreateGroupTypeModal" />
+    <CreateBroadcastChannelModal v-if="layout.isShowCreateBroadcastChannelModal" />
+    <!-- <CreateGroupTypeModal v-if="layout.isShowCreateGroupTypeModal" /> -->
   </div>
 </template>
 
@@ -57,6 +63,7 @@ import ChannelHeader from './components/ChannelHeader.vue'
 import CommunityInfo from './components/CommunityInfo.vue'
 import ChannelMemberListWrap from './components/ChannelMemberListWrap.vue'
 import ChannelMemberListDrawer from './components/ChannelMemberListDrawer.vue'
+import SubChannelDrawer from './components/SubChannelDrawer.vue'
 import PasswordModal from './components/modals/consensus/Password.vue'
 import CommunitySettingsModal from './components/modals/community/settings/Index.vue'
 import RequireNftModal from './components/modals/consensus/RequireNft.vue'
@@ -76,7 +83,8 @@ import NoMetaNameModal from './components/modals/community/NoMetaName.vue'
 import leaveCommunityModal from './components/modals/community/Leave.vue'
 import DirectContactList from './components/direct-contact/List.vue'
 import CreatePublicChannelModal from './components/modals/CreatePublicChannelModal.vue'
-import CreateGroupTypeModal from './components/modals/CreateGroupTypeModal.vue'
+import CreateBroadcastChannelModal from './components/modals/CreateBroadcastChannelModal.vue'
+//import CreateGroupTypeModal from './components/modals/CreateGroupTypeModal.vue'
 import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
 

@@ -11,6 +11,7 @@ import {
   SdkPayType,
   ChatType,
   ChatChain,
+  ChannelMode
 } from '@/enum'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
@@ -36,7 +37,7 @@ import { SHA256 } from 'crypto-js'
 import { toRaw } from 'vue'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
-import { MetaFlag, useBulidTx } from '@/hooks/use-build-tx'
+import { MetaFlag, useBulidTx,Operation } from '@/hooks/use-build-tx'
 import { AttachmentItem } from '@/@types/hd-wallet'
 
 import { useChainStore } from '@/stores/chain'
@@ -47,6 +48,7 @@ import { createPinWithBtc } from './pin'
 import { generateLuckyBagCode } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
+import i18n from './i18n'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -679,6 +681,181 @@ export const createChannel = async (
   } catch (err) {
     console.log(err)
     ElMessage.error('创建群组失败')
+    return { status: 'failed' }
+  }
+}
+
+export const createBroadcastChannel = async (
+  groupId: string,
+  channelId: string = '',
+  channelName: string = '',
+  channelIcon: string = '',
+  channelNote:string = '',
+) => {
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
+
+
+ 
+
+  const dataCarrier = {
+    groupId,
+    channelId:channelId ? channelId : '',
+    channelName,
+    channelIcon,
+    channelNote,
+    channelType:ChannelMode.broadcast,
+  }
+
+
+  console.log({ dataCarrier })
+  debugger
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleGroupChannel,
+    body: dataCarrier,
+   
+  }
+
+  // 3. 发送节点
+  try {
+    const { protocol, body } = node
+    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const res = await buildTx.createBroadcastChannel({
+      protocol,
+      body,
+      isBroadcast: true,
+    })
+    console.log('res', res)
+
+    console.log({ res })
+
+    if (res === null) {
+      return { status: 'canceled' }
+    }
+
+    if (chainStore.state.currentChain == ChatChain.btc) {
+      return { status: 'success',channelId:channelId ? channelId : res?.revealTxIds[0] }
+    } else {
+      return { status: 'success',channelId:channelId ? channelId : res?.txids[0] }
+    }
+  } catch (err) {
+    console.log(err)
+    ElMessage.error(`${i18n.global.t('create_broadcast_fail')}`)
+    return { status: 'failed' }
+  }
+}
+
+
+export const setChannelAdmins = async (
+  groupId: string,
+  admins:string[],
+ 
+) => {
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
+
+
+ 
+
+  const dataCarrier = {
+    groupId,
+    admins
+  }
+
+
+  console.log({ dataCarrier })
+  debugger
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleGroupAdmin,
+    body: dataCarrier,
+  
+    
+  }
+
+  // 3. 发送节点
+  try {
+    const { protocol, body} = node
+    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const res = await buildTx.setChannelAdmin({
+      protocol,
+      body,
+      isBroadcast: true,
+    })
+    console.log('res', res)
+
+    console.log({ res })
+
+    if (res === null) {
+      return { status: 'canceled' }
+    }
+
+    if (chainStore.state.currentChain == ChatChain.btc) {
+      return { status: 'success',txid:res?.revealTxIds[0] }
+    } else {
+      return { status: 'success',txid: res?.txids[0] }
+    }
+  } catch (err) {
+    console.log(err)
+    ElMessage.error(`${i18n.global.t('set_admin_fail')}`)
+    return { status: 'failed' }
+  }
+}
+
+
+export const setChannelWhiteList = async (
+  groupId: string,
+  users:string[],
+ 
+) => {
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
+
+
+ 
+
+  const dataCarrier = {
+    groupId,
+    users
+  }
+
+
+  console.log({ dataCarrier })
+  debugger
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleGroupWhitelist,
+    body: dataCarrier,
+   
+    
+  }
+
+  // 3. 发送节点
+  try {
+    const { protocol, body } = node
+    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const res = await buildTx.setChannelWhiteList({
+      protocol,
+      body,
+      isBroadcast: true,
+    })
+    console.log('res', res)
+
+    console.log({ res })
+
+    if (res === null) {
+      return { status: 'canceled' }
+    }
+
+    if (chainStore.state.currentChain == ChatChain.btc) {
+      return { status: 'success',txid:res?.revealTxIds[0] }
+    } else {
+      return { status: 'success',txid: res?.txids[0] }
+    }
+  } catch (err) {
+    console.log(err)
+    ElMessage.error(`${i18n.global.t('set_whitelist_fail')}`)
     return { status: 'failed' }
   }
 }

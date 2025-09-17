@@ -11,10 +11,11 @@ import {
   getOneChannel,
   getChannelMembers,
   GetUserEcdhPubkeyForPrivateChat,
-  BatchGetUsersEcdhPubkeyForPrivateChat
+  BatchGetUsersEcdhPubkeyForPrivateChat,
+  getGroupChannelList
 } from '@/api/talk'
 
-import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName } from '@/enum'
+import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName,MemberRule } from '@/enum'
 import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { useLayoutStore } from './layout'
@@ -55,10 +56,12 @@ export const useTalkStore = defineStore('talk', {
     return {
       communities: [{ id: 'public' }, { id: '@me' }] as Community[],
       members: [] as any,
-
       activeCommunityId: '' as string,
       activeChannelId: '' as string,
-      
+      selfChannelRule:[] as Array<{
+        channelId:string,
+        rule:MemberRule
+      }>,
       generalChannels: [
         {
           id: 'announcements',
@@ -117,6 +120,14 @@ export const useTalkStore = defineStore('talk', {
     selfAddress(): string {
       const userStore = useUserStore()
       return userStore.last?.address || ''
+    },
+
+
+      getMychannelRule() {
+      return (channeId: string) => {
+        const ruleItem=this.selfChannelRule.find(item=>item.channelId == channeId)
+        return ruleItem ? ruleItem.rule : MemberRule.Normal
+      }
     },
 
     realCommunities(state) {
@@ -355,6 +366,23 @@ export const useTalkStore = defineStore('talk', {
 
   actions: {
 
+    updateMyChannelRule(channelId:string,rule:MemberRule){
+      const ruleItem=this.selfChannelRule.find(item=>item.channelId == channelId)
+      if(ruleItem){
+         this.selfChannelRule.forEach(((item)=>{
+        if(item.channelId == channelId){
+          item.rule=rule
+        }
+      }))
+      }else{
+        this.selfChannelRule.push({
+        channelId:channelId,
+        rule:rule
+        })
+      }
+      
+    },
+
     async checkUserOpenPrivate(metaid:string){
          
       
@@ -489,6 +517,18 @@ export const useTalkStore = defineStore('talk', {
         this.initCommunityChannelIds()
 
         // 只保存頻道id
+        if(publicChannel.length){
+          for(let channel of publicChannel){
+              const subChannleList= await getGroupChannelList({
+              groupId:channel.groupId
+            })
+            const parentsIds=subChannleList.map((sub)=>sub.groupId)
+            if(channel.groupId == parentsIds[0]){
+              channel.subChannels=subChannleList
+            }
+          }
+        }
+
         const publicChannelIds = publicChannel.map((channel: Channel) => channel.id)
         const privateChannelIds = priviteChannel.map((channel: Channel) => channel.metaId)
         // const channelIds = allChannel.map((channel: any) => channel.id)
@@ -496,7 +536,12 @@ export const useTalkStore = defineStore('talk', {
         //
         if (communityId == 'public') {
           this.communityChannelIds[communityId] = publicChannelIds.filter(item => item)
+
+          
           this.communityChannelIds['@me'] = privateChannelIds.filter(item => item.length == 64)
+
+
+
         } else if (communityId == '@me') {
           this.communityChannelIds[communityId] = privateChannelIds.filter(
             item => item.length == 64
@@ -509,7 +554,7 @@ export const useTalkStore = defineStore('talk', {
           JSON.stringify(this.communityChannelIds)
         )
       }
-
+      debugger
       return activeChannelList
     },
 
@@ -615,13 +660,13 @@ export const useTalkStore = defineStore('talk', {
       layout.isShowChannelAcceptInviteModal = true
       // this.communityStatus ='inviting' //'inviting'
 
-      getChannelMembers({ groupId: routeChannelId })
-        .then((members: any) => {
-          this.members = members
-        })
-        .catch(() => {
-          ElMessage.error('获取群组成员失败')
-        })
+      // getChannelMembers({ groupId: routeChannelId })
+      //   .then((members: any) => {
+      //     this.members = members
+      //   })
+      //   .catch(() => {
+      //     ElMessage.error('获取群组成员失败')
+      //   })
 
       const isGuest = true
 
@@ -636,15 +681,15 @@ export const useTalkStore = defineStore('talk', {
       this.activeCommunityId = routeCommunityId
 
       if (!isAtMe) {
-        getChannelMembers({
-          groupId: routeChannelId,
-        })
-          .then((members: any) => {
-            this.members = members
-          })
-          .catch(() => {
-            ElMessage.error('获取群聊成员失败')
-          })
+        // getChannelMembers({
+        //   groupId: routeChannelId,
+        // })
+        //   .then((members: any) => {
+        //     this.members = members
+        //   })
+        //   .catch(() => {
+        //     ElMessage.error('获取群聊成员失败')
+        //   })
 
         // getCommunityMembers(routeCommunityId)
         //   .then((members: any) => {

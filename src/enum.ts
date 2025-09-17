@@ -1,5 +1,26 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
+export enum MemberRule{
+  Owner=0,
+  Admin=1,
+  Speaker=2,
+  Normal=3
+}
+
+export enum RuleOp{
+  CanSpeak=0,
+  SetAdmin=1,
+  RemoveAdmin=2,
+  SetSpeaker=3,
+  RemoveSpeaker=4,
+  DeleteMember=5,
+  Normal=6
+}
+
+export enum ChannelMode{
+  public = 0,
+  broadcast = 1
+}
 
 export enum CreateGroupType{
   public='public',
@@ -346,6 +367,9 @@ export enum NodeName {
   FtIssue = 'FtIssue',
   FtTransfer = 'FtTransfer',
   FtMerge = 'merge',
+  SimpleGroupChannel='simplegroupchannel',
+  SimpleGroupAdmin='simplegroupadmin',
+  SimpleGroupWhitelist='simplegroupwhitelist',
   SimpleRedEnvelope = 'Simpleredenvelope',
   SimpleGroupLuckyBag = 'simplegroupluckybag',
   OpenRedenvelope = 'openredenvelope',
@@ -429,6 +453,7 @@ export enum GroupChannelType {
 export enum ShowControl {
   isShowCreateCommunityModal = 'isShowCreateCommunityModal',
   isShowCreatePublicChannelModal = 'isShowCreatePublicChannelModal',
+  isShowCreateBroadcastChannelModal='isShowCreateBroadcastChannelModal',
   isShowCreateGroupTypeModal = 'isShowCreateGroupTypeModal',
   isShowCreateConsensualChannelModal = 'isShowCreateConsensualChannelModal',
   isShowCreateGeneralChannelModal = 'isShowCreateGeneralChannelModal',

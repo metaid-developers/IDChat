@@ -1,3 +1,5 @@
+import { string } from "yup"
+
 declare interface GetHonorsResItem {
   codehash: string
   genesis: string
@@ -270,6 +272,8 @@ declare interface MetaNameSearchResult {
   infos: Partial<MetaNameInfo>
   txid: string
 }
+
+
 
 declare interface MetaNameItem {
   codeHash: string
