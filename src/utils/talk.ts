@@ -47,6 +47,7 @@ import { createPinWithBtc } from './pin'
 import { generateLuckyBagCode } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -1647,7 +1648,7 @@ export function decryptedMessage(
   publicKeyStr = '' //私聊获取协商密钥使用
 ) {
   if (!content) return
-  const talk = useTalkStore()
+  const simpleTalk = useSimpleTalkStore()
 
   if (encryption === '0') {
     // return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
@@ -1662,12 +1663,12 @@ export function decryptedMessage(
   }
 
   if (isSession) {
-    if (!talk.activeChannel) return ''
+    if (!simpleTalk.activeChannel) return ''
     // const credentialsStore = useCredentialsStore()
     // const connectionStore = useConnectionStore()
     const ecdhsStore = useEcdhsStore()
     // console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
-    const ecdhPubkey = publicKeyStr ? publicKeyStr : talk.activeChannel.publicKeyStr
+    const ecdhPubkey = publicKeyStr ? publicKeyStr : simpleTalk.activeChannel!.publicKeyStr
     let ecdh = ecdhsStore.getEcdh(ecdhPubkey)
 
     try {
@@ -1678,6 +1679,6 @@ export function decryptedMessage(
       throw new Error((error as any).toString())
     }
   } else {
-    return decrypt(content, secretKeyStr || talk.activeChannelId.substring(0, 16))
+    return decrypt(content, secretKeyStr || simpleTalk.activeChannelId.substring(0, 16))
   }
 }

@@ -78,7 +78,7 @@
                 </h3>
                 <div
                   v-for="contact in filteredContacts"
-                  :key="'local-' + contact.groupId"
+                  :key="'local-' + contact.id"
                   class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer rounded-lg transition-colors"
                   @click="selectContact(contact)"
                 >
@@ -87,18 +87,18 @@
                       class="rounded-3xl w-12 h-12 shrink-0 relative bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
                     >
                       <ChatIcon
-                        :src="contact?.roomIcon || ''"
-                        :alt="contact?.roomName"
+                        :src="contact?.avatar || ''"
+                        :alt="contact?.name"
                         :customClass="'w-12 h-12 rounded-full'"
                       />
                     </div>
                     <div class="flex flex-col grow overflow-hidden">
                       <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {{ contact.roomName }}
+                        {{ contact.name }}
                       </div>
                       <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {{ $t('groupId') }}:{{
-                          contact.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2')
+                        {{ contact.type === 'group' ? 'GroupId' : 'MetaID' }}:{{
+                          contact.id.replace(/(\w{5})\w+(\w{3})/, '$1...$2')
                         }}
                       </div>
                     </div>
@@ -192,7 +192,7 @@
               <div class="space-y-1">
                 <div
                   v-for="contact in recentContacts"
-                  :key="contact.groupId"
+                  :key="contact.id"
                   class="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                   @click="selectContact(contact)"
                 >
@@ -200,19 +200,17 @@
                     class="rounded-3xl w-12 h-12 shrink-0 relative bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
                   >
                     <ChatIcon
-                      :src="contact?.roomIcon || ''"
-                      :alt="contact?.roomName"
+                      :src="contact?.avatar || ''"
+                      :alt="contact?.name"
                       :customClass="'w-12 h-12 rounded-full'"
                     />
                   </div>
                   <div class="flex flex-col grow overflow-hidden">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {{ contact.roomName }}
+                      {{ contact.name }}
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {{ $t('groupId') }}:{{
-                        contact.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2')
-                      }}
+                      {{ $t('groupId') }}:{{ contact.id.replace(/(\w{5})\w+(\w{3})/, '$1...$2') }}
                     </div>
                   </div>
                 </div>
@@ -233,11 +231,10 @@ import { useI18n } from 'vue-i18n'
 import ChatIcon from '@/components/ChatIcon/ChatIcon.vue'
 import { router } from '@/router'
 import { useLayoutStore } from '@/stores/layout'
-import {
-  GetUserEcdhPubkeyForPrivateChat,
-} from '@/api/talk'
+import { GetUserEcdhPubkeyForPrivateChat } from '@/api/talk'
 import { useEcdhsStore } from '@/stores/ecdh'
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { getEcdhPublickey } from '@/wallet-adapters/metalet'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 const layout = useLayoutStore()
 
 interface RemoteSearchGroup {
@@ -275,7 +272,8 @@ export default defineComponent({
   },
   emits: ['update:modelValue', 'select'],
   setup(props, { emit }) {
-    const { activeCommunity } = storeToRefs(useTalkStore())
+    const { channels } = storeToRefs(useSimpleTalkStore())
+    const simpleTalkStore = useSimpleTalkStore()
     const { t } = useI18n()
 
     const searchInput = ref<HTMLInputElement>()
@@ -283,8 +281,8 @@ export default defineComponent({
     const remoteGroups = ref<RemoteSearchGroup[]>([])
     const isSearching = ref(false)
     const searchError = ref('')
-    const i18n=useI18n()
-    const ecdhsStore=useEcdhsStore()
+    const i18n = useI18n()
+    const ecdhsStore = useEcdhsStore()
     const isVisible = computed({
       get: () => props.modelValue,
       set: value => emit('update:modelValue', value),
@@ -359,21 +357,21 @@ export default defineComponent({
 
     // 获取最近联系人 - 从当前社区的频道中获取
     const recentContacts = computed(() => {
-      if (!activeCommunity.value) return []
-      return activeCommunity.value.channels?.slice(0, 5) || []
+      if (!channels.value) return []
+      return channels.value?.slice(0, 5) || []
     })
 
     // 本地联系人过滤
     const filteredContacts = computed(() => {
       if (!searchKeyword.value.trim()) return []
-      if (!activeCommunity.value) return []
+      if (!channels.value) return []
 
       const keyword = searchKeyword.value.toLowerCase()
       return (
-        activeCommunity.value.channels?.filter(
+        channels.value?.filter(
           contact =>
-            contact.roomName?.toLowerCase().includes(keyword) ||
-            contact.groupId?.toLowerCase().includes(keyword)
+            contact.name?.toLowerCase().includes(keyword) ||
+            contact.id?.toLowerCase().includes(keyword)
         ) || []
       )
     })
@@ -384,7 +382,11 @@ export default defineComponent({
       layout.$patch({
         isShowLeftNav: false,
       })
-      router.push(`/talk/channels/public/${contact?.groupId}`)
+      if (contact.type === 'private') {
+        router.push(`/talk/@me/${contact.id}`)
+      } else {
+        router.push(`/talk/channels/public/${contact.id}`)
+      }
       closeModal()
     }
 
@@ -402,29 +404,8 @@ export default defineComponent({
       layout.$patch({
         isShowLeftNav: false,
       })
-      if(group.type === 'user') {
+      if (group.type === 'user') {
         router.push(`/talk/@me/${group.metaId}`)
-        // GetUserEcdhPubkeyForPrivateChat(group?.metaId).then((userInfo)=>{
-        //   if(!userInfo.chatPublicKey){
-        //      return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
-        //   }
-
-        //   let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
-        // if (!ecdh) {
-            
-        //      getEcdhPublickey(userInfo.chatPublicKey).then((res)=>{
-           
-        //        ecdhsStore.insert(res, res?.externalPubKey)
-        //          return router.push(`/talk/@me/${group.metaId}`)
-        //     })
-           
-        // }
-
-        
-
-     
-        // })
-        
       } else {
         router.push(`/talk/channels/public/${group?.groupId}`)
       }
@@ -451,8 +432,8 @@ export default defineComponent({
       selectContact,
       selectRemoteGroup,
       closeModal,
-       i18n,
-     ecdhsStore
+      i18n,
+      ecdhsStore,
     }
   },
 })

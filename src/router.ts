@@ -1,15 +1,11 @@
 import { createRouter, createWebHistory, RouterView } from 'vue-router'
-import {
-  getChannels,
-  getAllChannels
-} from '@/api/talk'
+import { getChannels, getAllChannels } from '@/api/talk'
 const NotFoundPage = () => import('@/views/404.vue')
 //
 import { ElMessage } from 'element-plus'
 import i18n from '@/utils/i18n'
 import { useRootStore } from './stores/root'
 import { useUserStore } from './stores/user'
-import { useTalkStore } from './stores/talk'
 import { GetBandProposalList } from '@/api/strapi'
 import { useLayoutStore } from './stores/layout'
 //import.meta.env.VITE_BASE_URL
@@ -48,7 +44,7 @@ export const router = createRouter({
       //        const myChannelList=await getChannels({
       //         metaId:userStore.last.metaid
       //         })
-      //         
+      //
 
       //          if(myChannelList.length){
 
@@ -58,10 +54,9 @@ export const router = createRouter({
       //               channelId='welcome'
       //             }
       //              return { name: 'talkChannel',params:{communityId:'public',channelId:channelId} }
-           
 
       //     // talkAtMe
-         
+
       //   } else {
       //     return { name: 'talkChannel',params:{communityId:'public',channelId:'welcome'} }
       //     //return { name: 'buzzRecommend' }
@@ -160,8 +155,6 @@ export const router = createRouter({
     //   //redirect: '/talk/channels/@me',
     // },
 
-
-
     // {
     //   //path: '/talk/channels/@me/index',
     //   path:'/talk/channels/public/index',
@@ -175,30 +168,30 @@ export const router = createRouter({
       name: 'talkAtMe',
       component: () => import('@/views/talk/AtMe.vue'),
       meta: { isAuth: true },
-      beforeEnter:async(to,from,next)=>{
-        const userStore=useUserStore()
-        const talk=useTalkStore()
-        const {channelId} = to.params
-        if(channelId){
-           const toUserCanPrivate= await talk.checkUserOpenPrivate(channelId as string)
-           if(!toUserCanPrivate){
-              ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
-              next('/')
-           }
-        }else{
-           ElMessage.error(`${i18n.global.t('user_private_chat_metaid_error')}`)
-              next('/')
-        }
+      // beforeEnter:async(to,from,next)=>{
+      //   const userStore=useUserStore()
+      //   const talk=useTalkStore()
+      //   const {channelId} = to.params
+      //   if(channelId){
+      //      const toUserCanPrivate= await talk.checkUserOpenPrivate(channelId as string)
+      //      if(!toUserCanPrivate){
+      //         ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
+      //         next('/')
+      //      }
+      //   }else{
+      //      ElMessage.error(`${i18n.global.t('user_private_chat_metaid_error')}`)
+      //         next('/')
+      //   }
 
-        if(!userStore.last?.chatpubkey){
-           ElMessage.error(`${i18n.global.t('self_private_chat_unsupport')}`)
-          
-           next('/')
-        }
-       
-        next()
+      //   if(!userStore.last?.chatpubkey){
+      //      ElMessage.error(`${i18n.global.t('self_private_chat_unsupport')}`)
 
-      }
+      //      next('/')
+      //   }
+
+      //   next()
+
+      // }
     },
 
     // .meta解析
@@ -216,133 +209,132 @@ export const router = createRouter({
     {
       path: '/talk/channels/:communityId',
       component: () => import('@/views/talk/Channel.vue'),
-     
+
       children: [
         {
           path: 'index',
           redirect: to => {
-            
-            let { communityId,channelId } = to.params
-            
-            if(!channelId){
-              channelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL
+            let { communityId, channelId } = to.params
+
+            if (!channelId) {
+              channelId = 'welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL
             }
-            if(!communityId){
-              communityId='public'
+            if (!communityId) {
+              communityId = 'public'
             }
-            console.log("channelId",communityId)
-            
-            return { name: 'talkChannel', params: { communityId,channelId } }
+            console.log('channelId', communityId)
+
+            return { name: 'talkChannel', params: { communityId, channelId } }
           },
         },
-        {
-          path: 'announcements',
-          name: 'talkAnnouncements',
-          component: () => import('@/views/talk/components/announcements/Body.vue'),
-        },
-        {
-          path: 'topics',
-          name: 'talkTopics',
-          component: () => import('@/views/talk/components/topics/Body.vue'),
-        },
-        {
-          path: 'dao',
-          name: 'talkDAO',
-          component: () => import('@/views/talk/DAO/Layout.vue'),
-          redirect: () => {
-            const talk = useTalkStore()
-            if (talk.activeCommunity?.dao) {
-              return {
-                name: 'talkDAOProposal',
-              }
-            } else {
-              return {
-                name: 'talkDAOCreate',
-              }
-            }
-          },
-          //
-          children: [
-            {
-              path: 'create',
-              name: 'talkDAOCreate',
-              component: () => import('@/views/talk/DAO/Null.vue'),
-            },
-            {
-              path: 'proposal',
-              name: 'talkDAOProposal',
-              component: () => RouterView,
-              redirect: { name: 'talkDAOProposalIndex' },
-              children: [
-                {
-                  path: 'index',
-                  name: 'talkDAOProposalIndex',
-                  component: () => import('@/views/talk/DAO/proposal/Index.vue'),
-                },
-                {
-                  path: 'detail/:id',
-                  name: 'talkDAOProposalDetail',
-                  component: () => import('@/views/talk/DAO/proposal/Detail.vue'),
-                  beforeEnter: async (to, from, next) => {
-                    const root = useRootStore()
-                    // if (root.bandProposalList.includes(to.params.id as string)) {
-                    //   next('/404')
-                    // } else {
-                    //   next()
-                    // }
-                    try {
-                      const bandList = await GetBandProposalList()
-                      if (bandList[0].vote_id.includes(to.params.id)) {
-                        next('/404')
-                      } else {
-                        next()
-                      }
-                    } catch (error) {
-                      ElMessage.error(`Network error:${error?.toString()}`)
-                      next()
-                    }
-                  },
-                },
-                {
-                  path: 'create',
-                  name: 'talkDAOProposalCreate',
-                  component: () => import('@/views/talk/DAO/proposal/Create.vue'),
-                  beforeEnter: (to, from, next) => {
-                    const userStore = useUserStore()
-                    try {
-                      if (
-                        userStore.user?.metaId !==
-                        '1f983cc536a5378952e7977c7dda26db52e1804c8d95efa4820144d6e823f5c9'
-                      ) {
-                        next('/404')
-                      } else {
-                        next()
-                      }
-                    } catch (error) {
-                      ElMessage.error(`${error?.toString()}`)
-                      next()
-                    }
-                  },
-                },
-              ],
-            },
-            {
-              path: 'entrust',
-              name: 'talkDAOEntrust',
-              component: () => import('@/views/talk/DAO/Entrust.vue'),
-            },
-            {
-              path: 'about',
-              name: 'talkDAOAbout',
-              component: () => import('@/views/talk/DAO/About.vue'),
-            },
-            {
-              path: 'leaderboard',
-              name: 'talkDAOLeaderboard',
-              component: () => import('@/views/talk/DAO/Rank.vue'),
-            },
-          ],
-        },
+        // {
+        //   path: 'announcements',
+        //   name: 'talkAnnouncements',
+        //   component: () => import('@/views/talk/components/announcements/Body.vue'),
+        // },
+        // {
+        //   path: 'topics',
+        //   name: 'talkTopics',
+        //   component: () => import('@/views/talk/components/topics/Body.vue'),
+        // },
+        // {
+        //   path: 'dao',
+        //   name: 'talkDAO',
+        //   component: () => import('@/views/talk/DAO/Layout.vue'),
+        //   redirect: () => {
+        //     const talk = useTalkStore()
+        //     if (talk.activeCommunity?.dao) {
+        //       return {
+        //         name: 'talkDAOProposal',
+        //       }
+        //     } else {
+        //       return {
+        //         name: 'talkDAOCreate',
+        //       }
+        //     }
+        //   },
+        //   //
+        //   children: [
+        //     {
+        //       path: 'create',
+        //       name: 'talkDAOCreate',
+        //       component: () => import('@/views/talk/DAO/Null.vue'),
+        //     },
+        //     {
+        //       path: 'proposal',
+        //       name: 'talkDAOProposal',
+        //       component: () => RouterView,
+        //       redirect: { name: 'talkDAOProposalIndex' },
+        //       children: [
+        //         {
+        //           path: 'index',
+        //           name: 'talkDAOProposalIndex',
+        //           component: () => import('@/views/talk/DAO/proposal/Index.vue'),
+        //         },
+        //         {
+        //           path: 'detail/:id',
+        //           name: 'talkDAOProposalDetail',
+        //           component: () => import('@/views/talk/DAO/proposal/Detail.vue'),
+        //           beforeEnter: async (to, from, next) => {
+        //             const root = useRootStore()
+        //             // if (root.bandProposalList.includes(to.params.id as string)) {
+        //             //   next('/404')
+        //             // } else {
+        //             //   next()
+        //             // }
+        //             try {
+        //               const bandList = await GetBandProposalList()
+        //               if (bandList[0].vote_id.includes(to.params.id)) {
+        //                 next('/404')
+        //               } else {
+        //                 next()
+        //               }
+        //             } catch (error) {
+        //               ElMessage.error(`Network error:${error?.toString()}`)
+        //               next()
+        //             }
+        //           },
+        //         },
+        //         {
+        //           path: 'create',
+        //           name: 'talkDAOProposalCreate',
+        //           component: () => import('@/views/talk/DAO/proposal/Create.vue'),
+        //           beforeEnter: (to, from, next) => {
+        //             const userStore = useUserStore()
+        //             try {
+        //               if (
+        //                 userStore.user?.metaId !==
+        //                 '1f983cc536a5378952e7977c7dda26db52e1804c8d95efa4820144d6e823f5c9'
+        //               ) {
+        //                 next('/404')
+        //               } else {
+        //                 next()
+        //               }
+        //             } catch (error) {
+        //               ElMessage.error(`${error?.toString()}`)
+        //               next()
+        //             }
+        //           },
+        //         },
+        //       ],
+        //     },
+        //     {
+        //       path: 'entrust',
+        //       name: 'talkDAOEntrust',
+        //       component: () => import('@/views/talk/DAO/Entrust.vue'),
+        //     },
+        //     {
+        //       path: 'about',
+        //       name: 'talkDAOAbout',
+        //       component: () => import('@/views/talk/DAO/About.vue'),
+        //     },
+        //     {
+        //       path: 'leaderboard',
+        //       name: 'talkDAOLeaderboard',
+        //       component: () => import('@/views/talk/DAO/Rank.vue'),
+        //     },
+        //   ],
+        // },
         {
           path: ':channelId',
           name: 'talkChannel',
@@ -557,93 +549,82 @@ window._go = go
 // router.beforeEach((to, from, next) => {
 //   if (to.query.to) next(to.query.to as string)
 
-  
-
-
 //   else next()
 // })
 router.beforeEach(async (to, from, next) => {
-   const layout=useLayoutStore()
-   
+  const layout = useLayoutStore()
+
   if (to.path === '/') {
-    const userStore = useUserStore();
-    const talk = useTalkStore();
-   
+    const userStore = useUserStore()
+    // const talk = useTalkStore()
 
     if (userStore.isAuthorized) {
       const myChannelList = await getChannels({
-        metaId: userStore.last.metaid
-      });
-      
-      let channelId;
+        metaId: userStore.last.metaid,
+      })
+
+      let channelId
       if (myChannelList.length) {
-        
-        channelId = myChannelList[0].groupId;
-        layout.$patch({showJoinView:false})
-           layout.$patch({showWelcomeDescView:false})
+        channelId = myChannelList[0].groupId
+        layout.$patch({ showJoinView: false })
+        layout.$patch({ showWelcomeDescView: false })
         //layout.$patch({ isShowLeftNav: true })
       } else {
-        
         layout.$patch({ isShowLeftNav: true })
-        layout.$patch({showJoinView:true})
-        channelId = 'welcome';
+        layout.$patch({ showJoinView: true })
+        channelId = 'welcome'
       }
 
       next({
         name: 'talkChannel',
-        params: { communityId: 'public', channelId }
-      });
+        params: { communityId: 'public', channelId },
+      })
     } else {
       layout.$patch({ isShowLeftNav: true })
-      layout.$patch({showJoinView:false})
-      layout.$patch({showWelcomeDescView:true})
+      layout.$patch({ showJoinView: false })
+      layout.$patch({ showWelcomeDescView: true })
       next({
         name: 'talkChannel',
-        params: { communityId: 'public', channelId: 'welcome' }
-      });
+        params: { communityId: 'public', channelId: 'welcome' },
+      })
     }
-  }else if(to.path == '/talk/channels/public/welcome'){
-       const userStore = useUserStore();
-       
-      if (userStore.isAuthorized) {
+  } else if (to.path == '/talk/channels/public/welcome') {
+    const userStore = useUserStore()
+
+    if (userStore.isAuthorized) {
       const myChannelList = await getChannels({
-        metaId: userStore.last.metaid
-      });
-      
-      let channelId;
+        metaId: userStore.last.metaid,
+      })
+
+      let channelId
       if (myChannelList.length) {
-        
-        channelId = myChannelList[0].groupId;
-        layout.$patch({showWelcomeDescView:false})
-        layout.$patch({showJoinView:false})
+        channelId = myChannelList[0].groupId
+        layout.$patch({ showWelcomeDescView: false })
+        layout.$patch({ showJoinView: false })
         next({
-        name: 'talkChannel',
-        params: { communityId: 'public', channelId }
-        });
+          name: 'talkChannel',
+          params: { communityId: 'public', channelId },
+        })
         //layout.$patch({ isShowLeftNav: true })
       } else {
-        
         layout.$patch({ isShowLeftNav: true })
-        layout.$patch({showJoinView:true})
-        layout.$patch({showWelcomeDescView:true})
-        channelId = 'welcome';
+        layout.$patch({ showJoinView: true })
+        layout.$patch({ showWelcomeDescView: true })
+        channelId = 'welcome'
         next()
       }
-    }else{
-      layout.$patch({showJoinView:false})
-      layout.$patch({showWelcomeDescView:true})
-       next()
+    } else {
+      layout.$patch({ showJoinView: false })
+      layout.$patch({ showWelcomeDescView: true })
+      next()
     }
-   
+
     layout.$patch({ isShowLeftNav: true })
   } else {
-    
-   
-    next();
+    next()
     //layout.$patch({ isShowLeftNav: true })
-   
   }
-});
+})
 
 const dirLog = {
   '': '？',

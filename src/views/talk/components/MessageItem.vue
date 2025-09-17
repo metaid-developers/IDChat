@@ -1,40 +1,41 @@
 <template>
-  <div
-    class="relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group message-item"
-    :class="{ replying: reply.val?.timestamp === message.timestamp }"
-    :data-message-id="messageId"
-    @touchstart="handleTouchStart"
-    @touchmove="handleTouchMove"
-    @touchend="handleTouchEnd"
-    @touchcancel="handleTouchEnd"
-  >
-    <!-- 消息菜单 -->
-    <template v-if="!isShare">
-      <MessageMenu
-        :message="props.message"
-        :message-id="messageId"
-        :parsed="
-          parseTextMessage(
-            decryptedMessage(
-              message?.content,
-              message?.encryption,
-              message?.protocol,
-              message?.isMock
+  <div :class="{ isMyMessage: isMyMessage }">
+    <div
+      class="w-full relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group message-item"
+      :class="{ replying: reply.val?.timestamp === message.timestamp }"
+      :data-message-id="messageId"
+      @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
+      @touchend="handleTouchEnd"
+      @touchcancel="handleTouchEnd"
+    >
+      <!-- 消息菜单 -->
+      <template v-if="!isShare">
+        <MessageMenu
+          :message="props.message"
+          :message-id="messageId"
+          :parsed="
+            parseTextMessage(
+              decryptedMessage(
+                message?.content,
+                message?.encryption,
+                message?.protocol,
+                message?.isMock
+              )
             )
-          )
-        "
-        v-model:translateStatus="translateStatus"
-        v-model:translatedContent="translatedContent"
-        v-bind="$attrs"
-        v-if="isText"
-      />
-      <MessageMenu :message="props.message" :message-id="messageId" v-bind="$attrs" v-else />
-    </template>
+          "
+          v-model:translateStatus="translateStatus"
+          v-model:translatedContent="translatedContent"
+          v-bind="$attrs"
+          v-if="isText"
+        />
+        <MessageMenu :message="props.message" :message-id="messageId" v-bind="$attrs" v-else />
+      </template>
 
-    <!-- quote -->
-    <MessageItemQuote
-      v-if="message.replyInfo"
-      :quote="{ avatarImage: message.replyInfo?.userInfo?.avatar,
+      <!-- quote -->
+      <MessageItemQuote
+        v-if="message.replyInfo"
+        :quote="{ avatarImage: message.replyInfo?.userInfo?.avatar,
     metaName: '',
     metaId: message.replyInfo?.metaId,
     nickName: message.replyInfo?.userInfo?.name,
@@ -42,97 +43,79 @@
     content: message.replyInfo?.content,
     encryption: message.replyInfo?.encryption,
     timestamp: message.replyInfo!.timestamp}"
-      v-bind="$attrs"
-    />
-
-    <!-- 消息主体 -->
-    <div class="flex">
-      <UserAvatar
-        :image="props.message.userInfo?.avatar"
-        :name="
-          props.message.userInfo?.name
-            ? props.message.userInfo?.name
-            : props.message.userInfo?.metaid.slice(0, 6)
-        "
-        :meta-id="props.message.userInfo?.metaid"
-        :meta-name="''"
-        @click="toPrivateChat(props.message)"
-        class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
+        v-bind="$attrs"
       />
-      <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
-        <div class="flex items-baseline space-x-2">
-          <!--message?.userInfo?.metaName-->
-          <UserName
-            :name="
-              message.userInfo?.name ? message.userInfo?.name : message.userInfo?.metaid.slice(0, 6)
-            "
-            :meta-name="''"
-            :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
-          />
-          <div
-            class="text-xs shrink-0 whitespace-nowrap inline-flex items-center gap-1"
-            :class="[
-              msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
-            ]"
-          >
-            {{ formatTimestamp(message.timestamp, i18n) }}
-            <img
-              :src="btcIcon"
-              class="chain-icon-menu w-[16px] h-[16px]"
-              v-if="msgChain == ChatChain.btc"
+
+      <!-- 消息主体 -->
+      <div class="flex">
+        <UserAvatar
+          :image="props.message.userInfo?.avatar"
+          :name="
+            props.message.userInfo?.name
+              ? props.message.userInfo?.name
+              : props.message.userInfo?.metaid.slice(0, 6)
+          "
+          :meta-id="props.message.userInfo?.metaid"
+          :meta-name="''"
+          @click="toPrivateChat(props.message)"
+          class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
+        />
+        <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
+          <div class="flex items-baseline space-x-2">
+            <!--message?.userInfo?.metaName-->
+            <UserName
+              :name="
+                message.userInfo?.name
+                  ? message.userInfo?.name
+                  : message.userInfo?.metaid.slice(0, 6)
+              "
+              :meta-name="''"
+              :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
             />
+            <div
+              class="text-xs shrink-0 whitespace-nowrap inline-flex items-center gap-1"
+              :class="[
+                msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
+              ]"
+            >
+              {{ formatTimestamp(message.timestamp, i18n) }}
+              <img
+                :src="btcIcon"
+                class="chain-icon-menu w-[16px] h-[16px]"
+                v-if="msgChain == ChatChain.btc"
+              />
+            </div>
           </div>
-        </div>
 
-        <div
-          class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
-          v-if="isGroupJoinAction"
-        >
-          {{ $t('Talk.Channel.join_channel') }}
-        </div>
-        <div
-          class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
-          v-else-if="isGroupLeaveAction"
-        >
-          {{ $t('Talk.Channel.leave_channel') }}
-        </div>
-        <div
-          class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs"
-          v-else-if="isGroupRemoveUserAction"
-        >
-          {{
-            removeUserInfo?.reason
-              ? $t('Talk.Channel.remove_user_with_reason', {
-                  username: removeUserInfo.username,
-                  reason: removeUserInfo.reason,
-                })
-              : $t('Talk.Channel.remove_user', {
-                  username: removeUserInfo?.username,
-                })
-          }}
-        </div>
-
-        <div class="w-full" v-else-if="isNftEmoji">
-          <ChatImage
-            :src="
-              decryptedMessage(
-                message?.content,
-                message?.encryption,
-                message?.protocol,
-                message?.isMock
-              )
-            "
-            customClass="max-w-[80%] md:max-w-[50%] lg:max-w-[320px] py-0.5 object-scale-down"
-          />
-
-          <NftLabel class="w-8 mt-1" />
-        </div>
-
-        <div class="w-full py-0.5 flex items-center" v-else-if="isImage">
           <div
-            class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200 relative"
-            @click="previewImage(message.content)"
+            class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
+            v-if="isGroupJoinAction"
           >
+            {{ $t('Talk.Channel.join_channel') }}
+          </div>
+          <div
+            class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
+            v-else-if="isGroupLeaveAction"
+          >
+            {{ $t('Talk.Channel.leave_channel') }}
+          </div>
+          <div
+            class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs"
+            v-else-if="isGroupRemoveUserAction"
+          >
+            {{
+              removeUserInfo?.reason
+                ? $t('Talk.Channel.remove_user_with_reason', {
+                    username: removeUserInfo.username,
+                    reason: removeUserInfo.reason,
+                  })
+                : $t('Talk.Channel.remove_user', {
+                    username: removeUserInfo?.username,
+                  })
+            }}
+          </div>
+
+          <div class="w-full" v-else-if="isNftEmoji">
             <ChatImage
               :src="
                 decryptedMessage(
@@ -142,171 +125,198 @@
                   message?.isMock
                 )
               "
-              customClass="rounded-xl py-0.5 object-scale-down max-w-full max-h-full"
+              customClass="max-w-[80%] md:max-w-[50%] lg:max-w-[320px] py-0.5 object-scale-down"
             />
+
+            <NftLabel class="w-8 mt-1" />
           </div>
-          <!--message.error-->
-          <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
-            <Icon
-              name="arrow_path"
-              class="w-4 h-4 text-dark-400 dark:text-gray-200 hover:animate-spin-once"
-            />
-          </button>
-        </div>
 
-        <div
-          class="text-xs text-dark-400 dark:text-gray-200 my-0.5 capitalize"
-          v-else-if="isReceiveRedPacket"
-        >
-          {{ redPacketReceiveInfo }}
-        </div>
-
-        <div class="w-full py-0.5" v-else-if="isGiveawayRedPacket">
-          <div
-            class="max-w-full sm:max-w-[300PX] shadow rounded-xl cursor-pointer origin-center hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-700 group"
-            :class="[
-              hasRedPacketReceived || redPackClaimOver
-                ? 'opacity-50'
-                : 'hover:animate-wiggle-subtle',
-            ]"
-            @click="handleOpenRedPacket"
-          >
+          <div class="w-full py-0.5 flex items-center" v-else-if="isImage">
             <div
-              class="rounded-xl p-4 flex space-x-2 bg-gradient-to-br  items-center"
-              :class="[
-                hasRedPacketReceived ? 'origin-top -skew-x-12 dark:-skew-x-6 shadow-md' : 'shadow',
-                msgChain == ChatChain.btc
-                  ? 'from-[#FFD897] via-[#FFD897] to-[#FFE9C5]'
-                  : 'from-[#FFE8D2] via-[#FFF1B9] to-[#FEFFE3]',
-              ]"
+              class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200 relative"
+              @click="previewImage(message.content)"
             >
-              <img
-                :src="msgChain == ChatChain.btc ? giftBtcImage : giftMvcImage"
-                class="h-12 w-12"
-                loading="lazy"
+              <ChatImage
+                :src="
+                  decryptedMessage(
+                    message?.content,
+                    message?.encryption,
+                    message?.protocol,
+                    message?.isMock
+                  )
+                "
+                customClass="rounded-xl py-0.5 object-scale-down max-w-full max-h-full"
               />
-              <div class="">
-                <div class="text-dark-800 text-base font-medium">
-                  {{ $t('Talk.Channel.come_get_red_envelope') }}
-                </div>
-                <div class="text-dark-300 text-sm mt-1 truncate max-w-[150PX] lg:max-w-[180PX]">
-                  {{ redPacketMessage }}
-                </div>
-              </div>
             </div>
-
-            <div class="flex py-2.5 items-center space-x-1.5 px-4">
-              <Icon name="gift" class="w-4 h-4 text-dark-300 dark:text-gray-400" />
-              <div class="text-dark-300 dark:text-gray-400 text-xs">
-                {{ $t('Talk.Input.giveaway') }}
-              </div>
-            </div>
+            <!--message.error-->
+            <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
+              <Icon
+                name="arrow_path"
+                class="w-4 h-4 text-dark-400 dark:text-gray-200 hover:animate-spin-once"
+              />
+            </button>
           </div>
-        </div>
 
-        <!-- 群聊邀请链接 -->
-        <div class="w-full py-0.5" v-else-if="isChatGroupLink">
           <div
-            class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
-            @click="handleGroupLinkClick"
+            class="text-xs text-dark-400 dark:text-gray-200 my-0.5 capitalize"
+            v-else-if="isReceiveRedPacket"
           >
-            <div class="p-4 space-y-3">
-              <!-- 群头像和基本信息 -->
-              <div class="flex items-center space-x-3">
+            {{ redPacketReceiveInfo }}
+          </div>
+
+          <div class="w-full py-0.5" v-else-if="isGiveawayRedPacket">
+            <div
+              class="max-w-full sm:max-w-[300PX] shadow rounded-xl cursor-pointer origin-center hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-700 group"
+              :class="[
+                hasRedPacketReceived || redPackClaimOver
+                  ? 'opacity-50'
+                  : 'hover:animate-wiggle-subtle',
+              ]"
+              @click="handleOpenRedPacket"
+            >
+              <div
+                class="rounded-xl p-4 flex space-x-2 bg-gradient-to-br  items-center"
+                :class="[
+                  hasRedPacketReceived
+                    ? 'origin-top -skew-x-12 dark:-skew-x-6 shadow-md'
+                    : 'shadow',
+                  msgChain == ChatChain.btc
+                    ? 'from-[#FFD897] via-[#FFD897] to-[#FFE9C5]'
+                    : 'from-[#FFE8D2] via-[#FFF1B9] to-[#FEFFE3]',
+                ]"
+              >
+                <img
+                  :src="msgChain == ChatChain.btc ? giftBtcImage : giftMvcImage"
+                  class="h-12 w-12"
+                  loading="lazy"
+                />
                 <div class="">
-                  <ChatIcon
-                    :src="groupLinkInfo.groupAvatar"
-                    :alt="groupLinkInfo.groupName"
-                    custom-class="w-12 h-12 min-w-12 min-h-12 rounded-full"
-                    :size="48"
-                  />
+                  <div class="text-dark-800 text-base font-medium">
+                    {{ $t('Talk.Channel.come_get_red_envelope') }}
+                  </div>
+                  <div class="text-dark-300 text-sm mt-1 truncate max-w-[150PX] lg:max-w-[180PX]">
+                    {{ redPacketMessage }}
+                  </div>
                 </div>
+              </div>
 
-                <div class="flex-1 min-w-0">
+              <div class="flex py-2.5 items-center space-x-1.5 px-4">
+                <Icon name="gift" class="w-4 h-4 text-dark-300 dark:text-gray-400" />
+                <div class="text-dark-300 dark:text-gray-400 text-xs">
+                  {{ $t('Talk.Input.giveaway') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 群聊邀请链接 -->
+          <div class="w-full py-0.5" v-else-if="isChatGroupLink">
+            <div
+              class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
+              @click="handleGroupLinkClick"
+            >
+              <div class="p-4 space-y-3">
+                <!-- 群头像和基本信息 -->
+                <div class="flex items-center space-x-3">
+                  <div class="">
+                    <ChatIcon
+                      :src="groupLinkInfo.groupAvatar"
+                      :alt="groupLinkInfo.groupName"
+                      custom-class="w-12 h-12 min-w-12 min-h-12 rounded-full"
+                      :size="48"
+                    />
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <div
+                      class="text-dark-800 dark:text-gray-100 font-medium text-base truncate max-w-[200px]"
+                    >
+                      {{ groupLinkInfo.groupName || 'Group Chat' }}
+                    </div>
+                    <div class="text-dark-400 dark:text-gray-400 text-sm">
+                      {{ props.message.userInfo?.name || 'Someone' }} invites you to join this group
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-4 items-center">
+                  <div class="text-dark-400 dark:text-gray-400 text-xs mt-1 truncate max-w-[150px]">
+                    creator: {{ groupLinkInfo.creator }}
+                  </div>
                   <div
-                    class="text-dark-800 dark:text-gray-100 font-medium text-base truncate max-w-[200px]"
+                    v-if="groupLinkInfo.memberCount > 0"
+                    class="text-dark-400 dark:text-gray-400 text-xs mt-1"
                   >
-                    {{ groupLinkInfo.groupName || 'Group Chat' }}
-                  </div>
-                  <div class="text-dark-400 dark:text-gray-400 text-sm">
-                    {{ props.message.userInfo?.name || 'Someone' }} invites you to join this group
+                    members: {{ groupLinkInfo.memberCount }}
                   </div>
                 </div>
-              </div>
-              <div class="flex gap-4 items-center">
-                <div class="text-dark-400 dark:text-gray-400 text-xs mt-1 truncate max-w-[150px]">
-                  creator: {{ groupLinkInfo.creator }}
-                </div>
-                <div
-                  v-if="groupLinkInfo.memberCount > 0"
-                  class="text-dark-400 dark:text-gray-400 text-xs mt-1"
-                >
-                  members: {{ groupLinkInfo.memberCount }}
-                </div>
-              </div>
 
-              <!-- 查看群组按钮 -->
-              <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
-                <div
-                  class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
-                >
-                  VIEW GROUP
+                <!-- 查看群组按钮 -->
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                  <div
+                    class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
+                  >
+                    VIEW GROUP
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="my-1.5 max-w-full flex " v-else>
-          <div
-            class="text-sm  text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
-            :class="[
-              msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
-              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
-            ]"
-            v-if="translateStatus === 'showing'"
-          >
-            <div class="" v-html="translatedContent"></div>
-            <div class="text-xxs text-dark-300 dark:text-gray-400 mt-1 underline">
-              {{ $t('Talk.Messages.translated') }}
+          <div class="my-1.5 max-w-full flex " v-else>
+            <div
+              class="text-sm  text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+              :class="[
+                msgChain == ChatChain.btc && 'btc-item',
+                isMyMessage
+                  ? 'bg-primary dark:text-gray-800'
+                  : 'not-mine bg-white dark:bg-gray-700',
+                message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
+              ]"
+              v-if="translateStatus === 'showing'"
+            >
+              <div class="" v-html="translatedContent"></div>
+              <div class="text-xxs text-dark-300 dark:text-gray-400 mt-1 underline">
+                {{ $t('Talk.Messages.translated') }}
+              </div>
             </div>
-          </div>
 
-          <div
-            class="text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
-            :class="[
-              msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
-              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
-            ]"
-            v-else
-            v-html="
-              parseTextMessage(
-                decryptedMessage(
-                  message?.content,
-                  message?.encryption,
-                  message?.protocol,
-                  message?.isMock
+            <div
+              class="text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+              :class="[
+                msgChain == ChatChain.btc && 'btc-item',
+                isMyMessage
+                  ? 'bg-primary dark:text-gray-800'
+                  : 'not-mine bg-white dark:bg-gray-700',
+                message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
+              ]"
+              v-else
+              v-html="
+                parseTextMessage(
+                  decryptedMessage(
+                    message?.content,
+                    message?.encryption,
+                    message?.protocol,
+                    message?.isMock
+                  )
                 )
-              )
-            "
-          ></div>
-          <!--message.error message?.reason {{ message?.reason }}-->
-          <button
-            v-if="message.error"
-            class="ml-3   break-words flex items-center  justify-center"
-            :title="resendTitle"
-            @click="tryResend"
-          >
-            <span v-if="message?.reason" class="text-[#fc457b] flex-1 font-medium mr-2">{{
-              message?.reason
-            }}</span>
-            <Icon
-              name="arrow_path"
-              class="w-4 h-4 flex-1  text-dark-400 dark:text-gray-200 hover:animate-spin-once"
-            />
-          </button>
+              "
+            ></div>
+            <!--message.error message?.reason {{ message?.reason }}-->
+            <button
+              v-if="message.error"
+              class="ml-3   break-words flex items-center  justify-center"
+              :title="resendTitle"
+              @click="tryResend"
+            >
+              <span v-if="message?.reason" class="text-[#fc457b] flex-1 font-medium mr-2">{{
+                message?.reason
+              }}</span>
+              <Icon
+                name="arrow_path"
+                class="w-4 h-4 flex-1  text-dark-400 dark:text-gray-200 hover:animate-spin-once"
+              />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -332,7 +342,6 @@ import {
 import { useI18n } from 'vue-i18n'
 import { formatTimestamp, decryptedMessage, sendMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
-import { useTalkStore } from '@/stores/talk'
 import giftImage from '@/assets/images/gift.svg?url'
 import giftBtcImage from '@/assets/images/gift_btc.svg?url'
 import giftMvcImage from '@/assets/images/gift_mvc.svg?url'
@@ -352,12 +361,13 @@ import { useRouter } from 'vue-router'
 import {getUserInfoByAddress} from '@/api/man'
 import ChatImage from '@/components/ChatImage/ChatImage.vue'
 import btcIcon from '@/assets/images/btc.png'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 
 const i18n = useI18n()
 
 const modals = useModalsStore()
 const userStore = useUserStore()
-const talk = useTalkStore()
+const simpleTalk= useSimpleTalkStore()
 const layout = useLayoutStore()
 const jobs = useJobsStore()
 const reply: any = inject('Reply')
@@ -386,11 +396,11 @@ const handleTouchStart = (event: TouchEvent) => {
   touchStartPosition.value = { x: touch.clientX, y: touch.clientY }
 
   // 清除之前的菜单
-  talk.clearActiveMessageMenu()
+  simpleTalk.clearActiveMessageMenu()
 
   // 设置长按定时器
   longPressTimer.value = window.setTimeout(() => {
-    talk.setActiveMessageMenu(messageId.value)
+    simpleTalk.setActiveMessageMenu(messageId.value)
   }, LONG_PRESS_DURATION)
 }
 
@@ -558,19 +568,19 @@ const isMyMessage = computed(() => {
 const handleOpenRedPacket = async() => {
   // 如果用户已经领取过红包，则显示红包领取信息
   const params: any = {
-    groupId: talk.activeChannelId,
+    groupId: simpleTalk.activeChannelId,
     pinId: `${props.message?.txId}i0`,
   }
   const redPacketType = props.message?.data?.requireType
   console.log({ redPacketType })
   if (redPacketType === '2') {
-    params.address = talk.selfAddress
+    params.address = simpleTalk.selfAddress
   } else if (redPacketType === '2001' || redPacketType === '2002') {
     // params.address = userStore.user?.evmAddress
   }
   const redPacketInfo = await getOneRedPacket(params)
   const hasReceived = redPacketInfo.payList.some(
-    (item: any) => item.userInfo?.metaid === talk.selfMetaId
+    (item: any) => item.userInfo?.metaid === simpleTalk.selfMetaId
   )
 
   if (hasReceived) {
@@ -578,7 +588,7 @@ const handleOpenRedPacket = async() => {
     layout.isShowRedPacketResultModal = true
 
     // 保存已领取红包的id
-    talk.addReceivedRedPacketId(props.message?.txId)
+    simpleTalk.addReceivedRedPacketId(props.message?.txId)
 
     return
   }
@@ -591,31 +601,31 @@ const handleOpenRedPacket = async() => {
 }
 
 const hasRedPacketReceived = computed(() => {
-  console.log('talk.receivedRedPacketIds', talk.receivedRedPacketIds)
-  return talk.receivedRedPacketIds.includes(props.message?.txId)
+  return simpleTalk.hasReceivedRedPacket(props.message?.txId)
 })
 
 const redPacketCliamOver = computed(() => {})
 
 const tryResend = async() => {
-  props.message.error = false
-  const messageDto = talk.getRetryById(props.message.mockId)
+  // props.message.error = false
+  // const messageDto = talk.getRetryById(props.message.mockId)
 
-  try {
-    if (messageDto) {
-      await sendMessage(messageDto)
+  // try {
+  //   if (messageDto) {
+  //     await sendMessage(messageDto)
 
-      talk.removeMessage(props.message.mockId)
-    } else {
-      return ElMessage.error(`${i18n.t('retry_msg_error')}`)
-    }
-  } catch (error) {
-    return ElMessage.error((error as any).toString())
-  }
+  //     talk.removeMessage(props.message.mockId)
+  //   } else {
+  //     return ElMessage.error(`${i18n.t('retry_msg_error')}`)
+  //   }
+  // } catch (error) {
+  //   return ElMessage.error((error as any).toString())
+  // }
 
   //
+  // TODO
 
-  // await jobs.resend(props.message.timestamp)
+
 }
 
 const isGroupJoinAction = computed(() =>
@@ -754,4 +764,16 @@ const isReceiveRedPacket = computed(() =>
 )
 </script>
 
-<style lang="scss" scoped src="./MessageItem.scss"></style>
+<style lang="scss" scoped>
+.isMyMessage {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+.not-mine {
+  &.btc-item {
+    background: linear-gradient(113deg, #fff6e6 -12%, #e5bc77 103%);
+    color: #5a4015;
+  }
+}
+</style>

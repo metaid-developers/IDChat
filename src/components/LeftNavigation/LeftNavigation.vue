@@ -133,11 +133,10 @@ const whiteList = [
   '7a7c301023d20f8dd3af3a4461f8e9726256286cc3c79b7fb0673a4a0d7d4625',
   'e9ab42667c5f5a6a1e7d45ed023f8961ee6950bba8a771d68732c8fb460a7aae',
 ]
-const isInWhitelist = talk.selfMetaId && whiteList.includes(talk.selfMetaId)
+// const isInWhitelist = talk.selfMetaId && whiteList.includes(talk.selfMetaId)
 
 function getCommunityKey(community: Community) {
   // return community.id
-  
 
   return 'public'
   if (!community.metaName) return community.id
@@ -173,11 +172,10 @@ const apps = reactive([
 
 if (userStore.isAuthorized) {
   //talk.fetchCommunities()
-  talk.initCommunityChannelIds()
-  talk.initReceivedRedPacketIds()
-  talk.initReadPointers()
+  // talk.initCommunityChannelIds()
+  // talk.initReceivedRedPacketIds()
+  // talk.initReadPointers()
   ws.init()
-  
 }
 
 watch(
@@ -185,25 +183,24 @@ watch(
   isAuthorized => {
     if (isAuthorized) {
       //talk.fetchCommunities()
-      talk.initCommunityChannelIds()
-      talk.initReceivedRedPacketIds()
-      talk.initReadPointers()
+      // talk.initCommunityChannelIds()
+      // talk.initReceivedRedPacketIds()
+      // talk.initReadPointers()
       ws.init()
-      
     } else {
-      talk.reset()
+      // talk.reset()
       ws.disconnect()
-      talk.saveReadPointers()
-      talk.closeReadPointerTimer()
+      // talk.saveReadPointers()
+      // talk.closeReadPointerTimer()
     }
   }
 )
 
 onBeforeUnmount(() => {
   ws.disconnect()
- 
-  talk.saveReadPointers()
-  talk.closeReadPointerTimer()
+
+  // talk.saveReadPointers()
+  // talk.closeReadPointerTimer()
 })
 </script>
 

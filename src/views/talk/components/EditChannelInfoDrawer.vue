@@ -86,6 +86,8 @@ import { useChainStore } from '@/stores/chain'
 import { createPinWithBtc } from '@/utils/pin'
 import { createPin } from '@/utils/userInfo'
 import { SimpleGroup, updateGroupChannel } from '@/utils/talk'
+import { SimpleChannel } from '@/@types/simple-chat.d'
+import { getOneChannel } from '@/api/talk'
 
 interface ChannelInfo {
   groupId: string
@@ -96,7 +98,7 @@ interface ChannelInfo {
 
 interface Props {
   modelValue: boolean
-  channelInfo?: ChannelInfo | null
+  channelInfo?: SimpleChannel | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -120,7 +122,7 @@ const imgRaw = ref<File | null>(null)
 
 const hasChanges = computed(() => {
   if (!props.channelInfo) return false
-  return channelName.value.trim() !== (props.channelInfo.roomName || '') || !!imageUrl.value
+  return channelName.value.trim() !== (props.channelInfo.name || '') || !!imageUrl.value
 })
 
 // 监听 channelInfo 变化，初始化内容
@@ -128,8 +130,8 @@ watch(
   () => props.channelInfo,
   newChannelInfo => {
     if (newChannelInfo) {
-      channelName.value = newChannelInfo.roomName || ''
-      channelAvatar.value = newChannelInfo.roomIcon || ''
+      channelName.value = newChannelInfo.name || ''
+      channelAvatar.value = newChannelInfo.avatar || ''
       avatarPreview.value = ''
       avatarFile.value = null
     }
@@ -142,8 +144,8 @@ watch(
   () => props.modelValue,
   newValue => {
     if (newValue && props.channelInfo) {
-      channelName.value = props.channelInfo.roomName || ''
-      channelAvatar.value = props.channelInfo.roomIcon || ''
+      channelName.value = props.channelInfo.name || ''
+      channelAvatar.value = props.channelInfo.avatar || ''
       avatarPreview.value = ''
       avatarFile.value = null
     }
@@ -194,11 +196,11 @@ const saveChannelInfo = async () => {
       const [image] = await image2Attach(([imgRaw.value] as unknown) as FileList)
       values.avatar = Buffer.from(image.data, 'hex').toString('base64')
     }
-    if (channelName.value !== props.channelInfo.roomName) {
+    if (channelName.value !== props.channelInfo.name) {
       values.name = channelName.value
     }
-    let groupIcon = props.channelInfo.roomIcon
-    const groupName = values.name || props.channelInfo.roomName
+    let groupIcon = props.channelInfo.avatar
+    const groupName = values.name || props.channelInfo.name
 
     if (values.avatar) {
       const fileOptions: any[] = []
@@ -238,25 +240,29 @@ const saveChannelInfo = async () => {
         }
       }
     }
+    const cur = await getOneChannel(props.channelInfo.id)
+    if (!cur || !cur.txId) {
+      throw new Error('Channel not exist')
+    }
 
     const group: SimpleGroup = {
-      groupId: props.channelInfo.groupId,
-      groupIcon: props.channelInfo.roomIcon || '',
-      communityId: props.channelInfo.communityId || '',
-      groupName: props.channelInfo.roomName || '',
-      groupNote: props.channelInfo.roomNote || '',
+      groupId: cur.groupId,
+      groupIcon: cur.roomIcon || '',
+      communityId: cur.communityId,
+      groupName: cur.roomName || '',
+      groupNote: cur.roomNote || '',
       timestamp: Date.now(),
-      groupType: props.channelInfo.roomType,
-      status: props.channelInfo.roomStatus,
-      type: props.channelInfo.roomType,
-      tickId: props.channelInfo.tickId || '',
-      collectionId: props.channelInfo.collectionId || '',
-      limitAmount: props.channelInfo.limitAmount || 0,
-      chatSettingType: props.channelInfo.chatSettingType,
-      deleteStatus: props.channelInfo.deleteStatus,
+      groupType: cur.roomType,
+      status: cur.roomStatus,
+      type: cur.roomType,
+      tickId: cur.tickId || '',
+      collectionId: cur.collectionId || '',
+      limitAmount: cur.limitAmount || 0,
+      chatSettingType: cur.chatSettingType,
+      deleteStatus: cur.deleteStatus,
     }
-    // 模拟 API 调用 - 实际项目中需要实现真正的 API
-    if (groupIcon !== props.channelInfo.roomIcon || groupName !== props.channelInfo.roomName) {
+
+    if (groupIcon !== cur.roomIcon || groupName !== cur.roomName) {
       const ret = await updateGroupChannel(group, { groupIcon, groupName })
     }
 

@@ -247,7 +247,7 @@ export const useConnectionStore = defineStore('connection', {
       this.last.wallet= 'metalet'
 
       const userStore = useUserStore()
-      const talkStore = useTalkStore()
+      // const talkStore = useTalkStore()
       const approvedStore = useApprovedStore()
       const ecdhsStore=useEcdhsStore()
       console.log('router', router)
@@ -259,7 +259,7 @@ export const useConnectionStore = defineStore('connection', {
         await approvedStore.clear()
       }
       setTimeout(() => {
-        talkStore.$patch({ isShowWelcome: false })
+        // talkStore.$patch({ isShowWelcome: false })
        
         router.push({
           name: 'talkChannel',

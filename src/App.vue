@@ -107,7 +107,7 @@ function handleNetworkChanged(network: Network) {
 }
 
 const metaletAccountsChangedHandler = () => {
-  
+
   if (useConnectionStore().last.wallet !== 'metalet') return
 
   // sync here to prevent chronological error
@@ -136,9 +136,9 @@ onMounted(async () => {
   //document.addEventListener('visibilitychange', handleVisibilityChange);
   accountInterval.value=setInterval(async()=>{
     if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
-      
+
          window.metaidwallet.getAddress().then((res)=>{
-          
+
              if (res?.status == 'not-connected' || userStore.last?.address !== res) {
               connectionStore.disconnect(router)
               ElMessage.warning({
@@ -147,7 +147,7 @@ onMounted(async () => {
               })
       }
         })
-   
+
     }
   },5 * 1000)
 
@@ -161,7 +161,7 @@ onMounted(async () => {
         console.error('Failed to setup Metalet listeners:', err)
       }
     } else if (retryCount * RETRY_INTERVAL < MAX_RETRY_TIME) {
-      
+
       retryCount++
       timeoutId = setTimeout(checkMetalet, RETRY_INTERVAL)
     } else {
@@ -175,13 +175,12 @@ onMounted(async () => {
   setTimeout(async() => {
      const res= await getEcdhPublickey()
 
- console.log("协商密钥",res)
 
- 
+
   }, 5000);
 
   onUnmounted(() => {
-    
+
     clearTimeout(timeoutId)
   })
 })
@@ -202,7 +201,7 @@ onBeforeUnmount(async() => {
 
   clearInterval(accountInterval.value)
 
-  
+
 })
 
 // if (!localStorage.getItem('showDiffLang')) {

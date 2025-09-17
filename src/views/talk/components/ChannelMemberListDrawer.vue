@@ -15,7 +15,7 @@
           <a class="back" @click="emit('update:modelValue', false)">
             <el-icon :size="16"><CloseBold /></el-icon>
           </a>
-          <span class="title truncate max-w-6xl">{{ currentChannelInfo?.roomName || '' }}</span>
+          <span class="title truncate max-w-6xl">{{ currentChannelInfo?.name || '' }}</span>
         </div>
 
         <el-icon
@@ -42,8 +42,8 @@
       <div class="flex flex-col  bg-dark-100 dark:bg-gray-800  info">
         <div class="flex flex-col items-center justify-center mt-4 mb-2">
           <ChatIcon
-            :src="currentChannelInfo?.roomIcon || ''"
-            :alt="currentChannelInfo?.roomName"
+            :src="currentChannelInfo?.avatar || ''"
+            :alt="currentChannelInfo?.name"
             customClass="w-[88px] h-[88px] rounded-full"
             :size="88"
           />
@@ -64,13 +64,13 @@
             v-else
           /> -->
           <div class=" text-xl font-medium text-dark-800 dark:text-gray-100 mt-5">
-            {{ currentChannelInfo?.roomName || '' }}
+            {{ currentChannelInfo?.name || '' }}
           </div>
           <div
             class="flex gap-2 items-center cursor-pointer text-sm font-medium text-dark-600 dark:text-gray-400 mt-2"
             @click="copyGroupId"
           >
-            GroupId: {{ currentChannelInfo?.groupId.replace(/(\w{5})\w+(\w{3})/, '$1...$2') || ''
+            GroupId: {{ currentChannelInfo?.id.replace(/(\w{5})\w+(\w{3})/, '$1...$2') || ''
             }}<el-icon><CopyDocument /></el-icon>
           </div>
           <div class="mt-4">
@@ -139,8 +139,8 @@
               :style="{ transform: `translateY(${member.start}px)` }"
               :member="member"
               :key="member.index"
-              :createUserMetaId="currentChannelInfo?.createUserMetaId"
-              :groupId="currentChannelInfo?.groupId"
+              :createUserMetaId="currentChannelInfo?.createdBy"
+              :groupId="currentChannelInfo?.id"
               @updated="handleDeleteSuccess"
             />
           </li>
@@ -224,6 +224,7 @@ import { metafile } from '@/utils/filters'
 import { NodeName } from '@/enum'
 import { createSinglePin } from '@/utils/pin'
 import { fa } from 'element-plus/es/locale'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 interface MemberItem {
   id: string
   index: number
@@ -237,7 +238,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {})
 const emit = defineEmits(['update:modelValue'])
 const showSearch = ref(false)
-const talkStore = useTalkStore()
+const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
 const cursor = ref(0)
 const pageSize = 20
@@ -290,14 +291,12 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  return talkStore?.activeCommunity?.channels?.find(
-    item => item?.groupId === route.params.channelId || item?.metaId == route.params.channelId
-  )
+  return simpleTalkStore.activeChannel
 })
 
 // 判断当前用户是否是频道创建者
 const isCurrentUserCreator = computed(() => {
-  return currentChannelInfo.value?.createUserMetaId === userStore.last?.metaid
+  return currentChannelInfo.value?.createdBy === userStore.last?.metaid
 })
 
 const currentLink = computed(() => {
@@ -310,7 +309,7 @@ const copyLink = () => {
 }
 
 const copyGroupId = () => {
-  copy(currentChannelInfo.value?.groupId || '')
+  copy(currentChannelInfo.value?.id || '')
   ElMessage.success('Copied')
 }
 
@@ -373,7 +372,7 @@ const handleLeave = async () => {
 
   try {
     const data = {
-      groupId: currentChannelInfo.value.groupId,
+      groupId: currentChannelInfo.value.id,
       state: -1,
       referrer: '',
     }
@@ -390,7 +389,7 @@ const handleLeave = async () => {
     await createSinglePin(metaidData)
     ElMessage.success('Left channel successfully')
     emit('update:modelValue', false)
-    talkStore.fetchChannels()
+    simpleTalkStore.syncFromServer()
     window.location.href = `/`
   } catch (error) {
     ElMessage.error(error.message || 'Failed to leave channel')
@@ -454,7 +453,7 @@ const performSearch = async (keyword: string) => {
 
   try {
     const members = await searchChannelMembers({
-      groupId: currentChannelInfo.value.groupId,
+      groupId: currentChannelInfo.value.id,
       query: keyword,
     })
 
@@ -559,18 +558,20 @@ onUnmounted(() => {
 })
 
 async function getMoreMember() {
-  if (!props.modelValue || !currentChannelInfo.value || loading.value || searchKey.value.trim()) {
+  if (!currentChannelInfo.value || loading.value || searchKey.value.trim()) {
     return
   }
 
-  const isSession = Number(currentChannelInfo.value?.type) === 2 ? true : false
+  const isSession = currentChannelInfo.value?.type === 'private' ? true : false
   if (isSession) return
+
+  console.log('加载更多成员', cursor.value, currentChannelInfo.value.id)
 
   loading.value = true
 
   try {
     const members = await getChannelMembers({
-      groupId: currentChannelInfo.value.groupId,
+      groupId: currentChannelInfo.value.id,
       cursor: String(cursor.value),
     })
 

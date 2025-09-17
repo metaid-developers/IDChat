@@ -10,7 +10,6 @@ import { realRandomString, sleep } from '@/utils/util'
 import { defineStore } from 'pinia'
 import { useLayoutStore } from './layout'
 import { getCommunityAuth } from '@/api/talk'
-import { useTalkStore } from './talk'
 import { useUserStore } from './user'
 import { Channel } from '@/@types/talk'
 import { GetFT, GetGenesis } from '@/api/aggregation'
@@ -20,6 +19,7 @@ import Decimal from 'decimal.js-light'
 import { useChainStore } from './chain'
 import i18n from '@/utils/i18n'
 import { ElMessage } from 'element-plus'
+import { useSimpleTalkStore } from './simple-talk'
 
 const MIN = new Decimal(0.0001).mul(10 ** 8).toNumber()
 const MAX = new Decimal(10).mul(10 ** 8).toNumber()
@@ -637,7 +637,8 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     },
 
     async submit() {
-      const talk = useTalkStore()
+      // const talk = useTalkStore()
+      const simpleTalk = useSimpleTalkStore()
       const user = useUserStore()
       const layout = useLayoutStore()
       const chainStore = useChainStore()
@@ -665,8 +666,8 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           type: this.type,
           unit: this.unit,
         },
-        talk.activeChannelId,
-        talk.selfMetaId
+        simpleTalk.activeChannelId,
+        simpleTalk.selfMetaId
       )
       console.log('giveRedPacket ret', ret)
       return ret

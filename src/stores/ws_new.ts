@@ -32,8 +32,8 @@ export const useWsStore = defineStore('ws', {
     },
 
     activeChannelId(): string {
-      const talk = useTalkStore()
-      return talk.activeChannelId
+      const simpleTalk = useSimpleTalkStore()
+      return simpleTalk.activeChannelId
     },
   },
 
@@ -113,35 +113,16 @@ export const useWsStore = defineStore('ws', {
       const messageWrapper = JSON.parse(data)
       switch (messageWrapper.M) {
         case 'WS_SERVER_NOTIFY_GROUP_CHAT':
-          await talk.handleNewGroupMessage(messageWrapper.D)
+          // await talk.handleNewGroupMessage(messageWrapper.D)
           console.log('收到新消息', messageWrapper.D)
-          await simpleTalkStore.addMessage({
-            channelId: messageWrapper.D.groupId,
-            content: messageWrapper.D.content,
-            id: messageWrapper.D.pinId,
-            sender: messageWrapper.D.userInfo.metaid,
-            senderName: messageWrapper.D.userInfo.name,
-            timestamp: messageWrapper.D.timestamp,
-            senderAvatar: messageWrapper.D.userInfo.avatarImage,
-            type: messageWrapper.D.chatType,
-          })
+          await simpleTalkStore.receiveMessage(messageWrapper.D)
 
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_PRIVATE_CHAT':
-          await talk.handleNewSessionMessage(messageWrapper.D)
+          // await talk.handleNewSessionMessage(messageWrapper.D)
           console.log('收到新消息', messageWrapper.D)
-          await simpleTalkStore.addMessage({
-            channelId: messageWrapper.D.userInfo.metaid,
-            content: messageWrapper.D.content,
-            id: messageWrapper.D.pinId,
-            sender: messageWrapper.D.fromUserInfo.metaid,
-            senderName: messageWrapper.D.fromUserInfo.name,
-            timestamp: messageWrapper.D.timestamp,
-            senderAvatar: messageWrapper.D.fromUserInfo.avatarImage,
-            type: messageWrapper.D.chatType,
-            senderChatPublicKey: messageWrapper.D.fromUserInfo.chatPublicKey,
-          })
+          await simpleTalkStore.receiveMessage(messageWrapper.D)
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_TX_TASK':

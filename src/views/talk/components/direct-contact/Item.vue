@@ -10,11 +10,6 @@
         :alt="session?.name"
         :customClass="'w-12 h-12 rounded-full'"
       />
-
-      <div
-        class="flex items-center justify-center absolute top-[-3px] right-0 rounded-full w-4 h-4 bg-red-500"
-        v-if="session?.unreadCount > 0"
-      ></div>
     </div>
 
     <div class="flex flex-col items-stretch grow space-y-1 overflow-x-hidden">
@@ -40,17 +35,27 @@
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.timestamp : '' }}</div> -->
-      <div class="text-xs flex items-center truncate max-w-fit ">
-        <div
-          v-if="session.type === 'group' && session.lastMessage"
-          class="text-dark-800  dark:text-gray-500 font-medium"
-        >
-          <UserName :name="session.lastMessage.senderName" :meta-name="''" />&nbsp;:&nbsp;
-        </div>
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-xs flex items-center truncate max-w-fit ">
+          <div
+            v-if="session.type === 'group' && session.lastMessage"
+            class="text-dark-800  dark:text-gray-500 font-medium"
+          >
+            <UserName :name="session.lastMessage.senderName" :meta-name="''" />&nbsp;:&nbsp;
+          </div>
 
-        <span class="text-dark-300 dark:text-gray-400 truncate">
-          {{ computeDecryptedMsg(session) }}
-        </span>
+          <span class="text-dark-300 dark:text-gray-400 truncate">
+            {{ computeDecryptedMsg(session) }}
+          </span>
+        </div>
+        <el-badge
+          v-show="session?.lastMessage.index - session?.lastReadIndex > 0"
+          class="item"
+          :value="session?.lastMessage.index - session?.lastReadIndex"
+          :offset="[10, 5]"
+          :max="999"
+        >
+        </el-badge>
       </div>
     </div>
   </div>
@@ -89,6 +94,8 @@ const router = useRouter()
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 const simpleTalkStore = useSimpleTalkStore()
+
+console.log('🚀 简化聊天列表项组件加载', props.session)
 
 const computeDecryptedMsg = (session: SimpleChannel) => {
   try {

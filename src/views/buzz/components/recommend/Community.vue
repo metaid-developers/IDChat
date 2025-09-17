@@ -67,15 +67,17 @@ import CardVue from '@/components/Card/Card.vue'
 import { Loading } from '@element-plus/icons-vue'
 import { NodeName } from '@/enum'
 import { useI18n } from 'vue-i18n'
-import { useTalkStore } from '@/stores/talk'
+// import { useTalkStore } from '@/stores/talk'
 import { sleep } from '@/utils/util'
 import DefaultImage from '@/assets/icons/photo_3.svg?url'
 import { ElMessage } from 'element-plus'
 import { useRootStore } from '@/stores/root'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 
 const pagination = reactive({ ...initPagination, pageSize: 10, totalPages: 1 })
 const userStore = useUserStore()
-const talkStore = useTalkStore()
+// const talkStore = useTalkStore()
+const simpleTalkStore = useSimpleTalkStore()
 const rootStore = useRootStore()
 const i18n = useI18n()
 const showDifferentLang = ref(Boolean(Number(localStorage.getItem('showDiffLang'))))
@@ -149,7 +151,7 @@ async function join(item: recommnedCommunity, index: number) {
 
   if (res) {
     sleep(2000).then(() => {
-      talkStore.fetchCommunities()
+      simpleTalkStore.syncFromServer()
     })
     item.isMyJoin = true
     item.memberTotal = item.memberTotal + 1

@@ -108,14 +108,11 @@ const handleContactSelect = (contact: any) => {
   }
 
   // 切换到选中的频道
-  const talkStore = useTalkStore()
-  if (contact.groupId) {
-    talkStore.activeChannelId = contact.groupId
+  const simpleTalkStore = useSimpleTalkStore()
+  if (contact.id) {
+    simpleTalkStore.setActiveChannel(contact.id)
   }
-} // const test=computed(()=>{
-//  return talkStore.activeCommunityChannels
-// })
-// console.log("test",test.value)
+}
 </script>
 
 <style lang="scss" scoped>
