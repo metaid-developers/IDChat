@@ -39,6 +39,7 @@
         encryption: message.replyInfo.encryption,
         timestamp: message.replyInfo.timestamp,
         isMock: message.isMock,
+        index: message.replyInfo.index,
       }"
       :isSession="true"
       v-bind="$attrs"

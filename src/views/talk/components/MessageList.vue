@@ -54,7 +54,7 @@
               :ref="el => setMessageRef(el, message)"
               v-bind="$attrs"
               @toBuzz="onToBuzz"
-              @to-time-stamp="time => scrollToTimeStamp(time)"
+              @to-time-stamp="scrollToIndex"
             />
           </template>
           <template v-else>
@@ -67,7 +67,7 @@
               v-bind="$attrs"
               :id="message.timestamp"
               @toBuzz="onToBuzz"
-              @to-time-stamp="time => scrollToTimeStamp(time)"
+              @to-time-stamp="scrollToIndex"
             />
           </template>
           <Transition name="fade-scroll-button" mode="out-in">
@@ -458,11 +458,68 @@ const scrollToMessagesBottom = async () => {
 
 // 监听消息变化，确保在有消息时滚动到底部
 
-function scrollToTimeStamp(time: number) {
-  const target = document.getElementById(time.toString())
-  if (target) {
+function scrollToIndex(index: number) {
+  // 根据消息索引滚动到对应位置
+  const targetElement = messageRefs.value.get(index)
+  if (targetElement && listContainer.value) {
+    // 计算目标元素相对于容器的位置
+    const containerRect = listContainer.value.getBoundingClientRect()
+    const targetRect = targetElement.getBoundingClientRect()
+
+    // 计算需要滚动的距离
+    const scrollOffset = targetRect.top - containerRect.top + listContainer.value.scrollTop
+
+    // 平滑滚动到目标位置
+    listContainer.value.scrollTo({
+      top: scrollOffset - 100, // 预留100px的偏移量，确保消息可见
+      behavior: 'smooth',
+    })
+
+    // 滚动完成后添加摇晃效果
+    setTimeout(() => {
+      if (targetElement) {
+        // 添加摇晃动画类
+        targetElement.classList.add('message-highlight-flash')
+
+        // 动画完成后移除类
+        setTimeout(() => {
+          targetElement.classList.remove('message-highlight-flash')
+        }, 800) // 0.8秒后移除摇晃效果
+      }
+    }, 500) // 等待滚动动画完成
+
+    console.log(`📍 滚动到消息索引: ${index}`)
+  } else {
+    console.warn(`⚠️ 无法找到索引为 ${index} 的消息元素`)
+  }
+}
+
+function scrollToTimeStamp(timestamp: number) {
+  // 根据时间戳滚动到对应消息
+  const target = document.getElementById(timestamp.toString())
+  if (target && messagesScroll.value) {
     const top = target.offsetTop - target.clientHeight
-    messagesScroll.value?.scrollTo({ top })
+    messagesScroll.value.scrollTo({
+      top,
+      behavior: 'smooth',
+    })
+
+    // 滚动完成后添加摇晃效果
+    setTimeout(() => {
+      if (target) {
+        // 添加摇晃动画类
+        target.classList.add('message-highlight-flash')
+
+        // 动画完成后移除类
+        setTimeout(() => {
+          target.classList.remove('message-highlight-flash')
+        }, 800) // 0.8秒后移除摇晃效果
+      }
+    }, 500) // 等待滚动动画完成
+
+    console.log(`📍 滚动到时间戳: ${timestamp}`)
+  } else {
+    console.warn(`⚠️ 无法找到时间戳为 ${timestamp} 的消息元素`)
   }
 }
 
@@ -499,6 +556,7 @@ async function onToBuzz(data: ShareChatMessageData) {
 // 移除了对 talk.newMessages 的监听
 
 defineExpose({
+  scrollToIndex,
   scrollToTimeStamp,
 })
 
@@ -631,5 +689,33 @@ defineExpose({
 .fade-scroll-button-leave-from {
   opacity: 1;
   transform: scale(1) translateY(0);
+}
+
+/* 消息高亮摇晃动画 */
+.message-highlight-flash {
+  animation: messageShake 0.8s ease-in-out;
+}
+
+@keyframes messageShake {
+  0%,
+  100% {
+    transform: translateX(0);
+    background-color: transparent;
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-3px);
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(3px);
+    background-color: rgba(59, 130, 246, 0.15);
+  }
 }
 </style>

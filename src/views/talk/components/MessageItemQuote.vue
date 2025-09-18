@@ -63,7 +63,6 @@ interface Props {
   isSession?: boolean // 是否私聊
 }
 const props = withDefaults(defineProps<Props>(), {})
-
 const emit = defineEmits<{
   (e: 'toTimeStamp', timestamp: number): void
 }>()

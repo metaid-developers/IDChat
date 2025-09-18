@@ -36,6 +36,7 @@
       <MessageItemQuote
         v-if="message.replyInfo"
         :quote="{ avatarImage: message.replyInfo?.userInfo?.avatar,
+        index: message.replyInfo?.index,
     metaName: '',
     metaId: message.replyInfo?.metaId,
     nickName: message.replyInfo?.userInfo?.name,
