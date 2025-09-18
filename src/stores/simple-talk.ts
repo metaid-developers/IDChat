@@ -1117,7 +1117,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         // 3. 如果有本地消息，直接展示，不从服务器拉取
-        if (localMessages.length > 0) {
+        if (localMessages.length > 20) {
           console.log(`🚀 检测到本地消息 ${localMessages.length} 条，直接展示，跳过服务器请求`)
           this.messageCache.set(channelId, localMessages)
           return
