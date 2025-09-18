@@ -70,32 +70,34 @@
               @to-time-stamp="time => scrollToTimeStamp(time)"
             />
           </template>
-          <div
-            v-show="showScrollToBottom || unReadCount > 0"
-            class="scroll-to-bottom-button"
-            @click="scrollToMessagesBottom()"
-          >
-            <el-badge
-              :value="unReadCount"
-              class="item"
-              :max="9999"
-              :show-zero="false"
-              v-if="unReadCount > 0"
+          <Transition name="fade-scroll-button" mode="out-in">
+            <div
+              v-show="showScrollToBottom || unReadCount > 0"
+              class="scroll-to-bottom-button cursor-pointer"
+              @click="scrollToMessagesBottom()"
             >
+              <el-badge
+                :value="unReadCount"
+                class="item"
+                :max="9999"
+                :show-zero="false"
+                v-if="unReadCount > 0"
+              >
+                <div
+                  class="w-10 h-10 min-h-10 min-w-10 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center "
+                >
+                  <el-icon class="text-dark-800 dark:text-white"><Bottom /></el-icon>
+                </div>
+              </el-badge>
+
               <div
+                v-else
                 class="w-10 h-10 min-h-10 min-w-10 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center "
               >
                 <el-icon class="text-dark-800 dark:text-white"><Bottom /></el-icon>
               </div>
-            </el-badge>
-
-            <div
-              v-else
-              class="w-10 h-10 min-h-10 min-w-10 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center "
-            >
-              <el-icon class="text-dark-800 dark:text-white"><Bottom /></el-icon>
             </div>
-          </div>
+          </Transition>
         </div>
 
         <div class="message-list-bottom-spacer" ref="bottomSpacer"></div>
@@ -606,5 +608,28 @@ defineExpose({
   right: 50px;
   bottom: 100px;
   z-index: 100000;
+}
+
+/* 滚动到底部按钮的渐隐渐显动画 */
+.fade-scroll-button-enter-active,
+.fade-scroll-button-leave-active {
+  transition: all 0.3s ease-in-out;
+  transform-origin: center;
+}
+
+.fade-scroll-button-enter-from {
+  opacity: 0;
+  transform: scale(0.8) translateY(10px);
+}
+
+.fade-scroll-button-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateY(10px);
+}
+
+.fade-scroll-button-enter-to,
+.fade-scroll-button-leave-from {
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
 </style>
