@@ -15,11 +15,17 @@
         </p>
 
         <div class="flex items-center gap-x-3 mt-6" v-if="groupInfo">
-          <Image
+          <!-- <Image
             :src="groupInfo?.roomIcon || ''"
             :customClass="
               '!w-13.5 !h-13.5 rounded-3xl object-cover object-center lg:group-hover:scale-110 transition-all duration-200'
             "
+          /> -->
+          <ChatIcon
+            :src="groupInfo?.roomIcon || ''"
+            :alt="groupInfo?.roomName"
+            :customClass="'w-16 h-16 rounded-full'"
+            :size="64"
           />
           <div class="flex flex-col">
             <h4 class="text-2xl font-bold tracking-wider">
