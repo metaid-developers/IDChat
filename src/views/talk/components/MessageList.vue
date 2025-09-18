@@ -445,7 +445,7 @@ async function onToBuzz(data: ShareChatMessageData) {
     encoding: 'utf-8',
   }
 
-  const res = await buildTx.createPin(metaidData, true).catch(error => {
+  const res = await buildTx.createPin(metaidData, true,false).catch(error => {
     loading.close()
     ElMessage.error(error.message)
   })
