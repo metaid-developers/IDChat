@@ -82,20 +82,19 @@
               :show-zero="false"
               v-if="unReadCount > 0"
             >
-              <el-button
-                type="warning"
-                class="w-8 h-8 min-h-8 min-w-8"
-                :icon="ArrowDownBold"
-                circle
-              />
+              <div
+                class="w-10 h-10 min-h-10 min-w-10 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center "
+              >
+                <el-icon class="text-dark-800 dark:text-white"><Bottom /></el-icon>
+              </div>
             </el-badge>
-            <el-button
+
+            <div
               v-else
-              type="warning"
-              class="w-8 h-8 min-h-8 min-w-8"
-              :icon="ArrowDownBold"
-              circle
-            />
+              class="w-10 h-10 min-h-10 min-w-10 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center "
+            >
+              <el-icon class="text-dark-800 dark:text-white"><Bottom /></el-icon>
+            </div>
           </div>
         </div>
 
@@ -141,7 +140,7 @@ import { useBulidTx } from '@/hooks/use-build-tx'
 import { useRouter } from 'vue-router'
 import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
-import { ArrowDownBold } from '@element-plus/icons-vue'
+import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 
 const isLoadingTop = ref(false) // 控制顶部加载器
@@ -604,8 +603,8 @@ defineExpose({
 }
 .scroll-to-bottom-button {
   position: absolute;
-  right: 80px;
-  bottom: 80px;
+  right: 50px;
+  bottom: 100px;
   z-index: 100000;
 }
 </style>
