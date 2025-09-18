@@ -1,6 +1,7 @@
 <template>
   <!-- <ChannelWelcome v-if="talk.isActiveChannelTheVoid" />
   <ChannelSettings v-else-if="talk.isActiveChannelTheVoid" /> -->
+  
   <SubChannelContent  />
 </template>
 

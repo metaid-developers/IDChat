@@ -4,11 +4,16 @@
   </div>
 
   <div
-    class="h-full overflow-y-auto"
+    class="h-full relative overflow-y-auto"
     ref="messagesScroll"
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
+     <div class="broadcast-nav w-full z-20 fixed top-12" v-if="talk.activeChannel?.subChannels?.length">
+    <SubBroadcastChannelNav></SubBroadcastChannelNav>
+
+   </div>
+
     <!-- <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
@@ -21,11 +26,11 @@
       
       </div>
   </div> -->
-   <div class="broadcast-nav" v-if="talk.activeChannel?.subChannels?.length">
+   <!-- <div class="broadcast-nav" v-if="talk.activeChannel?.subChannels?.length">
     <SubBroadcastChannelNav></SubBroadcastChannelNav>
 
-   </div>
-    <div class="" >
+   </div> -->
+    <div class="z-10 " >
      
       <div class="flex flex-col-reverse space-y-2 space-y-reverse">
         <!-- 群聊 -->
@@ -130,6 +135,7 @@ import {
 import LoadingItem from '../LoadingItem.vue'
 import LoadingList from '../LoadingList.vue'
 import MessageItem from '../MessageItem.vue'
+import SubBroadcastChannelNav from './SubBroadcastChannelNav.vue'
 //import MessageItemForSession from './MessageItemForSession.vue'
 import { openLoading, sleep, debounce } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
@@ -145,7 +151,7 @@ import { useRouter } from 'vue-router'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
-import SubBroadcastChannelNav from './SubBroadcastChannelNav.vue'
+// import SubBroadcastChannelNav from './SubBroadcastChannelNav.vue'
 const user = useUserStore()
 const talk = useTalkStore()
 const layout = useLayoutStore()

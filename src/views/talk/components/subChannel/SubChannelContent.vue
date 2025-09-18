@@ -1,5 +1,7 @@
 <template>
-  <div class="h-full pb-17.5 lg:pb-20">
+ 
+     
+    <div class="h-full  pb-17.5 lg:pb-20">
     <MessageList @quote="val => (quote.val = val)" ref="MessageListRef" />
   </div>
 
@@ -7,12 +9,16 @@
     <SubTheInput v-model:quote="quote.val" @to-quote="toQuote" />
     <TheErrorBox />
   </div>
+   
+
+
 </template>
 
 <script lang="ts" setup>
 import { defineAsyncComponent, provide, reactive, ref } from 'vue'
 import SubTheInput from './SubTheInput.vue'
 import TheErrorBox from '../TheErrorBox.vue'
+
 import { useTalkStore } from '@/stores/talk'
 const talk = useTalkStore()
 const quote: { val: any } = reactive({ val: undefined })

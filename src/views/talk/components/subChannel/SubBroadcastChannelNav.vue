@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white fixed top-20 pt-[11PX] pb-[15PX] flex items-center justify-between dark:bg-gray-700 px-4">
+  <div class="bg-white  pt-[11PX] pb-[15PX]  flex items-center justify-between dark:bg-gray-700 px-4">
     <div class="nav-left flex  ">
         <div class="nav-icon cursor-pointer mr-2 flex items-center w-[42px] h-[42px] justify-center ">
            
