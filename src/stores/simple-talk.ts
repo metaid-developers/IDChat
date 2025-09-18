@@ -1682,6 +1682,74 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     },
 
     /**
+     * 更新频道信息
+     * @param channelId 频道ID
+     * @param updates 要更新的字段
+     */
+    async updateChannelInfo(channelId: string, updates: {
+      name?: string,
+      avatar?: string,
+      roomNote?: string
+    }): Promise<boolean> {
+      try {
+        console.log(`🔄 更新频道信息: ${channelId}`, updates)
+
+        // 查找频道
+        const channel = this.channels.find(c => c.id === channelId)
+        if (!channel) {
+          console.warn(`⚠️ 未找到频道 ${channelId}`)
+          return false
+        }
+
+        // 记录更新前的信息
+        const oldInfo = {
+          name: channel.name,
+          avatar: channel.avatar,
+          roomNote: channel.roomNote
+        }
+
+        // 更新频道信息
+        let hasChanges = false
+        
+        if (updates.name !== undefined && updates.name !== channel.name) {
+          channel.name = updates.name
+          hasChanges = true
+          console.log(`📝 更新频道名称: "${oldInfo.name}" → "${updates.name}"`)
+        }
+
+        if (updates.avatar !== undefined && updates.avatar !== channel.avatar) {
+          if(updates.avatar && updates.avatar.startsWith('metafile://')){
+            updates.avatar = `https://man.metaid.io${updates.avatar.replace('metafile://', '/content/')}`
+          }
+          channel.avatar = updates.avatar
+          hasChanges = true
+          console.log(`🖼️ 更新频道头像: "${oldInfo.avatar}" → "${updates.avatar}"`)
+        }
+
+        if (updates.roomNote !== undefined && updates.roomNote !== channel.roomNote) {
+          channel.roomNote = updates.roomNote
+          hasChanges = true
+          console.log(`📋 更新群聊公告: "${oldInfo.roomNote}" → "${updates.roomNote}"`)
+        }
+
+        if (!hasChanges) {
+          console.log(`ℹ️ 频道信息无变化，跳过保存`)
+          return true
+        }
+
+        // 保存到本地数据库
+        await this.db.saveChannel(channel)
+        
+        console.log(`✅ 频道 ${channelId} 信息更新成功`)
+        return true
+
+      } catch (error) {
+        console.error('❌ 更新频道信息失败:', error)
+        return false
+      }
+    },
+
+    /**
      * 发送消息并更新频道数据
      */
     async sendMessage(channelId: string, content: string, messageType: MessageType = MessageType.msg, reply: any): Promise<UnifiedChatMessage | null> {

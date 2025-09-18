@@ -163,11 +163,7 @@
           No results found
         </p>
         <!-- IntersectionObserver 触发元素 - 只在非搜索状态下显示 -->
-        <div
-          ref="loadTrigger"
-          class="load-trigger"
-          v-if="!noMore && currentDisplayList.length > 0 && !searchKey.trim()"
-        ></div>
+        <div ref="loadTrigger" class="load-trigger" v-if="!noMore && !searchKey.trim()"></div>
       </div>
     </div>
   </ElDrawer>
@@ -326,26 +322,25 @@ const openEditChannelInfoDrawer = () => {
 // 处理公告更新
 const handleAnnouncementUpdated = (newAnnouncement: string) => {
   // 使用 store 专门的更新方法，确保全局数据一致性
-  if (currentChannelInfo.value) {
-    talkStore.updateChannelAnnouncement(currentChannelInfo.value.groupId, newAnnouncement)
-  }
+  // if (currentChannelInfo.value) {
+  //   talkStore.updateChannelAnnouncement(currentChannelInfo.value.groupId, newAnnouncement)
+  // }
+  simpleTalkStore.updateChannelInfo(simpleTalkStore.activeChannelId, {
+    roomNote: newAnnouncement,
+  })
 }
 
 // 处理群信息更新
 const handleChannelInfoUpdated = (updatedInfo: {
-  roomName: string
-  roomIcon: string
+  name: string
+  avatar: string
   avatarFile?: File | null
 }) => {
   // 使用 store 专门的更新方法，确保全局数据一致性
-  if (currentChannelInfo.value) {
-    talkStore.updateChannelInfo(currentChannelInfo.value.groupId, {
-      roomName: updatedInfo.roomName,
-      roomAvatarUrl: updatedInfo.roomIcon,
-      roomIcon: updatedInfo.roomIcon, // 同时更新 roomIcon 字段
-    })
-    // talkStore.fetchChannels()
-  }
+  simpleTalkStore.updateChannelInfo(simpleTalkStore.activeChannelId, {
+    name: updatedInfo.name,
+    avatar: updatedInfo.avatar,
+  })
 
   // 如果需要通知其他组件更新，可以在这里发送事件
   // 例如：发送自定义事件或更新其他 store 状态
@@ -398,27 +393,73 @@ const handleLeave = async () => {
 
 // 监听currentChannelInfo变化，重新拉取成员数据
 watch(
-  currentChannelInfo,
-  (newChannelInfo, oldChannelInfo) => {
-    if (newChannelInfo && newChannelInfo !== oldChannelInfo) {
-      // 重置分页状态
-      cursor.value = 0
-      noMore.value = false
-      list.value = []
-      searchList.value = []
-      isSearching.value = false
-      // 清除搜索防抖定时器
-      if (searchDebounceTimer) {
-        clearTimeout(searchDebounceTimer)
-        searchDebounceTimer = null
-      }
-      // 立即滚动到顶部
-      scrollToTop()
-      load()
+  () => currentChannelInfo.value?.id, // 直接监听 channelId 变化
+  (newChannelId, oldChannelId) => {
+    // 只有在抽屉打开状态下且频道ID确实发生变化时才执行
+    if (props.modelValue && newChannelId && newChannelId !== oldChannelId) {
+      console.log('频道切换，重新加载成员列表:', oldChannelId, '->', newChannelId)
+      resetAndLoad()
     }
   },
   { immediate: false }
 )
+
+// 监听抽屉开关状态
+watch(
+  () => props.modelValue,
+  isOpen => {
+    if (isOpen) {
+      console.log('抽屉打开，初始化成员列表')
+      // 抽屉打开时，如果有频道信息就加载数据
+      if (currentChannelInfo.value?.id) {
+        resetAndLoad()
+      } else {
+        // 没有频道信息时，至少要设置 observer
+        setupIntersectionObserver()
+      }
+    } else {
+      cleanupIntersectionObserver()
+      // 关闭时可以选择是否清理数据（这里保留数据以提高用户体验）
+      // resetData()
+    }
+  },
+  { immediate: true }
+)
+
+// 重置数据并加载的统一方法
+const resetAndLoad = async () => {
+  // 重置分页状态
+  cursor.value = 0
+  noMore.value = false
+  list.value = []
+  searchList.value = []
+  isSearching.value = false
+
+  // 清除搜索相关状态
+  searchKey.value = ''
+  showSearch.value = false
+
+  // 清除搜索防抖定时器
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = null
+  }
+
+  // 立即滚动到顶部
+  scrollToTop()
+
+  // 开始加载数据
+  try {
+    await getMoreMember()
+  } catch (error) {
+    console.error('重置并加载数据失败:', error)
+  }
+
+  // 数据加载完成后，确保 IntersectionObserver 正确设置
+  nextTick(() => {
+    setupIntersectionObserver()
+  })
+}
 
 // 监听搜索关键词变化，添加防抖处理
 watch(searchKey, newSearchKey => {
@@ -478,18 +519,6 @@ const performSearch = async (keyword: string) => {
   }
 }
 
-// 监听抽屉打开状态，设置 IntersectionObserver
-watch(
-  () => props.modelValue,
-  isOpen => {
-    if (isOpen) {
-      setupIntersectionObserver()
-    } else {
-      cleanupIntersectionObserver()
-    }
-  }
-)
-
 // 虚拟列表
 const loading = ref(false)
 const noMore = ref(false)
@@ -502,31 +531,65 @@ const currentDisplayList = computed(() => {
 
 // 设置 IntersectionObserver
 const setupIntersectionObserver = () => {
+  console.log('🔧 设置 IntersectionObserver')
+
   if (observer) {
-    console.log('Disconnecting previous observer')
+    console.log('🔄 断开之前的 observer')
     observer.disconnect()
   }
 
   observer = new IntersectionObserver(
     entries => {
       const [entry] = entries
+      console.log('👁️ IntersectionObserver 触发:', {
+        isIntersecting: entry.isIntersecting,
+        disabled: disabled.value,
+        loading: loading.value,
+        noMore: noMore.value,
+        searchKey: searchKey.value,
+        listLength: list.value.length,
+        cursor: cursor.value,
+      })
+
       if (entry.isIntersecting && !disabled.value) {
+        console.log('📥 触发加载更多')
         load()
+      } else if (entry.isIntersecting && disabled.value) {
+        console.log('⏸️ IntersectionObserver 触发但被禁用:', {
+          loading: loading.value,
+          noMore: noMore.value,
+          searchKey: searchKey.value.trim(),
+        })
       }
     },
     {
       root: scrollContainer.value,
-      rootMargin: '50px',
+      rootMargin: '200px', // 增加预加载区域到 200px
       threshold: 0.1,
     }
   )
 
   // 延迟一点时间确保 DOM 已经渲染
-  setTimeout(() => {
-    if (loadTrigger.value && observer && !searchKey.value.trim()) {
-      observer.observe(loadTrigger.value)
-    }
-  }, 100)
+  nextTick(() => {
+    setTimeout(() => {
+      if (loadTrigger.value && observer && !searchKey.value.trim()) {
+        console.log('✅ 开始观察 loadTrigger 元素')
+        observer.observe(loadTrigger.value)
+
+        // 检查元素是否已经在视口内，如果是且没有数据，立即触发加载
+        if (list.value.length === 0 && !loading.value && !noMore.value) {
+          console.log('🚀 loadTrigger 已在视口内且无数据，立即触发加载')
+          load()
+        }
+      } else {
+        console.warn('⚠️ 无法观察 loadTrigger 元素:', {
+          loadTrigger: !!loadTrigger.value,
+          observer: !!observer,
+          searchKey: searchKey.value,
+        })
+      }
+    }, 200) // 增加延迟时间
+  })
 }
 
 // 清理 IntersectionObserver
@@ -541,12 +604,10 @@ const load = () => {
   getMoreMember()
 }
 
-// 组件挂载时设置 observer
-onMounted(() => {
-  if (props.modelValue) {
-    setupIntersectionObserver()
-  }
-})
+// 组件挂载时的初始化已由 watch 监听器处理
+// onMounted(() => {
+//   // 初始化逻辑已移至 watch 监听器中
+// })
 
 // 组件卸载时清理 observer 和防抖定时器
 onUnmounted(() => {
@@ -558,14 +619,33 @@ onUnmounted(() => {
 })
 
 async function getMoreMember() {
+  console.log('📋 getMoreMember 调用:', {
+    hasChannelInfo: !!currentChannelInfo.value,
+    loading: loading.value,
+    searchKey: searchKey.value.trim(),
+    cursor: cursor.value,
+    noMore: noMore.value,
+  })
+
   if (!currentChannelInfo.value || loading.value || searchKey.value.trim()) {
+    console.log('❌ getMoreMember 中断:', {
+      hasChannelInfo: !!currentChannelInfo.value,
+      loading: loading.value,
+      hasSearchKey: !!searchKey.value.trim(),
+    })
     return
   }
 
-  const isSession = currentChannelInfo.value?.type === 'private' ? true : false
-  if (isSession) return
+  const isSession = currentChannelInfo.value?.type === 'private'
+  if (isSession) {
+    console.log('⏹️ 私聊会话，跳过成员加载')
+    return
+  }
 
-  console.log('加载更多成员', cursor.value, currentChannelInfo.value.id)
+  console.log('🔄 开始加载群组成员:', {
+    groupId: currentChannelInfo.value.id,
+    cursor: cursor.value,
+  })
 
   loading.value = true
 
@@ -575,6 +655,12 @@ async function getMoreMember() {
       cursor: String(cursor.value),
     })
 
+    console.log('📊 API 返回成员数据:', {
+      count: members.length,
+      pageSize,
+      cursor: cursor.value,
+    })
+
     if (members.length) {
       if (cursor.value === 0) {
         list.value = members.map((member: any, index: number) => ({
@@ -582,7 +668,11 @@ async function getMoreMember() {
           index,
           start: index * 60, // 60px = 50px height + 10px margin-top
         }))
-        cursor.value = members.length // 修复：使用实际接收到的成员数量
+        cursor.value = members.length
+        console.log('✅ 首页成员列表更新:', {
+          total: list.value.length,
+          newCursor: cursor.value,
+        })
       } else {
         const startIndex = list.value.length
         const newMembers = members.map((member: any, index: number) => ({
@@ -591,30 +681,42 @@ async function getMoreMember() {
           start: (startIndex + index) * 60, // 60px = 50px height + 10px margin-top
         }))
         list.value = [...list.value, ...newMembers]
-        cursor.value += members.length // 修复：使用实际接收到的成员数量，而不是固定的 pageSize
+        cursor.value += members.length
+        console.log('➕ 追加成员列表更新:', {
+          newCount: newMembers.length,
+          total: list.value.length,
+          newCursor: cursor.value,
+        })
       }
 
       if (members.length < pageSize) {
         noMore.value = true
+        console.log('🏁 已加载所有成员')
+      } else {
+        console.log('📋 还有更多成员可以加载')
       }
     } else {
       noMore.value = true
-    }
-
-    // 确保在数据更新后重新设置 observer
-    if (!noMore.value && loadTrigger.value && observer && !searchKey.value.trim()) {
-      // 确保 trigger 元素在 DOM 中可见
-      setTimeout(() => {
-        if (loadTrigger.value && observer && !searchKey.value.trim()) {
-          observer.observe(loadTrigger.value)
-        }
-      }, 100)
+      console.log('📭 无更多成员数据')
     }
   } catch (error) {
-    console.error('Error loading members:', error)
+    console.error('❌ 加载成员失败:', error)
     ElMessage.error('获取群组成员失败')
   } finally {
     loading.value = false
+    console.log('🔓 成员加载完成，loading = false')
+
+    // 确保在加载完成后 IntersectionObserver 仍在正常工作
+    if (!noMore.value && !searchKey.value.trim()) {
+      nextTick(() => {
+        if (loadTrigger.value && observer) {
+          console.log('🔄 重新确保 observer 正在监听')
+          // 先断开再重新连接，确保监听状态正确
+          observer.disconnect()
+          observer.observe(loadTrigger.value)
+        }
+      })
+    }
   }
 }
 </script>

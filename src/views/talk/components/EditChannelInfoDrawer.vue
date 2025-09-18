@@ -267,8 +267,8 @@ const saveChannelInfo = async () => {
     }
 
     emit('updated', {
-      roomName: groupName,
-      roomIcon: groupIcon,
+      name: groupName,
+      avatar: groupIcon,
     })
     emit('update:modelValue', false)
   } catch (error) {
