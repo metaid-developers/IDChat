@@ -1414,5 +1414,9 @@
     "error": "An error occurred during download"
   },
   "btcSameAsMvcError": "The current Metalet BTC address does not match the MVC address. Please switch to a BTC address that matches the MVC address before proceeding",
-  "redpack_claim_over": "The redpacket has been claimed over"
+  "redpack_claim_over": "The redpacket has been claimed over",
+  "share_group_member": "members",
+  "share_group_creator": "creator",
+  "share_group_view": "VIEW GROUP",
+  "share_group_invites": "invites you to join this group"
 }

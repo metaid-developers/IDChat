@@ -1414,5 +1414,9 @@
     "error": "下载过程中发生错误"
   },
   "btcSameAsMvcError": "Metalet BTC当前地址与MVC地址不一致，请切换BTC地址与MVC地址一致后再进行使用",
-  "redpack_claim_over": "红包已抢完！"
+  "redpack_claim_over": "红包已抢完！",
+  "share_group_member": "成员数",
+  "share_group_creator": "创建者",
+  "share_group_view": "查看群组",
+  "share_group_invites": "邀请您加入本群"
 }

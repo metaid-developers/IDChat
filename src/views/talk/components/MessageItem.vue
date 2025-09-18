@@ -229,19 +229,19 @@
                     {{ groupLinkInfo.groupName || 'Group Chat' }}
                   </div>
                   <div class="text-dark-400 dark:text-gray-400 text-sm">
-                    {{ props.message.userInfo?.name || 'Someone' }} invites you to join this group
+                    {{ props.message.userInfo?.name || 'Someone' }} {{ $t('share_group_invites') }}
                   </div>
                 </div>
               </div>
               <div class="flex gap-4 items-center">
                 <div class="text-dark-400 dark:text-gray-400 text-xs mt-1 truncate max-w-[150px]">
-                  creator: {{ groupLinkInfo.creator }}
+                   {{ $t('share_group_creator') }}: {{ groupLinkInfo.creator }}
                 </div>
                 <div
                   v-if="groupLinkInfo.memberCount > 0"
                   class="text-dark-400 dark:text-gray-400 text-xs mt-1"
                 >
-                  members: {{ groupLinkInfo.memberCount }}
+                   {{ $t('share_group_member') }}: {{ groupLinkInfo.memberCount }}
                 </div>
               </div>
 
@@ -250,7 +250,7 @@
                 <div
                   class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
                 >
-                  VIEW GROUP
+                  {{ $t('share_group_view') }}
                 </div>
               </div>
             </div>
