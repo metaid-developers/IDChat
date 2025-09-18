@@ -21,7 +21,7 @@ declare interface Message {
   to?: string
 }
 
-declare interface MemberItem{
+declare interface MemberListItem{
   address:string
   metaId:string
   timeStr:string
@@ -38,11 +38,11 @@ declare interface MemberItem{
 }
 
 declare interface MemberListRes{
-  admins:MemberItem[]
-  blockList:MemberItem[]
-  creator:MemberItem
-  list:MemberItem[]
-  whiteList:MemberItem[]
+  admins:MemberListItem[]
+  blockList:MemberListItem[]
+  creator:MemberListItem
+  list:MemberListItem[]
+  whiteList:MemberListItem[]
 }
 
 declare interface TalkError {

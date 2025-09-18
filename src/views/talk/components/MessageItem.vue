@@ -13,9 +13,16 @@
       <MessageMenu
         :message="props.message"
         :message-id="messageId"
+        :isSubChannelMsg="isSubChannelMsg"
         :parsed="
           parseTextMessage(
-            decryptedMessage(
+           isSubChannelMsg ? decryptedMessageForSubChannel(
+              message?.content,
+              message?.encryption,
+              message?.protocol,
+              message?.isMock,
+              message?.channelId?.substring(0, 16)
+            ) : decryptedMessage(
               message?.content,
               message?.encryption,
               message?.protocol,
@@ -36,12 +43,14 @@
       v-if="message.replyInfo"
       :quote="{ avatarImage: message.replyInfo?.userInfo?.avatar,
     metaName: '',
+    channelId:message?.replyInfo?.channelId|| '',
     metaId: message.replyInfo?.metaId,
     nickName: message.replyInfo?.userInfo?.name,
     protocol: message.replyInfo?.protocol,
     content: message.replyInfo?.content,
     encryption: message.replyInfo?.encryption,
     timestamp: message.replyInfo!.timestamp}"
+      :isSubChannelMsg="isSubChannelMsg"
       v-bind="$attrs"
     />
 
@@ -115,7 +124,14 @@
         <div class="w-full" v-else-if="isNftEmoji">
           <ChatImage
             :src="
-              decryptedMessage(
+           isSubChannelMsg ? decryptedMessageForSubChannel( 
+            message?.content,
+                message?.encryption,
+                message?.protocol,
+                message?.isMock,
+                message?.channelId?.substring(0,16)
+                  ) 
+                : decryptedMessage(
                 message?.content,
                 message?.encryption,
                 message?.protocol,
@@ -135,6 +151,14 @@
           >
             <ChatImage
               :src="
+                isSubChannelMsg ? decryptedMessageForSubChannel( 
+                message?.content,
+                message?.encryption,
+                message?.protocol,
+                message?.isMock,
+                message?.channelId?.substring(0,16)
+                  ) 
+                :
                 decryptedMessage(
                   message?.content,
                   message?.encryption,
@@ -282,19 +306,25 @@
             ]"
             v-else
             v-html="
-              parseTextMessage(
-                decryptedMessage(
-                  message?.content,
-                  message?.encryption,
-                  message?.protocol,
-                  message?.isMock
-                )
-              )
+            parseTextMessage(
+           isSubChannelMsg ? decryptedMessageForSubChannel(
+              message?.content,
+              message?.encryption,
+              message?.protocol,
+              message?.isMock,
+              message?.channelId?.substring(0, 16)
+            ) : decryptedMessage(
+              message?.content,
+              message?.encryption,
+              message?.protocol,
+              message?.isMock
+            )
+          )
             "
           ></div>
           <!--message.error message?.reason {{ message?.reason }}-->
           <button
-            v-if="message.error"
+            v-if="message?.error"
             class="ml-3   break-words flex items-center  justify-center"
             :title="resendTitle"
             @click="tryResend"
@@ -330,7 +360,7 @@ import {
   defineEmits,
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatTimestamp, decryptedMessage, sendMessage } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage, sendMessage,decryptedMessageForSubChannel } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import giftImage from '@/assets/images/gift.svg?url'
@@ -421,9 +451,12 @@ const handleTouchEnd = () => {
 
 interface Props {
   message: ChatMessageItem
+  isSubChannelMsg:boolean
   isShare?: boolean
 }
-const props = withDefaults(defineProps<Props>(), {})
+const props = withDefaults(defineProps<Props>(), {
+    isSubChannelMsg:false
+})
 
 const emit = defineEmits<{}>()
 
@@ -435,6 +468,7 @@ type TranslateStatus = 'hidden' | 'showing' | 'processing'
 const translateStatus: Ref<TranslateStatus> = ref('hidden')
 const translatedContent = ref('')
 /** 翻译 end */
+
 
 
 function toPrivateChat(message:ChatMessageItem){
@@ -561,6 +595,7 @@ const handleOpenRedPacket = async() => {
     groupId: talk.activeChannelId,
     pinId: `${props.message?.txId}i0`,
   }
+  debugger
   const redPacketType = props.message?.data?.requireType
   console.log({ redPacketType })
   if (redPacketType === '2') {
@@ -568,11 +603,13 @@ const handleOpenRedPacket = async() => {
   } else if (redPacketType === '2001' || redPacketType === '2002') {
     // params.address = userStore.user?.evmAddress
   }
+  console.log("props.message",props.message)
+  debugger
   const redPacketInfo = await getOneRedPacket(params)
   const hasReceived = redPacketInfo.payList.some(
     (item: any) => item.userInfo?.metaid === talk.selfMetaId
   )
-
+debugger
   if (hasReceived) {
     modals.redPacketResult = redPacketInfo
     layout.isShowRedPacketResultModal = true
@@ -673,7 +710,14 @@ const isGiveawayRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupLuckyBag)
 )
 const isChatGroupLink = computed(() => {
-  const messageContent = decryptedMessage(
+  const messageContent =  props.isSubChannelMsg ? decryptedMessageForSubChannel( 
+          props.message.content,
+          props.message.encryption,
+          props.message.protocol,
+          props.message.isMock,
+          props.message.channelId.substring(0,16)
+                  ) 
+                :decryptedMessage(
     props.message.content,
     props.message.encryption,
     props.message.protocol,
@@ -698,7 +742,14 @@ const isChatGroupLink = computed(() => {
 
 // 解析群链接信息
 const groupLinkInfo = computed(() => {
-  const messageContent = decryptedMessage(
+  const messageContent = props.isSubChannelMsg ? decryptedMessageForSubChannel( 
+          props.message.content,
+          props.message.encryption,
+          props.message.protocol,
+          props.message.isMock,
+          props.message.channelId.substring(0,16)
+                  ) 
+                : decryptedMessage(
     props.message.content,
     props.message.encryption,
     props.message.protocol,

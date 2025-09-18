@@ -678,7 +678,8 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           unit: this.unit,
         },
         talk.activeChannelId,
-        talk.selfMetaId
+        talk.selfMetaId,
+        talk.activeSubChannelId ? talk.activeSubChannelId : ''
       )
       console.log('giveRedPacket ret', ret)
       return ret

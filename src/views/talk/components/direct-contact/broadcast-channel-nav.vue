@@ -2,15 +2,16 @@
   <div class="bg-white pt-[11PX] pb-[15PX] flex items-center justify-between dark:bg-gray-700 px-4">
     <div class="nav-left flex  ">
         <div class="nav-icon mr-2 flex items-center w-[42px] h-[42px] justify-center ">
-            <Icon name="broadcast_icon" class=" text-dark-800 dark:text-gray-100"  />
+            <Icon name="broadcast_icon" class=" text-dark-800 dark:text-gray-100"   />
+            <!-- <el-icon @click="layout.isShowSubChannelDrawer = false" v-else><Back /></el-icon> -->
         </div>
         <div class="nav-content">
             <div class="text-base font-medium">{{ $t('Talk.Channel.broadcast_title') }}</div>
             <div class="text-sm  text-dark-300 dark:text-gray-400">1321321321</div>
         </div>
     </div>
-    <div class="nav-right">
-          <div class="flex items-center justify-center  ">
+    <div class="nav-right" >
+          <div class="flex items-center justify-center">
           <button
             class="w-9 h-9 main-border primary flex items-center justify-center"
             :class="{
@@ -28,7 +29,7 @@
 <script setup lang='ts'>
 import { useLayoutStore } from '@/stores/layout';
 import { useTalkStore } from '@/stores/talk';
-
+import { Back } from '@element-plus/icons-vue'
 
 const talk=useTalkStore()
 const layout=useLayoutStore()

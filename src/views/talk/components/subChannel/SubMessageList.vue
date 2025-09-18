@@ -9,7 +9,7 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
-    <div v-if="_welComePage && layout.showWelcomeDescView">
+    <!-- <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
         <div class="text-lg text-zinc-500 mt-3 break-all">
@@ -18,35 +18,28 @@
         <div class="text-xl mt-5 text-zinc-600 break-all ">
           Fully Decentralized,Immutable,Uncensorable,and Unhackable
         </div>
-        <!-- <div class="flex flex-col mt-5">
-          <div class="font-medium flex flex-row items-center text-lg">
-            <span>{{ $t('link.metaid.group') }}</span
-            ><el-icon><CaretBottom /></el-icon>
-          </div>
-          <a class="main-border mt-5 text-lg primary p-3" @click="toMetaIdGrop">{{
-            $t('MetaID.official_group')
-          }}</a>
-        </div> -->
+      
       </div>
-  </div>
+  </div> -->
    <div class="broadcast-nav" v-if="talk.activeChannel?.subChannels?.length">
-    <BroadcastChannelNav></BroadcastChannelNav>
+    <SubBroadcastChannelNav></SubBroadcastChannelNav>
 
    </div>
     <div class="" >
      
       <div class="flex flex-col-reverse space-y-2 space-y-reverse">
         <!-- 群聊 -->
-        <template v-if="talk.activeChannelType === 'group'">
+       
           <MessageItem
-            v-for="message in talk.activeChannel?.pastMessages"
+            v-for="message in talk.activeSubChannel?.pastMessages"
             :message="message"
             :id="message.timestamp"
+            :isSubChannelMsg="true"
             v-bind="$attrs"
             @toBuzz="onToBuzz"
             @to-time-stamp="time => scrollToTimeStamp(time)"
           />
-          <div
+          <!-- <div
             class="border-b border-solid border-gray-300 dark:border-gray-600 mb-6 pb-6 pt-2 mx-4"
             v-if="hasTooFewMessages"
           >
@@ -72,11 +65,11 @@
                 @click="popInvite"
               />
             </div>
-          </div>
-        </template>
+          </div> -->
+       
 
         <!-- 私聊 -->
-        <template v-else>
+        <!-- <template v-else>
           <MessageItemForSession
             v-for="message in talk.activeChannel?.pastMessages"
             :message="message"
@@ -85,24 +78,25 @@
             @toBuzz="onToBuzz"
             @to-time-stamp="time => scrollToTimeStamp(time)"
           />
-        </template>
+        </template> -->
 
         <LoadingItem v-show="loadingMore && !isAtTop" />
-        <div class="w-full h-px bg-inherit" id="topAnchor"></div>
+        <div class="w-full h-px bg-inherit" id="topAnchorWithSub"></div>
       </div>
 
       <div class="flex flex-col space-y-4 mt-2">
-        <template v-if="talk.activeChannelType === 'group'">
+        <template >
           <MessageItem
-            v-for="message in talk.activeChannel?.newMessages"
+            v-for="message in talk.activeSubChannel?.newMessages"
             :message="message"
+            :isSubChannelMsg="true"
             :id="message.timestamp"
             v-bind="$attrs"
             @toBuzz="onToBuzz"
             @to-time-stamp="time => scrollToTimeStamp(time)"
           />
         </template>
-        <template v-else>
+        <!-- <template v-else>
           <MessageItemForSession
             v-for="message in talk.activeChannel?.newMessages"
             :message="message"
@@ -111,7 +105,7 @@
             @toBuzz="onToBuzz"
             @to-time-stamp="time => scrollToTimeStamp(time)"
           />
-        </template>
+        </template> -->
       </div>
     </div>
   </div>
@@ -133,10 +127,10 @@ import {
   onMounted,
   onUnmounted,
 } from 'vue'
-import LoadingItem from './LoadingItem.vue'
-import LoadingList from './LoadingList.vue'
-import MessageItem from './MessageItem.vue'
-import MessageItemForSession from './MessageItemForSession.vue'
+import LoadingItem from '../LoadingItem.vue'
+import LoadingList from '../LoadingList.vue'
+import MessageItem from '../MessageItem.vue'
+//import MessageItemForSession from './MessageItemForSession.vue'
 import { openLoading, sleep, debounce } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
 import Publish from '@/views/buzz/components/Publish.vue'
@@ -151,7 +145,7 @@ import { useRouter } from 'vue-router'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
-import BroadcastChannelNav from './direct-contact/broadcast-channel-nav.vue'
+import SubBroadcastChannelNav from './SubBroadcastChannelNav.vue'
 const user = useUserStore()
 const talk = useTalkStore()
 const layout = useLayoutStore()
@@ -238,29 +232,29 @@ onUnmounted(() => {
 //   taskInterval.value=null
 // })
 
-function toMetaIdGrop() {
-  if (user.isAuthorized) {
-    router.push({
-      name: 'talkChannel',
-      params: {
-        communityId: 'public',
-        channelId: '396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
-      },
-    })
-    // setTimeout(() => {
-    //   window.location.reload()
-    // }, 2000);
-  } else {
-    openConnectionModal()
-  }
-}
+// function toMetaIdGrop() {
+//   if (user.isAuthorized) {
+//     router.push({
+//       name: 'talkChannel',
+//       params: {
+//         communityId: 'public',
+//         channelId: '396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
+//       },
+//     })
+//     // setTimeout(() => {
+//     //   window.location.reload()
+//     // }, 2000);
+//   } else {
+//     openConnectionModal()
+//   }
+// }
 
 const handleScroll = async () => {
   if (!user.isAuthorized) return
   // if(isLoadingMore.value === true){
   // return
   // }
-  const topAnchor = document.getElementById('topAnchor')
+  const topAnchor = document.getElementById('topAnchorWithSub')
   if (topAnchor) {
     const topAnchorRect = topAnchor.getBoundingClientRect()
     if (topAnchorRect.bottom > -100 && !loadingMore.value && !layout.isShowMessagesLoading) {
@@ -303,6 +297,7 @@ const popInvite = () => {
 }
 
 const loadMore = async (preTimestamp = 0) => {
+  debugger
   if (!talk.activeChannelId || !talk.selfMetaId) return
   const isSession=Number(talk.activeChannel.type) == 2 ? true : false
   const earliestMessage =isSession ? talk.activeChannel.lastMessageTimestamp :
@@ -401,15 +396,15 @@ const loadMore = async (preTimestamp = 0) => {
 }
 
 const hasTooFewMessages = computed(() => {
-  if (!talk.activeChannel) {
+  if (!talk.activeSubChannel) {
     return false
   }
 
-  if (!talk.activeChannel.pastMessages) {
+  if (!talk.activeSubChannel.pastMessages) {
     return false
   }
 
-  return talk.activeChannel?.pastMessages.length < 10
+  return talk.activeSubChannel?.pastMessages.length < 10
 })
 
 const scrollToMessagesBottom = async (retryCount = 0) => {
@@ -429,6 +424,7 @@ const scrollToMessagesBottom = async (retryCount = 0) => {
 
 function scrollToTimeStamp(time: number) {
   const target = document.getElementById(time.toString())
+  debugger
   if (target) {
     const top = target.offsetTop - target.clientHeight
     messagesScroll.value?.scrollTo({ top })

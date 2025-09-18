@@ -194,7 +194,7 @@ export const getChannelMembers = async ({
 
     return {
         admins:admins ?? [],
-        blockList:admins ?? [],
+        blockList:blockList ?? [],
         creator:creator ?? null,
         list: list ?? [],
         whiteList: whiteList ?? []
@@ -453,6 +453,63 @@ export const getChannelMessages = async ({
       list: ChatMessageItem[] | null
     }
   } = await TalkApi.get(`/group-chat-list-v2?${query}`)
+
+  // if (data.data.list?.length) {
+  //   for (let item of data.data.list) {
+  //     if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
+  //     getOneRedPacket({
+  //         groupId: item.groupId,
+  //         pinId: item.pinId,
+  //       }).then((redpackInfo)=>{
+  //           if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
+  //         item.claimOver = true
+  //       }
+  //       }).catch((e)=>console.log('e',e))
+
+  //     }
+  //   }
+  // }
+
+  return data.data.list ?? []
+}
+
+export const getSubChannelMessages = async ({
+  channelId,
+  metaId = '',
+  cursor = '0',
+  size = String(ChannelMsg_Size),
+  timestamp = '0',
+}: {
+  channelId: string
+  metaId: string
+  cursor?: string
+  size?: string
+  timestamp?: string
+}): Promise<any> => {
+  const selfMetaId = metaId
+  const query = new URLSearchParams({
+    channelId,
+    metaId,
+    cursor,
+    size,
+    timestamp,
+  }).toString()
+
+  // if (type === 'session') {
+  //   const {
+  //     data: { data: messages },
+  //   } = await TalkApi.get(`/chat/${selfMetaId}/${channelId}?${query}`)
+
+  //   return messages
+  // }
+
+  const data: {
+    data: {
+      total: number
+      nextTimestamp: number
+      list: ChatMessageItem[] | null
+    }
+  } = await TalkApi.get(`/channel-chat-list-v3?${query}`)
 
   // if (data.data.list?.length) {
   //   for (let item of data.data.list) {

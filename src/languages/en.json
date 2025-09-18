@@ -1433,5 +1433,6 @@
   "Non_permission_set_admin": "Insufficient permissions. Only the group owner can set administrators",
   "Non_permission_set_whitelist": "Insufficient permissions. Only the group owner or administrators have the authority to manage the whitelist",
   "set_admin_fail": "Failed to set administrator",
-  "set_whitelist_fail": "Failed to set whitelist"
+  "set_whitelist_fail": "Failed to set whitelist",
+  "channle_memeber_whitelist": "Speaker"
 }

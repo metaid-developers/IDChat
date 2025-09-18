@@ -523,13 +523,15 @@ const _redistributeEvenly = (amounts: number[], totalAmount: number, minSats: nu
   return adjustedAmounts
 }
 
-export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string) => {
+export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string,subChannelId?:string) => {
   // 1.1 构建红包地址
   const luckyBagCode = await generateLuckyBagCode()
   if (luckyBagCode.code !== 0) {
     ElMessage.error(luckyBagCode.message || 'Generate lucky bag code failed')
     return
   }
+
+  debugger
   const { code, luckyBagAddress: address, timestamp: createTime } = luckyBagCode.data
   const buildTx = useBulidTx()
 
@@ -556,6 +558,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     luckyBagAddress: address,
     createTime,
     groupId: channelId,
+    channelId:subChannelId ? subChannelId : '',
     img: '',
     imgType: '',
     subId,
@@ -572,7 +575,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     requireCollectionId: '',
     limitAmount: 0,
   }
-
+debugger
   // 2.1 nft红包处理
   if (form.nft && form.chain) {
     if (form.chain === 'eth' || form.chain === 'goerli') {
@@ -1118,11 +1121,15 @@ export const sendMessage = async (messageDto: MessageDto) => {
       case MessageType.Text:
         if (messageDto.channelType === ChannelType.Session) {
           return _sendTextMessageForSession(messageDto)
+        }else if(messageDto.channelType === ChannelType.Broadcast){
+          return _sendTextMessageForSubChannel(messageDto)
         }
         return _sendTextMessage(messageDto)
       case MessageType.Image:
         if (messageDto.channelType === ChannelType.Session) {
           // return _sendImageMessageForSession(messageDto)
+        }else if(messageDto.channelType === ChannelType.Broadcast){
+            return _sendImageMessageForSubChannel(messageDto)
         }
         return _sendImageMessage(messageDto)
     }
@@ -1216,11 +1223,70 @@ export const tryCreateNode = async (
   }
 }
 
+export const tryCreateSubChannelNode = async (
+  node: {
+    protocol: string
+    body: any
+    timestamp: number
+    externalEncryption?: '0' | '1' | '2'
+    fileEncryption?: '0' | '2' | '2'
+    attachments?: AttachmentItem[]
+  },
+  mockId: string
+) => {
+  const jobs = useJobsStore()
+  const talk = useTalkStore()
+  const buildTx = useBulidTx()
+  const {
+    protocol,
+    body,
+    timestamp: timeStamp,
+    attachments,
+    externalEncryption,
+    fileEncryption,
+  } = node
+  try {
+    // const nodeRes = await sdk.createBrfcChildNode(node)
+    const nodeRes = await buildTx.createShowMsg({
+      protocol,
+      body,
+      attachments,
+      externalEncryption,
+      fileEncryption,
+      isBroadcast: true,
+    })
+debugger
+    // 取消支付的情况下，删除mock消息
+    console.log({ nodeRes })
+    
+    if (nodeRes === null) {
+      talk.removeSubChannelMessage(mockId)
+    }else{
+      return nodeRes
+    }
+
+    
+    
+  } catch (error) {
+    const timestamp = timeStamp
+    jobs?.node && jobs?.nodes.push({ node, timestamp })
+    const newMessages = talk.activeSubChannel.newMessages
+    const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
+    if (message) {
+      console.log('message', message)
+
+      message.error = true
+      message.reason = `${(error as any).toString()}`
+      return false
+    }
+  }
+}
+
 const _sendTextMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
   const chainStore = useChainStore()
-  const { content, channelId: groupID, userName: nickName, reply } = messageDto
+  const { content, channelId: groupId, userName: nickName, reply } = messageDto
 
   // 1. 构建协议数据
   const timestamp = getTimestampInSeconds()
@@ -1228,7 +1294,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
   const encryption = 'aes'
   const externalEncryption = '0'
   const dataCarrier = {
-    groupID,
+    groupId,
     timestamp,
     nickName,
     content,
@@ -1283,7 +1349,8 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     contentType: 'text/plain',
     content,
     chatType: ChatType.msg,
-    groupId: groupID,
+    groupId: groupId,
+
     chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
     avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
@@ -1329,6 +1396,10 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     talkStore.addRetryList({ ...messageDto, mockId })
   }
 }
+
+
+
+
 
 const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
@@ -1618,6 +1689,251 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   // return
 }
 
+const _sendImageMessageForSubChannel=async (messageDto: MessageDto) => {
+  const userStore = useUserStore()
+  const talkStore = useTalkStore()
+  const chainStore = useChainStore()
+
+  const {
+    groupId,
+    channelId,
+    userName: nickName,
+    attachments,
+    originalFileUrl,
+    reply,
+    channelType,
+  } = messageDto
+
+  // 1. 构建协议数据
+  // 1.1 groupId: done
+  // 1.2 timestamp
+  const timestamp = getTimestampInSeconds()
+  // 1.3 nickName: done
+  // 1.4 fileType
+  const file = attachments![0]
+  const fileType = file.fileType.split('/')[1]
+  // 1.5 encrypt
+  const encrypt = 'aes'
+  const externalEncryption = '0' //channelType == ChannelType.Group ?  '0' : '1'
+
+  // const attachment =attachments//'metafile://$[0]'
+
+  const dataCarrier: any ={
+          timestamp,
+          encrypt,
+          fileType,
+          groupId: groupId,
+          channelId:channelId,
+          nickName,
+          attachment: '',
+          replyPin: reply ? `${reply.txId}i0` : '',
+        }
+
+  // if (messageDto.channelType !== ChannelType.Group) {
+  //   dataCarrier.to = channelId
+  // }
+
+  const nodeName =NodeName.SimpleFileGroupChat
+  const fileEncryption = '0'
+  // 2. 构建节点参数
+  const node = {
+    protocol: nodeName,
+    // dataType: 'application/json',
+    body: dataCarrier,
+    attachments,
+    timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
+    externalEncryption,
+    fileEncryption,
+  }
+
+  // 2.5. mock发送
+  const mockId = realRandomString(12)
+  const mockMessage = {
+    mockId,
+    protocol: nodeName,
+    nodeName,
+    groupId: groupId,
+    channelId:channelId,
+    chatType: ChatType.img,
+    contentType: fileType,
+    content: originalFileUrl,
+    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+    avatarType: userStore.last?.avatar || 'undefined',
+    avatarTxId: userStore.last?.avatarId || 'undefined',
+    avatarImage: userStore.last?.avatar || '',
+    fromAvatarImage: userStore.last?.avatar || '',
+    metaId: userStore.last?.metaid || 'undefined',
+    from: userStore.last?.metaid,
+    nickName: userStore.last?.name || '',
+    userInfo: userStore.last, // userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
+    timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
+    txId: '',
+    encryption: encrypt,
+    externalEncryption,
+    isMock: true,
+    replyInfo: reply,
+    type: messageDto.channelType === ChannelType.Group ? 1 : 2,
+  }
+
+  // if(messageDto.channelType == ChannelType.Group || channelId !== userStore.last.metaid ){
+    
+  //     talkStore.addMessage(mockMessage)
+  // }
+
+   talkStore.addSubChannleMessage(mockMessage)
+
+
+
+  // 3. 发送节点
+  // const sdk = userStore.showWallet
+  try {
+    const tryRes = await tryCreateSubChannelNode(node, mockId)
+      if (tryRes === false) {
+      talkStore.addRetryList({ ...messageDto, mockId })
+    } else {
+      if(tryRes?.txids?.length || tryRes?.revealTxIds?.length){
+        
+      if(channelId === userStore.last.metaid ){
+      const txId =(tryRes?.txids && tryRes?.txids[1]) || (tryRes?.revealTxIds && tryRes?.revealTxIds[0])
+      talkStore.updateMessage(mockMessage,txId)
+      }
+      }
+      talkStore.removeRetryList(mockId)
+      return '1'
+    }
+
+
+    // if (!tryRes) {
+    //   talkStore.addRetryList({ ...messageDto, mockId })
+    // } else {
+    //   talkStore.removeRetryList(mockId)
+    //   return
+    // }
+  } catch (error) {
+    talkStore.addRetryList({ ...messageDto, mockId })
+  }
+
+  // await tryCreateNode(node,mockId)
+
+  // return
+}
+
+const _sendTextMessageForSubChannel = async (messageDto: MessageDto) => {
+  const userStore = useUserStore()
+  const talkStore = useTalkStore()
+  const chainStore = useChainStore()
+  const { content, channelId,groupId, userName: nickName, reply } = messageDto
+
+  // 1. 构建协议数据
+  const timestamp = getTimestampInSeconds()
+  const contentType = 'text/plain'
+  const encryption = 'aes'
+  const externalEncryption = '0'
+  const dataCarrier = {
+    groupId,
+    channelId,
+    timestamp,
+    nickName,
+    content,
+    contentType,
+    encryption,
+    replyPin: reply ? `${reply.txId}i0` : '',
+  }
+  debugger
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleGroupChat,
+    body: dataCarrier,
+    timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
+    externalEncryption,
+  }
+
+  // 2.5. mock发送
+  const mockId = realRandomString(12)
+  // const mockMessage = {
+  //   mockId,
+  //   protocol: 'simpleGroupChat',
+  //   contentType: 'text/plain',
+  //   content,
+  //   avatarType: userStore.user?.avatarType || 'undefined',
+  //   avatarTxId: userStore.user?.avatarTxId || 'undefined',
+  //   avatarImage: userStore.user?.avatarImage || '',
+  //   metaId: userStore.user?.metaId || 'undefined',
+  //   nickName: userStore.user?.name || '',
+  //   userInfo: userStore.user?.metaName ? { metaName: userStore.user?.metaName } : {},
+  //   timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
+  //   txId: '',
+  //   encryption,
+  //   isMock: true,
+  //   replyInfo: reply
+  //     ? {
+  //         chatType: reply.chatType,
+  //         content: reply.content,
+  //         contentType: reply.contentType,
+  //         encryption: reply.encryption,
+  //         metaId: reply.metaId,
+  //         nickName: reply.nickName,
+  //         protocol: reply.protocol,
+  //         timestamp: reply.timestamp,
+  //         txId: reply.txId,
+  //         userInfo: reply.userInfo,
+  //       }
+  //     : undefined,
+  // }
+  const mockMessage = {
+    mockId,
+    protocol: NodeName.SimpleGroupChat,
+    contentType: 'text/plain',
+    content,
+    chatType: ChatType.msg,
+    groupId: groupId,
+    channelId:channelId,
+    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+    avatarType: 'undefined',
+    avatarTxId: userStore.last?.avatarId || 'undefined',
+    avatarImage: userStore.last?.avatar || '',
+    metaId: userStore.last?.metaid || 'undefined',
+    nickName: userStore.last?.name || '',
+    userInfo: userStore.last,
+    timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
+    txId: '',
+    encryption,
+    externalEncryption,
+    isMock: true,
+    replyInfo: reply
+      ? {
+          chatType: reply.chatType,
+          content: reply.content,
+          contentType: reply.contentType,
+          encryption: reply.encryption,
+          metaId: reply.metaId,
+          nickName: reply.userInfo.name,
+          protocol: reply.protocol,
+          timestamp: reply.timestamp,
+          txId: reply.txId,
+          userInfo: reply.userInfo,
+        }
+      : undefined,
+    type: 1,
+  }
+  talkStore.addSubChannleMessage(mockMessage) 
+
+  // 3. 发送节点
+  // const sdk = userStore.showWallet
+  try {
+    const tryRes = await tryCreateSubChannelNode(node, mockId)
+
+    if (tryRes === false) {
+      talkStore.addRetryList({ ...messageDto, mockId })
+    } else {
+      talkStore.removeRetryList(mockId)
+      return '1'
+    }
+  } catch (error) {
+    talkStore.addRetryList({ ...messageDto, mockId })
+  }
+}
+
 export const formatTimestamp = (timestamp: number, i18n: any, showMinutesWhenOld = true) => {
   if (String(timestamp).length < 13) {
     timestamp = timestamp * 1000
@@ -1893,3 +2209,52 @@ export function decryptedMessage(
     return decrypt(content, secretKeyStr || talk.activeChannelId.substring(0, 16))
   }
 }
+
+export function decryptedMessageForSubChannel(
+  content: string,
+  encryption: string,
+  protocol: string,
+  isMock = false,
+  secretKeyStr = '',
+
+) {
+  if (!content) return
+  const talk = useTalkStore()
+debugger
+  if (encryption === '0') {
+    // return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
+    return content
+  }
+
+  if (
+    containsString(protocol, NodeName.SimpleFileGroupChat) ||
+    containsString(protocol, NodeName.SimpleFileMsg)
+  ) {
+    return content
+  }
+  console.log("decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16))",decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16)))
+  debugger
+  return decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16))
+
+  // if (isSession) {
+  //   if (!talk.activeChannel) return ''
+  //   // const credentialsStore = useCredentialsStore()
+  //   // const connectionStore = useConnectionStore()
+  //   const ecdhsStore = useEcdhsStore()
+  //   // console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
+  //   const ecdhPubkey = publicKeyStr ? publicKeyStr : talk.activeChannel.publicKeyStr
+  //   let ecdh = ecdhsStore.getEcdh(ecdhPubkey)
+
+  //   try {
+  //     const sharedSecret = ecdh?.sharedSecret
+
+  //     return ecdhDecrypt(content, sharedSecret)
+  //   } catch (error) {
+  //     throw new Error((error as any).toString())
+  //   }
+  // } else {
+    
+  // }
+}
+
+

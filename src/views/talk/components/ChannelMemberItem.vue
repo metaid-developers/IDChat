@@ -8,10 +8,11 @@
   >
     <template #reference>
       <div
-        class="flex items-center py-1 lg:py-2 group cursor-pointer hover:bg-dark-200 hover:dark:bg-gray-900 px-4"
+        class="flex items-center justify-between py-1 lg:py-2 group cursor-pointer hover:bg-dark-200 hover:dark:bg-gray-900 px-4"
         @click="messageThisGuy"
       >
-        <!--member.avatarType-->
+     <div class="flex items-center">
+         <!--member.avatarType-->
         <UserAvatar
           :name="member.userInfo.name"
           :type="'metaId'"
@@ -22,11 +23,18 @@
           class="shrink-0"
         />
         <div class="ml-2 flex flex-col gap-y-px">
-          <UserName :name="member.userInfo.name" :meta-name="''" class="max-w-[160PX] text-sm" />
+          <div class="flex flex-row items-center justify-between ">
+            <UserName :name="member.userInfo.name" :meta-name="''" class="max-w-[160PX] mr-2 text-sm" />
+             <Icon :name="getRuleName" class="w-[46px] h-[18px]" v-if="getRuleName"></Icon>
+          </div>
           <div class="text-xxs text-dark-300 dark:text-gray-400" v-if="member.userInfo.metaid">
             MetaID: {{ member.userInfo.metaid.substring(0, 6) }}
           </div>
         </div>
+     </div>
+     <div class="flex items-center" v-if="getRuleIcon">
+      <Icon :name="getRuleIcon" class="w-[24px] h-[24px] "></Icon>
+     </div>
       </div>
     </template>
     <div>
@@ -43,14 +51,14 @@
       </div>
     </div>
 
-      <div class="my-2" v-if="!isYou &&  (selfPermission == MemberRule.Owner || selfPermission == MemberRule.Admin)" >
+      <div class="my-2" v-if="!isYou && !isOwner && !isAdmin && (selfPermission == MemberRule.Owner || selfPermission == MemberRule.Admin)" >
       <div class="flex items-center el-button el-button--info is-text" @click="manageWhitelist">
         <Icon name="white_list" class="w-[15px] h-[15px] text-dark-300 dark:text-gray-400"></Icon>
         <span class="ml-[5.4px]"> {{ isSpeaker ? $t('Talk.Channel.remove_WhiteList') : $t('Talk.Channel.WhiteList') }}</span>
       </div>
       </div>
 
-      <div class="my-2" v-if="!isYou && !isOwner && !isAdmin &&  (selfPermission == MemberRule.Owner || selfPermission == MemberRule.Admin) " >
+      <div class="my-2" v-if="(!isYou && selfPermission == MemberRule.Owner) ||  (!isYou && !isOwner && !isAdmin &&  (selfPermission == MemberRule.Owner || selfPermission == MemberRule.Admin) ) " >
       <el-popconfirm
         width="220"
         :icon="InfoFilled"
@@ -101,7 +109,7 @@ function onCancel() {
 // import UserName from
 
 const props = defineProps(['member', 'createUserMetaId', 'groupId',])
-const emit = defineEmits(['updated'])
+const emit = defineEmits(['updated','updateUserAdmin','updateUserWhiteList'])
 const talk = useTalkStore()
 const router = useRouter()
 const route =useRoute()
@@ -118,6 +126,42 @@ const selfPermission=computed(()=>{
   //return props.selfRule
 })
 
+const getRuleName=computed(()=>{
+  switch (props.member?.rule) {
+    case MemberRule.Owner:
+      
+      return 'owner';
+     case MemberRule.Admin:
+      
+      return 'adminer';
+       case MemberRule.Speaker:
+      
+      return '';
+       case MemberRule.Normal:
+      return '';
+    default:
+      return '';
+  }
+})
+
+const getRuleIcon=computed(()=>{
+  switch (props.member?.rule) {
+    case MemberRule.Owner:
+      
+      return 'gm';
+     case MemberRule.Admin:
+      
+      return 'admintor';
+       case MemberRule.Speaker:
+      
+      return 'speaker';
+       case MemberRule.Normal:
+      return '';
+    default:
+      return '';
+  }
+})
+
 console.log("selfPermission",selfPermission.value)
 
 
@@ -130,6 +174,7 @@ const isAdmin=computed(()=>{
 })
 
 const isSpeaker=computed(()=>{
+  
     return props.member.rule === MemberRule.Speaker
 })
 
@@ -144,30 +189,20 @@ const isCurrentUserCreator = computed(() => {
   )
 })
 
-const manageAdmin=async()=>{
+const manageAdmin=()=>{
   //检查权限
   if(selfPermission.value != MemberRule.Owner){
     return ElMessage.error(`${i18n.t('Non_permission_set_admin')}`)
   }
-  //如何是管理员就移除
-  if(isAdmin.value){
-
-  }else{
-    //不是管理员就设置
-  }
+    emit('updateUserAdmin', props.member)
 }
 
-const manageWhitelist=async()=>{
+const manageWhitelist=()=>{
   const hasPermission=selfPermission.value == MemberRule.Admin || selfPermission.value == MemberRule.Owner
    if(!hasPermission){
     return ElMessage.error(`${i18n.t('Non_permission_set_whitelist')}`)
   }
-   //如何是白名单就移除
-  if(isSpeaker.value){
-    
-  }else{
-    //不是白名单就设置
-  }
+  emit('updateUserWhiteList', props.member)
 }
 
 const onConfirm = async () => {

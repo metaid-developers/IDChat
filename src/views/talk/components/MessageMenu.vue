@@ -26,7 +26,7 @@ import { Translate } from '@/api/core'
 import { EnvMode, NodeName, ChatChain } from '@/enum'
 import { useTalkStore } from '@/stores/talk'
 import copy from 'copy-to-clipboard'
-import { decryptedMessage } from '@/utils/talk'
+import { decryptedMessage,decryptedMessageForSubChannel } from '@/utils/talk'
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { containsString, fetchTranlateResult } from '@/utils/util'
@@ -43,6 +43,7 @@ const props = defineProps([
   'translateStatus',
   'translatedContent',
   'messageId',
+  'isSubChannelMsg'
 ])
 
 const emit = defineEmits<{
@@ -159,16 +160,24 @@ const actions = computed(() => {
         let data: ShareChatMessageData
         const message = props.message
 
-        const decryptedMessageContent = decryptedMessage(
+        const decryptedMessageContent =props.isSubChannelMsg ? decryptedMessageForSubChannel(
+              message?.content,
+              message?.encryption,
+              message?.protocol,
+              message?.isMock,
+              message?.channelId?.substring(0, 16)
+            ) : decryptedMessage(
           message?.content,
           message?.encryption,
           message?.protocol
         )
-
+        console.log("decryptedMessageContent",decryptedMessageContent)
+        debugger
         if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
           data = {
             communityId: '', // talk.activeCommunityId,
             groupId: talk.activeChannelId,
+            channelId:talk.activeSubChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -186,6 +195,7 @@ const actions = computed(() => {
           data = {
             communityId: '', // talk.activeCommunityId,
             groupId: talk.activeChannelId,
+            channelId:talk.activeSubChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -193,7 +203,7 @@ const actions = computed(() => {
               contentType: message.contentType,
               protocol: message.protocol,
               txId: message.txId,
-                chain:message.chain || 'mvc',
+              chain:message.chain || 'mvc',
               pinId: message.pinId,
               timestamp: message.timestamp,
               metanetId: message.metanetId,
@@ -203,6 +213,7 @@ const actions = computed(() => {
           data = {
             communityId: '', // talk.activeCommunityId,
             groupId: talk.activeChannelId,
+             channelId:talk.activeSubChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {

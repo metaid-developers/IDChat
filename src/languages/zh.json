@@ -1431,5 +1431,6 @@
   "Non_permission_set_admin": "权限不足,只有群主有权设置管理员",
   "Non_permission_set_whitelist": "权限不足，只有群主或管理员有权设置白名单",
   "set_admin_fail": "设置管理员失败",
-  "set_whitelist_fail": "设置白名单失败"
+  "set_whitelist_fail": "设置白名单失败",
+  "channle_memeber_whitelist": "发言人"
 }

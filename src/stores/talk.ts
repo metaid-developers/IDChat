@@ -12,7 +12,8 @@ import {
   getChannelMembers,
   GetUserEcdhPubkeyForPrivateChat,
   BatchGetUsersEcdhPubkeyForPrivateChat,
-  getGroupChannelList
+  getGroupChannelList,
+  getSubChannelMessages
 } from '@/api/talk'
 
 import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName,MemberRule } from '@/enum'
@@ -58,6 +59,7 @@ export const useTalkStore = defineStore('talk', {
       members: [] as any,
       activeCommunityId: '' as string,
       activeChannelId: '' as string,
+      activeSubChannelId: '' as string,
       selfChannelRule:[] as Array<{
         channelId:string,
         rule:MemberRule
@@ -125,6 +127,7 @@ export const useTalkStore = defineStore('talk', {
 
       getMychannelRule() {
       return (channeId: string) => {
+        console.log("99999999",this.selfChannelRule)
         const ruleItem=this.selfChannelRule.find(item=>item.channelId == channeId)
         return ruleItem ? ruleItem.rule : MemberRule.Normal
       }
@@ -184,6 +187,15 @@ export const useTalkStore = defineStore('talk', {
       } else {
         return (state.isShowWelcome = false)
       }
+    },
+
+    activeSubChannel(state): any {
+      if (!this.activeCommunity) return null
+
+        if (this.canAccessActiveChannel && this.activeChannel && this.activeChannel?.subChannels?.length) {
+          return this.activeChannel.subChannels[0]
+      }
+
     },
 
     activeChannel(state): any {
@@ -796,7 +808,7 @@ export const useTalkStore = defineStore('talk', {
 
        
       }
-      
+       
 
       // 如果没有指定頻道，则先从存储中尝试读取该社区的最后阅读頻道
       const latestChannelsRecords =
@@ -810,7 +822,7 @@ export const useTalkStore = defineStore('talk', {
         } else {
           channelId = latestChannels[routeCommunityId] || 'welcome'
         }
-
+         
         this.activeChannelId = channelId
         return
 
@@ -821,10 +833,12 @@ export const useTalkStore = defineStore('talk', {
       // 将最后阅读頻道存储到本地
       latestChannels[routeCommunityId] = routeChannelId
       localStorage.setItem('latestChannels-' + this.selfMetaId, JSON.stringify(latestChannels))
-
+     
       this.activeChannelId = routeChannelId
       return 'ready'
     },
+
+  
 
     _updateReadPointers(messageTimestamp: number, messageMetaId: string) {
       if (!this.channelsReadPointers[messageMetaId]) {
@@ -948,7 +962,7 @@ export const useTalkStore = defineStore('talk', {
         return
       }
       
-      this.activeChannel.newMessages.push(message)
+      this.activeChannel?.newMessages?.push(message)
 
       try {
         sortByConditionInPlace(
@@ -1324,6 +1338,104 @@ export const useTalkStore = defineStore('talk', {
       }
     },
 
+    async initSubChannelMessages(channelId:string,selfMetaId?: string) {
+      if (!selfMetaId) selfMetaId = this.selfMetaId
+
+      if (!this.activeChannel) return
+
+      if(!channelId) return
+
+      if(!this.activeChannel.subChannels.length) return
+
+      const layoutStore = useLayoutStore()
+
+      layoutStore.isShowMessagesLoading = true
+
+      // 最少1秒，防止闪烁
+      const currentTimestamp = new Date().getTime()
+
+      console.log('this.activeChannelType', this.activeChannelType, this.activeChannelId)
+
+      let messages
+      //let nextTimestamp=0
+      // if (this.activeChannelType == 'session') {
+      //   const privateList = await getPrivateChatMessages({
+      //     otherMetaId: this.activeChannelId,
+      //     metaId: selfMetaId,
+      //   })
+      //   messages=privateList.list ?? []
+      //   nextTimestamp=privateList.nextTimestamp
+
+      // } else {
+      //   messages = await getChannelMessages({
+      //     groupId: this.activeChannelId,
+      //     metaId: selfMetaId,
+      //   })
+      // }
+
+
+      //子频道不需要处理私聊
+       messages = await getSubChannelMessages({
+          channelId,
+          metaId: selfMetaId,
+        })
+        console.log(" this.activeChannel", this.activeChannel)
+        debugger
+
+      // for(let i of messages){
+      //   const userInfo= await getUserInfoByAddress(i.address)
+      //    i.userInfo=userInfo
+      //   if(i.replyInfo){
+      //     const replyUserInfo=await getUserInfoByAddress(i.replyInfo.address)
+      //     i.replyInfo.userInfo=replyUserInfo
+      //   }
+
+      // }
+
+      // 优化：使用nextTick来减少对session列表的影响
+      await nextTick()
+
+      this.activeSubChannelId=channelId || ''
+      this.activeSubChannel.pastMessages=messages
+      debugger
+      //this.activeChannel.subChannels[0].pastMessages = messages
+      // if(this.activeChannelType == 'session'){
+      //   this.activeChannel.lastMessageTimestamp =nextTimestamp
+      // }
+      this.activeSubChannel.newMessages=[]
+      //this.activeChannel.newMessages = []
+
+      // 设置已读指针
+      const latestTimestamp = messages.length ? messages[0].timestamp : 0
+      if (latestTimestamp) {
+        if (
+          this.channelsReadPointers[this.activeSubChannelId] &&
+          latestTimestamp > this.channelsReadPointers[this.activeSubChannelId].latest
+        ) {
+          this.channelsReadPointers[this.activeSubChannelId].latest = latestTimestamp
+          this.channelsReadPointers[this.activeSubChannelId].lastRead = latestTimestamp
+        } else {
+          this.channelsReadPointers[this.activeSubChannelId] = {
+            latest: latestTimestamp,
+            lastRead: latestTimestamp,
+          }
+        }
+      }
+
+      // 保证至少1秒
+      // const delay = Math.max(1000 - (new Date().getTime() - currentTimestamp), 0)
+      // if (delay) await sleep(delay)
+
+      layoutStore.isShowMessagesLoading = false
+
+      // 滚动到底部
+      await sleep(1)
+      const messagesContainer = document.getElementById('messagesScroll')
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight
+      }
+    },
+
     async updateChannelMessages(messages: any) {
       // 最少1秒，防止闪烁
       const currentTimestamp = new Date().getTime()
@@ -1428,6 +1540,28 @@ export const useTalkStore = defineStore('talk', {
       this.activeChannel.newMessages.push(message)
     },
 
+    addSubChannleMessage(message: any) {
+      console.log('this.activeChannel333333333333333', this.activeSubChannel)
+      if (!this.activeSubChannel) return
+      if (!this.activeSubChannel.newMessages) {
+        this.activeSubChannel.newMessages = []
+      }
+      console.log('message', message)
+
+      //const isSession = Number(message.type) == 2 ? true : false
+      // if (isSession) {
+      //   sortByConditionInPlace(this.activeCommunity?.channels, channel => channel?.id == message.to)
+      //   console.log('this.activeChannel333333333333333', this.activeChannel)
+      // } else {
+      //   sortByConditionInPlace(
+      //     this.activeCommunity?.channels,
+      //     channel => channel?.groupId == message.groupId
+      //   )
+      // }
+
+      this.activeSubChannel.newMessages.push(message)
+    },
+
     updateMessage(message: any,txid:string) {
       console.log('this.activeChannel333333333333333', this.activeChannel)
       if (!this.activeChannel) return
@@ -1461,6 +1595,15 @@ export const useTalkStore = defineStore('talk', {
       if (!mockId || !this.activeChannel || !this.activeChannel.newMessages) return
 
       this.activeChannel.newMessages = this.activeChannel.newMessages.filter(
+        (message: any) => message.mockId !== mockId
+      )
+    },
+
+    removeSubChannelMessage(mockId: string) {
+      console.log('removing message', mockId)
+      if (!mockId || !this.activeSubChannel || !this.activeSubChannel.newMessages) return
+
+      this.activeSubChannel.newMessages = this.activeSubChannel.newMessages.filter(
         (message: any) => message.mockId !== mockId
       )
     },

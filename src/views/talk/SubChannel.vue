@@ -1,29 +1,27 @@
 <template>
-  <div class="relative lg:flex text-base fullscreen overscroll-y-none">
-    <DirectContactList />
-    <CommunityInfo v-if="!isPublicChannel(communityId)" />
+  <div class="relative  lg:flex text-base fullscreen overscroll-y-none">
+    
+    <!-- <DirectContactList /> -->
+    <!-- <CommunityInfo v-if="!isPublicChannel(communityId)" /> -->
 
     <div class="lg:grow fullscreen lg:!h-screen lg:relative lg:flex">
       <ChannelHeader />
-
       <div class="pt-12 lg:relative w-full bg-dark-200 dark:bg-gray-900 lg:pt-15 h-full">
-        <router-view :key="($route.params.channelId as string)"></router-view>
+        <SubChannelBody></SubChannelBody>
+        <!-- <router-view :key="($route.params.channelId as string)"></router-view> -->
       </div>
 
-      <!-- <Transition name="slide">
-        <ChannelMemberListWrap v-show="layout.isShowMemberList" />
-      </Transition> -->
-    </div>
+    </div> 
 
-    <ChannelMemberListDrawer
+    <!-- <ChannelMemberListDrawer
       v-model="layout.isShowMemberListDrawer"
       :key="($route.params.channelId as string)"
-    />
+    /> -->
 
-     <SubChannelDrawer
+     <!-- <SubChannelDrawer
       v-model="layout.isShowSubChannelDrawer"
-      
-    />
+      :key="1"
+    /> -->
 
     <!-- modals -->
     <PasswordModal v-if="layout.isShowPasswordModal" />
@@ -38,7 +36,7 @@
 
     <LoadingCover v-if="layout.isShowLoading" />
     <RedPacketOpenModal v-if="layout.isShowRedPacketOpenModal" />
-    <RedPacketCreateModal v-if="layout.isShowRedPacketModal" />
+    <RedPacketCreateModal  v-if="layout.isShowRedPacketModal" />
     <RedPacketResultModal v-if="layout.isShowRedPacketResultModal" />
     <ShareToBuzzModal v-if="layout.isShowShareToBuzzModal" />
     <ShareSuccessModal v-if="layout.isShowShareSuccessModal" />
@@ -63,7 +61,7 @@ import ChannelHeader from './components/ChannelHeader.vue'
 import CommunityInfo from './components/CommunityInfo.vue'
 import ChannelMemberListWrap from './components/ChannelMemberListWrap.vue'
 import ChannelMemberListDrawer from './components/ChannelMemberListDrawer.vue'
-import SubChannelDrawer from './components/SubChannelDrawer.vue'
+//import SubChannelDrawer from './components/SubChannelDrawer.vue'
 import PasswordModal from './components/modals/consensus/Password.vue'
 import CommunitySettingsModal from './components/modals/community/settings/Index.vue'
 import RequireNftModal from './components/modals/consensus/RequireNft.vue'
@@ -86,6 +84,7 @@ import CreatePublicChannelModal from './components/modals/CreatePublicChannelMod
 import CreateBroadcastChannelModal from './components/modals/CreateBroadcastChannelModal.vue'
 //import CreateGroupTypeModal from './components/modals/CreateGroupTypeModal.vue'
 import LoadingCover from './components/modals/LoadingCover.vue'
+import SubChannelBody from '@/views/talk/components/subChannel/SubChannelBody.vue'
 import { useUserStore } from '@/stores/user'
 
 const talk = useTalkStore()
@@ -155,15 +154,15 @@ async function initChannelGuestMode(channelId: string) {
 
 const { communityId, channelId } = route.params as { communityId: string; channelId: string }
 
-watch(
-  () => route.params,
-  (newVal, oldVal) => {
+// watch(
+//   () => route.params,
+//   (newVal, oldVal) => {
     
-    if (newVal.channelId != oldVal.channelId) {
-      resolve(newVal.communityId as string, newVal.channelId as string)
-    }
-  }
-)
+//     if (newVal.channelId != oldVal.channelId) {
+//       resolve(newVal.communityId as string, newVal.channelId as string)
+//     }
+//   }
+// )
 
 // 解析 communityId 为 metaName 的情况
 async function resolve(communityId: string, channelId: string) {
@@ -186,35 +185,35 @@ async function resolve(communityId: string, channelId: string) {
   //   init(communityId)
   // }
 }
-resolve(communityId, channelId)
+//resolve(communityId, channelId)
 
-watch(
-  () => talk.communityStatus,
-  async (status: string) => {
-    if (status === 'invited') {
-      return resolve(communityId, channelId)
-    }
-  },
-  { immediate: true }
-)
+// watch(
+//   () => talk.communityStatus,
+//   async (status: string) => {
+//     if (status === 'invited') {
+//       return resolve(communityId, channelId)
+//     }
+//   },
+//   { immediate: true }
+// )
 
-watch(
-  [() => talk.communityStatus, () => user.isAuthorized],
-  ([status, isAuthorized]) => {
-    if (status === 'auth processing' && isAuthorized) {
-      talk.communityStatus = 'authed'
-      return resolve(communityId, channelId)
-    }
-  },
-  { immediate: true }
-)
+// watch(
+//   [() => talk.communityStatus, () => user.isAuthorized],
+//   ([status, isAuthorized]) => {
+//     if (status === 'auth processing' && isAuthorized) {
+//       talk.communityStatus = 'authed'
+//       return resolve(communityId, channelId)
+//     }
+//   },
+//   { immediate: true }
+// )
 
 
-onBeforeUnmount(() => {
+// onBeforeUnmount(() => {
   
-  talk.saveReadPointers()
-  talk.closeReadPointerTimer()
-})
+//   talk.saveReadPointers()
+//   talk.closeReadPointerTimer()
+// })
 </script>
 
 <style lang="scss" scoped>

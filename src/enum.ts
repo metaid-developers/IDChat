@@ -434,6 +434,7 @@ export enum MessageType {
 
 export enum ChannelType {
   Group = 'group',
+  Broadcast='broadcast',
   Session = 'session',
 }
 

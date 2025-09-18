@@ -6,6 +6,7 @@ export const useLayoutStore = defineStore('layout', {
   state: () => {
     return {
       isShowLeftNav: false,
+      isShowContactList:false,
       showJoinView: false,
       showWelcomeDescView: false,
       isShowPublishBuzz: false,
