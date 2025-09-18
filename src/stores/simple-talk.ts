@@ -406,7 +406,7 @@ class SimpleChatDB {
         version: String(message.replyInfo.version || '1.0.0'),
         chatType: Number(message.replyInfo.chatType || 1),
         timestamp: Number(message.replyInfo.timestamp || 0),
-        chain: String(message.replyInfo.chain || 'btc'),
+        chain: String(message.replyInfo.chain || 'mvc'),
         blockHeight: Number(message.replyInfo.blockHeight || 0),
         index: Number(message.replyInfo.index || 0)
       } : null
