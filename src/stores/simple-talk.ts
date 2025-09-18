@@ -1921,8 +1921,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           const messages = this.messageCache.get(channelId)!
           messages.push(message) // 新消息在前
           // 限制缓存大小
-          if (messages.length > 500) {
-            messages.splice(500)
+          if (messages.length > 5000) {
+            messages.splice(5000)
           }
         } else {
           this.messageCache.set(channelId, [message])

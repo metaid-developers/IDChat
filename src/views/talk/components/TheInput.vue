@@ -529,13 +529,13 @@ const trySendImage = async () => {
 
   const attachments = [hexedFiles]
 
-  if (talk.activeChannelType == ChannelType.Session) {
-    if (!talk.activeChannel?.publicKeyStr) {
+  if (simpleTalk.activeChannel?.type == 'private') {
+    if (!simpleTalk.activeChannel?.publicKeyStr) {
       return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
     }
-    let ecdh = ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+    let ecdh = ecdhsStore.getEcdh(simpleTalk.activeChannel?.publicKeyStr)
     if (!ecdh) {
-      ecdh = await getEcdhPublickey(talk.activeChannel.publicKeyStr)
+      ecdh = await getEcdhPublickey(simpleTalk.activeChannel.publicKeyStr)
       ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
     }
 
@@ -551,16 +551,15 @@ const trySendImage = async () => {
 
   const messageDto = {
     type: MessageType.Image,
-    channelId: talk.activeChannel.id,
-    groupId: talk.activeChannelType == ChannelType.Session ? '' : talk?.activeCommunity?.id || '',
+    channelId: simpleTalk.activeChannelId,
+    groupId: simpleTalk.activeChannel?.type == 'private' ? '' : simpleTalk.activeChannelId || '',
     userName: userStore.last?.name!,
     attachments,
     content: '',
     originalFileUrl,
-    channelType: talk.activeChannelType as ChannelType,
+    channelType: simpleTalk.activeChannel?.type === 'group' ? 'group' : 'session',
     reply: props.quote,
   }
-  console.log('props.quote', props.quote)
 
   emit('update:quote', undefined)
   await sendMessage(messageDto)

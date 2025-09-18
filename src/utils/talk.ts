@@ -1283,7 +1283,7 @@ const _uploadImage = async (file: File, sdk: SDK) => {
 
 const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
-  const talkStore = useTalkStore()
+  const simpleTalkStore = useTalkStore()
   const chainStore = useChainStore()
 
   const {
@@ -1353,45 +1353,45 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
 
   // 2.5. mock发送
   const mockId = realRandomString(12)
-  const mockMessage = {
-    mockId,
-    protocol: nodeName,
-    nodeName,
-    groupId: channelId,
-    chatType: ChatType.img,
-    contentType: fileType,
-    content: originalFileUrl,
-    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
-    avatarType: userStore.last?.avatar || 'undefined',
-    avatarTxId: userStore.last?.avatarId || 'undefined',
-    avatarImage: userStore.last?.avatar || '',
-    fromAvatarImage: userStore.last?.avatar || '',
-    metaId: userStore.last?.metaid || 'undefined',
-    from: userStore.last?.metaid,
-    nickName: userStore.last?.name || '',
-    userInfo: userStore.last, // userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
-    timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
-    txId: '',
-    encryption: encrypt,
-    externalEncryption,
-    isMock: true,
-    replyInfo: reply,
-    type: messageDto.channelType === ChannelType.Group ? 1 : 2,
-  }
-  talkStore.addMessage(mockMessage)
+  // const mockMessage = {
+  //   mockId,
+  //   protocol: nodeName,
+  //   nodeName,
+  //   groupId: channelId,
+  //   chatType: ChatType.img,
+  //   contentType: fileType,
+  //   content: originalFileUrl,
+  //   chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+  //   avatarType: userStore.last?.avatar || 'undefined',
+  //   avatarTxId: userStore.last?.avatarId || 'undefined',
+  //   avatarImage: userStore.last?.avatar || '',
+  //   fromAvatarImage: userStore.last?.avatar || '',
+  //   metaId: userStore.last?.metaid || 'undefined',
+  //   from: userStore.last?.metaid,
+  //   nickName: userStore.last?.name || '',
+  //   userInfo: userStore.last, // userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
+  //   timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
+  //   txId: '',
+  //   encryption: encrypt,
+  //   externalEncryption,
+  //   isMock: true,
+  //   replyInfo: reply,
+  //   type: messageDto.channelType === ChannelType.Group ? 1 : 2,
+  // }
+  // talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
   // const sdk = userStore.showWallet
   try {
     const tryRes = await tryCreateNode(node, mockId)
-    if (!tryRes) {
-      talkStore.addRetryList({ ...messageDto, mockId })
-    } else {
-      talkStore.removeRetryList(mockId)
-      return
-    }
+    // if (!tryRes) {
+    //   talkStore.addRetryList({ ...messageDto, mockId })
+    // } else {
+    //   talkStore.removeRetryList(mockId)
+    //   return
+    // }
   } catch (error) {
-    talkStore.addRetryList({ ...messageDto, mockId })
+    // talkStore.addRetryList({ ...messageDto, mockId })
   }
 
   // await tryCreateNode(node,mockId)
