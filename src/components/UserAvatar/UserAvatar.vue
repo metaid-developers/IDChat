@@ -8,7 +8,18 @@
     ref="AvatarRef"
     v-if="!isCustom"
   />
-  <div :id="avatarsContainer" v-else></div>
+  <!-- <div :id="avatarsContainer" v-else></div> -->
+  <div
+    v-else
+    :style="
+      `background:${generateTelegramGradient(
+        props.name || ''
+      )};color:#fff;min-width:${size}px;min-height:${size}px;border-radius:50%;font-size:${
+        size! / 2.5}px;`"
+    class="flex items-center justify-center font-semibold"
+  >
+    {{ props.name ? props.name.slice(0, 2).toUpperCase() : '' }}
+  </div>
 </template>
 <script lang="ts" setup>
 import { computed, render, h, ref, nextTick, onMounted, watch } from 'vue'
@@ -71,6 +82,49 @@ const customAvatar = () => {
 //   }
 // )
 
+// 生成类似 Telegram 的渐变背景色（基于用户名）
+function generateTelegramGradient(name: string) {
+  // 更深色的渐变色组合，提高文字可读性
+  const gradients = [
+    'linear-gradient(135deg, #4a5eb8 0%, #5a3882 100%)', // 深蓝紫渐变
+    'linear-gradient(135deg, #c06cc7 0%, #c7455a 100%)', // 深粉红渐变
+    'linear-gradient(135deg, #3b8bcc 0%, #0097a7 100%)', // 深蓝青渐变
+    'linear-gradient(135deg, #2e8b5b 0%, #26a69a 100%)', // 深绿青渐变
+    'linear-gradient(135deg, #c75877 0%, #d4af37 100%)', // 深粉黄渐变
+    'linear-gradient(135deg, #6a9daa 0%, #d8749c 100%)', // 深青粉渐变
+    'linear-gradient(135deg, #cc9966 0%, #a67c52 100%)', // 深黄橙渐变
+    'linear-gradient(135deg, #cc6660 0%, #b8396b 100%)', // 深红粉渐变
+    'linear-gradient(135deg, #5faab3 0%, #5db877 100%)', // 深蓝绿渐变
+    'linear-gradient(135deg, #a67799 0%, #b8a85a 100%)', // 深紫黄渐变
+    'linear-gradient(135deg, #5bc5cc 0%, #4d7fd9 100%)', // 深青蓝渐变
+    'linear-gradient(135deg, #cc9a1f 0%, #1a8b8a 100%)', // 深黄青渐变
+  ]
+
+  if (!name) return gradients[0]
+
+  // 使用名字的哈希值来选择渐变
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+
+  const index = Math.abs(hash) % gradients.length
+  return gradients[index]
+}
+
+// 生成随机但稳定的背景颜色（基于用户名）
+function generateBackgroundColor(name: string) {
+  // 使用名字的哈希值来生成稳定的颜色
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+
+  // 使用HSL颜色空间，固定饱和度和亮度，只变化色相
+  const h = Math.abs(hash) % 360
+  return `hsl(${h}, 70%, 60%)`
+}
+
 function generateTelegramAvatar(username: string, size = 48) {
   if (!username) return
 
@@ -91,6 +145,7 @@ function generateTelegramAvatar(username: string, size = 48) {
 
   // 获取画布上下文
   const ctx = canvas.getContext('2d')
+  if (!ctx) return container // 如果无法获取上下文，返回空容器
 
   // 获取名字的首字母
   function getInitials(name: string) {
@@ -126,19 +181,6 @@ function generateTelegramAvatar(username: string, size = 48) {
     }
   }
 
-  // 生成随机但稳定的背景颜色（基于用户名）
-  function generateBackgroundColor(name: string) {
-    // 使用名字的哈希值来生成稳定的颜色
-    let hash = 0
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash)
-    }
-
-    // 使用HSL颜色空间，固定饱和度和亮度，只变化色相
-    const h = Math.abs(hash) % 360
-    return `hsl(${h}, 70%, 60%)`
-  }
-
   const initials = getInitials(username)
   const bgColor = generateBackgroundColor(username)
 
@@ -159,7 +201,7 @@ function generateTelegramAvatar(username: string, size = 48) {
 }
 
 onMounted(() => {
-  customAvatar()
+  // customAvatar()
 })
 
 const toUserPage = () => {
