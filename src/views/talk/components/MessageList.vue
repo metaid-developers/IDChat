@@ -75,7 +75,22 @@
             class="scroll-to-bottom-button"
             @click="scrollToMessagesBottom()"
           >
+            <el-badge
+              :value="unReadCount"
+              class="item"
+              :max="9999"
+              :show-zero="false"
+              v-if="unReadCount > 0"
+            >
+              <el-button
+                type="warning"
+                class="w-8 h-8 min-h-8 min-w-8"
+                :icon="ArrowDownBold"
+                circle
+              />
+            </el-badge>
             <el-button
+              v-else
               type="warning"
               class="w-8 h-8 min-h-8 min-w-8"
               :icon="ArrowDownBold"
@@ -346,7 +361,6 @@ onMounted(async () => {
   // 监听路由变化，激活对应频道
   const { channelId } = route.params as { channelId: string }
   if (channelId && simpleTalk.isInitialized) {
-    console.log('🎯 初始化时激活频道:', channelId)
     await simpleTalk.setActiveChannel(channelId)
 
     // 添加详细的频道和消息调试信息

@@ -281,7 +281,7 @@
             </div>
 
             <div
-              class="text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+              class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
               :class="[
                 msgChain == ChatChain.btc && 'btc-item',
                 isMyMessage
@@ -290,17 +290,27 @@
                 message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
               ]"
               v-else
-              v-html="
-                parseTextMessage(
-                  decryptedMessage(
-                    message?.content,
-                    message?.encryption,
-                    message?.protocol,
-                    message?.isMock
+            >
+              <div
+                class="whitespace-pre-wrap"
+                v-html="
+                  parseTextMessage(
+                    decryptedMessage(
+                      message?.content,
+                      message?.encryption,
+                      message?.protocol,
+                      message?.isMock
+                    )
                   )
-                )
-              "
-            ></div>
+                "
+              ></div>
+              <div
+                v-if="message.mockId && !message.error"
+                class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700 inline-block
+                opacity-50"
+              ></div>
+            </div>
+
             <!--message.error message?.reason {{ message?.reason }}-->
             <button
               v-if="message.error"
@@ -308,8 +318,8 @@
               :title="resendTitle"
               @click="tryResend"
             >
-              <span v-if="message?.reason" class="text-[#fc457b] flex-1 font-medium mr-2">{{
-                message?.reason
+              <span v-if="message?.error" class="text-[#fc457b] flex-1 font-sm mr-2">{{
+                message?.error
               }}</span>
               <Icon
                 name="arrow_path"
@@ -362,6 +372,7 @@ import {getUserInfoByAddress} from '@/api/man'
 import ChatImage from '@/components/ChatImage/ChatImage.vue'
 import btcIcon from '@/assets/images/btc.png'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { UnifiedChatMessage } from '@/@types/simple-chat'
 
 const i18n = useI18n()
 
@@ -430,7 +441,7 @@ const handleTouchEnd = () => {
 }
 
 interface Props {
-  message: ChatMessageItem
+  message: UnifiedChatMessage
   isShare?: boolean
 }
 const props = withDefaults(defineProps<Props>(), {})

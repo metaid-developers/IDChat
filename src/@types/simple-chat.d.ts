@@ -140,6 +140,8 @@ export interface ChatReplyInfo {
 
 // 统一的聊天消息结构（支持私聊和群聊）
 export interface UnifiedChatMessage {
+  mockId?: string // 本地模拟的唯一ID，用于前端区分消息，非服务端字段
+  error?: string // 消息错误信息，如果有的话
   // 通用字段
   txId: string // 交易ID
   pinId: string // Pin ID

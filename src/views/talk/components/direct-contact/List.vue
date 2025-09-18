@@ -64,9 +64,6 @@ const { allChannels } = storeToRefs(useSimpleTalkStore())
 
 console.log('🚀 简化聊天列表组件加载', allChannels.value)
 
-setTimeout(() => {
-  console.log('talkStore', allChannels.value)
-}, 2000)
 // console.log('talkStore', simpleTalkStore.allChannels)
 
 // 优化key生成策略，避免不必要的重新渲染

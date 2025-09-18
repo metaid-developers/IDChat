@@ -7,6 +7,9 @@ import { GetUserEcdhPubkeyForPrivateChat, getChannels } from '@/api/talk'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { decrypt } from '@/utils/crypto'
 import { useChainStore } from './chain'
+import { tryCreateNode } from '@/utils/talk'
+import { getTimestampInSeconds } from '@/utils/util'
+import { NodeName } from '@/enum'
 
 // IndexedDB 管理类
 class SimpleChatDB {
@@ -447,6 +450,10 @@ class SimpleChatDB {
         blockHeight: Number(message.blockHeight || 0),
         index: Number(message.index || 0),
 
+        // 本地状态字段
+        mockId: message.mockId ? String(message.mockId) : undefined,
+        error: message.error ? String(message.error) : undefined,
+
         // 私聊特有字段
         from: message.from ? String(message.from) : undefined,
         fromUserInfo: safeFromUserInfo,
@@ -492,7 +499,10 @@ class SimpleChatDB {
         params: '',
         chain: 'btc',
         blockHeight: 0,
-        index: 0
+        index: 0,
+        // 本地状态字段
+        mockId: message.mockId ? String(message.mockId) : undefined,
+        error: message.error ? String(message.error) : undefined
       }
     }
   }
@@ -513,7 +523,7 @@ class SimpleChatDB {
         const userMessages = allMessages.filter(msg => {
           const matchUser = msg.userPrefix === this.userPrefix
           const matchChannel = msg.channelId === channelId
-          console.log(`消息 ${msg.id}: userPrefix=${msg.userPrefix} (匹配:${matchUser}), channelId=${msg.channelId} (匹配:${matchChannel})`)
+          
           return matchUser && matchChannel
         })
         
@@ -530,6 +540,25 @@ class SimpleChatDB {
       request.onerror = () => {
         console.error('❌ 获取消息失败:', request.error)
         resolve([])
+      }
+    })
+  }
+
+  async deleteMessage(messageId: string): Promise<void> {
+    if (!this.db) return
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['messages'], 'readwrite')
+      const store = transaction.objectStore('messages')
+      const request = store.delete(messageId)
+      
+      request.onsuccess = () => {
+        console.log(`🗑️ 成功删除消息: ${messageId}`)
+        resolve()
+      }
+      request.onerror = () => {
+        console.error(`❌ 删除消息失败: ${messageId}`, request.error)
+        reject(request.error)
       }
     })
   }
@@ -1006,7 +1035,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       // 处理服务端频道
       for (const serverChannel of serverChannels) {
         const existing = existingMap.get(serverChannel.id)
-        console.log(`🔍 处理频道 ${serverChannel.id}`, { existing, serverChannel })
+       
         if (existing) {
           // 合并已存在的频道
           const merged: SimpleChannel = {
@@ -1017,7 +1046,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage)
           }
 
-          console.log(`🔄 合并频道 ${serverChannel.id}`, { existing, serverChannel, merged })
+          
           mergedChannels.push(merged)
           existingMap.delete(serverChannel.id)
            await this.db.saveChannel(merged)
@@ -1655,15 +1684,18 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     /**
      * 发送消息并更新频道数据
      */
-    async sendMessage(channelId: string, content: string, messageType: MessageType = MessageType.msg): Promise<UnifiedChatMessage | null> {
+    async sendMessage(channelId: string, content: string, messageType: MessageType = MessageType.msg, reply: any): Promise<UnifiedChatMessage | null> {
       try {
         const chainStore = useChainStore()
         const userStore = useUserStore()
         const channel = this.channels.find(c => c.id === channelId)
         const isPrivateChat = channel?.type === 'private'
+        const mockId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+       const timestamp = getTimestampInSeconds()
         
         // 创建消息对象
         const message: UnifiedChatMessage = {
+          mockId,
           // 通用字段
           txId: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           pinId: `pin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -1685,10 +1717,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           version: '1.0.0',
           chatType: 0,
           data: null,
-          replyPin: '',
-          replyInfo: null,
+          replyPin:  reply ? `${reply.txId}i0` : '',
+          replyInfo: reply,
           replyMetaId: '',
-          timestamp: Date.now(),
+          timestamp: timestamp,
           params: '',
           chain: chainStore.state.currentChain,
           blockHeight: 0,
@@ -1715,6 +1747,57 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         // 保存消息到本地
         await this.addMessage(message)
+        if(channel!.type==='group'){
+          
+          const contentType = 'text/plain'
+          const encryption = 'aes'
+          const externalEncryption = '0'
+          const dataCarrier = {
+            groupID: channelId,
+            timestamp,
+            nickName: userStore.last?.name||'',
+            content,
+            contentType,
+            encryption,
+            replyPin: reply ? `${reply.txId}i0` : '',
+          }
+            const node = {
+            protocol: NodeName.SimpleGroupChat,
+            body: dataCarrier,
+            timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
+            externalEncryption,
+          }
+           await tryCreateNode(node,mockId)
+        }else{
+          const contentType = 'text/plain'
+  // 1.5 encrypt
+  const encrypt = 'ecdh'
+  const externalEncryption = '0'
+  const dataCarrier = {
+    to: channelId,
+    timestamp,
+    content,
+    contentType,
+    encrypt,
+    replyPin: reply ? `${reply.txId}i0` : '',
+  }
+
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleMsg,
+    body: dataCarrier,
+    timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
+    externalEncryption,
+  }
+  await tryCreateNode(node,mockId)
+        }
+          
+        
+          // 2. 构建节点参数
+        
+       
+
+       
 
         // 这里应该调用实际的发送 API
         // const result = await sendMessageAPI(message)
@@ -1728,6 +1811,91 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       } catch (error) {
         console.error('发送消息失败:', error)
         return null
+      }
+    },
+
+    async removeMessage(mockId: string) {
+      console.log(`🗑️ 开始删除消息 mockId: ${mockId}`)
+      
+      try {
+        let foundMessage: UnifiedChatMessage | null = null
+        let foundChannelId: string | null = null
+
+        // 1. 在所有缓存的频道中查找包含指定 mockId 的消息
+        for (const [channelId, messages] of this.messageCache) {
+          const messageIndex = messages.findIndex(msg => msg.mockId === mockId)
+          if (messageIndex !== -1) {
+            foundMessage = messages[messageIndex]
+            foundChannelId = channelId
+            
+            // 从缓存中删除消息
+            messages.splice(messageIndex, 1)
+            console.log(`📝 从缓存中删除消息: channelId=${channelId}, mockId=${mockId}`)
+            break
+          }
+        }
+
+        if (!foundMessage || !foundChannelId) {
+          console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
+          return
+        }
+
+        // 2. 根据消息的 txId 从数据库中删除记录
+        if (foundMessage.txId) {
+          await this.db.deleteMessage(foundMessage.txId)
+          console.log(`🗄️ 从数据库中删除消息: txId=${foundMessage.txId}`)
+        } else {
+          console.warn(`⚠️ 消息没有 txId，跳过数据库删除: mockId=${mockId}`)
+        }
+
+        console.log(`✅ 消息删除完成: mockId=${mockId}`)
+      } catch (error) {
+        console.error(`❌ 删除消息失败: mockId=${mockId}`, error)
+        throw error
+      }
+    },
+
+    async setMessageError(mockId: string, error: string) {
+      console.log(`❌ 设置消息错误状态 mockId: ${mockId}, error: ${error}`)
+      
+      try {
+        let foundMessage: UnifiedChatMessage | null = null
+        let foundChannelId: string | null = null
+
+        // 1. 在所有缓存的频道中查找包含指定 mockId 的消息
+        for (const [channelId, messages] of this.messageCache) {
+          const message = messages.find(msg => msg.mockId === mockId)
+          if (message) {
+            await this.db.deleteMessage(message.txId)
+            foundMessage = message
+            foundChannelId = channelId
+            
+            // 设置错误信息
+            message.error = error
+            this.updateMessage(message)
+            console.log(`📝 为消息设置错误状态: channelId=${channelId}, mockId=${mockId}, error=${error}`)
+            break
+          }
+        }
+
+        if (!foundMessage || !foundChannelId) {
+          console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
+          return
+        }
+
+        // 2. 如果消息已经有 txId，也更新数据库中的记录
+        if (foundMessage.txId) {
+          // 这里需要更新数据库中的消息记录，添加错误信息
+          await this.db.saveMessage(foundMessage)
+          console.log(`🗄️ 更新数据库中消息的错误状态: txId=${foundMessage.txId}`)
+        } else {
+          console.log(`💡 消息尚未发送到服务器，仅更新内存缓存: mockId=${mockId}`)
+        }
+
+        console.log(`✅ 消息错误状态设置完成: mockId=${mockId}`)
+      } catch (error) {
+        console.error(`❌ 设置消息错误状态失败: mockId=${mockId}`, error)
+        throw error
       }
     },
 
@@ -1814,6 +1982,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async receiveMessage(message: UnifiedChatMessage): Promise<void> {
       try {
+        console.log('📩 接收到新消息:', message)
         // 确定频道ID
         const isPrivateChat = isPrivateChatMessage(message);
         const channelId =   isPrivateChat ? (message.to === this.selfMetaId ? message.from : message.to) : message.groupId;
@@ -1826,6 +1995,27 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 检查消息是否已存在（避免重复）
         const existingMessages = this.messageCache.get(channelId) || []
         const exists = existingMessages.some(m => m.txId === message.txId)
+
+        const mockMsg = existingMessages.find(m => m.mockId && m.content === message.content && m.metaId === message.metaId && Math.abs(m.timestamp - message.timestamp) < 5 * 60 * 1000)
+        if(mockMsg){
+          console.log('找到对应的mock消息:',mockMsg)
+          await this.db.deleteMessage(mockMsg.txId)
+          // 如果找到了对应的mock消息，更新其txId等信息
+          mockMsg.txId = message.txId
+          mockMsg.pinId = message.pinId
+          mockMsg.timestamp = message.timestamp
+          mockMsg.mockId = '' // 清空mockId，表示已发送成功
+          // 更新数据库
+          if(message.index === 0 && this.channels.find(c => c.id === channelId)?.lastMessage){
+            const channel = this.channels.find(c => c.id === channelId)
+            mockMsg.index = (channel?.lastMessage?.index || 0) + 1
+          }
+
+          await this.updateMessage(mockMsg)
+          console.log(`🔄 更新了已存在的草稿消息: ${mockMsg.mockId} 为正式消息: ${message.txId}`)
+          return
+        }
+        
         
         if (!exists) {
           if(message.index === 0 && this.channels.find(c => c.id === channelId)?.lastMessage){
@@ -1834,6 +2024,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
           await this.addMessage(message)
           console.log(`📨 收到新消息: ${message.content}`)
+        }else{
+          // tip: 如果消息已存在，可以选择更新内容（如状态变更等）
+
         }
       } catch (error) {
         console.error('接收消息失败:', error)
@@ -1876,8 +2069,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async deleteMessage(messageId: string, channelId: string): Promise<void> {
       try {
-        // 从数据库删除（这里需要实现 db.deleteMessage）
-        // await this.db.deleteMessage(messageId)
+        // 从数据库删除
+        await this.db.deleteMessage(messageId)
 
         // 从内存缓存删除
         const messages = this.messageCache.get(channelId)

@@ -702,25 +702,10 @@ const trySendText = async (e: any) => {
 
   try {
     // 使用 simple-talk 的 sendMessage 方法
-    await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content)
+    await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content, 0, props.quote)
     console.log('Message sent successfully via simpleTalk')
   } catch (error) {
     console.error('Failed to send message via simpleTalk:', error)
-    // 如果 simple-talk 发送失败，回退到原来的方法
-    const messageDto = {
-      content,
-      type: MessageType.Text,
-      channelId: simpleTalk.activeChannel.id,
-      userName: userStore.last?.name || '',
-      channelType:
-        simpleTalk.activeChannel.type === 'group' ? ChannelType.Group : ChannelType.Session,
-      reply: props.quote,
-    }
-
-    console.log('props.quote', props.quote)
-
-    emit('update:quote', undefined)
-    await sendMessage(messageDto)
   }
   isSending.value = false
 }

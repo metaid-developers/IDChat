@@ -422,7 +422,7 @@ export const useBulidTx = createGlobalState(() => {
     let SerialTransactions=[]
     try {
     
-   
+      throw new Error('--- IGNORE ---')
       if(attachments && attachments.length){
        
              

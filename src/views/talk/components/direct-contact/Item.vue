@@ -95,8 +95,6 @@ const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 const simpleTalkStore = useSimpleTalkStore()
 
-console.log('🚀 简化聊天列表项组件加载', props.session)
-
 const computeDecryptedMsg = (session: SimpleChannel) => {
   try {
     if (!session.lastMessage || !session.lastMessage.content) {

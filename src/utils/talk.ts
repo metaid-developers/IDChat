@@ -995,7 +995,7 @@ export const tryCreateNode = async (
   mockId: string
 ) => {
   const jobs = useJobsStore()
-  const talk = useTalkStore()
+  const simpleTalk = useSimpleTalkStore()
   const buildTx = useBulidTx()
   const {
     protocol,
@@ -1019,20 +1019,12 @@ export const tryCreateNode = async (
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
     if (nodeRes === null) {
-      talk.removeMessage(mockId)
+      simpleTalk.removeMessage(mockId)
     }
   } catch (error) {
     const timestamp = timeStamp
     jobs?.node && jobs?.nodes.push({ node, timestamp })
-    const newMessages = talk.activeChannel.newMessages
-    const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
-    if (message) {
-      console.log('message', message)
-
-      message.error = true
-      message.reason = `${(error as any).toString()}`
-      return false
-    }
+    simpleTalk.setMessageError(mockId, (error as any).message || 'Send failed')
   }
 }
 
@@ -1152,7 +1144,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
 
 const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
-  const talkStore = useTalkStore()
+  const simpleTalkStore = useSimpleTalkStore()
   const chainStore = useChainStore()
 
   const { content, channelId: to, reply } = messageDto
@@ -1242,7 +1234,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     protocol: NodeName.SimpleMsg,
     type: 2,
   }
-  talkStore.addMessage(mockMessage)
+  simpleTalkStore.addMessage(mockMessage)
 
   // 3. 发送节点
   // const sdk = userStore.showWallet
