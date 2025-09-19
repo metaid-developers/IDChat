@@ -54,7 +54,7 @@ export default ({ mode, command }) => {
   const isProduction = command === 'build'
   
   return defineConfig({
-    base:'/chat/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
+    //base:'/chat/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({
@@ -68,13 +68,13 @@ export default ({ mode, command }) => {
         }),
         enforce: 'post',
       },
-        createHtmlPlugin({
-        inject: {
-          data: {
-            basePath:'/chat/'//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
-          }
-        }
-      }),
+      //   createHtmlPlugin({
+      //   inject: {
+      //     data: {
+      //       basePath:'/chat/'//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
+      //     }
+      //   }
+      // }),
     //      createHtmlPlugin({
     //   inject: {
     //     data: {
