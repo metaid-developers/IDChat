@@ -9,7 +9,8 @@ import { useUserStore } from './stores/user'
 import { GetBandProposalList } from '@/api/strapi'
 import { useLayoutStore } from './stores/layout'
 //import.meta.env.VITE_BASE_URL
-export const routerHistory = createWebHistory()
+//export const routerHistory = createWebHistory()
+export const routerHistory = createWebHistory(import.meta.env.MODE == 'mainnet' ? '/chat/' : '/')
 export const router = createRouter({
   history: routerHistory,
   strict: true,
