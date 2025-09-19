@@ -146,6 +146,7 @@ import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 
 const isLoadingTop = ref(false) // 控制顶部加载器
+const isNoMoreTop = ref(false) // 控制顶部没有更多数据
 const isLoadingBottom = ref(false) // 控制底部加载器
 const listContainer = ref<HTMLElement | null>(null)
 const bottomSpacer = ref<HTMLElement | null>(null)
@@ -259,6 +260,9 @@ const loadItems = async (isPrepending = false) => {
   if (isLoadingTop.value || isLoadingBottom.value) return
 
   if (!isPrepending) {
+    if (isNoMoreTop.value) {
+      return
+    }
     isLoadingTop.value = true
   } else {
     isLoadingBottom.value = true
@@ -270,11 +274,18 @@ const loadItems = async (isPrepending = false) => {
     // 在添加新内容前，记录当前列表的总高度
     scrollHeightBefore = listWrapper.value.scrollHeight
   }
+  const beforeLength = simpleTalk.activeChannelMessages.length
 
   await simpleTalk.loadMoreMessages(simpleTalk.activeChannelId)
 
   // 等待 DOM 更新
   await nextTick()
+
+  const afterLength = simpleTalk.activeChannelMessages.length
+
+  if (beforeLength === afterLength) {
+    isNoMoreTop.value = true
+  }
 
   if (isPrepending) {
     // 添加新内容后，列表总高度会增加
