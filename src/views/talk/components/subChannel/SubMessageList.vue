@@ -119,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { getChannelMessages,getPrivateChatMessages } from '@/api/talk'
+import { getChannelMessages,getSubChannelMessages } from '@/api/talk'
 import { useTalkStore } from '@/stores/talk'
 import { useLayoutStore } from '@/stores/layout'
 import {
@@ -304,11 +304,11 @@ const popInvite = () => {
 
 const loadMore = async (preTimestamp = 0) => {
   debugger
-  if (!talk.activeChannelId || !talk.selfMetaId) return
-  const isSession=Number(talk.activeChannel.type) == 2 ? true : false
-  const earliestMessage =isSession ? talk.activeChannel.lastMessageTimestamp :
-    talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
-  const earliestMessageTimestamp =isSession ? earliestMessage : earliestMessage?.timestamp
+  if (!talk.activeSubChannelId || !talk.selfMetaId) return
+  //const isSession=Number(talk.activeChannel.type) == 2 ? true : false
+  const earliestMessage =talk.activeSubChannel?.pastMessages[talk.activeSubChannel?.pastMessages.length - 1]
+    
+  const earliestMessageTimestamp =earliestMessage?.timestamp
   const earliestMessageElement = document.getElementById(earliestMessageTimestamp?.toString() || '')
 
   const earliestMessagePosition = earliestMessageElement?.getBoundingClientRect().bottom
@@ -336,21 +336,13 @@ const loadMore = async (preTimestamp = 0) => {
   
   let items
   let nextTimestamp=0
-  if(isSession){
-     const privateList = await getPrivateChatMessages({
-    otherMetaId:talk.activeChannel.id,
+ 
+  items = await getSubChannelMessages({
+    channelId: talk.activeSubChannelId,
     metaId: talk.selfMetaId,
     timestamp: params.timestamp ?? '0',
   })
-  items=privateList.list ?? []
-  nextTimestamp=privateList.nextTimestamp
-  }else{
-     items = await getChannelMessages({
-    groupId: talk.activeChannelId,
-    metaId: talk.selfMetaId,
-    timestamp: params.timestamp ?? '0',
-  })
-  }
+ 
 
   
 
@@ -382,10 +374,8 @@ const loadMore = async (preTimestamp = 0) => {
     // }
     // })
 
-    talk.activeChannel?.pastMessages.push(item)
-    if(isSession){
-       talk.activeChannel.lastMessageTimestamp=nextTimestamp
-    }
+    talk.activeSubChannel?.pastMessages.push(item)
+   
   }
 
   // 滚动到原来的位置
