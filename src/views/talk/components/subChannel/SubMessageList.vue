@@ -9,7 +9,7 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
-     <div class="broadcast-nav w-full z-20 fixed top-12" v-if="talk.activeChannel?.subChannels?.length">
+     <div class="broadcast-nav w-full z-20 sticky top-0" v-if="talk.activeChannel?.subChannels?.length">
     <SubBroadcastChannelNav></SubBroadcastChannelNav>
 
    </div>

@@ -4,7 +4,7 @@
   </div>
 
   <div
-    class="h-full overflow-y-auto"
+    class="h-full relative overflow-y-auto"
     ref="messagesScroll"
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
@@ -29,7 +29,7 @@
         </div> -->
       </div>
   </div>
-   <div class="broadcast-nav" v-if="talk.activeChannel?.subChannels?.length">
+   <div class="broadcast-nav w-full z-20 sticky top-0" v-if="talk.activeChannel?.subChannels?.length">
     <BroadcastChannelNav></BroadcastChannelNav>
 
    </div>
