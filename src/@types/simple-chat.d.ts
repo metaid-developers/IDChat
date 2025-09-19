@@ -55,6 +55,8 @@ export interface SimpleChannel {
   id: string
   type: ChatType
   name: string
+  groupId:string
+  channelId:string
   avatar?: string
   members?: string[] // metaId列表，私聊时只有两个成员
   createdBy: string
@@ -77,6 +79,7 @@ export interface SimpleChannel {
   publicKeyStr?: string // 私聊加密公钥
   // 保存原始服务端数据
   serverData?: any
+  subChannels?:SimpleChannel[]
 }
 
 // 简化的用户信息

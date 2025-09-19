@@ -9,7 +9,7 @@ import { decrypt } from '@/utils/crypto'
 import { useChainStore } from './chain'
 import { tryCreateNode } from '@/utils/talk'
 import { getTimestampInSeconds } from '@/utils/util'
-import { NodeName } from '@/enum'
+import { NodeName ,MemberRule} from '@/enum'
 
 // IndexedDB 管理类
 class SimpleChatDB {
@@ -673,6 +673,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     
     // 当前激活的聊天
     activeChannelId: '',
+    //子频道
+    activeSubChannelId:'',
     
     // 消息缓存（内存中保存最近的消息）
     messageCache: new Map<string, UnifiedChatMessage[]>(),
@@ -696,6 +698,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     
     // 全局消息菜单状态管理
     activeMessageMenuId: '', // 当前显示菜单的消息ID
+
+    selfChannelRule:[] as Array<{
+          channelId:string,
+          rule:MemberRule
+        }>,
   }),
 
   getters: {
@@ -759,7 +766,15 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return (redPacketId: string) => {
         return this.receivedRedPacketIds.includes(redPacketId)
       }
-    }
+    },
+
+    getMychannelRule() {
+      return (channeId: string) => {
+        console.log("99999999",this.selfChannelRule)
+        const ruleItem=this.selfChannelRule.find(item=>item.channelId == channeId)
+        return ruleItem ? ruleItem.rule : MemberRule.Normal
+      }
+    },
   },
 
   actions: {
@@ -2217,6 +2232,23 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         isLoading: this.isLoading,
         lastSyncTime: this.lastSyncTime
       }
-    }
+    },
+
+    updateMyChannelRule(channelId:string,rule:MemberRule){
+          const ruleItem=this.selfChannelRule.find(item=>item.channelId == channelId)
+          if(ruleItem){
+             this.selfChannelRule.forEach(((item)=>{
+            if(item.channelId == channelId){
+              item.rule=rule
+            }
+          }))
+          }else{
+            this.selfChannelRule.push({
+            channelId:channelId,
+            rule:rule
+            })
+          }
+          
+        },
   }
 })
