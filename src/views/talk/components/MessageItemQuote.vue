@@ -5,20 +5,12 @@
       <ElPopover :width="'auto'">
         <template #reference>
           <div class="quote-content flex flex-align-center">
-            <UserAvatar
-              :image="quote.avatarImage"
-              :meta-name="''"
-              :meta-id="quote.metaId"
-            />
-            <UserName
-              :name="quote.nickName"
-              :meta-name="''"
-              :no-tag="true"
-            />:&nbsp;&nbsp;
+            <UserAvatar :image="quote.avatarImage" :meta-name="''" :meta-id="quote.metaId" />
+            <UserName :name="quote.nickName" :meta-name="''" :no-tag="true" />:&nbsp;&nbsp;
             <template
               v-if="
-              containsString(quote.protocol,NodeName.SimpleFileGroupChat)
-                || containsString(quote.protocol,NodeName.SimpleFileMsg)
+                containsString(quote.protocol, NodeName.SimpleFileGroupChat) ||
+                  containsString(quote.protocol, NodeName.SimpleFileMsg)
               "
             >
               <a class="attachment" @click="previewImage(quote.content)"
@@ -40,7 +32,7 @@
         </template>
         <div
           class="whitespace-nowrap cursor-pointer select-none"
-          @click="emit('toTimeStamp', quote!.timestamp)"
+          @click="emit('toTimeStamp', quote!.index)"
         >
           {{ $t('Talk.Go to the original position') }}
         </div>
@@ -53,7 +45,7 @@
 import { useImagePreview } from '@/stores/imagePreview'
 import { decryptedMessage } from '@/utils/talk'
 import { NodeName } from '@/enum'
-import {UserInfo as newUserInfo} from '@/api/man'
+import { UserInfo as newUserInfo } from '@/api/man'
 import { containsString } from '@/utils/util'
 interface Props {
   quote: {
@@ -65,15 +57,12 @@ interface Props {
     content: string
     encryption: string
     timestamp: number
-    userInfo:newUserInfo
+    userInfo: newUserInfo
     isMock?: boolean
-  
   }
   isSession?: boolean // 是否私聊
 }
 const props = withDefaults(defineProps<Props>(), {})
-
-
 const emit = defineEmits<{
   (e: 'toTimeStamp', timestamp: number): void
 }>()

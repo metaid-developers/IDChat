@@ -116,6 +116,11 @@ export const useUserStore = defineStore('user', {
             layoutStore.isShowProfileEditModal = true
           }
 
+          // 用户登录成功后，初始化简化聊天系统
+          if (this.last.metaid) {
+           
+          }
+
           return this.last
         }
       } catch (e: any) {
@@ -127,6 +132,19 @@ export const useUserStore = defineStore('user', {
 
     clearUserInfo() {
       if (!this.last) return
+      
+      // 用户登出时，重置聊天系统（延迟执行避免循环依赖）
+      setTimeout(async () => {
+        try {
+          const { useSimpleTalkStore } = await import('@/stores/simple-talk')
+          const simpleTalkStore = useSimpleTalkStore()
+          await simpleTalkStore.reset()
+          console.log('✅ 用户登出，聊天数据已清理')
+        } catch (error) {
+          console.warn('⚠️ 登出时清理聊天数据失败:', error)
+        }
+      }, 100)
+      
       this.last = {
         address: '',
         avatar: '',
@@ -149,22 +167,12 @@ export const useUserStore = defineStore('user', {
         pinId: '',
         soulbondToken: '',
         unconfirmed: '',
+        chatpubkey: ''
       }
-    },
+    }
    
-    
-   
-  },
-
-
-  
-
-  
+  }
 })
-
-
-
-
 // import { encode, decode } from 'js-base64'
 // import { SDK } from '@/utils/sdk'
 // import { toRaw } from 'vue'

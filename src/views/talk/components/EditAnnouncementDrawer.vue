@@ -61,6 +61,8 @@
 import { ref, watch, defineProps, defineEmits, withDefaults } from 'vue'
 import { ElMessage } from 'element-plus'
 import { SimpleGroup, updateGroupChannel } from '@/utils/talk'
+import { SimpleChannel } from '@/@types/simple-chat.d'
+import { getOneChannel } from '@/api/talk'
 
 interface ChannelInfo {
   groupId: string
@@ -70,7 +72,7 @@ interface ChannelInfo {
 
 interface Props {
   modelValue: boolean
-  channelInfo?: ChannelInfo | null
+  channelInfo?: SimpleChannel | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -116,21 +118,26 @@ const saveAnnouncement = async () => {
 
   saving.value = true
   try {
+    const cur = await getOneChannel(props.channelInfo.id)
+    if (!cur || !cur.txId) {
+      throw new Error('Channel not exist')
+    }
+
     const group: SimpleGroup = {
-      groupId: props.channelInfo.groupId,
-      groupIcon: props.channelInfo.roomIcon || '',
-      communityId: props.channelInfo.communityId || '',
-      groupName: props.channelInfo.roomName || '',
-      groupNote: announcementText.value.trim(),
+      groupId: cur.groupId,
+      groupIcon: cur.roomIcon || '',
+      communityId: cur.communityId,
+      groupName: cur.roomName || '',
+      groupNote: cur.roomNote || '',
       timestamp: Date.now(),
-      groupType: props.channelInfo.roomType,
-      status: props.channelInfo.roomStatus,
-      type: props.channelInfo.roomType,
-      tickId: props.channelInfo.tickId || '',
-      collectionId: props.channelInfo.collectionId || '',
-      limitAmount: props.channelInfo.limitAmount || 0,
-      chatSettingType: props.channelInfo.chatSettingType,
-      deleteStatus: props.channelInfo.deleteStatus,
+      groupType: cur.roomType,
+      status: cur.roomStatus,
+      type: cur.roomType,
+      tickId: cur.tickId || '',
+      collectionId: cur.collectionId || '',
+      limitAmount: cur.limitAmount || 0,
+      chatSettingType: cur.chatSettingType,
+      deleteStatus: cur.deleteStatus,
     }
     // 模拟 API 调用 - 实际项目中需要实现真正的 API
     const ret = await updateGroupChannel(group, { groupNote: announcementText.value.trim() })

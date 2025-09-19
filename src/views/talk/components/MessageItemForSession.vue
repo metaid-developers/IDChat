@@ -33,14 +33,13 @@
         metaId: message.replyInfo?.userInfo?.metaid,
         nickName: message.replyInfo.userInfo.name,
         protocol: message.replyInfo.protocol,
-        content:
-         containsString(message.replyInfo.protocol,NodeName.SimpleFileMsg)
-            ? message.replyInfo.content
-            : message.replyInfo.content,
+        content: containsString(message.replyInfo.protocol, NodeName.SimpleFileMsg)
+          ? message.replyInfo.content
+          : message.replyInfo.content,
         encryption: message.replyInfo.encryption,
         timestamp: message.replyInfo.timestamp,
         isMock: message.isMock,
-        
+        index: message.replyInfo.index,
       }"
       :isSession="true"
       v-bind="$attrs"
@@ -62,13 +61,14 @@
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100'"
           />
-          <div class=" text-xs shrink-0 inline-flex gap-1 whitespace-nowrap"
-          :class="[
+          <div
+            class=" text-xs shrink-0 inline-flex gap-1 whitespace-nowrap"
+            :class="[
               msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
             ]"
           >
             {{ formatTimestamp(message.timestamp, i18n) }}
-             <img
+            <img
               :src="btcIcon"
               class="chain-icon-menu w-[16px] h-[16px]"
               v-if="msgChain == ChatChain.btc"
@@ -78,13 +78,15 @@
 
         <div class="w-full" v-if="isNftEmoji">
           <Image
-            :src="decryptedMessage(
-            message?.content,
-            message?.encryption,
-            message?.protocol,
-            message?.isMock,
-            true
-          )"
+            :src="
+              decryptedMessage(
+                message?.content,
+                message?.encryption,
+                message?.protocol,
+                message?.isMock,
+                true
+              )
+            "
             customClass="max-w-[80%] md:max-w-[50%] lg:max-w-[320px] py-0.5 object-scale-down"
           />
 
@@ -291,7 +293,12 @@
             :class="[message.error && 'opacity-50']"
             @click="previewImage"
           >
-            <Image :src="decryptedImageMessage" :isPrivateChat="true" :chatPubkeyForDecrypt="chatPubkeyForDecrypt"  customClass="rounded py-0.5 object-scale-down" />
+            <Image
+              :src="decryptedImageMessage"
+              :isPrivateChat="true"
+              :chatPubkeyForDecrypt="chatPubkeyForDecrypt"
+              customClass="rounded py-0.5 object-scale-down"
+            />
           </div>
           <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
             <Icon
@@ -302,7 +309,9 @@
           <Teleport to="body" v-if="isImage && showImagePreview">
             <TalkImagePreview
               v-if="showImagePreview"
-              :src="message.content" :isPrivateChat="true" :chatPubkeyForDecrypt="chatPubkeyForDecrypt"
+              :src="message.content"
+              :isPrivateChat="true"
+              :chatPubkeyForDecrypt="chatPubkeyForDecrypt"
               @close="showImagePreview = false"
             />
           </Teleport>
@@ -404,24 +413,65 @@
           <div
             class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[
-                msgChain == ChatChain.btc && 'btc-item',
+              msgChain == ChatChain.btc && 'btc-item',
               isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
-           
+
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else
-            v-html="parseTextMessage(decryptedMessage(
-            message?.content,
-            message?.encryption,
-            message?.protocol,
-            message?.isMock,
-            true
-          ))"
+            v-html="
+              parseTextMessage(
+                decryptedMessage(
+                  message?.content,
+                  message?.encryption,
+                  message?.protocol,
+                  message?.isMock,
+                  true
+                )
+              )
+            "
           ></div>
-          <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
+          <div
+            class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+            :class="[
+              msgChain == ChatChain.btc && 'btc-item',
+              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
+              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
+            ]"
+            v-else
+          >
+            <div
+              class="whitespace-pre-wrap"
+              v-html="
+                parseTextMessage(
+                  decryptedMessage(
+                    message?.content,
+                    message?.encryption,
+                    message?.protocol,
+                    message?.isMock,
+                    true
+                  )
+                )
+              "
+            ></div>
+            <div
+              v-if="message.mockId && !message.error"
+              class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700 inline-block
+                opacity-50"
+            ></div>
+          </div>
+          <button
+            v-if="message.error"
+            class="ml-3   break-words flex items-center  justify-center"
+            :title="resendTitle"
+            @click="tryResend"
+          >
+            <span v-if="message?.error" class="text-[#fc457b] flex-1 font-sm mr-2">{{
+              message?.error
+            }}</span>
             <Icon
               name="arrow_path"
-              class="w-4 h-4 text-dark-400 dark:text-gray-200 hover:animate-spin-once"
+              class="w-4 h-4 flex-1  text-dark-400 dark:text-gray-200 hover:animate-spin-once"
             />
           </button>
         </div>
@@ -448,6 +498,8 @@ import { containsString } from '@/utils/util'
 import type { PriviteChatMessageItem } from '@/@types/common'
 import btcIcon from '@/assets/images/btc.png'
 import { DB } from '@/utils/db'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { UnifiedChatMessage } from '@/@types/simple-chat'
 import { getOneChannel } from '@/api/talk'
 const reply: any = inject('Reply')
 const i18n = useI18n()
@@ -456,12 +508,12 @@ const showImagePreview = ref(false)
 // 群信息缓存
 const channelInfo = ref<any>(null)
 interface Props {
-  message:PriviteChatMessageItem //ChatSessionMessageItem
+  message:UnifiedChatMessage //ChatSessionMessageItem
 }
 const props = withDefaults(defineProps<Props>(), {})
 const userStore = useUserStore()
-const talkStore = useTalkStore()
-const activeChannel = computed(() => talkStore.activeChannel)
+const simpleTalkStore = useSimpleTalkStore()
+const activeChannel = computed(() => simpleTalkStore.activeChannel)
 const jobs = useJobsStore()
 
 
@@ -581,23 +633,23 @@ const groupLinkInfo = computed(() => {
 })
 
 const tryResend = async () => {
-  props.message.error = false
-  await jobs.resend(props.message.timestamp)
+  // props.message.error = false
+  // await jobs.resend(props.message.timestamp)
 }
 
 const chatPubkeyForDecrypt=computed(()=>{
-  return talkStore.activeChannel.publicKeyStr//props.message?.userInfo?.chatPublicKey
+  return simpleTalkStore.activeChannel!.publicKeyStr//props.message?.userInfo?.chatPublicKey
 })
 
 const decryptedImageMessage = computed(() => {
   console.log("props.message.content",props.message)
-  
+
   if (props.message.isMock) {
     return props.message.content
   }
 
 
-  
+
   if (props.message.encryption !== '1') {
     return props.message.data?.attachment || props.message?.content
   }
@@ -610,7 +662,7 @@ const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string)=>{
     const res=await  DB.getMetaFileData(content, 235,true,chatPubkeyForDecrypt)
    return URL.createObjectURL(res.data)
   } catch (error) {
-    
+
   }
 }
 

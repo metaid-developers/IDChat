@@ -61,6 +61,7 @@
 <script lang="ts" setup>
 import { ChatChain } from '@/enum'
 import { useChainStore } from '@/stores/chain'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useTalkStore } from '@/stores/talk'
 import { useUserStore } from '@/stores/user'
 import { createPinWithBtc } from '@/utils/pin'
@@ -80,11 +81,11 @@ function onCancel() {
 
 const props = defineProps(['member', 'createUserMetaId', 'groupId'])
 const emit = defineEmits(['updated'])
-const talk = useTalkStore()
+const simpleTalk = useSimpleTalkStore()
 const router = useRouter()
 
 const isYou = computed(() => {
-  return props.member.userInfo.metaid === talk.selfMetaId
+  return props.member.userInfo.metaid === simpleTalk.selfMetaId
 })
 
 const popMemberMenu = () => {

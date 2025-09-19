@@ -422,7 +422,6 @@ export const useBulidTx = createGlobalState(() => {
     let SerialTransactions=[]
     try {
     
-   
       if(attachments && attachments.length){
        
              

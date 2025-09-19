@@ -47,6 +47,7 @@ import { createPinWithBtc } from './pin'
 import { generateLuckyBagCode } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -994,7 +995,7 @@ export const tryCreateNode = async (
   mockId: string
 ) => {
   const jobs = useJobsStore()
-  const talk = useTalkStore()
+  const simpleTalk = useSimpleTalkStore()
   const buildTx = useBulidTx()
   const {
     protocol,
@@ -1019,9 +1020,7 @@ export const tryCreateNode = async (
     console.log({ nodeRes })
     
     if (nodeRes === null) {
-      talk.removeMessage(mockId)
-    }else{
-      return nodeRes
+      simpleTalk.removeMessage(mockId)
     }
 
     
@@ -1029,15 +1028,7 @@ export const tryCreateNode = async (
   } catch (error) {
     const timestamp = timeStamp
     jobs?.node && jobs?.nodes.push({ node, timestamp })
-    const newMessages = talk.activeChannel.newMessages
-    const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
-    if (message) {
-      console.log('message', message)
-
-      message.error = true
-      message.reason = `${(error as any).toString()}`
-      return false
-    }
+    simpleTalk.setMessageError(mockId, (error as any).message || 'Send failed')
   }
 }
 
@@ -1157,7 +1148,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
 
 const _sendTextMessageForSession = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
-  const talkStore = useTalkStore()
+  const simpleTalkStore = useSimpleTalkStore()
   const chainStore = useChainStore()
 
   const { content, channelId: to, reply } = messageDto
@@ -1247,7 +1238,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     protocol: NodeName.SimpleMsg,
     type: 2,
   }
-  talkStore.addMessage(mockMessage)
+  simpleTalkStore.addMessage(mockMessage)
 
   // 3. 发送节点
   // const sdk = userStore.showWallet
@@ -1304,7 +1295,7 @@ const _uploadImage = async (file: File, sdk: SDK) => {
 
 const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
-  const talkStore = useTalkStore()
+  const simpleTalkStore = useTalkStore()
   const chainStore = useChainStore()
 
   const {
@@ -1374,60 +1365,37 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
 
   // 2.5. mock发送
   const mockId = realRandomString(12)
-  const mockMessage = {
-    mockId,
-    protocol: nodeName,
-    nodeName,
-    groupId: channelId,
-    chatType: ChatType.img,
-    contentType: fileType,
-    content: originalFileUrl,
-    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
-    avatarType: userStore.last?.avatar || 'undefined',
-    avatarTxId: userStore.last?.avatarId || 'undefined',
-    avatarImage: userStore.last?.avatar || '',
-    fromAvatarImage: userStore.last?.avatar || '',
-    metaId: userStore.last?.metaid || 'undefined',
-    from: userStore.last?.metaid,
-    nickName: userStore.last?.name || '',
-    userInfo: userStore.last, // userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
-    timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
-    txId: '',
-    encryption: encrypt,
-    externalEncryption,
-    isMock: true,
-    replyInfo: reply,
-    type: messageDto.channelType === ChannelType.Group ? 1 : 2,
-  }
-
-  // if(messageDto.channelType == ChannelType.Group || channelId !== userStore.last.metaid ){
-    
-  //     talkStore.addMessage(mockMessage)
+  // const mockMessage = {
+  //   mockId,
+  //   protocol: nodeName,
+  //   nodeName,
+  //   groupId: channelId,
+  //   chatType: ChatType.img,
+  //   contentType: fileType,
+  //   content: originalFileUrl,
+  //   chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+  //   avatarType: userStore.last?.avatar || 'undefined',
+  //   avatarTxId: userStore.last?.avatarId || 'undefined',
+  //   avatarImage: userStore.last?.avatar || '',
+  //   fromAvatarImage: userStore.last?.avatar || '',
+  //   metaId: userStore.last?.metaid || 'undefined',
+  //   from: userStore.last?.metaid,
+  //   nickName: userStore.last?.name || '',
+  //   userInfo: userStore.last, // userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
+  //   timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
+  //   txId: '',
+  //   encryption: encrypt,
+  //   externalEncryption,
+  //   isMock: true,
+  //   replyInfo: reply,
+  //   type: messageDto.channelType === ChannelType.Group ? 1 : 2,
   // }
-
-   talkStore.addMessage(mockMessage)
-
-
+  // talkStore.addMessage(mockMessage)
 
   // 3. 发送节点
   // const sdk = userStore.showWallet
   try {
     const tryRes = await tryCreateNode(node, mockId)
-      if (tryRes === false) {
-      talkStore.addRetryList({ ...messageDto, mockId })
-    } else {
-      if(tryRes?.txids?.length || tryRes?.revealTxIds?.length){
-        
-      if(channelId === userStore.last.metaid ){
-      const txId =(tryRes?.txids && tryRes?.txids[1]) || (tryRes?.revealTxIds && tryRes?.revealTxIds[0])
-      talkStore.updateMessage(mockMessage,txId)
-      }
-      }
-      talkStore.removeRetryList(mockId)
-      return '1'
-    }
-
-
     // if (!tryRes) {
     //   talkStore.addRetryList({ ...messageDto, mockId })
     // } else {
@@ -1435,7 +1403,7 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     //   return
     // }
   } catch (error) {
-    talkStore.addRetryList({ ...messageDto, mockId })
+    // talkStore.addRetryList({ ...messageDto, mockId })
   }
 
   // await tryCreateNode(node,mockId)
@@ -1684,7 +1652,7 @@ export function decryptedMessage(
   publicKeyStr = '' //私聊获取协商密钥使用
 ) {
   if (!content) return
-  const talk = useTalkStore()
+  const simpleTalk = useSimpleTalkStore()
 
   if (encryption === '0') {
     // return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
@@ -1699,12 +1667,12 @@ export function decryptedMessage(
   }
 
   if (isSession) {
-    if (!talk.activeChannel) return ''
+    if (!simpleTalk.activeChannel) return ''
     // const credentialsStore = useCredentialsStore()
     // const connectionStore = useConnectionStore()
     const ecdhsStore = useEcdhsStore()
     // console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
-    const ecdhPubkey = publicKeyStr ? publicKeyStr : talk.activeChannel.publicKeyStr
+    const ecdhPubkey = publicKeyStr ? publicKeyStr : simpleTalk.activeChannel!.publicKeyStr
     let ecdh = ecdhsStore.getEcdh(ecdhPubkey)
 
     try {
@@ -1715,6 +1683,6 @@ export function decryptedMessage(
       throw new Error((error as any).toString())
     }
   } else {
-    return decrypt(content, secretKeyStr || talk.activeChannelId.substring(0, 16))
+    return decrypt(content, secretKeyStr || simpleTalk.activeChannelId.substring(0, 16))
   }
 }

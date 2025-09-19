@@ -1,5 +1,8 @@
 <template>
-  <div class="h-full overflow-y-hidden" v-show="layout.isShowMessagesLoading">
+  <div
+    class="h-full overflow-y-hidden"
+    v-show="layout.isShowMessagesLoading || simpleTalk.isInitialized === false"
+  >
     <LoadingList />
   </div>
 
@@ -28,85 +31,81 @@
           }}</a>
         </div> -->
       </div>
-  </div>
-    <div class="" >
-      <div class="flex flex-col-reverse space-y-2 space-y-reverse">
-        <!-- 群聊 -->
-        <template v-if="talk.activeChannelType === 'group'">
-          <MessageItem
-            v-for="message in talk.activeChannel?.pastMessages"
-            :message="message"
-            :id="message.timestamp"
-            v-bind="$attrs"
-            @toBuzz="onToBuzz"
-            @to-time-stamp="time => scrollToTimeStamp(time)"
-          />
-          <div
-            class="border-b border-solid border-gray-300 dark:border-gray-600 mb-6 pb-6 pt-2 mx-4"
-            v-if="hasTooFewMessages"
-          >
-            <h3 class="text-2xl font-medium text-dark-400 dark:text-gray-200">
-              {{
-                '😊 ' + $t('Talk.Channel.welcome_message', { channel: talk.activeChannel?.name })
-              }}
-            </h3>
-            <div class="flex space-x-2 items-center mt-4">
-              <p class="text-sm font-thin text-dark-400 dark:text-gray-200 italic">
-                {{ $t('Talk.Channel.welcome_start', { channel: talk.activeChannel?.name }) }}
-              </p>
-              <p>🎉</p>
+    </div>
+
+    <div class="app-container">
+      <div class="list-container" ref="listContainer" @scroll.passive="handleScroll">
+        <!-- 顶部加载指示器 -->
+        <div class="loader" v-show="isLoadingTop">
+          <div class="spinner"></div>
+        </div>
+
+        <!-- 列表项将被渲染到这里 -->
+        <!-- ref 用于在代码中直接访问这个 DOM 元素 -->
+        <div ref="listWrapper">
+          <!-- 使用 v-for 循环渲染列表项 -->
+          <template v-if="currentChannelType === 'group'">
+            <MessageItem
+              v-for="message in simpleTalk.activeChannelMessages"
+              :key="message.txId || message.timestamp"
+              :message="message"
+              :id="message.timestamp"
+              :data-message-index="message.index"
+              :ref="el => setMessageRef(el, message)"
+              v-bind="$attrs"
+              @toBuzz="onToBuzz"
+              @to-time-stamp="scrollToIndex"
+            />
+          </template>
+          <template v-else>
+            <MessageItemForSession
+              v-for="message in simpleTalk.activeChannelMessages"
+              :key="message.txId || message.timestamp"
+              :message="message"
+              :data-message-index="message.index"
+              :ref="el => setMessageRef(el, message)"
+              v-bind="$attrs"
+              :id="message.timestamp"
+              @toBuzz="onToBuzz"
+              @to-time-stamp="scrollToIndex"
+            />
+          </template>
+          <Transition name="fade-scroll-button" mode="out-in">
+            <div
+              v-show="showScrollToBottom || unReadCount > 0"
+              class="scroll-to-bottom-button cursor-pointer"
+              @click="scrollToMessagesBottom()"
+            >
+              <el-badge
+                :value="unReadCount"
+                class="item"
+                :max="9999"
+                :show-zero="false"
+                v-if="unReadCount > 0"
+              >
+                <div
+                  class="w-10 h-10 min-h-10 min-w-10 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center "
+                >
+                  <el-icon class="text-dark-800 dark:text-white"><Bottom /></el-icon>
+                </div>
+              </el-badge>
+
+              <div
+                v-else
+                class="w-10 h-10 min-h-10 min-w-10 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center "
+              >
+                <el-icon class="text-dark-800 dark:text-white"><Bottom /></el-icon>
+              </div>
             </div>
+          </Transition>
+        </div>
 
-            <div class="flex mt-1 items-center space-x-2">
-              <p class="text-sm font-thin text-dark-400 dark:text-gray-200 mt-1 italic">
-                {{ $t('Talk.Channel.welcome_invite') }}
-              </p>
-              <Icon
-                name="user_plus"
-                class="box-content w-4 h-4 p-1.5 text-dark-400 dark:text-gray-200 mt-1 ml-1 border-2 border-dashed border-dark-250 dark:border-dark-400 rounded-lg cursor-pointer hover:border-solid hover:text-dark-800 hover:dark:text-primary transition-all duration-300"
-                @click="popInvite"
-              />
-            </div>
-          </div>
-        </template>
+        <div class="message-list-bottom-spacer" ref="bottomSpacer"></div>
 
-        <!-- 私聊 -->
-        <template v-else>
-          <MessageItemForSession
-            v-for="message in talk.activeChannel?.pastMessages"
-            :message="message"
-            v-bind="$attrs"
-            :id="message.timestamp"
-            @toBuzz="onToBuzz"
-            @to-time-stamp="time => scrollToTimeStamp(time)"
-          />
-        </template>
-
-        <LoadingItem v-show="loadingMore && !isAtTop" />
-        <div class="w-full h-px bg-inherit" id="topAnchor"></div>
-      </div>
-
-      <div class="flex flex-col space-y-4 mt-2">
-        <template v-if="talk.activeChannelType === 'group'">
-          <MessageItem
-            v-for="message in talk.activeChannel?.newMessages"
-            :message="message"
-            :id="message.timestamp"
-            v-bind="$attrs"
-            @toBuzz="onToBuzz"
-            @to-time-stamp="time => scrollToTimeStamp(time)"
-          />
-        </template>
-        <template v-else>
-          <MessageItemForSession
-            v-for="message in talk.activeChannel?.newMessages"
-            :message="message"
-            v-bind="$attrs"
-            :id="message.timestamp"
-            @toBuzz="onToBuzz"
-            @to-time-stamp="time => scrollToTimeStamp(time)"
-          />
-        </template>
+        <!-- 底部加载指示器 -->
+        <div class="loader" v-show="isLoadingBottom">
+          <div class="spinner"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -115,9 +114,10 @@
 </template>
 
 <script setup lang="ts">
-import { getChannelMessages,getPrivateChatMessages } from '@/api/talk'
-import { useTalkStore } from '@/stores/talk'
+import { getChannelMessages, getPrivateChatMessages } from '@/api/talk'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
+import VirtualList from 'vue3-virtual-scroll-list'
 import {
   computed,
   nextTick,
@@ -128,7 +128,7 @@ import {
   onMounted,
   onUnmounted,
 } from 'vue'
-import LoadingItem from './LoadingItem.vue'
+import { useRoute } from 'vue-router'
 import LoadingList from './LoadingList.vue'
 import MessageItem from './MessageItem.vue'
 import MessageItemForSession from './MessageItemForSession.vue'
@@ -139,19 +139,20 @@ import { IsEncrypt, NodeName, ChatChain } from '@/enum'
 import { decrypt } from '@/utils/crypto'
 import { ShareChatMessageData } from '@/@types/common'
 import { useBulidTx } from '@/hooks/use-build-tx'
-import { GroupMessagePollingQueue } from '@/utils/taskQueue'
-import { getUserInfoByAddress } from '@/api/man'
-import { CaretBottom } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
+import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
+import { storeToRefs } from 'pinia'
+
+const isLoadingTop = ref(false) // 控制顶部加载器
+const isLoadingBottom = ref(false) // 控制底部加载器
+const listContainer = ref<HTMLElement | null>(null)
+const bottomSpacer = ref<HTMLElement | null>(null)
+const listWrapper = ref<HTMLElement | null>(null)
 const user = useUserStore()
-const talk = useTalkStore()
+const simpleTalk = useSimpleTalkStore()
 const layout = useLayoutStore()
-const MetaIdUrl = `${location.origin}/talk/channels/public/396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0`
-const loadingMore = ref(false)
-const isAtTop = ref(false)
 const router = useRouter()
 const isShowPublish = ref(false)
 const chainStore = useChainStore()
@@ -159,273 +160,366 @@ const repostBuzzTxId = ref('')
 const PublishRef = ref()
 const buildTx = useBulidTx()
 const messagesScroll = ref<HTMLElement>()
-const preTime = ref(0)
-const { openConnectionModal } = useConnectionModal()
+const route = useRoute()
+const showScrollToBottom = ref(false)
+
+const { activeChannel } = storeToRefs(useSimpleTalkStore())
+
+// 消息元素引用和观察器
+const messageRefs = ref<Map<number, HTMLElement>>(new Map())
+const messageObserver = ref<IntersectionObserver | null>(null)
 const _welComePage = computed(() => {
-  return talk.showWelcome
-})
-
-// 全局点击监听器，用于隐藏消息菜单
-const handleGlobalClick = (event: MouseEvent) => {
-  if (!isMobile || !talk.activeMessageMenuId) return
-
-  const target = event.target as Element
-
-  // 检查是否点击了菜单
-  const messageMenu = target.closest('.message-menu')
-
-  // 如果点击的是菜单内部，不关闭菜单
-  if (messageMenu) {
-    console.log('点击了菜单内部，不关闭菜单')
-    return
+  // 检查 simple-talk 的状态
+  if (simpleTalk.isInitialized) {
+    const hasMessages = simpleTalk.activeChannelMessages.length > 0
+    const hasActiveChannel = !!simpleTalk.activeChannel
+    console.log('🏠 WelcomePage check (simple-talk):', {
+      hasActiveChannel,
+      hasMessages,
+      shouldShowWelcome: !hasActiveChannel || !hasMessages,
+    })
+    return !hasActiveChannel || !hasMessages
   }
 
-  // 否则关闭菜单
-  console.log('点击了菜单外部，关闭菜单')
-  talk.clearActiveMessageMenu()
+  return false
+})
+
+// 设置消息元素引用
+const setMessageRef = (el: any, message: any) => {
+  if (el && el.$el) {
+    messageRefs.value.set(message.index || 0, el.$el)
+  } else if (el) {
+    messageRefs.value.set(message.index || 0, el)
+  }
+}
+
+// 初始化消息观察器
+const initMessageObserver = () => {
+  if (messageObserver.value) {
+    messageObserver.value.disconnect()
+  }
+
+  messageObserver.value = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const messageElement = entry.target as HTMLElement
+          const messageIndex = parseInt(messageElement.getAttribute('data-message-index') || '0')
+
+          // 更新最后已读索引
+          if (simpleTalk.activeChannelId && messageIndex >= 0) {
+            console.log(`📖 消息 ${messageIndex} 进入视图，更新已读索引`)
+            simpleTalk.setLastReadIndex(simpleTalk.activeChannelId, messageIndex).catch(error => {
+              console.warn('❌ 更新已读索引失败:', error)
+            })
+          }
+        }
+      })
+    },
+    {
+      root: listContainer.value,
+      rootMargin: '0px',
+      threshold: 0, // 当消息50%进入视图时触发
+    }
+  )
+}
+
+// 观察消息元素
+const observeMessages = () => {
+  if (!messageObserver.value) return
+
+  // 清除之前的观察
+  messageObserver.value.disconnect()
+
+  // 重新初始化观察器
+  initMessageObserver()
+
+  // 观察所有消息元素
+  messageRefs.value.forEach((element, messageIndex) => {
+    if (element && messageObserver.value) {
+      element.setAttribute('data-message-index', messageIndex.toString())
+      messageObserver.value.observe(element)
+    }
+  })
+}
+
+// 获取当前频道类型（群聊或私聊）
+const currentChannelType = computed(() => {
+  // 使用 simple-talk 的频道类型
+  if (simpleTalk.isInitialized) {
+    const channel = simpleTalk.activeChannel
+    // simple-talk 的类型是 'group' | 'private'，需要转换为 'group' | 'session'
+    return channel!.type === 'group' ? 'group' : 'session'
+  }
+  return 'group' // 默认值
+})
+
+const loadItems = async (isPrepending = false) => {
+  // 防止重复加载
+  if (isLoadingTop.value || isLoadingBottom.value) return
+
+  if (!isPrepending) {
+    isLoadingTop.value = true
+  } else {
+    isLoadingBottom.value = true
+  }
+
+  // ** 核心逻辑：保持下拉加载时的滚动位置 **
+  let scrollHeightBefore = 0
+  if (!isPrepending) {
+    // 在添加新内容前，记录当前列表的总高度
+    scrollHeightBefore = listWrapper.value.scrollHeight
+  }
+
+  await simpleTalk.loadMoreMessages(simpleTalk.activeChannelId)
+
+  // 等待 DOM 更新
+  await nextTick()
+
+  if (isPrepending) {
+    // 添加新内容后，列表总高度会增加
+    const scrollHeightAfter = listWrapper.value.scrollHeight
+    // 将滚动条位置设置为新内容的高度，这样旧内容就回到了原来的位置
+    listContainer.value.scrollTop = scrollHeightAfter - scrollHeightBefore
+  }
+
+  // 更新加载状态
+  isLoadingTop.value = false
+  isLoadingBottom.value = false
+}
+
+const unReadCount = computed(() => {
+  if (activeChannel.value) {
+    return activeChannel.value.lastMessage.index - activeChannel.value.lastReadIndex
+  }
+  return 0
+})
+
+/**
+ * 滚动事件处理
+ */
+const handleScroll = event => {
+  const container = event.target
+  // 检查是否滚动到顶部
+  console.log('handleScroll', { scrollTop: container.scrollTop })
+  if (container.scrollTop === 0) {
+    console.log('滚动到顶部，准备加载新数据...')
+    // loadItems(true) // true 表示下拉刷新
+  }
+
+  if (Math.abs(container.scrollTop) > 500) {
+    showScrollToBottom.value = true
+  } else {
+    showScrollToBottom.value = false
+  }
+
+  // 检查是否滚动到底部
+  const threshold = 100 // 预加载阈值
+  if (container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight < threshold) {
+    console.log('滚动到底部，准备加载更多数据...')
+    loadItems(false)
+  }
+}
+
+// 自动初始化 simple-talk
+const autoInitSimpleTalk = async () => {
+  if (user.isAuthorized) {
+    if (!simpleTalk.isInitialized) {
+      try {
+        await simpleTalk.init()
+      } catch (error) {
+        console.error('❌ MessageList simple-talk 初始化失败:', error)
+      }
+    } else if (simpleTalk.channels.length === 0) {
+      // 如果已初始化但没有频道，强制同步
+      console.log('🔄 SimpleTalk已初始化但无频道，强制同步...')
+      try {
+        await simpleTalk.syncFromServer()
+        console.log('✅ 强制同步完成，频道数量:', simpleTalk.channels.length)
+      } catch (error) {
+        console.error('❌ 强制同步失败:', error)
+      }
+    } else {
+      console.log('✅ SimpleTalk已正常初始化，频道数量:', simpleTalk.channels.length)
+    }
+  }
+}
+
+// 全局点击监听器，用于隐藏消息菜单 - 已移除 talk store 依赖
+const handleGlobalClick = (event: MouseEvent) => {
+  // 功能已简化，不再处理消息菜单
+  // 如果需要，可以通过 simpleTalk 或其他方式实现
 }
 
 // 添加和移除全局点击监听器
-onMounted(() => {
+onMounted(async () => {
+  // 自动初始化 simple-talk
+  await autoInitSimpleTalk()
+
+  // 初始化消息观察器
+  initMessageObserver()
+
+  // 监听路由变化，激活对应频道
+  const { channelId } = route.params as { channelId: string }
+  if (channelId && simpleTalk.isInitialized) {
+    await simpleTalk.setActiveChannel(channelId)
+
+    // 添加详细的频道和消息调试信息
+  }
+  // await nextTick()
+  // scrollToMessagesBottom()
+
   if (isMobile) {
     document.addEventListener('click', handleGlobalClick)
   }
 })
 
+// 监听路由参数变化，处理频道切换
+watch(
+  () => route.params.channelId,
+  async (newChannelId, oldChannelId) => {
+    if (newChannelId && newChannelId !== oldChannelId) {
+      console.log('🔄 频道切换:', { from: oldChannelId, to: newChannelId })
+
+      // 确保 simple-talk 已初始化
+      if (!simpleTalk.isInitialized) {
+        console.log('📋 频道切换时初始化 simple-talk')
+        await simpleTalk.init()
+      }
+
+      // 激活新频道
+      await simpleTalk.setActiveChannel(newChannelId as string)
+      console.log('✅ 频道切换完成:', newChannelId)
+      await nextTick()
+      // scrollToMessagesBottom()
+    }
+  },
+  { immediate: false }
+)
+
+// 监听消息变化，确保在有消息时滚动到底部
+watch(
+  [() => simpleTalk.activeChannelMessages],
+  ([simpleMessages]) => {
+    // 如果有消息显示，重新观察消息元素
+    const hasMessages = simpleMessages && simpleMessages.length > 0
+
+    if (hasMessages) {
+      console.log('📝 检测到消息变化，重新设置观察器')
+      nextTick(() => {
+        // 延迟执行，确保DOM已更新
+        setTimeout(() => {
+          observeMessages()
+        }, 100)
+      })
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 onUnmounted(() => {
-  
   if (isMobile) {
     document.removeEventListener('click', handleGlobalClick)
   }
+
+  // 清理 Intersection Observer
+  if (messageObserver.value) {
+    messageObserver.value.disconnect()
+  }
+
+  // 清理消息引用
+  messageRefs.value.clear()
 })
-// const pollingQueue = new GroupMessagePollingQueue(5000);
-// const taskInterval=ref()
-
-// onMounted(()=>{
-
-// taskInterval.value= setInterval(()=>{
-//    if(talk.activeChannel?.pastMessages.length){
-
-//     // const nextTimeStamp= talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length-1].timestamp
-//     //
-
-//     pollingQueue.enqueue(talk.activeChannelId,talk.selfMetaId).then((messages)=>{
-//       console.log("messages",messages)
-//       if(messages.length){
-//            const currentTimeStamp=messages[0].timestamp
-//       const talkLastTimeStamp=talk.activeChannel?.pastMessages[0].timestamp
-//       if(currentTimeStamp == talkLastTimeStamp){
-
-//       }else{
-//          talk.updateChannelMessages(messages).then()
-//         // talk.activeChannel?.pastMessages.unshift(...messages)
-//       }
-//       }
-
-//     })
-//   }
-//  },5000)
-
-// })
-
-// onBeforeUnmount(()=>{
-//   taskInterval.value=null
-// })
-
-function toMetaIdGrop() {
-  if (user.isAuthorized) {
-    router.push({
-      name: 'talkChannel',
-      params: {
-        communityId: 'public',
-        channelId: '396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
-      },
-    })
-    // setTimeout(() => {
-    //   window.location.reload()
-    // }, 2000);
-  } else {
-    openConnectionModal()
-  }
-}
-
-const handleScroll = async () => {
-  if (!user.isAuthorized) return
-  // if(isLoadingMore.value === true){
-  // return
-  // }
-  const topAnchor = document.getElementById('topAnchor')
-  if (topAnchor) {
-    const topAnchorRect = topAnchor.getBoundingClientRect()
-    if (topAnchorRect.bottom > -100 && !loadingMore.value && !layout.isShowMessagesLoading) {
-      // isLoadingMore.value=true
-      loadingMore.value = true
-      const getMoreRes = await loadMore(preTime.value)
-      preTime.value = getMoreRes
-      loadingMore.value = false
-      // const preTimestamp=talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
-      //     console.log("getMoreRes",getMoreRes,preTimestamp)
-      //     
-      // if(getMoreRes == preTimestamp.timestamp){
-      //     isLoadingMore.value=false
-      //     loadingMore.value = false
-      //     
-      // }
-      // 
-    }
-  }
-}
-
-watch(
-  messagesScroll,
-  async () => {
-    if (messagesScroll.value) {
-      await nextTick()
-      messagesScroll.value?.addEventListener('scroll', handleScroll)
-    }
-  },
-  { immediate: true }
-)
 
 const popInvite = () => {
-  talk.inviteLink = `${location.origin}/talk/channels/${talk.activeCommunitySymbol}/${talk.activeChannelId}`
-  talk.invitingChannel = {
-    community: talk.activeCommunity,
-    channel: talk.activeChannel,
-  }
+  layout.inviteLink = `${location.origin}/talk/channels/public/${simpleTalk.activeChannelId}`
   layout.isShowInviteModal = true
 }
 
-const loadMore = async (preTimestamp = 0) => {
-  if (!talk.activeChannelId || !talk.selfMetaId) return
-  const isSession=Number(talk.activeChannel.type) == 2 ? true : false
-  const earliestMessage =isSession ? talk.activeChannel.lastMessageTimestamp :
-    talk.activeChannel?.pastMessages[talk.activeChannel?.pastMessages.length - 1]
-  const earliestMessageTimestamp =isSession ? earliestMessage : earliestMessage?.timestamp
-  const earliestMessageElement = document.getElementById(earliestMessageTimestamp?.toString() || '')
-
-  const earliestMessagePosition = earliestMessageElement?.getBoundingClientRect().bottom
-
-  let params
-  
-  if (earliestMessageTimestamp) {
-    params = {
-      timestamp: earliestMessageTimestamp,
-      timestampType: 0,
-      metaId: talk.selfMetaId,
-    }
-  } else {
-    params = {
-      metaId: talk.selfMetaId,
-    }
-  }
-  console.log('earliestMessageTimestamp', earliestMessageTimestamp, preTimestamp)
-  if (earliestMessageTimestamp == preTimestamp) {
-    return earliestMessageTimestamp
-  }
-  
-  
-  console.log("talk.activeChannel",talk.activeChannel)
-  
-  let items
-  let nextTimestamp=0
-  if(isSession){
-     const privateList = await getPrivateChatMessages({
-    otherMetaId:talk.activeChannel.id,
-    metaId: talk.selfMetaId,
-    timestamp: params.timestamp ?? '0',
-  })
-  items=privateList.list ?? []
-  nextTimestamp=privateList.nextTimestamp
-  }else{
-     items = await getChannelMessages({
-    groupId: talk.activeChannelId,
-    metaId: talk.selfMetaId,
-    timestamp: params.timestamp ?? '0',
-  })
-  }
-
-  
-
-  // 如果没有更多消息了，就不再加载
-  if (items.length === 0) {
-    isAtTop.value = true
-
-    return earliestMessageTimestamp
-  }
-
-  for (const item of items) {
-    // const isDuplicate= talk.activeChannel.pastMessages?.find((item: Message) => item.txId === item.txId)
-
-    // 
-    // if(isDuplicate){
-    //   continue
-    // }
-
-    //  getUserInfoByAddress(item.address).then((userInfo)=>{
-    //     item.userInfo=userInfo
-    //        if(item.replyInfo){
-    //       getUserInfoByAddress(item.replyInfo.address).then((replyUserInfo)=>{
-    //         item.replyInfo.userInfo=replyUserInfo
-
-    //         talk.activeChannel?.pastMessages.push(item)
-    //   })
-    // }else{
-    //       talk.activeChannel?.pastMessages.push(item)
-    // }
-    // })
-
-    talk.activeChannel?.pastMessages.push(item)
-    if(isSession){
-       talk.activeChannel.lastMessageTimestamp=nextTimestamp
-    }
-  }
-
-  // 滚动到原来的位置
-  if (earliestMessagePosition) {
-    const newEarliestMessageElement = document.getElementById(
-      earliestMessageTimestamp?.toString() || ''
-    )
-    const newEarliestMessagePosition = newEarliestMessageElement?.getBoundingClientRect().bottom
-    if (newEarliestMessagePosition) {
-      messagesScroll.value?.scrollBy(0, newEarliestMessagePosition - earliestMessagePosition)
-    }
-  }
-  return earliestMessageTimestamp
-}
-
 const hasTooFewMessages = computed(() => {
-  if (!talk.activeChannel) {
-    return false
+  // 检查 simple-talk 数据
+  if (simpleTalk.isInitialized && simpleTalk.activeChannelMessages.length > 0) {
+    return simpleTalk.activeChannelMessages.length < 10
   }
 
-  if (!talk.activeChannel.pastMessages) {
-    return false
-  }
-
-  return talk.activeChannel?.pastMessages.length < 10
+  return false
 })
 
-const scrollToMessagesBottom = async (retryCount = 0) => {
-  await nextTick()
-  const mse: HTMLElement = messagesScroll.value as HTMLElement
-  if (mse) {
-    mse.scrollTop = mse.scrollHeight
-    await sleep(2000)
-    mse.scrollTop = mse.scrollHeight
+const scrollToMessagesBottom = async () => {
+  if (unReadCount.value > 0) {
+    await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
+    await nextTick()
+    await sleep(100)
+    listContainer.value.scrollTop = 0
   } else {
-    if (retryCount < 5) {
-      await nextTick()
-      await scrollToMessagesBottom(retryCount + 1)
-    }
+    listContainer.value.scrollTop = 0
   }
 }
 
-function scrollToTimeStamp(time: number) {
-  const target = document.getElementById(time.toString())
-  if (target) {
+// 监听消息变化，确保在有消息时滚动到底部
+
+function scrollToIndex(index: number) {
+  // 根据消息索引滚动到对应位置
+  const targetElement = messageRefs.value.get(index)
+  if (targetElement && listContainer.value) {
+    // 计算目标元素相对于容器的位置
+    const containerRect = listContainer.value.getBoundingClientRect()
+    const targetRect = targetElement.getBoundingClientRect()
+
+    // 计算需要滚动的距离
+    const scrollOffset = targetRect.top - containerRect.top + listContainer.value.scrollTop
+
+    // 平滑滚动到目标位置
+    listContainer.value.scrollTo({
+      top: scrollOffset - 100, // 预留100px的偏移量，确保消息可见
+      behavior: 'smooth',
+    })
+
+    // 滚动完成后添加摇晃效果
+    setTimeout(() => {
+      if (targetElement) {
+        // 添加摇晃动画类
+        targetElement.classList.add('message-highlight-flash')
+
+        // 动画完成后移除类
+        setTimeout(() => {
+          targetElement.classList.remove('message-highlight-flash')
+        }, 800) // 0.8秒后移除摇晃效果
+      }
+    }, 500) // 等待滚动动画完成
+
+    console.log(`📍 滚动到消息索引: ${index}`)
+  } else {
+    console.warn(`⚠️ 无法找到索引为 ${index} 的消息元素`)
+  }
+}
+
+function scrollToTimeStamp(timestamp: number) {
+  // 根据时间戳滚动到对应消息
+  const target = document.getElementById(timestamp.toString())
+  if (target && messagesScroll.value) {
     const top = target.offsetTop - target.clientHeight
-    messagesScroll.value?.scrollTo({ top })
+    messagesScroll.value.scrollTo({
+      top,
+      behavior: 'smooth',
+    })
+
+    // 滚动完成后添加摇晃效果
+    setTimeout(() => {
+      if (target) {
+        // 添加摇晃动画类
+        target.classList.add('message-highlight-flash')
+
+        // 动画完成后移除类
+        setTimeout(() => {
+          target.classList.remove('message-highlight-flash')
+        }, 800) // 0.8秒后移除摇晃效果
+      }
+    }, 500) // 等待滚动动画完成
+
+    console.log(`📍 滚动到时间戳: ${timestamp}`)
+  } else {
+    console.warn(`⚠️ 无法找到时间戳为 ${timestamp} 的消息元素`)
   }
 }
 
@@ -437,12 +531,12 @@ async function onToBuzz(data: ShareChatMessageData) {
   const metaidData = {
     body: JSON.stringify(data),
     path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.ShareChatMessage}`,
-    flag: 'metaid',
+    flag: 'metaid' as any,
     version: '1.0.0',
-    operation: 'create',
+    operation: 'create' as any,
     contentType: 'application/json',
-    encryption: '0',
-    encoding: 'utf-8',
+    encryption: '0' as any,
+    encoding: 'utf-8' as any,
   }
 
   const res = await buildTx.createPin(metaidData, true,false).catch(error => {
@@ -452,71 +546,28 @@ async function onToBuzz(data: ShareChatMessageData) {
 
   if (res) {
     loading.close()
-    talk.shareToBuzzTxId =
-      chainStore.state.currentChain == ChatChain.btc ? res?.revealTxIds[0] : res?.txids[0]
+    // 移除对 talk.shareToBuzzTxId 的赋值，直接显示成功
     layout.isShowShareSuccessModal = true
   } else if (res === null) {
     loading.close()
   }
 }
 
-function decryptedMessage(message: ChatMessageItem) {
-  if(!message) return
-  if (message.encryption === '0') {
-    return message.content
-  }
-
-  if (message.protocol !== 'simpleGroupChat' && message.protocol !== 'SimpleFileGroupChat') {
-    return message.content
-  }
-
-  // 处理mock的图片消息
-  if (message.isMock && message.protocol === 'SimpleFileGroupChat') {
-    return message.content
-  }
-
-  return decrypt(message.content, talk.activeChannelId.substring(0, 16))
-}
-
-watch(
-  () => talk.newMessages,
-  async () => {
-    // 依据滚动状态，如果当前距离底部的距离超过一屏，则说明在阅读历史消息，不需要滚动到底部
-    if (messagesScroll.value && talk.activeChannel?.newMessages) {
-      const mse: HTMLElement = messagesScroll.value as HTMLElement
-      
-      const disFromBottom = mse.scrollHeight - mse.scrollTop - mse.clientHeight // 滚动元素的总高度 - 滚动元素的离顶部距离 - 滚动元素的可视高度
-
-      // 还要判断是不是用户自己发的消息
-      const lastMessage =
-        talk.activeChannel?.newMessages[talk.activeChannel?.newMessages.length - 1]
-      const isMyMessage = lastMessage?.metaId === talk.selfMetaId
-
-      if (disFromBottom > mse.clientHeight && !isMyMessage) {
-        return
-      }
-    }
-
-    await scrollToMessagesBottom()
-  },
-  { deep: true, immediate: true }
-)
+// 移除了对 talk.newMessages 的监听
 
 defineExpose({
+  scrollToIndex,
   scrollToTimeStamp,
 })
 
-onUnmounted(() => {
-  
-  if(messagesScroll.value){
-    
-     messagesScroll.value?.removeEventListener('scroll', handleScroll)
-  }
- 
-})
+// onUnmounted(() => {
+//   if (messagesScroll.value) {
+//     messagesScroll.value?.removeEventListener('scroll', handleScroll)
+//   }
+// })
 
 // onBeforeUnmount(() => {
-//   
+//
 //   messagesScroll.value?.removeEventListener('scroll', handleScroll)
 // })
 </script>
@@ -541,5 +592,130 @@ onUnmounted(() => {
 
 .dark *::-webkit-scrollbar-thumb {
   background-color: #374151;
+}
+
+/* 改进滚动行为 */
+#messagesScroll {
+  /* 使用 auto 而不是 smooth，避免分页加载时的滚动干扰 */
+  // scroll-behavior: auto;
+  /* 确保在iOS上滚动流畅 */
+  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+}
+
+/* 确保消息容器正常渲染 */
+#messagesScroll > div {
+  min-height: 100%;
+  height: calc(100vh - 128px);
+  overflow: hidden;
+}
+
+/* 加载指示器样式 */
+// .loading-indicator {
+//   transition: opacity 0.3s ease;
+// }
+.app-container {
+  width: 100%;
+  height: calc(100vh - 128px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.list-container {
+  flex-grow: 1;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  font-size: 14px;
+  color: #888;
+  height: 50px;
+  box-sizing: border-box;
+}
+.loader .spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--el-color-primary);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.message-list-bottom-spacer {
+  height: 20px;
+  background-color: transparent;
+}
+.scroll-to-bottom-button {
+  position: absolute;
+  right: 50px;
+  bottom: 100px;
+  z-index: 100000;
+}
+
+/* 滚动到底部按钮的渐隐渐显动画 */
+.fade-scroll-button-enter-active,
+.fade-scroll-button-leave-active {
+  transition: all 0.3s ease-in-out;
+  transform-origin: center;
+}
+
+.fade-scroll-button-enter-from {
+  opacity: 0;
+  transform: scale(0.8) translateY(10px);
+}
+
+.fade-scroll-button-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateY(10px);
+}
+
+.fade-scroll-button-enter-to,
+.fade-scroll-button-leave-from {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* 消息高亮摇晃动画 */
+.message-highlight-flash {
+  animation: messageShake 0.8s ease-in-out;
+}
+
+@keyframes messageShake {
+  0%,
+  100% {
+    transform: translateX(0);
+    background-color: transparent;
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-3px);
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(3px);
+    background-color: rgba(59, 130, 246, 0.15);
+  }
 }
 </style>

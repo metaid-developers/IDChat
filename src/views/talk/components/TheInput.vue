@@ -2,9 +2,7 @@
   <div
     class="bg-white dark:bg-gray-700 rounded-lg"
     v-if="
-      talk.activeChannelType === ChannelType.Session ||
-        talk.activeChannel?.chatSettingType === 0 ||
-        talk.isAdmin()
+      simpleTalk.activeChannel?.type === 'private' || simpleTalk.activeChannel?.type === 'group'
     "
   >
     <!-- 回复/引用 -->
@@ -154,8 +152,8 @@
           :placeholder="
             $t('Talk.Channel.message_to', {
               channel:
-                talk?.activeChannelSymbol +
-                (talk.activeChannel?.name || activeChannel?.userInfo?.name || ''),
+                (simpleTalk.activeChannel?.type === 'group' ? '#' : '@') +
+                (simpleTalk.activeChannel?.name || ''),
             })
           "
           v-model="chatInput"
@@ -181,7 +179,7 @@
         <div :class="[hasInput ? 'hidden lg:flex' : 'flex', 'items-center px-1 mr-2']">
           <div
             class="p-2 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer"
-            v-if="talk.activeChannelType === ChannelType.Group && !quote"
+            v-if="simpleTalk.activeChannel?.type === 'group' && !quote"
             @click="openRedPackDialog"
           >
             <Icon name="red_envelope" class="w-full h-full text-dark-800 dark:text-gray-100" />
@@ -360,6 +358,7 @@ import { FileToAttachmentItem, compressImage, atobToHex } from '@/utils/util'
 import { useCredentialsStore } from '@/stores/credentials'
 import { encrypt, ecdhEncrypt, ecdhDecrypt, ecdhEncryptForPrivateImg } from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { ChannelType, MessageType, ChatChain } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
 
@@ -387,6 +386,8 @@ const spaceNotEnoughFlag = ref(false)
 const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
 const ecdhsStore = useEcdhsStore()
+const talk = useTalkStore()
+const simpleTalk = useSimpleTalkStore()
 const hasInput = computed(() => chatInput.value.length > 0)
 
 /** 输入框样式 */
@@ -440,7 +441,6 @@ const moreCommands = () => {
 /** ------ */
 
 /** 上传图片 */
-const talk = useTalkStore()
 const imageUploader = ref<HTMLInputElement | null>(null)
 const imageFile = ref<File | null>(null)
 const showImagePreview = ref(false)
@@ -449,10 +449,8 @@ const useCompression = ref(true)
 const hasImage = computed(() => imageFile.value !== null)
 
 const activeChannel = computed(() => {
-  return talk.activeChannel
+  return simpleTalk.activeChannel
 })
-
-console.log('talk.activeChannel22222', activeChannel)
 
 const openImageUploader = (close: Function) => {
   imageUploader.value?.click()
@@ -531,13 +529,13 @@ const trySendImage = async () => {
 
   const attachments = [hexedFiles]
 
-  if (talk.activeChannelType == ChannelType.Session) {
-    if (!talk.activeChannel?.publicKeyStr) {
+  if (simpleTalk.activeChannel?.type == 'private') {
+    if (!simpleTalk.activeChannel?.publicKeyStr) {
       return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
     }
-    let ecdh = ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+    let ecdh = ecdhsStore.getEcdh(simpleTalk.activeChannel?.publicKeyStr)
     if (!ecdh) {
-      ecdh = await getEcdhPublickey(talk.activeChannel.publicKeyStr)
+      ecdh = await getEcdhPublickey(simpleTalk.activeChannel.publicKeyStr)
       ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
     }
 
@@ -553,16 +551,15 @@ const trySendImage = async () => {
 
   const messageDto = {
     type: MessageType.Image,
-    channelId: talk.activeChannel.id,
-    groupId: talk.activeChannelType == ChannelType.Session ? '' : talk?.activeCommunity?.id || '',
+    channelId: simpleTalk.activeChannelId,
+    groupId: simpleTalk.activeChannel?.type == 'private' ? '' : simpleTalk.activeChannelId || '',
     userName: userStore.last?.name!,
     attachments,
     content: '',
     originalFileUrl,
-    channelType: talk.activeChannelType as ChannelType,
+    channelType: simpleTalk.activeChannel?.type === 'group' ? 'group' : 'session',
     reply: props.quote,
   }
-  console.log('props.quote', props.quote)
 
   emit('update:quote', undefined)
   await sendMessage(messageDto)
@@ -651,50 +648,40 @@ const trySendText = async (e: any) => {
 
   // 去除首尾空格
   chatInput.value = chatInput.value.trim()
-  if (!validateTextMessage(chatInput.value)) return
-
-  // 私聊会话和頻道群聊的加密方式不同
-  let content = ''
-  if (talk.activeChannel?.roomLimitAmount > 0) {
-    checkSpaceBalance()
-      .then(() => {
-        spaceNotEnoughFlag.value = false
-      })
-      .catch(() => {
-        isSending.value = false
-        spaceNotEnoughFlag.value = true
-      })
+  if (!validateTextMessage(chatInput.value)) {
+    isSending.value = false
+    return
   }
 
   if (spaceNotEnoughFlag.value) {
+    isSending.value = false
     return
   }
-  console.log('activeChannelType', talk.activeChannelType)
+  console.log('activeChannel type:', simpleTalk.activeChannel?.type)
 
-  // if (talk.activeChannelType === 'group') {
+  // 私聊会话和頻道群聊的加密方式不同
+  let content = ''
 
-  // }
-  if (talk.activeChannel?.groupId) {
-    content = encrypt(chatInput.value, talk.activeChannel.id.substring(0, 16))
+  if (simpleTalk.activeChannel?.type === 'group') {
+    content = encrypt(chatInput.value, simpleTalk.activeChannel.id.substring(0, 16))
   } else {
-    // const privateKey = toRaw(userStore?.wallet)!.getPathPrivateKey('0/0')!
-    //
-    // const privateKeyStr = privateKey.toHex()
-    //const credential=credentialsStore.getByAddress(connectionStore.last.address)
-    if (!talk.activeChannel?.publicKeyStr) {
+    // 私聊加密
+    if (!simpleTalk.activeChannel?.publicKeyStr) {
       return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
     }
-    let ecdh = ecdhsStore.getEcdh(talk.activeChannel?.publicKeyStr)
+    let ecdh = ecdhsStore.getEcdh(simpleTalk.activeChannel?.publicKeyStr)
 
     if (!ecdh) {
-      ecdh = await getEcdhPublickey(talk.activeChannel.publicKeyStr)
-      ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+      ecdh = await getEcdhPublickey(simpleTalk.activeChannel.publicKeyStr)
+      if (ecdh) {
+        ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+      }
     }
-    //const
 
-    const sharedSecret = ecdh?.sharedSecret //atobToHex(credential!.signature)
-    // credentialsStore.update(sigStr)
-    //const otherPublicKeyStr =talk.activeChannel.publicKeyStr
+    const sharedSecret = ecdh?.sharedSecret
+    if (!sharedSecret) {
+      return ElMessage.error('Failed to generate shared secret')
+    }
 
     console.log(chatInput.value, sharedSecret)
 
@@ -706,21 +693,21 @@ const trySendText = async (e: any) => {
   }
 
   chatInput.value = ''
-  console.log('talk.activeChannel.id', talk.activeChannel.id)
+  console.log('simpleTalk.activeChannel.id', simpleTalk.activeChannel?.id)
 
-  const messageDto = {
-    content,
-    type: MessageType.Text,
-    channelId: talk.activeChannel.id,
-    userName: userStore.last?.name || '',
-    channelType: talk.activeChannelType as ChannelType,
-    reply: props.quote,
+  // 使用 simple-talk store 发送消息
+  if (!simpleTalk.activeChannel) {
+    console.error('No active channel')
+    return
   }
 
-  console.log('props.quote', props.quote)
-
-  emit('update:quote', undefined)
-  await sendMessage(messageDto)
+  try {
+    // 使用 simple-talk 的 sendMessage 方法
+    await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content, 0, props.quote)
+    console.log('Message sent successfully via simpleTalk')
+  } catch (error) {
+    console.error('Failed to send message via simpleTalk:', error)
+  }
   isSending.value = false
 }
 /** ------ */

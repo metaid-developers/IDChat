@@ -88,60 +88,62 @@ import { watch } from 'vue'
 import { fromBase64 } from 'js-base64'
 import { debug } from 'console'
 import { useRouter } from 'vue-router'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 const form = useChannelFormStore()
 const router = useRouter()
 form.type = GroupChannelType.PublicText
 
 const userStore = useUserStore()
 const layout = useLayoutStore()
-const talk = useTalkStore()
+const simpleTalk = useSimpleTalkStore()
 
 const tryCreateChannel = async () => {
   if (!form.isFinished) return
-  
+
   layout.isShowCreatePublicChannelModal = false
   layout.isShowLoading = true
   const subscribeId = form.uuid || realRandomString(32)
   // talk.activeCommunityId == '@me' ? '' : talk.activeCommunityId
-  const res = await createChannel(form,'',subscribeId)
-  console.log("res",res)
-    
+  const res = await createChannel(form, '', subscribeId)
+  console.log('res', res)
+
   // 添加占位頻道
   if (res.status === 'success') {
- 
-    const newChannel = {
-      id: 'placeholder_' + realRandomString(8),
-      name: form.name,
-      isPlaceHolder: true,
-      roomType: ChannelPublicityType.Public,
-      uuid: res.subscribeId,
-      roomPublicKey: form.publicKey,
-      chatSettingType: form.adminOnly ? 1 : 0,
-      txId:`${res.channelId}i0`//form.txId,
-    }
-    
-    // 将占位頻道添加到頻道列表最前面
-    if (res.channelId) {
-      console.log("talk.activeCommunityChannels",talk.activeCommunityChannels)
-      const index = talk.activeCommunityChannels.findIndex(item => item.txId === `${res.channelId}i0`)
-      
-      if (index !== -1) {
-        talk.activeCommunityChannels[index] = newChannel
-      }
-    } else {
-      talk.activeCommunityChannels.unshift(newChannel)
-    }
+    await simpleTalk.syncFromServer()
+
+    // const newChannel = {
+    //   id: 'placeholder_' + realRandomString(8),
+    //   name: form.name,
+    //   isPlaceHolder: true,
+    //   roomType: ChannelPublicityType.Public,
+    //   uuid: res.subscribeId,
+    //   roomPublicKey: form.publicKey,
+    //   chatSettingType: form.adminOnly ? 1 : 0,
+    //   txId:`${res.channelId}i0`//form.txId,
+    // }
+
+    // // 将占位頻道添加到頻道列表最前面
+    // if (res.channelId) {
+    //   console.log("talk.activeCommunityChannels",talk.activeCommunityChannels)
+    //   const index = talk.activeCommunityChannels.findIndex(item => item.txId === `${res.channelId}i0`)
+
+    //   if (index !== -1) {
+    //     talk.activeCommunityChannels[index] = newChannel
+    //   }
+    // } else {
+    //   talk.activeCommunityChannels.unshift(newChannel)
+    // }
   }
 
   layout.isShowLoading = false
 
   sleep(2000).then(() => {
     // 跳转刷新
-     //
+    //
 
-     router.push(`/talk/channels/public/${res.channelId}i0`)
-     talk.refetchChannels()
-     //window.location.reload()
+    router.push(`/talk/channels/public/${res.channelId}i0`)
+    //  talk.refetchChannels()
+    //window.location.reload()
   })
 }
 </script>

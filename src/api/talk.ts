@@ -442,7 +442,7 @@ export const getChannelMessages = async ({
   //   }
   // }
 
-  return data.data.list ?? []
+  return data.data
 }
 
 export const getPrivateChatMessages = async (

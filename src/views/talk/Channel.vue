@@ -49,6 +49,7 @@ import { onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useTalkStore } from '@/stores/talk'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import { isMetaName, resolveMetaName, isPublicChannel } from '@/utils/meta-name'
 
@@ -78,55 +79,66 @@ import CreatePublicChannelModal from './components/modals/CreatePublicChannelMod
 import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
 
-const talk = useTalkStore()
+// const talk = useTalkStore()
+const simpleTalk = useSimpleTalkStore()
 const user = useUserStore()
 const route = useRoute()
 const layout = useLayoutStore()
 console.log('route', route)
+
+// 初始化 simple-talk store
+const initSimpleTalk = async () => {
+  if (user.isAuthorized && !simpleTalk.isInitialized) {
+    try {
+      await simpleTalk.init()
+      console.log('✅ Simple-talk store 初始化成功')
+    } catch (error) {
+      console.error('❌ Simple-talk store 初始化失败:', error)
+    }
+  }
+}
+
 // 初始化頻道
 function init(communityId: string, channelId: string) {
+  // 初始化 simple-talk store
+  console.log('🚀 初始化 simple-talk store')
+  initSimpleTalk()
+
   // 先检查社区是否还佩戴有效的metaname
-  talk.checkCommunityMetaName(communityId).then((isValid: boolean) => {
-    layout.isShowNoMetaNameModal = false
+  // talk.checkCommunityMetaName(communityId).then((isValid: boolean) => {
+  //   layout.isShowNoMetaNameModal = false
 
-    if (!isValid) {
-      // 显示社区没有metaname modal
-      talk.activeCommunityId = communityId
-      // layout.isShowNoMetaNameModal = true
-      return
-    }
+  //   if (!isValid) {
+  //     // 显示社区没有metaname modal
+  //     talk.activeCommunityId = communityId
+  //     // layout.isShowNoMetaNameModal = true
+  //     return
+  //   }
 
-    // 如果是游客，则返回游客模式
-    if (!user.isAuthorized) {
-      return initChannelGuestMode(channelId)
-      // return initGuestMode(communityId)
-    }
+  //   // 如果是游客，则返回游客模式
+  //   if (!user.isAuthorized) {
+  //     return initChannelGuestMode(channelId)
+  //     // return initGuestMode(communityId)
+  //   }
 
-   
+  //   talk.checkChannelMembership(communityId, channelId).then(async (isMember: boolean) => {
+  //     if (!isMember) {
+  //       await talk.inviteChannel(channelId)
+  //       return
+  //     }
 
-   
-
-    talk.checkChannelMembership(communityId, channelId).then(async (isMember: boolean) => {
-      if (!isMember) {
-        await talk.inviteChannel(channelId)
-        return
-      }
-
-      talk.initCommunity(communityId, channelId)
-    })
-  })
+  //     talk.initCommunity(communityId, channelId)
+  //   })
+  // })
 }
 
 // 初始化游客模式
 async function initGuestMode(communityId: string) {
   // 1. 将当前社区推入社区列表
-  await talk.addTempCommunity(communityId)
-
+  // await talk.addTempCommunity(communityId)
   // 2. 弹出邀请框
-  await talk.invite(communityId)
-
+  // await talk.invite(communityId)
   // 2. 弹出注册框
-
   // 4. 接受邀请逻辑
 }
 
@@ -134,12 +146,9 @@ async function initGuestMode(communityId: string) {
 async function initChannelGuestMode(channelId: string) {
   // 1. 将当前社区推入社区列表
   // await talk.addTempCommunity(communityId)
-
   // 2. 弹出邀请框
-  await talk.inviteChannel(channelId)
-
+  // await talk.inviteChannel(channelId)
   // 2. 弹出注册框
-
   // 4. 接受邀请逻辑
 }
 
@@ -148,7 +157,6 @@ const { communityId, channelId } = route.params as { communityId: string; channe
 watch(
   () => route.params,
   (newVal, oldVal) => {
-    
     if (newVal.channelId != oldVal.channelId) {
       resolve(newVal.communityId as string, newVal.channelId as string)
     }
@@ -157,54 +165,80 @@ watch(
 
 // 解析 communityId 为 metaName 的情况
 async function resolve(communityId: string, channelId: string) {
-  
   // init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
 
-  
+  console.log('🔍 resolve 函数被调用:', { communityId, channelId })
 
   if (isPublicChannel(communityId)) {
-    init(communityId, channelId)
-    // init(communityId)
-  } else if (isMetaName(communityId)) {
-    const resolveRes = await resolveMetaName(communityId)
-    init(resolveRes.communityId, channelId)
+    if (!simpleTalk.isInitialized) {
+      await simpleTalk.init()
+    }
+    if (simpleTalk.channels.find(c => c.id === channelId)) {
+      console.log('频道已存在，直接激活:', channelId)
+      await simpleTalk.setActiveChannel(channelId)
+      return
+    } else {
+      if (channelId !== 'welcome') {
+        layout.isShowChannelAcceptInviteModal = true
+      }
+    }
   }
-  // if (isMetaName(communityId)) {
-  //   const resolveRes = await resolveMetaName(communityId)
-  //   init(resolveRes.communityId)
-  // } else {
-  //   init(communityId)
-  // }
 }
 resolve(communityId, channelId)
 
+// watch(
+//   () => talk.communityStatus,
+//   async (status: string) => {
+//     if (status === 'invited') {
+//       return resolve(communityId, channelId)
+//     }
+//   },
+//   { immediate: true }
+// )
+
+// watch(
+//   [ () => user.isAuthorized],
+//   ([status, isAuthorized]) => {
+//     if (status === 'auth processing' && isAuthorized) {
+//       talk.communityStatus = 'authed'
+//       return resolve(communityId, channelId)
+//     }
+//   },
+//   { immediate: true }
+// )
+
+// 监听路由参数变化，激活对应的频道
 watch(
-  () => talk.communityStatus,
-  async (status: string) => {
-    if (status === 'invited') {
-      return resolve(communityId, channelId)
+  () => route.params.channelId,
+  async (newChannelId: string | string[]) => {
+    if (user.isAuthorized && simpleTalk.isInitialized && newChannelId) {
+      const channelId = Array.isArray(newChannelId) ? newChannelId[0] : newChannelId
+      console.log('🔄 路由变化，切换到频道:', channelId)
+
+      // 设置激活的频道
+      simpleTalk.activeChannelId = channelId
+
+      // 如果频道不存在于本地，尝试创建或获取
+      const existingChannel = simpleTalk.channels.find(c => c.id === channelId)
+      if (!existingChannel) {
+        console.log('🔍 频道不存在于本地，尝试获取或创建...')
+        // 这里可能需要根据 channelId 的类型判断是私聊还是群聊
+        // 暂时先同步一下服务器数据
+        try {
+          await simpleTalk.syncFromServer()
+        } catch (error) {
+          console.warn('同步服务器数据失败:', error)
+        }
+      }
     }
   },
   { immediate: true }
 )
 
-watch(
-  [() => talk.communityStatus, () => user.isAuthorized],
-  ([status, isAuthorized]) => {
-    if (status === 'auth processing' && isAuthorized) {
-      talk.communityStatus = 'authed'
-      return resolve(communityId, channelId)
-    }
-  },
-  { immediate: true }
-)
-
-
-onBeforeUnmount(() => {
-  
-  talk.saveReadPointers()
-  talk.closeReadPointerTimer()
-})
+// onBeforeUnmount(() => {
+//   talk.saveReadPointers()
+//   talk.closeReadPointerTimer()
+// })
 </script>
 
 <style lang="scss" scoped>
