@@ -7,11 +7,17 @@
   </div>
 
   <div
-    class="h-full overflow-y-auto"
+    class="h-full relative overflow-y-auto"
     ref="messagesScroll"
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
+
+    <div class="broadcast-nav w-full z-20 sticky top-0" v-if="simpleTalk.activeChannel?.subChannels?.length">
+    <BroadcastChannelNav></BroadcastChannelNav>
+
+   </div>
+
     <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
@@ -144,12 +150,13 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-
+import BroadcastChannelNav from './direct-contact/broadcast-channel-nav.vue'
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isLoadingBottom = ref(false) // 控制底部加载器
 const listContainer = ref<HTMLElement | null>(null)
 const bottomSpacer = ref<HTMLElement | null>(null)
 const listWrapper = ref<HTMLElement | null>(null)
+
 const user = useUserStore()
 const simpleTalk = useSimpleTalkStore()
 const layout = useLayoutStore()
@@ -531,9 +538,9 @@ async function onToBuzz(data: ShareChatMessageData) {
   const metaidData = {
     body: JSON.stringify(data),
     path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.ShareChatMessage}`,
-    flag: 'metaid' as any,
-    version: '1.0.0',
-    operation: 'create' as any,
+    flag: 'metaid',
+    version: '1.0.1',
+    operation: 'create',
     contentType: 'application/json',
     encryption: '0' as any,
     encoding: 'utf-8' as any,

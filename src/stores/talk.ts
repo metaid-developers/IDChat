@@ -12,9 +12,11 @@ import {
   getChannelMembers,
   GetUserEcdhPubkeyForPrivateChat,
   BatchGetUsersEcdhPubkeyForPrivateChat,
+  getGroupChannelList,
+  getSubChannelMessages
 } from '@/api/talk'
 
-import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName } from '@/enum'
+import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName,MemberRule,GroupMessageType } from '@/enum'
 import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { useLayoutStore } from './layout'
@@ -55,10 +57,14 @@ export const useTalkStore = defineStore('talk', {
     return {
       communities: [{ id: 'public' }, { id: '@me' }] as Community[],
       members: [] as any,
-
       activeCommunityId: '' as string,
       activeChannelId: '' as string,
-
+      activeSubChannelId: '' as string,
+   
+      selfChannelRule:[] as Array<{
+        channelId:string,
+        rule:MemberRule
+      }>,
       generalChannels: [
         {
           id: 'announcements',
@@ -119,6 +125,15 @@ export const useTalkStore = defineStore('talk', {
       return userStore.last?.address || ''
     },
 
+
+      getMychannelRule() {
+      return (channeId: string) => {
+        console.log("99999999",this.selfChannelRule)
+        const ruleItem=this.selfChannelRule.find(item=>item.channelId == channeId)
+        return ruleItem ? ruleItem.rule : MemberRule.Normal
+      }
+    },
+
     realCommunities(state) {
       if (!state.communities) return []
       return state.communities.filter(community => community.id === 'public')
@@ -175,6 +190,39 @@ export const useTalkStore = defineStore('talk', {
       }
     },
 
+    activeSubChannel(state): any {
+      if (!this.activeCommunity) return null
+
+        if (this.canAccessActiveChannel && this.activeChannel && this.activeChannel?.subChannels?.length) {
+          
+         
+          return this.activeChannel.subChannels[0]
+      }
+
+      //    if (this.canAccessActiveChannel) {
+      //   const activeSubRes= this.activeCommunity?.channels?.map((channel: any) => {
+      //     if(channel.id && channel.id === state.activeChannelId){
+      //       return channel.subChannels[0]
+      //     }
+      //   })
+      //   debugger
+      //   return activeSubRes.length && activeSubRes[0]
+
+      // }
+
+      //   if (this.canAccessActiveChannel) {
+      //     debugger
+      //   const currentChannel = this.activeCommunity?.channels?.find((channel: any) => {
+      //     debugger
+      //     return channel.id && channel.id === state.activeChannelId
+      //   })
+      //   if(currentChannel?.subChannels?.length) return currentChannel?.subChannels[0]
+
+       
+      // }
+
+    },
+
     activeChannel(state): any {
       if (!this.activeCommunity) return null
 
@@ -182,7 +230,8 @@ export const useTalkStore = defineStore('talk', {
       if (this.isActiveChannelGeneral) {
         return this.generalChannels.find(channel => channel.id === state.activeChannelId)
       }
-      if (this.canAccessActiveChannel) {
+      
+        if (this.canAccessActiveChannel) {
         return this.activeCommunity?.channels?.find((channel: any) => {
           return (
             (channel.id && channel.id === state.activeChannelId) ||
@@ -354,20 +403,41 @@ export const useTalkStore = defineStore('talk', {
   },
 
   actions: {
-    async checkUserOpenPrivate(metaid: string) {
-      if (metaid == this.selfMetaId) {
-        const userStore = useUserStore()
-        if (!userStore.last?.chatpubkey) {
-          return false
-        } else {
-          return false
+
+    updateMyChannelRule(channelId:string,rule:MemberRule){
+      const ruleItem=this.selfChannelRule.find(item=>item.channelId == channelId)
+      if(ruleItem){
+         this.selfChannelRule.forEach(((item)=>{
+        if(item.channelId == channelId){
+          item.rule=rule
         }
-      } else {
+      }))
+      }else{
+        this.selfChannelRule.push({
+        channelId:channelId,
+        rule:rule
+        })
+      }
+      
+    },
+
+    async checkUserOpenPrivate(metaid:string){
+         
+      
+      if(metaid == this.selfMetaId){
+         const userStore = useUserStore()
+        if(!userStore.last?.chatpubkey){
+          
+            return false
+        }else{
+           return true
+        }
+      }else{
         const userInfo = await GetUserEcdhPubkeyForPrivateChat(metaid)
-        if (!userInfo.chatPublicKey) {
-          //ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
-          return false
-        } else {
+        if(!userInfo.chatPublicKey){
+         //ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
+            return false
+        }else{
           return true
         }
       }
@@ -419,13 +489,15 @@ export const useTalkStore = defineStore('talk', {
       })
 
       if (priviteChannel.length) {
-        const userMetaIdList = []
 
+
+        const userMetaIdList=[]
+       
         for (let channel of priviteChannel) {
           userMetaIdList.push(channel.metaId)
-
+        
           //const userInfo = await GetUserEcdhPubkeyForPrivateChat(channel.metaId)
-
+          
           // if (userInfo.chatPublicKey) {
           //   channel.publicKeyStr = userInfo.chatPublicKey
           //   channel.id = userInfo.metaid
@@ -437,12 +509,13 @@ export const useTalkStore = defineStore('talk', {
           //   }
           // }
         }
-        const userInfoList = await BatchGetUsersEcdhPubkeyForPrivateChat({
-          metaIds: userMetaIdList,
+       const userInfoList= await BatchGetUsersEcdhPubkeyForPrivateChat({
+          metaIds:userMetaIdList
         })
 
-        for (let i = 0; userInfoList.length && i < userInfoList.length; i++) {
-          if (userInfoList[i].chatPublicKey) {
+       
+          for(let i=0;userInfoList.length && i<userInfoList.length;i++){
+             if (userInfoList[i].chatPublicKey) {
             priviteChannel[i].publicKeyStr = userInfoList[i].chatPublicKey
             priviteChannel[i].id = userInfoList[i].metaid
             let ecdh = ecdhsStore.getEcdh(userInfoList[i].chatPublicKey)
@@ -452,7 +525,9 @@ export const useTalkStore = defineStore('talk', {
               ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
             }
           }
-        }
+          }
+        
+        
       }
 
       //const channels = [...publicChannel]
@@ -480,6 +555,18 @@ export const useTalkStore = defineStore('talk', {
         this.initCommunityChannelIds()
 
         // 只保存頻道id
+        if(publicChannel.length){
+          for(let channel of publicChannel){
+              const subChannleList= await getGroupChannelList({
+              groupId:channel.groupId
+            })
+            const parentsIds=subChannleList.map((sub)=>sub.groupId)
+            if(channel.groupId == parentsIds[0]){
+              channel.subChannels=subChannleList
+            }
+          }
+        }
+
         const publicChannelIds = publicChannel.map((channel: Channel) => channel.id)
         const privateChannelIds = priviteChannel.map((channel: Channel) => channel.metaId)
         // const channelIds = allChannel.map((channel: any) => channel.id)
@@ -487,7 +574,12 @@ export const useTalkStore = defineStore('talk', {
         //
         if (communityId == 'public') {
           this.communityChannelIds[communityId] = publicChannelIds.filter(item => item)
+
+          
           this.communityChannelIds['@me'] = privateChannelIds.filter(item => item.length == 64)
+
+
+
         } else if (communityId == '@me') {
           this.communityChannelIds[communityId] = privateChannelIds.filter(
             item => item.length == 64
@@ -500,7 +592,7 @@ export const useTalkStore = defineStore('talk', {
           JSON.stringify(this.communityChannelIds)
         )
       }
-
+      
       return activeChannelList
     },
 
@@ -606,13 +698,13 @@ export const useTalkStore = defineStore('talk', {
       layout.isShowChannelAcceptInviteModal = true
       // this.communityStatus ='inviting' //'inviting'
 
-      getChannelMembers({ groupId: routeChannelId })
-        .then((members: any) => {
-          this.members = members
-        })
-        .catch(() => {
-          ElMessage.error('获取群组成员失败')
-        })
+      // getChannelMembers({ groupId: routeChannelId })
+      //   .then((members: any) => {
+      //     this.members = members
+      //   })
+      //   .catch(() => {
+      //     ElMessage.error('获取群组成员失败')
+      //   })
 
       const isGuest = true
 
@@ -624,23 +716,18 @@ export const useTalkStore = defineStore('talk', {
 
       const isAtMe = routeCommunityId === '@me'
       const isPublic = routeCommunityId == 'public'
-
-      // 如果社区ID没有变化，且已有频道数据，则跳过 fetchChannels
-      const shouldFetchChannels =
-        this.activeCommunityId !== routeCommunityId || !this.activeCommunity?.channels?.length
-
       this.activeCommunityId = routeCommunityId
 
       if (!isAtMe) {
-        getChannelMembers({
-          groupId: routeChannelId,
-        })
-          .then((members: any) => {
-            this.members = members
-          })
-          .catch(() => {
-            ElMessage.error('获取群聊成员失败')
-          })
+        // getChannelMembers({
+        //   groupId: routeChannelId,
+        // })
+        //   .then((members: any) => {
+        //     this.members = members
+        //   })
+        //   .catch(() => {
+        //     ElMessage.error('获取群聊成员失败')
+        //   })
 
         // getCommunityMembers(routeCommunityId)
         //   .then((members: any) => {
@@ -652,13 +739,7 @@ export const useTalkStore = defineStore('talk', {
       } else {
       }
 
-      // 只在必要时重新获取频道数据
-      if (shouldFetchChannels) {
-        console.log('fetchChannels: 重新获取频道数据', routeCommunityId)
-        await this.fetchChannels(routeCommunityId)
-      } else {
-        console.log('fetchChannels: 跳过重复获取，使用缓存数据', routeCommunityId)
-      }
+      await this.fetchChannels(routeCommunityId)
 
       this.updateReadPointers()
       this.communityStatus = 'ready'
@@ -666,25 +747,30 @@ export const useTalkStore = defineStore('talk', {
 
     async initChannel(routeCommunityId: string, routeChannelId?: string) {
       // 如果是私聊，而且路由中的頻道 ID 不存在，则新建会话
-
-      const ecdhsStore = useEcdhsStore()
-      const userStore = useUserStore()
+      
+       const ecdhsStore=useEcdhsStore()
+       const userStore=useUserStore()
 
       if (
         routeCommunityId === '@me' &&
         routeChannelId &&
         !this.activeCommunityChannels.some((channel: any) => channel.metaId === routeChannelId)
       ) {
+     
         // const userInfo=await
         // const metaidInfo = await getUserInfoByMetaId(routeChannelId)
         //
         // const userInfo= await getUserInfoByAddress(metaidInfo?.address)
 
+
+
+       
         const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
-        let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
         if (!ecdh) {
-          ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
-          ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+            
+            ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+            ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
         }
         const newSession = {
           id: routeChannelId,
@@ -696,26 +782,26 @@ export const useTalkStore = defineStore('talk', {
           lastMessageTimestamp: null,
           pastMessages: [],
           newMessages: [],
-          address: userInfo.address,
-          blockHeight: 0,
-          chain: '',
-          chatSettingType: 0,
-          chatType: 0,
-          content: '',
-          createAddress: userStore.last.address,
-          createMetaId: userStore.last.metaid,
-          createUserAddress: userStore.last.address,
-          createUserInfo: userStore.last,
-          createUserMetaId: userStore.last.metaid,
-          deleteStatus: 0,
-          groupId: '',
-          index: 0,
-          lastMessagePinId: '',
-          timestamp: Date.now(),
-          type: '2',
-          userCount: 0,
-          userInfo: userInfo,
-          uuid: '',
+          address:userInfo.address,
+          blockHeight:0,
+          chain:'',
+          chatSettingType:0,
+          chatType:0,
+          content:'',
+          createAddress:userStore.last.address,
+          createMetaId:userStore.last.metaid,
+          createUserAddress:userStore.last.address,
+          createUserInfo:userStore.last,
+          createUserMetaId:userStore.last.metaid,
+          deleteStatus:0,
+          groupId:"",
+          index:0,
+          lastMessagePinId:'',
+          timestamp:Date.now(),
+          type:'2',
+          userCount:0,
+          userInfo:userInfo,
+          uuid:""
         }
 
         this.activeCommunityChannels.unshift(newSession)
@@ -725,25 +811,30 @@ export const useTalkStore = defineStore('talk', {
         routeCommunityId === '@me' &&
         routeChannelId &&
         this.activeCommunityChannels.some((channel: any) => channel.metaId === routeChannelId)
-      ) {
-        const currentChannel = this.activeCommunityChannels.find(
-          (channel: any) => channel.metaId === routeChannelId
-        )
-        if (currentChannel && currentChannel.publicKeyStr) {
-          let ecdh = ecdhsStore.getEcdh(currentChannel.publicKeyStr)
-          if (!ecdh) {
+      ){
+        
+         const currentChannel= this.activeCommunityChannels.find((channel: any) => channel.metaId === routeChannelId)
+        if(currentChannel && currentChannel.publicKeyStr){
+            
+        let ecdh= ecdhsStore.getEcdh(currentChannel.publicKeyStr)
+        if (!ecdh) {
+            
             ecdh = await getEcdhPublickey(currentChannel.publicKeyStr)
             ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
-          }
-        } else {
-          const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
-          let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
-          if (!ecdh) {
+        }
+        }else{
+             const userInfo = await GetUserEcdhPubkeyForPrivateChat(routeChannelId)
+        let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        if (!ecdh) {
+            
             ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
             ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
-          }
         }
+        }
+
+       
       }
+       
 
       // 如果没有指定頻道，则先从存储中尝试读取该社区的最后阅读頻道
       const latestChannelsRecords =
@@ -757,7 +848,7 @@ export const useTalkStore = defineStore('talk', {
         } else {
           channelId = latestChannels[routeCommunityId] || 'welcome'
         }
-
+         
         this.activeChannelId = channelId
         return
 
@@ -768,10 +859,12 @@ export const useTalkStore = defineStore('talk', {
       // 将最后阅读頻道存储到本地
       latestChannels[routeCommunityId] = routeChannelId
       localStorage.setItem('latestChannels-' + this.selfMetaId, JSON.stringify(latestChannels))
-
+     
       this.activeChannelId = routeChannelId
       return 'ready'
     },
+
+  
 
     _updateReadPointers(messageTimestamp: number, messageMetaId: string) {
       if (!this.channelsReadPointers[messageMetaId]) {
@@ -785,8 +878,21 @@ export const useTalkStore = defineStore('talk', {
         this.channelsReadPointers[messageMetaId].latest = messageTimestamp
       }
     },
-    _updateCurrentChannelReadPointers(messageTimestamp: number) {
-      if (this.channelsReadPointers[this.activeChannelId]) {
+    _updateCurrentChannelReadPointers(messageTimestamp: number,messageType?:GroupMessageType) {
+
+      if(messageType && messageType == GroupMessageType.SubChannel){
+          if (this.channelsReadPointers[this.activeSubChannelId]) {
+        this.channelsReadPointers[this.activeSubChannelId].latest = messageTimestamp
+        this.channelsReadPointers[this.activeSubChannelId].lastRead = messageTimestamp
+      } else {
+        this.channelsReadPointers[this.activeSubChannelId] = {
+          lastRead: messageTimestamp,
+          latest: messageTimestamp,
+        }
+      }
+      }else{
+
+         if (this.channelsReadPointers[this.activeChannelId]) {
         this.channelsReadPointers[this.activeChannelId].latest = messageTimestamp
         this.channelsReadPointers[this.activeChannelId].lastRead = messageTimestamp
       } else {
@@ -795,29 +901,54 @@ export const useTalkStore = defineStore('talk', {
           latest: messageTimestamp,
         }
       }
+
+      }
+
+     
     },
 
     async handleNewGroupMessage(message: any) {
-      console.log('收到新消息', message)
-      const messageMetaId = message.groupId
 
-      const isFromActiveChannel = messageMetaId === this.activeChannelId
+      debugger
+
+      const messageType=message.channelId ? GroupMessageType.SubChannel : GroupMessageType.Group
+      const messageMetaId = messageType == GroupMessageType.SubChannel ? message.channelId : message.groupId
+      const groupId=message.groupId
+
+
+      const isFromActiveChannel = messageType == GroupMessageType.SubChannel ? messageMetaId == this.activeSubChannelId : messageMetaId === this.activeChannelId
 
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
         this._updateReadPointers(message.timestamp, messageMetaId)
-        this.activeCommunity?.channels?.map((channel: any) => {
-          if (channel.id === messageMetaId) {
+
+        if(messageType == GroupMessageType.Group){
+            this.activeCommunity?.channels?.map((channel: any) => {
+            if (channel.id === messageMetaId) {
+            
             channel.newMessages = [message]
           }
         })
+        }else{
+             this.activeCommunity?.channels?.map((channel: any) => {
+            if (channel.id === groupId) {
+            
+              channel.subChannels[0].newMessages = [message]
+          }
+        })
+        }
+
+      
 
         try {
-          sortByConditionInPlace(
+           if(messageType == GroupMessageType.Group){
+              sortByConditionInPlace(
             this.activeCommunity?.channels,
             channel => channel?.groupId == messageMetaId
           )
-          return
+          
+           }
+        return
         } catch (error) {
           console.log('socket推送11111', error.toString())
           return
@@ -826,20 +957,30 @@ export const useTalkStore = defineStore('talk', {
 
       // 当前頻道，插入新消息
       // 先去重
-      const isDuplicate =
-        this.activeChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
-        this.activeChannel?.pastMessages?.some((item: Message) => item.txId === message.txId)
+      const isDuplicate = messageType == GroupMessageType.Group ? this.activeChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
+        this.activeChannel?.pastMessages?.some((item: Message) => item.txId === message.txId) : this.activeSubChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
+        this.activeSubChannel?.pastMessages?.some((item: Message) => item.txId === message.txId)
+
+        
 
       if (isDuplicate) return
 
       // 更新当前頻道的已读指针
-      this._updateCurrentChannelReadPointers(message.timestamp)
+      this._updateCurrentChannelReadPointers(message.timestamp,messageType)
 
       // 优先查找替代mock数据
       let mockMessage: any
 
       if (containsString(message.protocol, NodeName.SimpleGroupChat)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        debugger
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.content === message.content &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -847,8 +988,16 @@ export const useTalkStore = defineStore('talk', {
             item.metaId === message.metaId &&
             containsString(message.protocol, item?.protocol!)
         )
+
+        debugger
       } else if (containsString(message.protocol, NodeName.SimpleFileGroupChat)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -856,7 +1005,13 @@ export const useTalkStore = defineStore('talk', {
             containsString(message.protocol, item?.protocol!)
         )
       } else if (containsString(message.protocol, NodeName.SimpleGroupOpenLuckybag)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -864,7 +1019,13 @@ export const useTalkStore = defineStore('talk', {
             containsString(message.protocol, item?.protocol!)
         )
       } else if (containsString(message.protocol, NodeName.SimpleGroupLuckyBag)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -875,6 +1036,7 @@ export const useTalkStore = defineStore('talk', {
 
       if (mockMessage) {
         console.log('替换中')
+       
         if (containsString(message.protocol, NodeName.SimpleFileGroupChat)) {
           await sleep(2000) // 等待图片上传完成
           this.$patch(state => {
@@ -894,10 +1056,16 @@ export const useTalkStore = defineStore('talk', {
 
         return
       }
-
-      this.activeChannel.newMessages.push(message)
+      if(messageType == GroupMessageType.SubChannel){
+        this.activeSubChannel?.newMessages?.push(message)
+       // this.activeChannel?.subChannels[0]?.newMessages?.push(message)
+      }else{
+        this.activeChannel?.newMessages?.push(message)
+      }
+      
 
       try {
+        if(messageType == GroupMessageType.Group)
         sortByConditionInPlace(
           this.activeCommunity?.channels,
           channel => channel?.groupId == messageMetaId
@@ -964,68 +1132,74 @@ export const useTalkStore = defineStore('talk', {
     },
 
     async handleNewSessionMessage(message: any) {
-      const ecdhsStore = useEcdhsStore()
+      const ecdhsStore=useEcdhsStore()
       const messageMetaId = message.from === this.selfMetaId ? message.to : message.from
-
+      
       const isFromActiveChannel = messageMetaId === this.activeChannelId
-
+      
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
         this._updateReadPointers(message.timestamp, messageMetaId)
 
-        const hasChannelInActiveCommunity = this.activeCommunity?.channels.find(channel => {
+        const hasChannelInActiveCommunity= this.activeCommunity?.channels.find((channel)=>{
           return channel.id == message?.from
         })
 
-        if (!hasChannelInActiveCommunity) {
-          const userInfo = await GetUserEcdhPubkeyForPrivateChat(message.metaId)
-          let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
-          if (!ecdh) {
+        if(!hasChannelInActiveCommunity){
+           
+        const userInfo = await GetUserEcdhPubkeyForPrivateChat(message.metaId)
+        let ecdh= ecdhsStore.getEcdh(userInfo.chatPublicKey)
+        if (!ecdh) {
+            
             ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
             ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
-          }
-          const newSession = {
-            id: message.from,
-            name: message.fromUserInfo.name,
-            publicKeyStr: message.fromUserInfo.chatPublicKey,
-            avatarImage: message.fromUserInfo.avatarImage,
-            metaId: message.fromUserInfo.metaid,
-            lastMessage: '',
-
-            lastMessageTimestamp: null,
-            pastMessages: [],
-            newMessages: [],
-            address: message.fromUserInfo.address,
-            blockHeight: 0,
-            chain: '',
-            chatSettingType: 0,
-            chatType: 0,
-            content: message.content,
-            createAddress: message.fromUserInfo.address,
-            createMetaId: message.fromUserInfo.metaid,
-            createUserAddress: message.fromUserInfo.address,
-            createUserInfo: message.fromUserInfo,
-            createUserMetaId: message.fromUserInfo.metaid,
-            deleteStatus: 0,
-            groupId: '',
-            index: message.index,
-            lastMessagePinId: message.pinId,
-            timestamp: message.timestamp,
-            type: '2',
-            userCount: 0,
-            userInfo: userInfo,
-            uuid: '',
-          }
-
-          this.activeCommunityChannels.unshift(newSession)
         }
+        const newSession = {
+          id: message.from,
+          name: message.fromUserInfo.name,
+          publicKeyStr: message.fromUserInfo.chatPublicKey,
+          avatarImage: message.fromUserInfo.avatarImage,
+          metaId: message.fromUserInfo.metaid,
+          lastMessage: '',
+          
+          lastMessageTimestamp: null,
+          pastMessages: [],
+          newMessages: [],
+          address:message.fromUserInfo.address,
+          blockHeight:0,
+          chain:'',
+          chatSettingType:0,
+          chatType:0,
+          content:message.content,
+          createAddress:message.fromUserInfo.address,
+          createMetaId:message.fromUserInfo.metaid,
+          createUserAddress:message.fromUserInfo.address,
+          createUserInfo:message.fromUserInfo,
+          createUserMetaId:message.fromUserInfo.metaid,
+          deleteStatus:0,
+          groupId:"",
+          index:message.index,
+          lastMessagePinId:message.pinId,
+          timestamp:message.timestamp,
+          type:'2',
+          userCount:0,
+          userInfo:userInfo,
+          uuid:""
+        }
+
+        this.activeCommunityChannels.unshift(newSession)
+        }
+
+         
+
+
 
         this.activeCommunity?.channels?.map((channel: any) => {
           if (channel?.userInfo?.metaid === messageMetaId) {
             channel.newMessages = [message]
           }
         })
-
+        
         try {
           sortByConditionInPlace(
             this.activeCommunity?.channels,
@@ -1039,8 +1213,8 @@ export const useTalkStore = defineStore('talk', {
         }
       }
       console.log('11111111', this.activeChannel.newMessages, message.txId)
-      console.log('this.activeCommunity?.channels', this.activeCommunity?.channels)
-
+      console.log("this.activeCommunity?.channels",this.activeCommunity?.channels)
+      
       // 去重
       const isDuplicate =
         this.activeChannel.newMessages.some((item: Message) => item.txId === message.txId) ||
@@ -1067,16 +1241,18 @@ export const useTalkStore = defineStore('talk', {
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
-            if (mockMessage.data) {
-              mockMessage.data.content = message.content || message.data?.content
+            if(mockMessage.data){
+               mockMessage.data.content = message.content || message.data?.content
             }
+           
           })
         } else {
+          debugger
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
-            if (mockMessage.data) {
-              mockMessage.data.content = message.content || message.data?.content
+                if(mockMessage.data){
+               mockMessage.data.content = message.content || message.data?.content
             }
             //mockMessage.data.content = message.content || message.data?.content
             delete mockMessage.isMock
@@ -1198,14 +1374,15 @@ export const useTalkStore = defineStore('talk', {
       console.log('this.activeChannelType', this.activeChannelType, this.activeChannelId)
 
       let messages
-      let nextTimestamp = 0
+      let nextTimestamp=0
       if (this.activeChannelType == 'session') {
         const privateList = await getPrivateChatMessages({
           otherMetaId: this.activeChannelId,
           metaId: selfMetaId,
         })
-        messages = privateList.list ?? []
-        nextTimestamp = privateList.nextTimestamp
+        messages=privateList.list ?? []
+        nextTimestamp=privateList.nextTimestamp
+
       } else {
         messages = await getChannelMessages({
           groupId: this.activeChannelId,
@@ -1226,10 +1403,10 @@ export const useTalkStore = defineStore('talk', {
       // 优化：使用nextTick来减少对session列表的影响
       await nextTick()
       this.activeChannel.pastMessages = messages
-      if (this.activeChannelType == 'session') {
-        this.activeChannel.lastMessageTimestamp = nextTimestamp
+      if(this.activeChannelType == 'session'){
+        this.activeChannel.lastMessageTimestamp =nextTimestamp
       }
-
+      
       this.activeChannel.newMessages = []
 
       // 设置已读指针
@@ -1243,6 +1420,108 @@ export const useTalkStore = defineStore('talk', {
           this.channelsReadPointers[this.activeChannelId].lastRead = latestTimestamp
         } else {
           this.channelsReadPointers[this.activeChannelId] = {
+            latest: latestTimestamp,
+            lastRead: latestTimestamp,
+          }
+        }
+      }
+
+      // 保证至少1秒
+      // const delay = Math.max(1000 - (new Date().getTime() - currentTimestamp), 0)
+      // if (delay) await sleep(delay)
+
+      layoutStore.isShowMessagesLoading = false
+
+      // 滚动到底部
+      await sleep(1)
+      const messagesContainer = document.getElementById('messagesScroll')
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight
+      }
+    },
+
+    async initSubChannelMessages(channelId:string,selfMetaId?: string) {
+      if (!selfMetaId) selfMetaId = this.selfMetaId
+
+      if (!this.activeChannel) return
+
+      if(!channelId) return
+
+      if(!this.activeChannel.subChannels.length) return
+
+      const layoutStore = useLayoutStore()
+
+      layoutStore.isShowMessagesLoading = true
+
+      // 最少1秒，防止闪烁
+      const currentTimestamp = new Date().getTime()
+
+      console.log('this.activeChannelType', this.activeChannelType, this.activeChannelId)
+
+      let messages
+      //let nextTimestamp=0
+      // if (this.activeChannelType == 'session') {
+      //   const privateList = await getPrivateChatMessages({
+      //     otherMetaId: this.activeChannelId,
+      //     metaId: selfMetaId,
+      //   })
+      //   messages=privateList.list ?? []
+      //   nextTimestamp=privateList.nextTimestamp
+
+      // } else {
+      //   messages = await getChannelMessages({
+      //     groupId: this.activeChannelId,
+      //     metaId: selfMetaId,
+      //   })
+      // }
+
+
+      //子频道不需要处理私聊
+       messages = await getSubChannelMessages({
+          channelId,
+          metaId: selfMetaId,
+        })
+        console.log(" this.activeChannel", this.activeChannel)
+        
+
+      // for(let i of messages){
+      //   const userInfo= await getUserInfoByAddress(i.address)
+      //    i.userInfo=userInfo
+      //   if(i.replyInfo){
+      //     const replyUserInfo=await getUserInfoByAddress(i.replyInfo.address)
+      //     i.replyInfo.userInfo=replyUserInfo
+      //   }
+
+      // }
+
+      // 优化：使用nextTick来减少对session列表的影响
+      await nextTick()
+
+      this.activeSubChannelId=channelId || ''
+      //
+     // this.activeChannel.subChannels[0].pastMessages=messages
+       this.activeSubChannel.pastMessages=messages
+      
+      //this.activeChannel.subChannels[0].pastMessages = messages
+      // if(this.activeChannelType == 'session'){
+      //   this.activeChannel.lastMessageTimestamp =nextTimestamp
+      // }
+      // 
+      //this.activeChannel.subChannels[0].newMessages=[]
+      this.activeSubChannel.newMessages=[]
+      //this.activeChannel.newMessages = []
+
+      // 设置已读指针
+      const latestTimestamp = messages.length ? messages[0].timestamp : 0
+      if (latestTimestamp) {
+        if (
+          this.channelsReadPointers[this.activeSubChannelId] &&
+          latestTimestamp > this.channelsReadPointers[this.activeSubChannelId].latest
+        ) {
+          this.channelsReadPointers[this.activeSubChannelId].latest = latestTimestamp
+          this.channelsReadPointers[this.activeSubChannelId].lastRead = latestTimestamp
+        } else {
+          this.channelsReadPointers[this.activeSubChannelId] = {
             latest: latestTimestamp,
             lastRead: latestTimestamp,
           }
@@ -1367,6 +1646,31 @@ export const useTalkStore = defineStore('talk', {
       this.activeChannel.newMessages.push(message)
     },
 
+    addSubChannleMessage(message: any) {
+      console.log('this.activeChannel333333333333333', this.activeSubChannel)
+      if (!this.activeSubChannel) return
+      if (!this.activeSubChannel.newMessages) {
+        this.activeSubChannel.newMessages = []
+        //this.activeChannel.subChannels[0].newMessages = []
+      }
+      console.log('message', message)
+
+      //const isSession = Number(message.type) == 2 ? true : false
+      // if (isSession) {
+      //   sortByConditionInPlace(this.activeCommunity?.channels, channel => channel?.id == message.to)
+      //   console.log('this.activeChannel333333333333333', this.activeChannel)
+      // } else {
+      //   sortByConditionInPlace(
+      //     this.activeCommunity?.channels,
+      //     channel => channel?.groupId == message.groupId
+      //   )
+      // }
+
+      this.activeSubChannel.newMessages.push(message)
+       //this.activeChannel.subChannels[0].newMessages.push(message)
+      debugger
+    },
+
     updateMessage(message: any,txid:string) {
       console.log('this.activeChannel333333333333333', this.activeChannel)
       if (!this.activeChannel) return
@@ -1402,6 +1706,19 @@ export const useTalkStore = defineStore('talk', {
       this.activeChannel.newMessages = this.activeChannel.newMessages.filter(
         (message: any) => message.mockId !== mockId
       )
+    },
+
+    removeSubChannelMessage(mockId: string) {
+      console.log('removing message', mockId)
+      if (!mockId || !this.activeSubChannel || !this.activeSubChannel.newMessages) return
+
+      this.activeSubChannel.newMessages = this.activeSubChannel.newMessages.filter(
+        (message: any) => message.mockId !== mockId
+      )
+
+      //  this.activeChannel.subChannels[0].newMessages=this.activeSubChannel.newMessages.filter(
+      //   (message: any) => message.mockId !== mockId
+      // )
     },
 
     addRetryList(message: MessageDto) {

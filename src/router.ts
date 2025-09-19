@@ -8,6 +8,7 @@ import { useRootStore } from './stores/root'
 import { useUserStore } from './stores/user'
 import { GetBandProposalList } from '@/api/strapi'
 import { useLayoutStore } from './stores/layout'
+import { KeepAlive } from 'vue'
 //import.meta.env.VITE_BASE_URL
 //export const routerHistory = createWebHistory()
 export const routerHistory =createWebHistory() //'/chat/'//createWebHistory(import.meta.env.MODE == 'mainnet' ? '/chat/' : '/')
@@ -340,6 +341,14 @@ export const router = createRouter({
           path: ':channelId',
           name: 'talkChannel',
           component: () => import('@/views/talk/components/ChannelBody.vue'),
+           meta: { KeepAlive: true },
+          // children:[
+          //    {
+          //     path: 'sub/:subId',
+          //     name: 'talkSubChannel',
+          //     component: () => import('@/views/talk/components/ChannelBody.vue'),
+          //   },
+          // ]
           // meta: {  keepAlive: true },
         },
       ],

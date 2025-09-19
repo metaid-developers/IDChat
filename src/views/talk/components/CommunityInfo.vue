@@ -18,7 +18,7 @@
         >
           <button
             class="absolute top-[16PX] right-[16PX] flex items-center justify-center outline-0 z-[90] lg:!hidden"
-            @click="layout.isShowLeftNav = false"
+            @click="  layout.$patch({ isShowLeftNav: false,isShowContactList:false })"
           >
             <Icon
               name="x_mark"

@@ -1,5 +1,5 @@
 import HttpRequest from '@/utils/request'
-import { Channel, Community, CommunityAuth } from '@/@types/talk'
+import { Channel, Community, CommunityAuth,SubChannel,MemberListRes } from '@/@types/talk'
 import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
@@ -181,7 +181,7 @@ export const getChannelMembers = async ({
   timestamp?: string
   orderBy?: string
   orderType?: 'asc' | 'desc'
-}): Promise<any> => {
+}): Promise<MemberListRes> => {
   const query = new URLSearchParams({
     groupId,
     cursor,
@@ -191,7 +191,10 @@ export const getChannelMembers = async ({
     orderType,
   }).toString()
   return TalkApi.get(`/group-member-list?${query}`).then(async res => {
-    const members = res.data.list
+    const members = res.data
+
+    const {admins,blockList,creator,list,whiteList}=members
+
     // if(members){
     //   for(let i of members){
     //     const userInfo= await getUserInfoByAddress(i.address)
@@ -199,7 +202,13 @@ export const getChannelMembers = async ({
     //   }
     // }
 
-    return members || []
+    return {
+        admins:admins ?? [],
+        blockList:blockList ?? [],
+        creator:creator ?? null,
+        list: list ?? [],
+        whiteList: whiteList ?? []
+    } 
   })
 }
 
@@ -388,6 +397,35 @@ export const getAllChannels = async ({
   })
 }
 
+export const getGroupChannelList=async({
+  groupId,
+  cursor='0',
+  size='20'
+}: {
+  groupId:string
+  cursor?:string
+  size?: string
+}):Promise<SubChannel[]>=>{
+  const params = new URLSearchParams({
+    groupId,
+    cursor,
+    size,
+  })
+    return TalkApi.get(`/group-channel-list?${params}`).then(res => {
+   if(res.data.list?.length){
+    return res.data.list
+    //  return res.data.list.map((channel: any) => {
+    //   channel.id = channel.groupId
+    //   channel.name = channel.roomName
+    //   channel.uuid = channel.txId // 用于key,不修改
+    //   return channel
+    // })
+   }else{
+    return []
+   }
+  })
+}
+
 export const getChannelMessages = async ({
   groupId,
   metaId = '',
@@ -443,6 +481,63 @@ export const getChannelMessages = async ({
   // }
 
   return data.data
+}
+
+export const getSubChannelMessages = async ({
+  channelId,
+  metaId = '',
+  cursor = '0',
+  size = String(ChannelMsg_Size),
+  timestamp = '0',
+}: {
+  channelId: string
+  metaId: string
+  cursor?: string
+  size?: string
+  timestamp?: string
+}): Promise<any> => {
+  const selfMetaId = metaId
+  const query = new URLSearchParams({
+    channelId,
+    metaId,
+    cursor,
+    size,
+    timestamp,
+  }).toString()
+
+  // if (type === 'session') {
+  //   const {
+  //     data: { data: messages },
+  //   } = await TalkApi.get(`/chat/${selfMetaId}/${channelId}?${query}`)
+
+  //   return messages
+  // }
+
+  const data: {
+    data: {
+      total: number
+      nextTimestamp: number
+      list: ChatMessageItem[] | null
+    }
+  } = await TalkApi.get(`/channel-chat-list-v3?${query}`)
+
+  // if (data.data.list?.length) {
+  //   for (let item of data.data.list) {
+  //     if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
+  //     getOneRedPacket({
+  //         groupId: item.groupId,
+  //         pinId: item.pinId,
+  //       }).then((redpackInfo)=>{
+  //           if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
+  //         item.claimOver = true
+  //       }
+  //       }).catch((e)=>console.log('e',e))
+
+  //     }
+  //   }
+  // }
+
+  return data.data.list ?? []
 }
 
 export const getPrivateChatMessages = async (

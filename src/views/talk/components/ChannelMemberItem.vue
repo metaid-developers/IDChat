@@ -8,10 +8,11 @@
   >
     <template #reference>
       <div
-        class="flex items-center py-1 lg:py-2 group cursor-pointer hover:bg-dark-200 hover:dark:bg-gray-900 px-4"
+        class="flex items-center justify-between py-1 lg:py-2 group cursor-pointer hover:bg-dark-200 hover:dark:bg-gray-900 px-4"
         @click="messageThisGuy"
       >
-        <!--member.avatarType-->
+     <div class="flex items-center">
+         <!--member.avatarType-->
         <UserAvatar
           :name="member.userInfo.name"
           :type="'metaId'"
@@ -22,18 +23,42 @@
           class="shrink-0"
         />
         <div class="ml-2 flex flex-col gap-y-px">
-          <UserName :name="member.userInfo.name" :meta-name="''" class="max-w-[160PX] text-sm" />
+          <div class="flex flex-row items-center justify-between ">
+            <UserName :name="member.userInfo.name" :meta-name="''" class="max-w-[160PX] mr-2 text-sm" />
+             <Icon :name="getRuleName" class="w-[46px] h-[18px]" v-if="getRuleName"></Icon>
+          </div>
           <div class="text-xxs text-dark-300 dark:text-gray-400" v-if="member.userInfo.metaid">
             MetaID: {{ member.userInfo.metaid.substring(0, 6) }}
           </div>
         </div>
+     </div>
+     <div class="flex items-center" v-if="getRuleIcon">
+      <Icon :name="getRuleIcon" class="w-[24px] h-[24px] "></Icon>
+     </div>
       </div>
     </template>
     <div>
       <el-button :icon="Promotion" text type="info">
         {{ $t('Talk.Channel.SendMessage') }}
       </el-button>
-      <div class="my-2" v-if="isCurrentUserCreator" />
+
+      <div class="my-2" v-if="!isYou &&  selfPermission == MemberRule.Owner " >
+      <div class="flex items-center el-button el-button--info is-text" @click="manageAdmin">
+        <Icon name="admin" class="w-[15px] h-[15px] text-dark-300 dark:text-gray-400"></Icon>
+        <span class="ml-[5.4px]">
+           {{isAdmin ? $t('Talk.Channel.removeAdmin') :  $t('Talk.Channel.SetAdmin') }}
+        </span>
+      </div>
+    </div>
+
+      <div class="my-2" v-if="!isYou && !isOwner && !isAdmin && (selfPermission == MemberRule.Owner || selfPermission == MemberRule.Admin)" >
+      <div class="flex items-center el-button el-button--info is-text" @click="manageWhitelist">
+        <Icon name="white_list" class="w-[15px] h-[15px] text-dark-300 dark:text-gray-400"></Icon>
+        <span class="ml-[5.4px]"> {{ isSpeaker ? $t('Talk.Channel.remove_WhiteList') : $t('Talk.Channel.WhiteList') }}</span>
+      </div>
+      </div>
+
+      <div class="my-2" v-if="(!isYou && selfPermission == MemberRule.Owner) ||  (!isYou && !isOwner && !isAdmin &&  (selfPermission == MemberRule.Owner || selfPermission == MemberRule.Admin) ) " >
       <el-popconfirm
         width="220"
         :icon="InfoFilled"
@@ -41,7 +66,7 @@
         :title="`Are you sure to remove this user ${member.userInfo.name}?`"
         @cancel="onCancel"
         @confirm="onConfirm"
-        v-if="isCurrentUserCreator"
+        v-if="!isYou"
       >
         <template #reference>
           <el-button :icon="Remove" text type="danger">
@@ -55,6 +80,8 @@
           </el-button>
         </template>
       </el-popconfirm>
+      </div>
+
     </div>
   </el-popover>
 </template>
@@ -68,11 +95,14 @@ import { createPinWithBtc } from '@/utils/pin'
 import { createPin } from '@/utils/userInfo'
 import { InfoFilled, Promotion, Remove } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { MemberRule,RuleOp } from '@/enum'
+import { useI18n } from 'vue-i18n'
 
 const userStore = useUserStore()
 const chainStore = useChainStore()
 const clicked = ref(false)
+const i18n=useI18n()
 function onCancel() {
   clicked.value = true
 }
@@ -80,12 +110,74 @@ function onCancel() {
 // import UserName from
 
 const props = defineProps(['member', 'createUserMetaId', 'groupId'])
-const emit = defineEmits(['updated'])
 const simpleTalk = useSimpleTalkStore()
+const emit = defineEmits(['updated','updateUserAdmin','updateUserWhiteList'])
+const talk = useTalkStore()
 const router = useRouter()
-
+const route =useRoute()
 const isYou = computed(() => {
   return props.member.userInfo.metaid === simpleTalk.selfMetaId
+})
+
+const currentChannelInfo = computed(() => {
+  return talk?.activeCommunity?.channels?.find(item => item?.groupId === route.params.channelId || item?.metaId == route.params.channelId)
+})
+
+const selfPermission=computed(()=>{
+  return talk.getMychannelRule(currentChannelInfo.value?.groupId)
+  //return props.selfRule
+})
+
+const getRuleName=computed(()=>{
+  switch (props.member?.rule) {
+    case MemberRule.Owner:
+      
+      return 'owner';
+     case MemberRule.Admin:
+      
+      return 'adminer';
+       case MemberRule.Speaker:
+      
+      return '';
+       case MemberRule.Normal:
+      return '';
+    default:
+      return '';
+  }
+})
+
+const getRuleIcon=computed(()=>{
+  switch (props.member?.rule) {
+    case MemberRule.Owner:
+      
+      return 'gm';
+     case MemberRule.Admin:
+      
+      return 'admintor';
+       case MemberRule.Speaker:
+      
+      return 'speaker';
+       case MemberRule.Normal:
+      return '';
+    default:
+      return '';
+  }
+})
+
+console.log("selfPermission",selfPermission.value)
+
+
+const isOwner=computed(()=>{
+  return props.member.rule == MemberRule.Owner
+})
+
+const isAdmin=computed(()=>{
+    return props.member.rule === MemberRule.Admin
+})
+
+const isSpeaker=computed(()=>{
+  
+    return props.member.rule === MemberRule.Speaker
 })
 
 const popMemberMenu = () => {
@@ -98,6 +190,22 @@ const isCurrentUserCreator = computed(() => {
     props.member.userInfo.metaid !== userStore.last?.metaid
   )
 })
+
+const manageAdmin=()=>{
+  //检查权限
+  if(selfPermission.value != MemberRule.Owner){
+    return ElMessage.error(`${i18n.t('Non_permission_set_admin')}`)
+  }
+    emit('updateUserAdmin', props.member)
+}
+
+const manageWhitelist=()=>{
+  const hasPermission=selfPermission.value == MemberRule.Admin || selfPermission.value == MemberRule.Owner
+   if(!hasPermission){
+    return ElMessage.error(`${i18n.t('Non_permission_set_whitelist')}`)
+  }
+  emit('updateUserWhiteList', props.member)
+}
 
 const onConfirm = async () => {
   clicked.value = false

@@ -3,7 +3,7 @@
     <Icon
       :name="layout.isShowLeftNav ? 'x_mark' : 'bars'"
       id="phone-menu-btn"
-      @click="layout.$patch({ isShowLeftNav: !layout.isShowLeftNav })"
+      @click="layout.$patch({ isShowLeftNav: !layout.isShowLeftNav,isShowContactList:!layout.isShowContactList })"
     />
 
     <div class="dived"></div>

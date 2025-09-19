@@ -1,5 +1,32 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
+export enum MemberRule{
+  Owner=0,
+  Admin=1,
+  Speaker=2,
+  Normal=3
+}
+
+export enum RuleOp{
+  CanSpeak=0,
+  SetAdmin=1,
+  RemoveAdmin=2,
+  SetSpeaker=3,
+  RemoveSpeaker=4,
+  DeleteMember=5,
+  Normal=6
+}
+
+export enum ChannelMode{
+  public = 0,
+  broadcast = 1
+}
+
+export enum CreateGroupType{
+  public='public',
+  broadcast='broadcast',
+}
+
 export enum ChatChain {
   mvc = 'mvc',
   btc = 'btc',
@@ -340,6 +367,9 @@ export enum NodeName {
   FtIssue = 'FtIssue',
   FtTransfer = 'FtTransfer',
   FtMerge = 'merge',
+  SimpleGroupChannel='simplegroupchannel',
+  SimpleGroupAdmin='simplegroupadmin',
+  SimpleGroupWhitelist='simplegroupwhitelist',
   SimpleRedEnvelope = 'Simpleredenvelope',
   SimpleGroupLuckyBag = 'simplegroupluckybag',
   OpenRedenvelope = 'openredenvelope',
@@ -367,6 +397,11 @@ export const enum GetInitAmountType {
   metalet = 'metalet',
 }
 
+export const enum GroupMessageType{
+  Group=0,
+  SubChannel=1
+}
+
 export const enum BindStatus {
   ChooseType,
   BindHavedMetaId,
@@ -392,6 +427,7 @@ export const enum CommunityJoinAction {
 export const enum ChannelPublicityType {
   Public = '1',
   Private = '2',
+  Broadcast = '3',
 }
 
 export enum MessageType {
@@ -403,11 +439,13 @@ export enum MessageType {
 
 export enum ChannelType {
   Group = 'group',
+  Broadcast='broadcast',
   Session = 'session',
 }
 
 export enum GroupChannelType {
   PublicText = 'publicText',
+  Broadcast = 'broadcast',
   Password = 'password',
   NFT = 'NFT',
   FT = 'FT',
@@ -421,6 +459,8 @@ export enum GroupChannelType {
 export enum ShowControl {
   isShowCreateCommunityModal = 'isShowCreateCommunityModal',
   isShowCreatePublicChannelModal = 'isShowCreatePublicChannelModal',
+  isShowCreateBroadcastChannelModal='isShowCreateBroadcastChannelModal',
+  isShowCreateGroupTypeModal = 'isShowCreateGroupTypeModal',
   isShowCreateConsensualChannelModal = 'isShowCreateConsensualChannelModal',
   isShowCreateGeneralChannelModal = 'isShowCreateGeneralChannelModal',
   isShowCreateDaoModal = 'isShowCreateDaoModal',

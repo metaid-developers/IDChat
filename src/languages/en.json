@@ -234,7 +234,16 @@
       "SetNewPhoto": "Set New Photo",
       "ShareLink": "Share Link",
       "SendMessage": "Send Message",
-      "RemoveUser": "Remove User"
+      "RemoveUser": "Remove User",
+      "team_members_count": "members",
+      "team_OwnerOrAdmin": "Group Owner/Admin",
+      "broadcast": "Broadcast",
+      "leave": "Leave",
+      "broadcast_title": "# Broadcast Chat",
+      "SetAdmin": "Set as Admin",
+      "WhiteList": "Add to Whitelist",
+      "removeAdmin": "Remove From Admin",
+      "remove_WhiteList": "Remove From Whitelist"
     },
     "Community": {
       "optional": "",
@@ -285,7 +294,9 @@
       "edit_consensual_channel": "Edit Pass Channel",
       "announcements": "Announcements",
       "topics": "Topics",
-      "DAO": "DAO"
+      "DAO": "DAO",
+      "create_broadcast_channel": "Create Broadcast",
+      "create_broadcast_channel_tip": "Create a broadcast subchannel where only admins and whitelisted members can post, while others have read-only access."
     },
     "Input": {
       "nft_stickers": "NFT Emoji",
@@ -1418,5 +1429,16 @@
   "share_group_member": "members",
   "share_group_creator": "creator",
   "share_group_view": "VIEW GROUP",
-  "share_group_invites": "invites you to join this group"
+  "share_group_invites": "invites you to join this group",
+  "channel_type_public": "Public Group Chat",
+  "channel_type_broadcast": "Broadcast Group",
+  "create_broadcast_fail": "Failed to create broadcast channel.",
+  "create_broadcast_success": "创建发布频道成功",
+  "channle_memeber_admin": "Group Owner/Admin",
+  "channle_memeber_noraml": "Members",
+  "Non_permission_set_admin": "Insufficient permissions. Only the group owner can set administrators",
+  "Non_permission_set_whitelist": "Insufficient permissions. Only the group owner or administrators have the authority to manage the whitelist",
+  "set_admin_fail": "Failed to set administrator",
+  "set_whitelist_fail": "Failed to set whitelist",
+  "channle_memeber_whitelist": "Speaker"
 }

@@ -1,6 +1,8 @@
 <template>
   <TransitionRoot :show="modelValue">
-    <Dialog @close="tryClose" class="relative z-50 text-dark-800 dark:text-gray-100">
+    <Dialog @close="tryClose" class="relative  text-dark-800 dark:text-gray-100"
+    :class="[layout.isShowSubChannelDrawer ? 'z-[9999]' : 'z-50']"
+    >
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -109,6 +111,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useLayoutStore } from '@/stores/layout';
 import { Dialog, DialogTitle, DialogPanel, TransitionRoot, TransitionChild } from '@headlessui/vue'
 import { computed } from 'vue'
 
@@ -122,6 +125,8 @@ const props = defineProps<{
   fullScreen?: boolean
 }>()
 
+const layout=useLayoutStore()
+
 const tryClose = () => {
   if (props.strictClose || props.noClose) {
     return
@@ -131,6 +136,9 @@ const tryClose = () => {
 }
 
 const emit = defineEmits(['update:modelValue', 'update:showSecondControl'])
+
+
+
 
 const mobileSize = computed(() => {
   if (props.mobileSize) {

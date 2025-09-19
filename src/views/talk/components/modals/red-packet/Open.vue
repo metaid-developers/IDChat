@@ -1,6 +1,6 @@
 <template>
   <TransitionRoot :show="layout.isShowRedPacketOpenModal" :unmount="true">
-    <Dialog @close="closeModal" class="relative z-50">
+    <Dialog @close="closeModal" class="relative" :class="[layout.isShowSubChannelDrawer ? 'z-[9999]' : 'z-50']">
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"

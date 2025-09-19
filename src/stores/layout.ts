@@ -6,11 +6,13 @@ export const useLayoutStore = defineStore('layout', {
   state: () => {
     return {
       isShowLeftNav: false,
+      isShowContactList:false,
       showJoinView: false,
       showWelcomeDescView: false,
       isShowPublishBuzz: false,
       isShowCreateCommunityModal: false,
-
+      isShowCreateGroupTypeModal: false,
+      isShowCreateBroadcastChannelModal:false,
       isShowCreatePublicChannelModal: false,
       isShowCreateConsensualChannelModal: false,
       isShowCreateGeneralChannelModal: false,
@@ -39,6 +41,7 @@ export const useLayoutStore = defineStore('layout', {
       isShowCommunitySettingsModal: false,
       isShowMemberList: true,
       isShowMemberListDrawer: false,
+      isShowSubChannelDrawer:false,
       isShowPasswordModal: false,
       isShowRequireNftModal: false,
       isShowRequireFtModal: false,

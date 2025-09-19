@@ -2,6 +2,7 @@
   <BaseModal
     v-model="layout[ShowControl.isShowRedPacketModal]"
     v-model:show-second-control="layout[ShowControl.isShowChooseTokenModal]"
+ 
   >
     <template #title>
       {{ $t('Talk.Modals.create_candy_bags') }}

@@ -74,8 +74,11 @@
             }}<el-icon><CopyDocument /></el-icon>
           </div>
           <div class="mt-4">
+            <el-button v-if="isCurrentUserCreator" color="#ffffff" size="default" :icon="CirclePlus" @click="openBroadcastMode"
+              >{{ $t('Talk.Channel.broadcast') }}</el-button
+            >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true"
-              >Search</el-button
+              >{{ $t('Talk.Channel.search') }}</el-button
             >
             <el-button
               v-if="!isCurrentUserCreator"
@@ -83,7 +86,7 @@
               size="default"
               :icon="Remove"
               @click="handleLeave"
-              >Leave</el-button
+              >{{ $t('Talk.Channel.leave') }}</el-button
             >
           </div>
         </div>
@@ -118,7 +121,7 @@
         </div>
       </div>
 
-      <div class="flex items-baseline justify-between mb-2 px-4 py-4 affix members-header">
+      <div class="flex items-baseline justify-between mb-2 px-4 py-2 affix members-header">
         <div class="text-sm text-dark-800 dark:text-gray-100 uppercase font-medium">
           {{ $t('Talk.Channel.team_members') }}
         </div>
@@ -128,6 +131,78 @@
       </div>
       <div class="infinite-list-wrapper" style="overflow: auto" ref="scrollContainer">
         <ul class="list">
+
+          <!--管理员-->
+          <li class="px-4 py-2 text-sm text-dark-300 dark:text-gray-400" v-if="currentAdminList.length">
+            <span>
+              {{ $t('channle_memeber_admin') }}
+            </span>
+            <span>
+             ({{ currentAdminList.length }})
+            </span>
+          </li>
+
+          <li
+          v-for="member in currentAdminList"
+          :key="member?.index"
+          class="w-full relative list-item"
+          >
+           <ChannelMemberItem
+              class="absolute top-0 left-0 w-full z-0"
+              :id="member?.index"
+
+              :style="{ transform: `translateY(${member?.start}px)` }"
+              :member="member"
+             
+              :key="member?.index"
+              :createUserMetaId="currentChannelInfo?.createUserMetaId"
+              :groupId="currentChannelInfo?.groupId"
+              @updated="handleDeleteSuccess"
+              @updateUserAdmin="handleAdmin"
+              @updateUserWhiteList="handleWhiteList"
+            />
+
+          </li>
+
+          <!--白名单-->
+
+          <li class="px-4 py-2 text-sm text-dark-300 dark:text-gray-400" v-if="currentSpeakerList.length">
+              <span>
+               {{ $t('channle_memeber_whitelist') }}
+            </span>
+            <span>
+             ({{ currentSpeakerList.length }})
+            </span>
+          
+          </li>
+
+          <li
+          v-for="member in currentSpeakerList"
+          :key="member?.index"
+          class="w-full relative list-item"
+          >
+           <ChannelMemberItem
+              class="absolute top-0 left-0 w-full z-0"
+              :id="member?.index"
+
+              :style="{ transform: `translateY(${member?.start}px)` }"
+              :member="member"
+             
+              :key="member?.index"
+              :createUserMetaId="currentChannelInfo?.createUserMetaId"
+              :groupId="currentChannelInfo?.groupId"
+              @updated="handleDeleteSuccess"
+              @updateUserAdmin="handleAdmin"
+              @updateUserWhiteList="handleWhiteList"
+            />
+
+          </li>
+
+          <!--普通成员-->
+
+          <li class="px-4 py-2 text-sm text-dark-300 dark:text-gray-400" v-if="currentDisplayList.length">
+            {{ $t('channle_memeber_noraml') }}
+          </li>
           <li
             v-for="member in currentDisplayList"
             :key="member.id"
@@ -136,12 +211,16 @@
             <ChannelMemberItem
               class="absolute top-0 left-0 w-full z-0"
               :id="member.index"
+               
               :style="{ transform: `translateY(${member.start}px)` }"
               :member="member"
+               
               :key="member.index"
               :createUserMetaId="currentChannelInfo?.createdBy"
               :groupId="currentChannelInfo?.id"
               @updated="handleDeleteSuccess"
+               @updateUserAdmin="handleAdmin"
+              @updateUserWhiteList="handleWhiteList"
             />
           </li>
         </ul>
@@ -158,7 +237,7 @@
         </div>
         <p v-if="loading && !searchKey.trim()" class="text-center">Loading...</p>
         <p v-if="isSearching && searchKey.trim()" class="text-center">Searching...</p>
-        <p v-if="noMore && !searchKey.trim()" class="text-center">No more</p>
+        <p v-if="noMore && !searchKey.trim()" class="text-center mt-3">No more</p>
         <p v-if="!isSearching && searchKey.trim() && !searchList.length" class="text-center">
           No results found
         </p>
@@ -194,6 +273,9 @@ import {
   onMounted,
   onUnmounted,
   nextTick,
+  toRaw,
+  reactive,
+  onUpdated,
 } from 'vue'
 
 import { useTalkStore } from '@/stores/talk'
@@ -214,20 +296,49 @@ import {
   Edit,
   Link,
   Remove,
+CirclePlus,
   Search,
 } from '@element-plus/icons-vue'
 import { metafile } from '@/utils/filters'
-import { NodeName } from '@/enum'
+import { NodeName,MemberRule,RuleOp } from '@/enum'
 import { createSinglePin } from '@/utils/pin'
-import { fa } from 'element-plus/es/locale'
+
 import { useSimpleTalkStore } from '@/stores/simple-talk'
-interface MemberItem {
-  id: string
+import { useLayoutStore } from '@/stores/layout'
+import { setChannelAdmins,setChannelWhiteList } from '@/utils/talk'
+
+interface MemberItem  {
+  id?: string
   index: number
   start: number
+  rule:MemberRule
+  permission:RuleOp[]
+  address?:string
+  metaId?:string
+  timeStr?:string
+  timestamp?:number
+  userInfo?:{
+    address:string
+    avatar:string
+    avatarImage:string
+    chatPublicKey:string
+    chatPublicKeyId:string
+    metaid:string
+    name:string
+  }
   [key: string]: unknown
 }
 
+interface MemberListRes {
+  admins:MemberItem[]
+  blockList:MemberItem[]
+  creator:MemberItem | null
+  list:MemberItem[]
+  normalList:MemberItem[]
+  whiteList:MemberItem[]
+}
+
+ 
 interface Props {
   modelValue: boolean
 }
@@ -236,10 +347,23 @@ const emit = defineEmits(['update:modelValue'])
 const showSearch = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
+const layout=useLayoutStore()
 const cursor = ref(0)
 const pageSize = 20
 const route = useRoute()
-const list = ref<MemberItem[]>([])
+const permissionMemberList=reactive<string[]>([])
+
+const memberList =ref<MemberListRes>({
+  admins:[],
+  blockList:[],
+  creator:null,
+  list:[],
+  normalList:[],
+  whiteList:[]
+})
+// const adminList=ref<MemberItem[]>([])
+// const speakerWhiteList=ref<MemberItem[]>([])   
+// const normalList=ref<MemberItem[]>([])  
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadTrigger = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
@@ -273,6 +397,13 @@ const closeSearch = () => {
   })
 }
 
+const openBroadcastMode=()=>{
+  layout.isShowCreateBroadcastChannelModal = true
+  layout.isShowMemberListDrawer =false
+}
+
+
+
 // 控制编辑公告抽屉的显示
 const showEditAnnouncementDrawer = ref(false)
 
@@ -298,6 +429,22 @@ const isCurrentUserCreator = computed(() => {
 const currentLink = computed(() => {
   return window.location.href
 })
+
+
+const getPermission = (rule:MemberRule) =>{
+  switch(rule){
+    case MemberRule.Owner:
+      return [RuleOp.CanSpeak,RuleOp.SetAdmin,RuleOp.RemoveAdmin,RuleOp.SetSpeaker,RuleOp.RemoveSpeaker,RuleOp.DeleteMember,RuleOp.Normal]
+    case MemberRule.Admin:
+      return [RuleOp.CanSpeak,RuleOp.SetSpeaker,RuleOp.RemoveSpeaker,RuleOp.DeleteMember,RuleOp.Normal]
+    case MemberRule.Speaker:
+      return [RuleOp.CanSpeak,RuleOp.Normal]
+    case MemberRule.Normal:
+      return [RuleOp.Normal]
+    default:
+      return [RuleOp.Normal]
+  }
+}
 
 const copyLink = () => {
   copy(currentLink.value)
@@ -350,7 +497,14 @@ const handleDeleteSuccess = (metaid: string) => {
   console.log(metaid)
   cursor.value = 0
   noMore.value = false
-  list.value = []
+  memberList.value = {
+    admins:[],
+    blockList:[],
+    creator:null,
+    list:[],
+    normalList:[],
+    whiteList:[]
+  }
 
   // 如果当前在搜索状态，重新执行搜索
   if (searchKey.value.trim()) {
@@ -390,6 +544,142 @@ const handleLeave = async () => {
     ElMessage.error(error.message || 'Failed to leave channel')
   }
 }
+
+const handleAdmin=async(member:MemberItem)=>{
+  try {
+   
+
+  
+  let admins:string[]=[]
+  memberList.value.admins.forEach((item)=>{
+    if(item.rule != MemberRule.Owner){
+      admins.push(item?.metaId) 
+    }
+  })
+  //已经是管理员，要移除
+  if(admins.includes(member?.metaId)){
+    
+    admins=admins.filter((admin)=>admin !== member.metaId)
+  }else{
+    
+    admins.push(member?.metaId)
+  }
+  const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+  
+  const updateRes=await setChannelAdmins(groupId,admins) 
+  if(updateRes.status == 'success' && updateRes.txid){
+  cursor.value = 0
+  noMore.value = false
+  memberList.value = {
+    admins:[],
+    blockList:[],
+    creator:null,
+    list:[],
+    normalList:[],
+    whiteList:[]
+  }
+
+  // 如果当前在搜索状态，重新执行搜索
+  if (searchKey.value.trim()) {
+    performSearch(searchKey.value.trim())
+  } else {
+    // 立即滚动到顶部
+    scrollToTop()
+    load()
+    nextTick(()=>{
+      
+      const observeInterval= setInterval(() => {
+      
+      if (loadTrigger.value && observer && !searchKey.value.trim()) {
+      
+      observer.observe(loadTrigger.value)
+
+      console.log("进来清除定时器",1111)
+      clearInterval(observeInterval)
+      }
+
+      
+      }, 3000)
+
+     
+      })
+   
+
+  }
+  }else{
+    
+  }
+  } catch (error) {
+    ElMessage.error((error as any).message)
+  }
+
+}
+
+const handleWhiteList=async(member:MemberItem)=>{
+
+  try {
+  
+  
+  let whiteList:string[]=[]
+  memberList.value.whiteList.forEach((item)=>{
+    if(item.rule != MemberRule.Owner || item.rule != MemberRule.Admin){
+      whiteList.push(item?.metaId) 
+    }
+  })
+  //已经是白名单，要移除
+  if(whiteList.includes(member?.metaId)){
+    
+    whiteList=whiteList.filter((admin)=>admin !== member.metaId)
+  }else{
+    
+    whiteList.push(member?.metaId)
+  }
+  const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+  
+  const updateRes=await setChannelWhiteList(groupId,whiteList) 
+  if(updateRes.status == 'success' && updateRes.txid){
+  cursor.value = 0
+  noMore.value = false
+  memberList.value = {
+    admins:[],
+    blockList:[],
+    creator:null,
+    list:[],
+    normalList:[],
+    whiteList:[]
+  }
+
+  // 如果当前在搜索状态，重新执行搜索
+  if (searchKey.value.trim()) {
+    performSearch(searchKey.value.trim())
+  } else {
+    // 立即滚动到顶部
+    scrollToTop()
+    load()
+    nextTick(()=>{
+      
+      const observeInterval= setInterval(() => {
+      
+      if (loadTrigger.value && observer && !searchKey.value.trim()) {
+      
+      observer.observe(loadTrigger.value)
+      console.log("进来清除定时器",1111)
+      clearInterval(observeInterval)
+      }
+      }, 3000)
+
+     
+      })
+  }
+  }else{
+    
+  }
+  } catch (error) {
+    ElMessage.error((error as any).message)
+  }
+}
+
+
 
 // 监听currentChannelInfo变化，重新拉取成员数据
 watch(
@@ -431,7 +721,15 @@ const resetAndLoad = async () => {
   // 重置分页状态
   cursor.value = 0
   noMore.value = false
-  list.value = []
+  memberList.value = {
+        admins:[],
+        blockList:[],
+        creator:null,
+        list:[],
+        normalList:[],
+        whiteList:[]
+      }
+  // list.value = []
   searchList.value = []
   isSearching.value = false
 
@@ -526,7 +824,16 @@ const disabled = computed(() => loading.value || noMore.value || searchKey.value
 
 // 计算当前显示的列表（搜索结果或默认列表）
 const currentDisplayList = computed(() => {
-  return searchKey.value.trim() ? searchList.value : list.value
+  return searchKey.value.trim() ? searchList.value : memberList.value.normalList//list.value.filter((member)=>member.rule!==MemberRule.Owner && member.rule!==MemberRule.Admin)
+})
+
+
+const currentSpeakerList = computed(() => {
+  return memberList.value.whiteList//list.value.filter((member)=>member.rule===MemberRule.Admin || member.rule===MemberRule.Owner)
+})
+
+const currentAdminList = computed(() => {
+  return memberList.value.admins//list.value.filter((member)=>member.rule===MemberRule.Admin || member.rule===MemberRule.Owner)
 })
 
 // 设置 IntersectionObserver
@@ -609,6 +916,8 @@ const load = () => {
 //   // 初始化逻辑已移至 watch 监听器中
 // })
 
+
+
 // 组件卸载时清理 observer 和防抖定时器
 onUnmounted(() => {
   cleanupIntersectionObserver()
@@ -654,42 +963,155 @@ async function getMoreMember() {
       groupId: currentChannelInfo.value.id,
       cursor: String(cursor.value),
     })
-
-    console.log('📊 API 返回成员数据:', {
-      count: members.length,
-      pageSize,
-      cursor: cursor.value,
-    })
-
-    if (members.length) {
+    
+    
+   
+    if (members.list.length) {
       if (cursor.value === 0) {
-        list.value = members.map((member: any, index: number) => ({
-          ...member,
-          index,
-          start: index * 60, // 60px = 50px height + 10px margin-top
-        }))
-        cursor.value = members.length
-        console.log('✅ 首页成员列表更新:', {
-          total: list.value.length,
-          newCursor: cursor.value,
+        memberList.value.creator={
+          ...members.creator,
+          index: 0,
+          rule:MemberRule.Owner,
+          permission:getPermission(MemberRule.Owner),
+          start: 0, // 60px = 50px height + 10px margin-top
+        }
+
+        if(members.creator.metaId == simpleTalkStore.selfMetaId){
+          simpleTalkStore.updateMyChannelRule(currentChannelInfo.value?.groupId,MemberRule.Owner)
+          //selfRule.value=MemberRule.Owner
+        }
+
+        permissionMemberList.push(members.creator.metaId)
+        // memberList.value.admins.push({
+        //   ...members.creator,
+        //   index: 0,
+        //   rule:MemberRule.Owner,
+        //   permission:getPermission(MemberRule.Owner),
+        //   start: 0, // 60px = 50px height + 10px margin-top
+        // })
+
+        
+
+        if(members.admins){
+
+
+          members.admins.forEach((admin,index)=>{
+             permissionMemberList.push(admin.metaId)
+             if(admin.metaId == simpleTalkStore.selfMetaId){
+               simpleTalkStore.updateMyChannelRule(currentChannelInfo.value?.groupId,MemberRule.Admin)
+                //selfRule.value=MemberRule.Admin
+                }
+             memberList.value.admins.push({
+              ...admin,
+              index: (index + 1),
+              rule:MemberRule.Admin,
+              permission:getPermission(MemberRule.Admin),
+              start: (index + 1) * 60, // 60px = 50px height + 10px margin-top
+            })
+            
+          })
+        }
+
+           memberList.value.admins.unshift({
+          ...members.creator,
+          index: 0,
+          rule:MemberRule.Owner,
+          permission:getPermission(MemberRule.Owner),
+          start: 0, // 60px = 50px height + 10px margin-top
         })
+
+        
+
+        if(members.whiteList){
+          members.whiteList.forEach((speaker,index)=>{
+             if(speaker.metaId == simpleTalkStore.selfMetaId){
+              const existRule= simpleTalkStore.getMychannelRule(currentChannelInfo?.value?.groupId)
+              if(existRule != MemberRule.Admin){
+                
+                simpleTalkStore.updateMyChannelRule(currentChannelInfo?.value?.groupId,MemberRule.Speaker)
+              }
+              
+              
+                //selfRule.value=MemberRule.Speaker
+              }
+             permissionMemberList.push(speaker.metaId)
+             memberList.value.whiteList.push({
+              ...speaker,
+              index: (index + 1 + memberList.value.admins.length),
+              rule:MemberRule.Speaker,
+              permission:getPermission(MemberRule.Speaker),
+              start: (index + 1 + memberList.value.admins.length) * 60, // 60px = 50px height + 10px margin-top
+            })
+            
+          })
+        }
+
+        if(members.list){
+          let tempIndex=0
+          members.list.forEach((normal,index)=>{
+              if(!permissionMemberList.includes(normal.metaId)){
+                  memberList.value.normalList.push({
+                  ...normal,
+                  index: (tempIndex + 1 + memberList.value.admins.length + memberList.value.whiteList.length),
+                  rule:MemberRule.Normal,
+                  permission:getPermission(MemberRule.Normal),
+                  start: (tempIndex + 1 + memberList.value.admins.length + memberList.value.whiteList.length) * 60, // 60px = 50px height + 10px margin-top
+                  })
+                  tempIndex++
+              }
+
+              memberList.value.list.push({
+              ...normal,
+              index: index,
+              rule:MemberRule.Normal,
+              permission:getPermission(MemberRule.Normal),
+              start: index * 60, // 60px = 50px height + 10px margin-top
+            })
+            
+          })
+        }
+        console.log("memberList",memberList)
+        
+
+        //  list.value=members.map((member: any,index:number) => {
+        //   return {
+        //   ...member,
+        //   index: index ,
+        //   start: index * 60, // 60px = 50px height + 10px margin-top
+        // }
+        // })
+
+        cursor.value = members.list.length // 修复：使用实际接收到的成员数量
       } else {
-        const startIndex = list.value.length
-        const newMembers = members.map((member: any, index: number) => ({
+        const startIndex = memberList.value.list.length
+        const newMembers = members.list.map((member: any, index: number) => ({
           ...member,
+          rule:MemberRule.Normal,
+          permission:getPermission(MemberRule.Normal),
           index: startIndex + index,
           start: (startIndex + index) * 60, // 60px = 50px height + 10px margin-top
         }))
-        list.value = [...list.value, ...newMembers]
-        cursor.value += members.length
-        console.log('➕ 追加成员列表更新:', {
-          newCount: newMembers.length,
-          total: list.value.length,
-          newCursor: cursor.value,
+        let tempIndex=0
+        newMembers.forEach((member)=>{
+          if(!permissionMemberList.includes(member.metaId)){
+              memberList.value.normalList.push({
+              ...member,
+              rule:MemberRule.Normal,
+              permission:getPermission(MemberRule.Normal),
+              index: startIndex + tempIndex,
+              start: (startIndex + tempIndex) * 60, // 60px = 50px height + 10px margin-top
+            })
+            tempIndex++
+          }
         })
+
+        //memberList.value.normalList = [...memberList.value.normalList, ...newMembers]
+        memberList.value.list = [...memberList.value.list, ...newMembers]
+        cursor.value += members.list.length // 修复：使用实际接收到的成员数量，而不是固定的 pageSize
       }
 
-      if (members.length < pageSize) {
+      if (members.list.length < pageSize) {
+        
         noMore.value = true
         console.log('🏁 已加载所有成员')
       } else {
@@ -697,7 +1119,17 @@ async function getMoreMember() {
       }
     } else {
       noMore.value = true
-      console.log('📭 无更多成员数据')
+    }
+    
+    // 确保在数据更新后重新设置 observer
+    if (!noMore.value && loadTrigger.value && observer && !searchKey.value.trim()) {
+      
+      // 确保 trigger 元素在 DOM 中可见
+      setTimeout(() => {
+        if (loadTrigger.value && observer && !searchKey.value.trim()) {
+          observer.observe(loadTrigger.value)
+        }
+      }, 100)
     }
   } catch (error) {
     console.error('❌ 加载成员失败:', error)
@@ -817,6 +1249,10 @@ async function getMoreMember() {
   }
 }
 
+.group-info-btn{
+  padding: 0 !important;
+}
+
 header {
   height: 60px;
   padding: 0 18px;
@@ -861,7 +1297,7 @@ header {
   background: var(--el-drawer-bg-color);
 }
 .info {
-  padding-top: 60px;
+  //padding-top: 60px;
 }
 
 /* 搜索框滑动动画 */

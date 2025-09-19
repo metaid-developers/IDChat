@@ -8,7 +8,7 @@
         class="w-6 h-6 text-dark-800 dark:text-gray-100 shrink-0 lg:hidden mr-2"
         @click="layout.isShowLeftNav = true"
       /> -->
-      <a class="mt-1 text-center lg:hidden" @click="layout.isShowLeftNav = true">
+      <a class="mt-1 text-center lg:hidden" @click="layout.$patch({ isShowLeftNav: true,isShowContactList:true })">
      
       <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
       </a>

@@ -106,7 +106,8 @@ const goChannel = () => {
   const currentCommunityId = router.currentRoute.value.params.communityId
   const currentChannelId = router.currentRoute.value.params.channelId
 
-  layout.isShowLeftNav = false
+  // layout.isShowLeftNav = false
+  layout.$patch({ isShowLeftNav: false,isShowContactList:false })
 
   if (currentChannelId === props.channel.id) {
     return

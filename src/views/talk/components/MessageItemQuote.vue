@@ -19,7 +19,13 @@
             </template>
             <div class="content">
               {{
-                decryptedMessage(
+              isSubChannelMsg ? decryptedMessageForSubChannel(
+               quote?.content,
+                  quote?.encryption,
+                  quote?.protocol,
+                  quote?.isMock,
+                  quote?.channelId?.substring(0, 16)
+            ) : decryptedMessage(
                   quote?.content,
                   quote?.encryption,
                   quote?.protocol,
@@ -43,7 +49,7 @@
 
 <script setup lang="ts">
 import { useImagePreview } from '@/stores/imagePreview'
-import { decryptedMessage } from '@/utils/talk'
+import { decryptedMessage,decryptedMessageForSubChannel } from '@/utils/talk'
 import { NodeName } from '@/enum'
 import { UserInfo as newUserInfo } from '@/api/man'
 import { containsString } from '@/utils/util'
@@ -54,6 +60,7 @@ interface Props {
     metaId: string
     nickName: string
     protocol: string
+    channelId?:string
     content: string
     encryption: string
     timestamp: number
@@ -61,8 +68,13 @@ interface Props {
     isMock?: boolean
   }
   isSession?: boolean // 是否私聊
+  isSubChannelMsg?:boolean
 }
-const props = withDefaults(defineProps<Props>(), {})
+const props = withDefaults(defineProps<Props>(), {
+  isSubChannelMsg:false
+})
+
+
 const emit = defineEmits<{
   (e: 'toTimeStamp', timestamp: number): void
 }>()

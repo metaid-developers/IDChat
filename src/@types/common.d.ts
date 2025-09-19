@@ -904,9 +904,11 @@ declare interface ChatMessageItem {
   chain:'btc' | 'mvc'
   encryption: string
   groupId: string
+  channelId?:string
   metaId: string
   metanetId: string
   nickName: string
+  pinId?:string
   params: string
   protocol: string
   redMetaId: string
@@ -916,6 +918,7 @@ declare interface ChatMessageItem {
   userInfo: ChatUserInfo
   isMock?: boolean
   replyInfo?: {
+    channelId?:string
     chatType: number
     content: string
     contentType: string
@@ -984,6 +987,7 @@ declare interface PriviteChatMessageItem {
 declare interface ShareChatMessageData {
   communityId: string
   groupId:string
+  channelId:string
   userMetaId: string
   comment:string
   message: {

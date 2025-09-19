@@ -268,7 +268,16 @@
       "SetNewPhoto": "設置新照片",
       "ShareLink": "分享鏈接",
       "SendMessage": "發送消息",
-      "RemoveUser": "移除用戶"
+      "RemoveUser": "移除用戶",
+      "team_members_count": "成员",
+      "team_OwnerOrAdmin": "群主/管理员",
+      "broadcast": "创建发布频道",
+      "leave": "离开群组",
+      "broadcast_title": "# 发布频道聊天",
+      "SetAdmin": "设置为管理员",
+      "WhiteList": "添加到白名单",
+      "removeAdmin": "移除管理员",
+      "remove_WhiteList": "移除白名单"
     },
     "Community": {
       "optional": "（可選）",
@@ -319,7 +328,9 @@
       "general_channels": "功能頻道",
       "announcements": "公告",
       "topics": "話題",
-      "DAO": "DAO"
+      "DAO": "DAO",
+      "create_broadcast_channel": "创建发布模式",
+      "create_broadcast_channel_tip": "创建发布子频道，仅管理员和白名单成员可发布内容，其他成员只读。"
     },
     "Input": {
       "nft_stickers": "NFT表情",
@@ -1418,5 +1429,14 @@
   "share_group_member": "成员数",
   "share_group_creator": "创建者",
   "share_group_view": "查看群组",
-  "share_group_invites": "邀请您加入本群"
+  "share_group_invites": "邀请您加入本群",
+  "create_broadcast_fail": "创建发布频道失败",
+  "create_broadcast_success": "创建发布频道成功",
+  "channle_memeber_admin": "群主/管理员",
+  "channle_memeber_noraml": "成员",
+  "Non_permission_set_admin": "权限不足,只有群主有权设置管理员",
+  "Non_permission_set_whitelist": "权限不足，只有群主或管理员有权设置白名单",
+  "set_admin_fail": "设置管理员失败",
+  "set_whitelist_fail": "设置白名单失败",
+  "channle_memeber_whitelist": "发言人"
 }

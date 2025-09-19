@@ -1,4 +1,4 @@
-import { Chains, ChannelPublicityType, GroupChannelType, RedPacketDistributeType } from '@/enum'
+import { Chains, ChannelPublicityType, GroupChannelType, RedPacketDistributeType,CreateGroupType } from '@/enum'
 import {
   createAnnouncement,
   deleteAnnouncement,
@@ -39,6 +39,7 @@ export const useCommunityFormStore = defineStore('communityForm', {
       description: '',
       cover: null as File | null,
       name: '',
+     
       // metaName: null as MetaNameItem | null,
     }
   },
@@ -79,6 +80,7 @@ export const useCommunityFormStore = defineStore('communityForm', {
       this.description = ''
       this.cover = null
       this.name = ''
+      
       // this.metaName = null
     },
   },
@@ -93,6 +95,7 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       original: null as any,
       // metaName: null as MetaNameItem | null,
       name: '',
+     
     }
   },
 
@@ -123,6 +126,7 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       this.cover = null
       // this.metaName = null
       this.name = ''
+     
     },
 
     resetInForm() {
@@ -181,6 +185,7 @@ export interface ChannelFormState {
   groupId?: string
   txId?: string
   nativeAmount?: number
+  
 }
 export const useChannelFormStore = defineStore('channelForm', {
   state: () => {
@@ -198,6 +203,7 @@ export const useChannelFormStore = defineStore('channelForm', {
       uuid: undefined, // 用于 订阅和 key， 不可修改
       txId: undefined,
       chainInfo: null as any,
+      
     }
   },
 
@@ -205,6 +211,8 @@ export const useChannelFormStore = defineStore('channelForm', {
     isFinished(state) {
       switch (state.type) {
         case GroupChannelType.PublicText:
+          return !!state.name
+        case GroupChannelType.Broadcast:
           return !!state.name
         case GroupChannelType.Password:
           return !!state.name && !!state.password
@@ -228,6 +236,10 @@ export const useChannelFormStore = defineStore('channelForm', {
 
       if (channel.roomType === ChannelPublicityType.Public) {
         this.type = GroupChannelType.PublicText
+      }
+
+       if (channel.roomType === ChannelPublicityType.Broadcast) {
+        this.type = GroupChannelType.Broadcast
       }
 
       if (channel.roomType === ChannelPublicityType.Private) {
@@ -667,7 +679,8 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           unit: this.unit,
         },
         simpleTalk.activeChannelId,
-        simpleTalk.selfMetaId
+        simpleTalk.selfMetaId,
+        simpleTalk.activeSubChannelId
       )
       console.log('giveRedPacket ret', ret)
       return ret
