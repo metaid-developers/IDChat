@@ -42,7 +42,7 @@ const tryInitChannel = async (status: string) => {
   if (status !== 'ready') return
   //const channleId=activeChannel.value
   console.log("activeChannelactiveChannel",activeChannelId.value)
-  debugger
+  
   // const initChannelStatus = await talk.initChannel(communityId as string, channelId as string)
   // if (['redirect'].includes(initChannelStatus)) return
 
@@ -431,7 +431,7 @@ watch(
   async canAccess => {
     if (canAccess) {
         console.log("activeChannelactiveChannel2",activeChannelId.value)
-        debugger
+        
       await talk.initSubChannelMessages(activeChannelId.value)
     }
   }
@@ -441,7 +441,7 @@ onUnmounted(()=>{
     //talk.resetCurrentChannel()
 })
 onBeforeUnmount(() => {
-  // debugger
+  // 
   // talk.resetCurrentChannel()
 })
 </script>

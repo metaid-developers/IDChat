@@ -397,6 +397,11 @@ export const enum GetInitAmountType {
   metalet = 'metalet',
 }
 
+export const enum GroupMessageType{
+  Group=0,
+  SubChannel=1
+}
+
 export const enum BindStatus {
   ChooseType,
   BindHavedMetaId,

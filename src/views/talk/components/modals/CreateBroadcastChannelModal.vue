@@ -101,7 +101,7 @@ const tryCreateBroadcastChannel = async () => {
   // talk.activeCommunityId == '@me' ? '' : talk.activeCommunityId
    const subscribeId = realRandomString(32)
    const groupId=route.params.channelId as string
-   debugger
+   
   const res = await createBroadcastChannel(groupId)
   console.log("res",res)
     
@@ -123,12 +123,12 @@ const tryCreateBroadcastChannel = async () => {
     if (res.channelId) {
       console.log("talk.activeCommunityChannels",talk.activeCommunityChannels)
       const index = talk.activeCommunityChannels.findIndex(item => item.txId === `${res.channelId}i0`)
-      debugger
+      
       if (index !== -1) {
         talk.activeCommunityChannels[index] = newChannel
       }
     } else {
-        debugger
+        
       talk.activeCommunityChannels.unshift(newChannel)
     }
   }

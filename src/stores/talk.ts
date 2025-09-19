@@ -16,7 +16,7 @@ import {
   getSubChannelMessages
 } from '@/api/talk'
 
-import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName,MemberRule } from '@/enum'
+import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName,MemberRule,GroupMessageType } from '@/enum'
 import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { useLayoutStore } from './layout'
@@ -60,6 +60,7 @@ export const useTalkStore = defineStore('talk', {
       activeCommunityId: '' as string,
       activeChannelId: '' as string,
       activeSubChannelId: '' as string,
+ 
       selfChannelRule:[] as Array<{
         channelId:string,
         rule:MemberRule
@@ -193,8 +194,32 @@ export const useTalkStore = defineStore('talk', {
       if (!this.activeCommunity) return null
 
         if (this.canAccessActiveChannel && this.activeChannel && this.activeChannel?.subChannels?.length) {
+          
+         
           return this.activeChannel.subChannels[0]
       }
+
+      //    if (this.canAccessActiveChannel) {
+      //   const activeSubRes= this.activeCommunity?.channels?.map((channel: any) => {
+      //     if(channel.id && channel.id === state.activeChannelId){
+      //       return channel.subChannels[0]
+      //     }
+      //   })
+      //   debugger
+      //   return activeSubRes.length && activeSubRes[0]
+
+      // }
+
+      //   if (this.canAccessActiveChannel) {
+      //     debugger
+      //   const currentChannel = this.activeCommunity?.channels?.find((channel: any) => {
+      //     debugger
+      //     return channel.id && channel.id === state.activeChannelId
+      //   })
+      //   if(currentChannel?.subChannels?.length) return currentChannel?.subChannels[0]
+
+       
+      // }
 
     },
 
@@ -205,6 +230,7 @@ export const useTalkStore = defineStore('talk', {
       if (this.isActiveChannelGeneral) {
         return this.generalChannels.find(channel => channel.id === state.activeChannelId)
       }
+      
         if (this.canAccessActiveChannel) {
         return this.activeCommunity?.channels?.find((channel: any) => {
           return (
@@ -566,7 +592,7 @@ export const useTalkStore = defineStore('talk', {
           JSON.stringify(this.communityChannelIds)
         )
       }
-      debugger
+      
       return activeChannelList
     },
 
@@ -852,8 +878,21 @@ export const useTalkStore = defineStore('talk', {
         this.channelsReadPointers[messageMetaId].latest = messageTimestamp
       }
     },
-    _updateCurrentChannelReadPointers(messageTimestamp: number) {
-      if (this.channelsReadPointers[this.activeChannelId]) {
+    _updateCurrentChannelReadPointers(messageTimestamp: number,messageType?:GroupMessageType) {
+
+      if(messageType && messageType == GroupMessageType.SubChannel){
+          if (this.channelsReadPointers[this.activeSubChannelId]) {
+        this.channelsReadPointers[this.activeSubChannelId].latest = messageTimestamp
+        this.channelsReadPointers[this.activeSubChannelId].lastRead = messageTimestamp
+      } else {
+        this.channelsReadPointers[this.activeSubChannelId] = {
+          lastRead: messageTimestamp,
+          latest: messageTimestamp,
+        }
+      }
+      }else{
+
+         if (this.channelsReadPointers[this.activeChannelId]) {
         this.channelsReadPointers[this.activeChannelId].latest = messageTimestamp
         this.channelsReadPointers[this.activeChannelId].lastRead = messageTimestamp
       } else {
@@ -862,29 +901,54 @@ export const useTalkStore = defineStore('talk', {
           latest: messageTimestamp,
         }
       }
+
+      }
+
+     
     },
 
     async handleNewGroupMessage(message: any) {
-      const messageMetaId = message.groupId
 
-      const isFromActiveChannel = messageMetaId === this.activeChannelId
+      debugger
+
+      const messageType=message.channelId ? GroupMessageType.SubChannel : GroupMessageType.Group
+      const messageMetaId = messageType == GroupMessageType.SubChannel ? message.channelId : message.groupId
+      const groupId=message.groupId
+
+
+      const isFromActiveChannel = messageType == GroupMessageType.SubChannel ? messageMetaId == this.activeSubChannelId : messageMetaId === this.activeChannelId
 
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
         this._updateReadPointers(message.timestamp, messageMetaId)
-        this.activeCommunity?.channels?.map((channel: any) => {
-          if (channel.id === messageMetaId) {
+
+        if(messageType == GroupMessageType.Group){
+            this.activeCommunity?.channels?.map((channel: any) => {
+            if (channel.id === messageMetaId) {
             
             channel.newMessages = [message]
           }
         })
+        }else{
+             this.activeCommunity?.channels?.map((channel: any) => {
+            if (channel.id === groupId) {
+            
+              channel.subChannels[0].newMessages = [message]
+          }
+        })
+        }
+
+      
 
         try {
-          sortByConditionInPlace(
+           if(messageType == GroupMessageType.Group){
+              sortByConditionInPlace(
             this.activeCommunity?.channels,
             channel => channel?.groupId == messageMetaId
           )
-          return
+          
+           }
+        return
         } catch (error) {
           console.log('socket推送11111', error.toString())
           return
@@ -893,20 +957,30 @@ export const useTalkStore = defineStore('talk', {
 
       // 当前頻道，插入新消息
       // 先去重
-      const isDuplicate =
-        this.activeChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
-        this.activeChannel?.pastMessages?.some((item: Message) => item.txId === message.txId)
+      const isDuplicate = messageType == GroupMessageType.Group ? this.activeChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
+        this.activeChannel?.pastMessages?.some((item: Message) => item.txId === message.txId) : this.activeSubChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
+        this.activeSubChannel?.pastMessages?.some((item: Message) => item.txId === message.txId)
+
+        
 
       if (isDuplicate) return
 
       // 更新当前頻道的已读指针
-      this._updateCurrentChannelReadPointers(message.timestamp)
+      this._updateCurrentChannelReadPointers(message.timestamp,messageType)
 
       // 优先查找替代mock数据
       let mockMessage: any
 
       if (containsString(message.protocol, NodeName.SimpleGroupChat)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        debugger
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.content === message.content &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -914,8 +988,16 @@ export const useTalkStore = defineStore('talk', {
             item.metaId === message.metaId &&
             containsString(message.protocol, item?.protocol!)
         )
+
+        debugger
       } else if (containsString(message.protocol, NodeName.SimpleFileGroupChat)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -923,7 +1005,13 @@ export const useTalkStore = defineStore('talk', {
             containsString(message.protocol, item?.protocol!)
         )
       } else if (containsString(message.protocol, NodeName.SimpleGroupOpenLuckybag)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -931,7 +1019,13 @@ export const useTalkStore = defineStore('talk', {
             containsString(message.protocol, item?.protocol!)
         )
       } else if (containsString(message.protocol, NodeName.SimpleGroupLuckyBag)) {
-        mockMessage = this.activeChannel?.newMessages?.find(
+        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
+          (item: Message) =>
+            item.txId === '' &&
+            item.isMock === true &&
+            item.metaId === message.metaId &&
+            containsString(message.protocol, item?.protocol!)
+        ) : this.activeChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
             item.isMock === true &&
@@ -942,6 +1036,7 @@ export const useTalkStore = defineStore('talk', {
 
       if (mockMessage) {
         console.log('替换中')
+       
         if (containsString(message.protocol, NodeName.SimpleFileGroupChat)) {
           await sleep(2000) // 等待图片上传完成
           this.$patch(state => {
@@ -961,10 +1056,16 @@ export const useTalkStore = defineStore('talk', {
 
         return
       }
+      if(messageType == GroupMessageType.SubChannel){
+        this.activeSubChannel?.newMessages?.push(message)
+       // this.activeChannel?.subChannels[0]?.newMessages?.push(message)
+      }else{
+        this.activeChannel?.newMessages?.push(message)
+      }
       
-      this.activeChannel?.newMessages?.push(message)
 
       try {
+        if(messageType == GroupMessageType.Group)
         sortByConditionInPlace(
           this.activeCommunity?.channels,
           channel => channel?.groupId == messageMetaId
@@ -1146,6 +1247,7 @@ export const useTalkStore = defineStore('talk', {
            
           })
         } else {
+          debugger
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
@@ -1380,7 +1482,7 @@ export const useTalkStore = defineStore('talk', {
           metaId: selfMetaId,
         })
         console.log(" this.activeChannel", this.activeChannel)
-        debugger
+        
 
       // for(let i of messages){
       //   const userInfo= await getUserInfoByAddress(i.address)
@@ -1396,12 +1498,16 @@ export const useTalkStore = defineStore('talk', {
       await nextTick()
 
       this.activeSubChannelId=channelId || ''
-      this.activeSubChannel.pastMessages=messages
-      debugger
+      //
+     // this.activeChannel.subChannels[0].pastMessages=messages
+       this.activeSubChannel.pastMessages=messages
+      
       //this.activeChannel.subChannels[0].pastMessages = messages
       // if(this.activeChannelType == 'session'){
       //   this.activeChannel.lastMessageTimestamp =nextTimestamp
       // }
+      // 
+      //this.activeChannel.subChannels[0].newMessages=[]
       this.activeSubChannel.newMessages=[]
       //this.activeChannel.newMessages = []
 
@@ -1545,6 +1651,7 @@ export const useTalkStore = defineStore('talk', {
       if (!this.activeSubChannel) return
       if (!this.activeSubChannel.newMessages) {
         this.activeSubChannel.newMessages = []
+        //this.activeChannel.subChannels[0].newMessages = []
       }
       console.log('message', message)
 
@@ -1560,6 +1667,8 @@ export const useTalkStore = defineStore('talk', {
       // }
 
       this.activeSubChannel.newMessages.push(message)
+       //this.activeChannel.subChannels[0].newMessages.push(message)
+      debugger
     },
 
     updateMessage(message: any,txid:string) {
@@ -1606,6 +1715,10 @@ export const useTalkStore = defineStore('talk', {
       this.activeSubChannel.newMessages = this.activeSubChannel.newMessages.filter(
         (message: any) => message.mockId !== mockId
       )
+
+      //  this.activeChannel.subChannels[0].newMessages=this.activeSubChannel.newMessages.filter(
+      //   (message: any) => message.mockId !== mockId
+      // )
     },
 
     addRetryList(message: MessageDto) {

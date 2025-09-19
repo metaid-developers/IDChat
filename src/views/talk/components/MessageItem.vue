@@ -595,7 +595,7 @@ const handleOpenRedPacket = async() => {
     groupId: talk.activeChannelId,
     pinId: `${props.message?.txId}i0`,
   }
-  debugger
+  
   const redPacketType = props.message?.data?.requireType
   console.log({ redPacketType })
   if (redPacketType === '2') {
@@ -604,12 +604,12 @@ const handleOpenRedPacket = async() => {
     // params.address = userStore.user?.evmAddress
   }
   console.log("props.message",props.message)
-  debugger
+  
   const redPacketInfo = await getOneRedPacket(params)
   const hasReceived = redPacketInfo.payList.some(
     (item: any) => item.userInfo?.metaid === talk.selfMetaId
   )
-debugger
+
   if (hasReceived) {
     modals.redPacketResult = redPacketInfo
     layout.isShowRedPacketResultModal = true

@@ -171,6 +171,13 @@ const _welComePage = computed(() => {
   return talk.showWelcome
 })
 
+
+const test=computed(()=>{
+  console.log("talk.activeSubChannel11111",talk.activeSubChannel?.newMessages)
+  debugger
+  return talk.activeSubChannel?.newMessages
+})
+
 // 全局点击监听器，用于隐藏消息菜单
 const handleGlobalClick = (event: MouseEvent) => {
   if (!isMobile || !talk.activeMessageMenuId) return
@@ -303,7 +310,7 @@ const popInvite = () => {
 }
 
 const loadMore = async (preTimestamp = 0) => {
-  debugger
+  
   if (!talk.activeSubChannelId || !talk.selfMetaId) return
   //const isSession=Number(talk.activeChannel.type) == 2 ? true : false
   const earliestMessage =talk.activeSubChannel?.pastMessages[talk.activeSubChannel?.pastMessages.length - 1]
@@ -375,6 +382,7 @@ const loadMore = async (preTimestamp = 0) => {
     // })
 
     talk.activeSubChannel?.pastMessages.push(item)
+     talk.activeChannel?.subChannels[0]?.pastMessages?.push(item)
    
   }
 
@@ -420,7 +428,7 @@ const scrollToMessagesBottom = async (retryCount = 0) => {
 
 function scrollToTimeStamp(time: number) {
   const target = document.getElementById(time.toString())
-  debugger
+  
   if (target) {
     const top = target.offsetTop - target.clientHeight
     messagesScroll.value?.scrollTo({ top })

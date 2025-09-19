@@ -172,7 +172,7 @@ const actions = computed(() => {
           message?.protocol
         )
         console.log("decryptedMessageContent",decryptedMessageContent)
-        debugger
+        
         if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
           data = {
             communityId: '', // talk.activeCommunityId,

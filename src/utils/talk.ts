@@ -531,7 +531,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     return
   }
 
-  debugger
+  
   const { code, luckyBagAddress: address, timestamp: createTime } = luckyBagCode.data
   const buildTx = useBulidTx()
 
@@ -575,7 +575,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     requireCollectionId: '',
     limitAmount: 0,
   }
-debugger
+
   // 2.1 nft红包处理
   if (form.nft && form.chain) {
     if (form.chain === 'eth' || form.chain === 'goerli') {
@@ -712,7 +712,7 @@ export const createBroadcastChannel = async (
 
 
   console.log({ dataCarrier })
-  debugger
+  
   // 2. 构建节点参数
   const node = {
     protocol: NodeName.SimpleGroupChannel,
@@ -768,7 +768,7 @@ export const setChannelAdmins = async (
 
 
   console.log({ dataCarrier })
-  debugger
+  
   // 2. 构建节点参数
   const node = {
     protocol: NodeName.SimpleGroupAdmin,
@@ -825,7 +825,7 @@ export const setChannelWhiteList = async (
 
 
   console.log({ dataCarrier })
-  debugger
+  
   // 2. 构建节点参数
   const node = {
     protocol: NodeName.SimpleGroupWhitelist,
@@ -1255,7 +1255,7 @@ export const tryCreateSubChannelNode = async (
       fileEncryption,
       isBroadcast: true,
     })
-debugger
+
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
     
@@ -1839,7 +1839,7 @@ const _sendTextMessageForSubChannel = async (messageDto: MessageDto) => {
     encryption,
     replyPin: reply ? `${reply.txId}i0` : '',
   }
-  debugger
+  
   // 2. 构建节点参数
   const node = {
     protocol: NodeName.SimpleGroupChat,
@@ -1916,6 +1916,7 @@ const _sendTextMessageForSubChannel = async (messageDto: MessageDto) => {
       : undefined,
     type: 1,
   }
+  debugger
   talkStore.addSubChannleMessage(mockMessage) 
 
   // 3. 发送节点
@@ -2220,7 +2221,7 @@ export function decryptedMessageForSubChannel(
 ) {
   if (!content) return
   const talk = useTalkStore()
-debugger
+
   if (encryption === '0') {
     // return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
     return content
@@ -2233,7 +2234,7 @@ debugger
     return content
   }
   console.log("decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16))",decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16)))
-  debugger
+  
   return decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16))
 
   // if (isSession) {
