@@ -54,7 +54,7 @@ export default ({ mode, command }) => {
   const isProduction = command === 'build'
   
   return defineConfig({
-    base: process.env.NODE_ENV === 'production' ? '/chat/' : '/',
+    base:'/chat/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({
@@ -71,7 +71,7 @@ export default ({ mode, command }) => {
         createHtmlPlugin({
         inject: {
           data: {
-            basePath:process.env.NODE_ENV === 'production' ? '/chat/' : '/'
+            basePath:'/chat/'//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
           }
         }
       }),
