@@ -666,7 +666,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           type: this.type,
           unit: this.unit,
         },
-        simpleTalk.activeChannelId,
+        simpleTalk.activeChannel,
         simpleTalk.selfMetaId
       )
       console.log('giveRedPacket ret', ret)

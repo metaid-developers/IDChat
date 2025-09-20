@@ -48,6 +48,7 @@ import { generateLuckyBagCode } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { SimpleChannel } from '@/@types/simple-chat'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -522,7 +523,7 @@ const _redistributeEvenly = (amounts: number[], totalAmount: number, minSats: nu
   return adjustedAmounts
 }
 
-export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string) => {
+export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaId: string) => {
   // 1.1 构建红包地址
   const luckyBagCode = await generateLuckyBagCode()
   if (luckyBagCode.code !== 0) {
@@ -533,7 +534,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   const buildTx = useBulidTx()
 
   // const code = realRandomString(6)
-  const subId = channelId.substring(0, 12)
+  const subId = channel.id.substring(0, 12)
   // const createTime = Date.now()
   // const key = `${subId.toLocaleLowerCase()}${code.toLocaleLowerCase()}${createTime}`
   const net = import.meta.env.VITE_NET_WORK || 'mainnet'
@@ -556,7 +557,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     domain: import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
     luckyBagAddress: address,
     createTime,
-    groupId: channelId,
+    groupId: channel.parentGroupId || '',
     img: '',
     imgType: '',
     subId,
@@ -572,6 +573,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     requireTickId: '',
     requireCollectionId: '',
     limitAmount: 0,
+    channelId: channel.id,
   }
 
   // 2.1 nft红包处理

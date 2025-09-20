@@ -580,7 +580,7 @@ const isMyMessage = computed(() => {
 const handleOpenRedPacket = async() => {
   // 如果用户已经领取过红包，则显示红包领取信息
   const params: any = {
-    groupId: simpleTalk.activeChannelId,
+    groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannel?.id,
     pinId: `${props.message?.txId}i0`,
   }
   const redPacketType = props.message?.data?.requireType

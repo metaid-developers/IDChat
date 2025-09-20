@@ -225,7 +225,7 @@ const tryOpenRedPacket = async () => {
   try {
     layout.isShowLoading = true
     const params: any = {
-      groupId: simpleTalk.activeChannelId,
+      groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannelId,
       pinId: `${message?.txId}i0`,
       metaId: simpleTalk.selfMetaId,
       address: simpleTalk.selfAddress,
@@ -268,7 +268,7 @@ const closeModal = () => {
 }
 
 onMounted(async () => {
-  const groupId = simpleTalk.activeChannelId
+  const groupId = simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannelId
   const pinId = `${message?.txId}i0`
   const params: any = {
     groupId,
