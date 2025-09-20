@@ -316,8 +316,9 @@ class SimpleChatDB {
     const safeMessageData = this.createCloneableMessage(message)
     const isPrivateChat = isPrivateChatMessage(safeMessageData)
     // 确定频道ID
-    const channelId = isPrivateChat ? (this.userPrefix.indexOf(safeMessageData.from) !== -1 ? safeMessageData.to : safeMessageData.from) : message.groupId
+    const channelId = isPrivateChat ? (this.userPrefix.indexOf(safeMessageData.from) !== -1 ? safeMessageData.to : safeMessageData.from) : message.channelId ||  message.groupId 
     if (!channelId) {
+      debugger
       console.warn('⚠️ 无法确定消息的频道ID，跳过保存')
       return
     }
