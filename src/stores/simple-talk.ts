@@ -246,7 +246,8 @@ class SimpleChatDB {
         targetMetaId: channel.targetMetaId,
         publicKeyStr: channel.publicKeyStr,
         // 群聊特有字段
-        userCount: channel.userCount
+        userCount: channel.userCount,
+        parentGroupId: channel.parentGroupId,
       }
 
       // 安全处理 lastMessage
