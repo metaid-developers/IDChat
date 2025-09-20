@@ -299,7 +299,6 @@ import copy from 'copy-to-clipboard'
 import {
   ArrowRight,
   CircleClose,
-  CirclePlus,
   Close,
   CloseBold,
   CopyDocument,
@@ -413,7 +412,7 @@ const currentChannelInfo = computed(() => {
 
  watch(()=>currentChannelInfo.value?.id,(newVal,oldVal)=>{
   if(newVal && newVal !== oldVal){
-    
+      
      resetAndLoad()
  }
  })
@@ -512,7 +511,9 @@ const handleDeleteSuccess = (metaid: string) => {
   if (searchKey.value.trim()) {
     performSearch(searchKey.value.trim())
   } else {
-    const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+
+
+    const groupId= route.params.channelId as string
      setTimeout(() => {
       getUserGroupRole({
       groupId:groupId,
@@ -577,7 +578,9 @@ const handleAdmin=async(member:MemberItem)=>{
     
     admins.push(member?.metaId)
   }
-  const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+  console.log("currentChannelInfo",currentChannelInfo.value)
+  
+  const groupId= route.params.channelId as string
   
   const updateRes=await setChannelAdmins(groupId,admins) 
   if(updateRes.status == 'success' && updateRes.txid){
@@ -666,7 +669,7 @@ const handleWhiteList=async(member:MemberItem)=>{
     
     whiteList.push(member?.metaId)
   }
-  const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+  const groupId= route.params.channelId as string
   
   const updateRes=await setChannelWhiteList(groupId,whiteList) 
   if(updateRes.status == 'success' && updateRes.txid){
@@ -744,6 +747,7 @@ const handleWhiteList=async(member:MemberItem)=>{
 watch(
   () => currentChannelInfo.value?.id, // 直接监听 channelId 变化
   (newChannelId, oldChannelId) => {
+    
     // 只有在抽屉打开状态下且频道ID确实发生变化时才执行
     if (props.modelValue && newChannelId && newChannelId !== oldChannelId) {
       console.log('频道切换，重新加载成员列表:', oldChannelId, '->', newChannelId)
@@ -758,9 +762,11 @@ watch(
   () => props.modelValue,
   isOpen => {
     if (isOpen) {
+      
       console.log('抽屉打开，初始化成员列表')
       // 抽屉打开时，如果有频道信息就加载数据
       if (currentChannelInfo.value?.id) {
+        
         resetAndLoad()
       } else {
         // 没有频道信息时，至少要设置 observer
@@ -772,7 +778,7 @@ watch(
       // resetData()
     }
   },
-  { immediate: true }
+  // { immediate: true }
 )
 
 // 重置数据并加载的统一方法
@@ -972,11 +978,13 @@ const load = () => {
 // 组件挂载时的初始化已由 watch 监听器处理
 onMounted(() => {
   // 初始化逻辑已移至 watch 监听器中
-  const groupId=simpleTalkStore.activeChannel?.id || route.params.channelId as string
+  
+  const groupId= route.params.channelId as string
   getUserGroupRole({
     groupId,
     metaId:simpleTalkStore.selfMetaId
   }).then((res)=>{
+    
     const {isCreator,isAdmin,isBlocked,isWhitelist,isRemoved,userInfo,metaId,address,groupId}=res
     let role=MemberRule.Normal
     
@@ -1125,7 +1133,7 @@ async function getMoreMember() {
         
 
         if(members.whiteList){
-            const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+            const groupId= route.params.channelId as string
           members.whiteList.forEach((speaker,index)=>{
             //  if(speaker.metaId == simpleTalkStore.selfMetaId){
             //   const existRule= simpleTalkStore.getMychannelRule(groupId)

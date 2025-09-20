@@ -26,7 +26,7 @@ import { Translate } from '@/api/core'
 import { EnvMode, NodeName, ChatChain } from '@/enum'
 import { useTalkStore } from '@/stores/talk'
 import copy from 'copy-to-clipboard'
-import { decryptedMessage,decryptedMessageForSubChannel } from '@/utils/talk'
+import { decryptedMessage } from '@/utils/talk'
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { containsString, fetchTranlateResult } from '@/utils/util'
@@ -161,13 +161,7 @@ const actions = computed(() => {
         let data: ShareChatMessageData
         const message = props.message
 
-        const decryptedMessageContent =props.isSubChannelMsg ? decryptedMessageForSubChannel(
-              message?.content,
-              message?.encryption,
-              message?.protocol,
-              message?.isMock,
-              message?.channelId?.substring(0, 16)
-            ) : decryptedMessage(
+        const decryptedMessageContent = decryptedMessage(
           message?.content,
           message?.encryption,
           message?.protocol

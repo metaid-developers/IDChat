@@ -2017,7 +2017,7 @@ export const createBroadcastChannel = async (
   }
 
   console.log({ dataCarrier })
-  debugger
+  
 
   // 2. 构建节点参数
   const node = {

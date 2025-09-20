@@ -120,14 +120,7 @@
           <div class="w-full" v-else-if="isNftEmoji">
             <ChatImage
               :src="
-                isSubChannelMsg ? decryptedMessageForSubChannel( 
-                message?.content,
-                message?.encryption,
-                message?.protocol,
-                message?.isMock,
-                message?.channelId?.substring(0,16)
-                  ) 
-                :
+               
                 decryptedMessage(
                   message?.content,
                   message?.encryption,
@@ -341,7 +334,8 @@
       </div>
     </div>
   </div>
-  </div>
+  
+  
 </template>
 
 <script setup lang="ts">
@@ -361,7 +355,7 @@ import {
   defineEmits,
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatTimestamp, decryptedMessage, sendMessage,decryptedMessageForSubChannel } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage, sendMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import giftImage from '@/assets/images/gift.svg?url'
 import giftBtcImage from '@/assets/images/gift_btc.svg?url'
@@ -712,14 +706,7 @@ const isGiveawayRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupLuckyBag)
 )
 const isChatGroupLink = computed(() => {
-  const messageContent =  props.isSubChannelMsg ? decryptedMessageForSubChannel( 
-          props.message.content,
-          props.message.encryption,
-          props.message.protocol,
-          props.message.isMock,
-          props.message.channelId?.substring(0,16)
-                  ) 
-                :decryptedMessage(
+  const messageContent = decryptedMessage(
     props.message.content,
     props.message.encryption,
     props.message.protocol,
@@ -744,14 +731,7 @@ const isChatGroupLink = computed(() => {
 
 // 解析群链接信息
 const groupLinkInfo = computed(() => {
-  const messageContent = props.isSubChannelMsg ? decryptedMessageForSubChannel( 
-          props.message.content,
-          props.message.encryption,
-          props.message.protocol,
-          props.message.isMock,
-          props.message?.channelId.substring(0,16)
-                  ) 
-                : decryptedMessage(
+  const messageContent = decryptedMessage(
     props.message.content,
     props.message.encryption,
     props.message.protocol,

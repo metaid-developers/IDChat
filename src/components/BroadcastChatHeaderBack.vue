@@ -1,15 +1,15 @@
 <template>
-  <div class="broadcast-chat-header" v-if="simpleTalkStore.activeChannel?.type === 'sub-group'">
+  <div class="broadcast-chat-header text-dark-800 dark:text-white" v-if="simpleTalkStore.activeChannel?.type === 'sub-group'">
     <div class="broadcast-chat-container">
       <div class="broadcast-icon" @click="goChannel">
         <el-icon><Back /></el-icon>
       </div>
 
-      <div class="broadcast-content">
-        <div class="broadcast-title">
+      <div class="broadcast-content ">
+        <div class="broadcast-title ">
           # Broadcast Chat
         </div>
-        <div class="broadcast-description">
+        <div class="broadcast-description ">
           An on-chain "Telegram" running on Bitcoin is here! IDChat, based on the...
         </div>
       </div>
@@ -44,11 +44,13 @@ const goChannel = () => {
   background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+ 
 }
 
 .broadcast-chat-container {
   display: flex;
   align-items: center;
+  
   padding: 12px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -67,7 +69,7 @@ const goChannel = () => {
   justify-content: center;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  color: white;
+  /* color: white; */
   margin-right: 12px;
 }
 
@@ -79,7 +81,7 @@ const goChannel = () => {
 .broadcast-title {
   font-size: 16px;
   font-weight: 600;
-  color: white;
+  /* color: white; */
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -90,14 +92,14 @@ const goChannel = () => {
   font-size: 12px;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.2);
-  color: white;
+  /* color: white; */
   padding: 2px 6px;
   border-radius: 10px;
 }
 
 .broadcast-description {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  /* color: rgba(255, 255, 255, 0.8); */
   line-height: 1.4;
   margin-bottom: 4px;
   overflow: hidden;

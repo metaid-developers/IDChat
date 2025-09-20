@@ -343,7 +343,7 @@ class SimpleChatDB {
     // 确定频道ID
     const channelId = isPrivateChat ? (this.userPrefix.indexOf(safeMessageData.from) !== -1 ? safeMessageData.to : safeMessageData.from) : message.channelId ||  message.groupId 
     if (!channelId) {
-      debugger
+      
       console.warn('⚠️ 无法确定消息的频道ID，跳过保存')
       return
     }
@@ -811,8 +811,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     },
 
     getMychannelRule(state) {
-
-      const ruleItem=state.selfChannelRule.find(item=>item.channelId == state.activeChannelId)
+      
+      const ruleItem=state.selfChannelRule.find(item=>item.channelId == this.activeChannel?.parentGroupId || this.activeChannel?.id)
+      
       return ruleItem ? ruleItem.rule : MemberRule.Normal
     
     },
@@ -820,6 +821,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     getMySpeakingPermission(){
       
       const isMute= MuteRoleList.includes(this.getMychannelRule)
+      console.log("this.getMychannelRule",this.getMychannelRule)
       
       console.log("isMute",isMute)
       if(isMute){
@@ -2807,7 +2809,21 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
 
          const {isCreator,isAdmin,isBlocked,isWhitelist,isRemoved,userInfo,metaId,address,groupId}=message
-        if(groupId !== this.activeChannelId) return
+         
+          if(this.activeChannel?.parentGroupId){
+           if( groupId !== this.activeChannel?.parentGroupId){
+            
+            return
+           }
+          }else if(this.activeChannel?.id){
+            
+            if( groupId !== this.activeChannel?.id){
+            
+            return
+           }
+          }
+
+       
 
         if(metaId == this.selfMetaId){
             let role=MemberRule.Normal

@@ -119,11 +119,12 @@ const isYou = computed(() => {
   return props.member.userInfo.metaid === simpleTalk.selfMetaId
 })
 
-const currentChannelInfo = computed(() => {
-  return simpleTalk.activeChannel
-})
+// const currentChannelInfo = computed(() => {
+//   return simpleTalk.activeChannel
+// })
 
 const selfPermission=computed(()=>{
+  
   return simpleTalk.getMychannelRule
   // return simpleTalk.getMychannelRule(currentChannelInfo.value?.groupId || route.params.groupId as string)
   //return props.selfRule

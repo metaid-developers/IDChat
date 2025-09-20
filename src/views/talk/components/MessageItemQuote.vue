@@ -19,13 +19,7 @@
             </template>
             <div class="content">
               {{
-              isSubChannelMsg ? decryptedMessageForSubChannel(
-               quote?.content,
-                  quote?.encryption,
-                  quote?.protocol,
-                  quote?.isMock,
-                  quote?.channelId?.substring(0, 16)
-            ) : decryptedMessage(
+               decryptedMessage(
                   quote?.content,
                   quote?.encryption,
                   quote?.protocol,
@@ -49,7 +43,7 @@
 
 <script setup lang="ts">
 import { useImagePreview } from '@/stores/imagePreview'
-import { decryptedMessage,decryptedMessageForSubChannel } from '@/utils/talk'
+import { decryptedMessage } from '@/utils/talk'
 import { NodeName } from '@/enum'
 import { UserInfo as newUserInfo } from '@/api/man'
 import { containsString } from '@/utils/util'

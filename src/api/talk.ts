@@ -432,34 +432,34 @@ export const getAllChannels = async ({
   })
 }
 
-export const getGroupChannelList=async({
-  groupId,
-  cursor='0',
-  size='20'
-}: {
-  groupId:string
-  cursor?:string
-  size?: string
-}):Promise<SubChannel[]>=>{
-  const params = new URLSearchParams({
-    groupId,
-    cursor,
-    size,
-  })
-    return TalkApi.get(`/group-channel-list?${params}`).then(res => {
-   if(res.data.list?.length){
-    return res.data.list
-    //  return res.data.list.map((channel: any) => {
-    //   channel.id = channel.groupId
-    //   channel.name = channel.roomName
-    //   channel.uuid = channel.txId // 用于key,不修改
-    //   return channel
-    // })
-   }else{
-    return []
-   }
-  })
-}
+// export const getGroupChannelList=async({
+//   groupId,
+//   cursor='0',
+//   size='20'
+// }: {
+//   groupId:string
+//   cursor?:string
+//   size?: string
+// }):Promise<SubChannel[]>=>{
+//   const params = new URLSearchParams({
+//     groupId,
+//     cursor,
+//     size,
+//   })
+//     return TalkApi.get(`/group-channel-list?${params}`).then(res => {
+//    if(res.data.list?.length){
+//     return res.data.list
+//     //  return res.data.list.map((channel: any) => {
+//     //   channel.id = channel.groupId
+//     //   channel.name = channel.roomName
+//     //   channel.uuid = channel.txId // 用于key,不修改
+//     //   return channel
+//     // })
+//    }else{
+//     return []
+//    }
+//   })
+// }
 
 export const getChannelMessages = async ({
   groupId,

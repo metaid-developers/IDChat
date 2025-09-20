@@ -1,5 +1,5 @@
 <template>
-  <div class="broadcast-chat-header" v-if="subchannels.length > 0">
+  <div class="broadcast-chat-header text-dark-800 dark:text-white" v-if="subchannels.length > 0">
     <div class="broadcast-chat-container" v-for="channel in subchannels" :key="channel.id">
       <div class="broadcast-icon">
         <img :src="subChannel" alt="" />
@@ -96,7 +96,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
   justify-content: center;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  color: white;
+ 
   margin-right: 12px;
 }
 
@@ -108,7 +108,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 .broadcast-title {
   font-size: 16px;
   font-weight: 600;
-  color: white;
+ 
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -119,14 +119,14 @@ const getUnreadCount = (channel: SimpleChannel) => {
   font-size: 12px;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.2);
-  color: white;
+
   padding: 2px 6px;
   border-radius: 10px;
 }
 
 .broadcast-description {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  
   line-height: 1.4;
   margin-bottom: 4px;
   overflow: hidden;
@@ -136,7 +136,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 
 .broadcast-note {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  
   font-style: italic;
   background: rgba(255, 255, 255, 0.1);
   padding: 4px 8px;
@@ -146,7 +146,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 
 .broadcast-latest {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
+ 
   display: flex;
   align-items: center;
   gap: 8px;
@@ -169,7 +169,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 
 .broadcast-chat-container:hover .broadcast-arrow {
   transform: translateX(2px);
-  color: white;
+ 
 }
 
 /* 响应式设计 */
