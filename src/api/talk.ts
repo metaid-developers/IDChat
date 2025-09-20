@@ -1,6 +1,7 @@
 import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth,SubChannel,MemberListRes } from '@/@types/talk'
-import {GroupUserRoleInfo } from '@/@types/simple-chat.d'
+
+import type { GroupChannel, GroupChannelListResponse,GroupUserRoleInfo } from '@/@types/simple-chat.d'
 import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
@@ -571,7 +572,7 @@ export const getSubChannelMessages = async ({
   //   }
   // }
 
-  return data.data.list ?? []
+  return data.data
 }
 
 export const getPrivateChatMessages = async (
@@ -859,4 +860,12 @@ export const generateLuckyBagCode = async (): Promise<{
   }
 }> => {
   return TalkApi.get('/generate-lucky-bag-code')
+}
+
+// 获取群聊的子频道列表
+export const getGroupChannelList = async (params: {
+  groupId: string
+}): Promise<GroupChannelListResponse> => {
+  const query = new URLSearchParams(params).toString()
+  return TalkApi.get(`/group-channel-list?${query}`)
 }

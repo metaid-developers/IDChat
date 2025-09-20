@@ -395,9 +395,9 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  console.log("simpleTalkStore.activeChannel",simpleTalkStore.activeChannel)
-  
-  return simpleTalkStore.activeChannel
+  return simpleTalkStore.activeChannel?.type === 'sub-group'
+    ? simpleTalkStore.getParentGroupChannel(simpleTalkStore.activeChannel.id) || null
+    : simpleTalkStore.activeChannel || null
 })
 
  watch(()=>currentChannelInfo.value?.id,(newVal,oldVal)=>{
@@ -731,13 +731,25 @@ const handleWhiteList=async(member:MemberItem)=>{
 
 // 监听抽屉开关状态
 watch(
+  () => currentChannelInfo.value?.id, // 直接监听 channelId 变化
+  (newChannelId, oldChannelId) => {
+    // 只有在抽屉打开状态下且频道ID确实发生变化时才执行
+    if (props.modelValue && newChannelId && newChannelId !== oldChannelId) {
+      console.log('频道切换，重新加载成员列表:', oldChannelId, '->', newChannelId)
+      resetAndLoad()
+    }
+  },
+  // { immediate: true }
+)
+
+// 监听抽屉开关状态
+watch(
   () => props.modelValue,
   isOpen => {
     if (isOpen) {
       console.log('抽屉打开，初始化成员列表')
       // 抽屉打开时，如果有频道信息就加载数据
       if (currentChannelInfo.value?.id) {
-        
         resetAndLoad()
       } else {
         // 没有频道信息时，至少要设置 observer
@@ -749,33 +761,22 @@ watch(
       // resetData()
     }
   },
-  // { immediate: true }
+  { immediate: true }
 )
 
 // 重置数据并加载的统一方法
 const resetAndLoad = async () => {
   // 重置分页状态
-  
   cursor.value = 0
   noMore.value = false
   simpleTalkStore.$patch({channelMemeberList:{
-       admins:[],
-        blockList:[],
-        creator:null,
-        list:[],
-        normalList:[],
-        whiteList:[]
-  }})
-  
-  // memberList.value = {
-  //       admins:[],
-  //       blockList:[],
-  //       creator:null,
-  //       list:[],
-  //       normalList:[],
-  //       whiteList:[]
-  //     }
-  // list.value = []
+      admins:[],
+      blockList:[],
+      creator:null,
+      list:[],
+      normalList:[],
+      whiteList:[]
+}})
   searchList.value = []
   isSearching.value = false
 
@@ -794,7 +795,6 @@ const resetAndLoad = async () => {
 
   // 开始加载数据
   try {
-    
     await getMoreMember()
   } catch (error) {
     console.error('重置并加载数据失败:', error)
@@ -1007,7 +1007,6 @@ onUnmounted(() => {
 })
 
 async function getMoreMember() {
-  
   console.log('📋 getMoreMember 调用:', {
     hasChannelInfo: !!currentChannelInfo.value,
     loading: loading.value,

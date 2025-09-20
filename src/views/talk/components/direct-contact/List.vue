@@ -20,12 +20,12 @@
             v-model:needModifyPubkey="needModifyPubkey"
             v-if="userStore.isAuthorized && !userStore.last?.chatpubkey && !needModifyPubkey"
           />
-          <Welcome v-show="!allChannels?.length && layout.isShowLeftNav"></Welcome>
+          <Welcome v-show="!_allChannels?.length && layout.isShowLeftNav"></Welcome>
 
           <!-- 联系人列表 -->
           <div class="overflow-y-auto" v-show="userStore.isAuthorized">
             <DirectContactItem
-              v-for="session in allChannels"
+              v-for="session in _allChannels"
               :key="getSessionKey(session)"
               :session="session"
             />
@@ -62,8 +62,6 @@ const userStore = useUserStore()
 const needModifyPubkey = ref(false)
 const { allChannels } = storeToRefs(useSimpleTalkStore())
 
-console.log('🚀 简化聊天列表组件加载', allChannels.value)
-
 // console.log('talkStore', simpleTalkStore.allChannels)
 
 // 优化key生成策略，避免不必要的重新渲染
@@ -72,11 +70,15 @@ const getSessionKey = (session: any) => {
   return session.id || session.groupId || session.metaId || session.timestamp
 }
 
+const _allChannels = computed(() => {
+  return allChannels.value.filter(channel => channel.type === 'private' || channel.type === 'group')
+})
+
 onMounted(async () => {
   const pubkey = userStore.last.chatpubkey
   const ecdh = await getEcdhPublickey()
   await useSimpleTalkStore().init()
-
+  console.log('🚀 简化聊天列表组件加载', allChannels.value)
   if (pubkey && pubkey !== ecdh.ecdhPubKey) {
     needModifyPubkey.value = true
   }

@@ -630,8 +630,6 @@ router.beforeEach(async (to, from, next) => {
     }
 
     layout.$patch({ isShowLeftNav: true })
-    
-     next()
   } else {
     next()
     //layout.$patch({ isShowLeftNav: true })

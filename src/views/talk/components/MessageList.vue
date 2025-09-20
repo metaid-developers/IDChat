@@ -12,11 +12,7 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
-
-    <div class="broadcast-nav w-full z-20 sticky top-0" v-if="simpleTalk.activeChannel?.subChannels?.length">
-    <BroadcastChannelNav></BroadcastChannelNav>
-
-   </div>
+    <!-- 广播聊天头部 - 在消息列表最上方（简化版提示） -->
 
     <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
@@ -40,6 +36,8 @@
     </div>
 
     <div class="app-container">
+      <BroadcastChatHeader />
+      <BroadcastChatHeaderBack />
       <div class="list-container" ref="listContainer" @scroll.passive="handleScroll">
         <!-- 顶部加载指示器 -->
         <div class="loader" v-show="isLoadingTop">
@@ -50,7 +48,7 @@
         <!-- ref 用于在代码中直接访问这个 DOM 元素 -->
         <div ref="listWrapper">
           <!-- 使用 v-for 循环渲染列表项 -->
-          <template v-if="currentChannelType === 'group'">
+          <template v-if="currentChannelType === 'group' || currentChannelType === 'sub-group'">
             <MessageItem
               v-for="message in simpleTalk.activeChannelMessages"
               :key="message.txId || message.timestamp"
@@ -138,6 +136,8 @@ import { useRoute } from 'vue-router'
 import LoadingList from './LoadingList.vue'
 import MessageItem from './MessageItem.vue'
 import MessageItemForSession from './MessageItemForSession.vue'
+import BroadcastChatHeader from '@/components/BroadcastChatHeader.vue'
+import BroadcastChatHeaderBack from '@/components/BroadcastChatHeaderBack.vue'
 import { openLoading, sleep, debounce } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
 import Publish from '@/views/buzz/components/Publish.vue'
@@ -150,13 +150,13 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-import BroadcastChannelNav from './direct-contact/broadcast-channel-nav.vue'
+
 const isLoadingTop = ref(false) // 控制顶部加载器
+const isNoMoreTop = ref(false) // 控制顶部没有更多数据
 const isLoadingBottom = ref(false) // 控制底部加载器
 const listContainer = ref<HTMLElement | null>(null)
 const bottomSpacer = ref<HTMLElement | null>(null)
 const listWrapper = ref<HTMLElement | null>(null)
-
 const user = useUserStore()
 const simpleTalk = useSimpleTalkStore()
 const layout = useLayoutStore()
@@ -256,7 +256,7 @@ const currentChannelType = computed(() => {
   if (simpleTalk.isInitialized) {
     const channel = simpleTalk.activeChannel
     // simple-talk 的类型是 'group' | 'private'，需要转换为 'group' | 'session'
-    return channel!.type === 'group' ? 'group' : 'session'
+    return channel!.type === 'private' ? 'session' : channel!.type
   }
   return 'group' // 默认值
 })
@@ -266,6 +266,9 @@ const loadItems = async (isPrepending = false) => {
   if (isLoadingTop.value || isLoadingBottom.value) return
 
   if (!isPrepending) {
+    if (isNoMoreTop.value) {
+      return
+    }
     isLoadingTop.value = true
   } else {
     isLoadingBottom.value = true
@@ -277,11 +280,18 @@ const loadItems = async (isPrepending = false) => {
     // 在添加新内容前，记录当前列表的总高度
     scrollHeightBefore = listWrapper.value.scrollHeight
   }
+  const beforeLength = simpleTalk.activeChannelMessages.length
 
   await simpleTalk.loadMoreMessages(simpleTalk.activeChannelId)
 
   // 等待 DOM 更新
   await nextTick()
+
+  const afterLength = simpleTalk.activeChannelMessages.length
+
+  if (beforeLength === afterLength) {
+    isNoMoreTop.value = true
+  }
 
   if (isPrepending) {
     // 添加新内容后，列表总高度会增加
@@ -530,6 +540,8 @@ function scrollToTimeStamp(timestamp: number) {
   }
 }
 
+// 注：子频道选择功能已简化，现在子群聊作为独立频道显示在频道列表中
+
 async function onToBuzz(data: ShareChatMessageData) {
   const loading = openLoading()
 
@@ -632,7 +644,7 @@ defineExpose({
   flex-grow: 1;
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
-  padding: 20px 0;
+  padding: 20px 0 !important;
   box-sizing: border-box;
   display: flex;
   flex-direction: column-reverse;

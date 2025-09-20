@@ -1,34 +1,28 @@
 <template>
-  <div
-    class="relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group message-item"
-    :class="{ replying: reply.val?.timestamp === message.timestamp }"
-    :data-message-id="messageId"
-    @touchstart="handleTouchStart"
-    @touchmove="handleTouchMove"
-    @touchend="handleTouchEnd"
-    @touchcancel="handleTouchEnd"
-  >
-    <!-- 消息菜单 -->
-    <template v-if="!isShare">
-      <MessageMenu
-        :message="props.message"
-        :message-id="messageId"
-        :isSubChannelMsg="isSubChannelMsg"
-        :parsed="
-          parseTextMessage(
-           isSubChannelMsg ? decryptedMessageForSubChannel(
-              message?.content,
-              message?.encryption,
-              message?.protocol,
-              message?.isMock,
-              message?.channelId?.substring(0, 16)
-            ) : decryptedMessage(
-              message?.content,
-              message?.encryption,
-              message?.protocol,
-              message?.isMock
+  <div :class="{ isMyMessage: isMyMessage }">
+    <div
+      class="w-full relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150  group message-item"
+      :class="{ replying: reply.val?.timestamp === message.timestamp }"
+      :data-message-id="messageId"
+      @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
+      @touchend="handleTouchEnd"
+      @touchcancel="handleTouchEnd"
+    >
+      <!-- 消息菜单 -->
+      <template v-if="!isShare">
+        <MessageMenu
+          :message="props.message"
+          :message-id="messageId"
+          :parsed="
+            parseTextMessage(
+              decryptedMessage(
+                message?.content,
+                message?.encryption,
+                message?.protocol,
+                message?.isMock
+              )
             )
-          )
           "
           v-model:translateStatus="translateStatus"
           v-model:translatedContent="translatedContent"
@@ -51,10 +45,8 @@
     content: message.replyInfo?.content,
     encryption: message.replyInfo?.encryption,
     timestamp: message.replyInfo!.timestamp}"
-      :isSubChannelMsg="isSubChannelMsg"
-      v-bind="$attrs"
-    />
-
+        v-bind="$attrs"
+      />
 
       <!-- 消息主体 -->
       <div class="flex">
@@ -97,58 +89,6 @@
             </div>
           </div>
 
-        <div
-          class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
-          v-if="isGroupJoinAction"
-        >
-          {{ $t('Talk.Channel.join_channel') }}
-        </div>
-        <div
-          class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
-          v-else-if="isGroupLeaveAction"
-        >
-          {{ $t('Talk.Channel.leave_channel') }}
-        </div>
-        <div
-          class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs"
-          v-else-if="isGroupRemoveUserAction"
-        >
-          {{
-            removeUserInfo?.reason
-              ? $t('Talk.Channel.remove_user_with_reason', {
-                  username: removeUserInfo.username,
-                  reason: removeUserInfo.reason,
-                })
-              : $t('Talk.Channel.remove_user', {
-                  username: removeUserInfo?.username,
-                })
-          }}
-        </div>
-
-        <div class="w-full" v-else-if="isNftEmoji">
-          <ChatImage
-            :src="
-           isSubChannelMsg ? decryptedMessageForSubChannel( 
-            message?.content,
-                message?.encryption,
-                message?.protocol,
-                message?.isMock,
-                message?.channelId?.substring(0,16)
-                  ) 
-                : decryptedMessage(
-                message?.content,
-                message?.encryption,
-                message?.protocol,
-                message?.isMock
-              )
-            "
-            customClass="max-w-[80%] md:max-w-[50%] lg:max-w-[320px] py-0.5 object-scale-down"
-          />
-
-          <NftLabel class="w-8 mt-1" />
-        </div>
-
-        <div class="w-full py-0.5 flex items-center" v-else-if="isImage">
           <div
             class="w-full py-0.5 text-dark-400 dark:text-gray-200 text-xs capitalize"
             v-if="isGroupJoinAction"
@@ -316,31 +256,17 @@
                     v-if="groupLinkInfo.memberCount > 0"
                     class="text-dark-400 dark:text-gray-400 text-xs mt-1"
                   >
-                    {{ groupLinkInfo.groupName || 'Group Chat' }}
-                  </div>
-                  <div class="text-dark-400 dark:text-gray-400 text-sm">
-                    {{ props.message.userInfo?.name || 'Someone' }} {{ $t('share_group_invites') }}
+                    members: {{ groupLinkInfo.memberCount }}
                   </div>
                 </div>
-              </div>
-              <div class="flex gap-4 items-center">
-                <div class="text-dark-400 dark:text-gray-400 text-xs mt-1 truncate max-w-[150px]">
-                   {{ $t('share_group_creator') }}: {{ groupLinkInfo.creator }}
-                </div>
-                <div
-                  v-if="groupLinkInfo.memberCount > 0"
-                  class="text-dark-400 dark:text-gray-400 text-xs mt-1"
-                >
-                   {{ $t('share_group_member') }}: {{ groupLinkInfo.memberCount }}
-                </div>
-              </div>
 
-              <!-- 查看群组按钮 -->
-              <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
-                <div
-                  class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
-                >
-                  {{ $t('share_group_view') }}
+                <!-- 查看群组按钮 -->
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                  <div
+                    class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
+                  >
+                    VIEW GROUP
+                  </div>
                 </div>
               </div>
             </div>
@@ -364,46 +290,53 @@
               </div>
             </div>
 
-          <div
-            class="text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
-            :class="[
-              msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
-              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
-            ]"
-            v-else
-            v-html="
-            parseTextMessage(
-           isSubChannelMsg ? decryptedMessageForSubChannel(
-              message?.content,
-              message?.encryption,
-              message?.protocol,
-              message?.isMock,
-              message?.channelId?.substring(0, 16)
-            ) : decryptedMessage(
-              message?.content,
-              message?.encryption,
-              message?.protocol,
-              message?.isMock
-            )
-          )
-            "
-          ></div>
-          <!--message.error message?.reason {{ message?.reason }}-->
-          <button
-            v-if="message?.error"
-            class="ml-3   break-words flex items-center  justify-center"
-            :title="resendTitle"
-            @click="tryResend"
-          >
-            <span v-if="message?.reason" class="text-[#fc457b] flex-1 font-medium mr-2">{{
-              message?.reason
-            }}</span>
-            <Icon
-              name="arrow_path"
-              class="w-4 h-4 flex-1  text-dark-400 dark:text-gray-200 hover:animate-spin-once"
-            />
-          </button>
+            <div
+              class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+              :class="[
+                msgChain == ChatChain.btc && 'btc-item',
+                isMyMessage
+                  ? 'bg-primary dark:text-gray-800'
+                  : 'not-mine bg-white dark:bg-gray-700',
+                message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
+              ]"
+              v-else
+            >
+              <div
+                class="whitespace-pre-wrap"
+                v-html="
+                  parseTextMessage(
+                    decryptedMessage(
+                      message?.content,
+                      message?.encryption,
+                      message?.protocol,
+                      message?.isMock
+                    )
+                  )
+                "
+              ></div>
+              <div
+                v-if="message.mockId && !message.error"
+                class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700 inline-block
+                opacity-50"
+              ></div>
+            </div>
+
+            <!--message.error message?.reason {{ message?.reason }}-->
+            <button
+              v-if="message.error"
+              class="ml-3   break-words flex items-center  justify-center"
+              :title="resendTitle"
+              @click="tryResend"
+            >
+              <span v-if="message?.error" class="text-[#fc457b] flex-1 font-sm mr-2">{{
+                message?.error
+              }}</span>
+              <Icon
+                name="arrow_path"
+                class="w-4 h-4 flex-1  text-dark-400 dark:text-gray-200 hover:animate-spin-once"
+              />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -519,8 +452,8 @@ const handleTouchEnd = () => {
 }
 
 interface Props {
-  message: ChatMessageItem
-  isSubChannelMsg:boolean
+  message: UnifiedChatMessage
+  isSubChannelMsg?:boolean
   isShare?: boolean
 }
 const props = withDefaults(defineProps<Props>(), {
@@ -661,7 +594,7 @@ const isMyMessage = computed(() => {
 const handleOpenRedPacket = async() => {
   // 如果用户已经领取过红包，则显示红包领取信息
   const params: any = {
-    groupId: simpleTalk.activeChannelId,
+    groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannel?.id,
     pinId: `${props.message?.txId}i0`,
   }
   
@@ -816,7 +749,7 @@ const groupLinkInfo = computed(() => {
           props.message.encryption,
           props.message.protocol,
           props.message.isMock,
-          props.message.channelId.substring(0,16)
+          props.message?.channelId.substring(0,16)
                   ) 
                 : decryptedMessage(
     props.message.content,

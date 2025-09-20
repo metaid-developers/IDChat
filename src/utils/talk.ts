@@ -49,6 +49,7 @@ import { generateLuckyBagCode } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { SimpleChannel } from '@/@types/simple-chat'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -523,7 +524,7 @@ const _redistributeEvenly = (amounts: number[], totalAmount: number, minSats: nu
   return adjustedAmounts
 }
 
-export const giveRedPacket = async (form: any, channelId: string, selfMetaId: string,subChannelId?:string) => {
+export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaId: string) => {
   // 1.1 构建红包地址
   const luckyBagCode = await generateLuckyBagCode()
   if (luckyBagCode.code !== 0) {
@@ -536,7 +537,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
   const buildTx = useBulidTx()
 
   // const code = realRandomString(6)
-  const subId = channelId.substring(0, 12)
+  const subId = channel.id.substring(0, 12)
   // const createTime = Date.now()
   // const key = `${subId.toLocaleLowerCase()}${code.toLocaleLowerCase()}${createTime}`
   const net = import.meta.env.VITE_NET_WORK || 'mainnet'
@@ -559,8 +560,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     domain: import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
     luckyBagAddress: address,
     createTime,
-    groupId: channelId,
-    channelId:subChannelId ? subChannelId : '',
+    groupId: channel.parentGroupId || '',
     img: '',
     imgType: '',
     subId,
@@ -576,6 +576,7 @@ export const giveRedPacket = async (form: any, channelId: string, selfMetaId: st
     requireTickId: '',
     requireCollectionId: '',
     limitAmount: 0,
+    channelId: channel.id,
   }
 
   // 2.1 nft红包处理
@@ -1215,65 +1216,6 @@ export const tryCreateNode = async (
   }
 }
 
-export const tryCreateSubChannelNode = async (
-  node: {
-    protocol: string
-    body: any
-    timestamp: number
-    externalEncryption?: '0' | '1' | '2'
-    fileEncryption?: '0' | '2' | '2'
-    attachments?: AttachmentItem[]
-  },
-  mockId: string
-) => {
-  const jobs = useJobsStore()
-  const talk = useTalkStore()
-  const buildTx = useBulidTx()
-  const {
-    protocol,
-    body,
-    timestamp: timeStamp,
-    attachments,
-    externalEncryption,
-    fileEncryption,
-  } = node
-  try {
-    // const nodeRes = await sdk.createBrfcChildNode(node)
-    const nodeRes = await buildTx.createShowMsg({
-      protocol,
-      body,
-      attachments,
-      externalEncryption,
-      fileEncryption,
-      isBroadcast: true,
-    })
-
-    // 取消支付的情况下，删除mock消息
-    console.log({ nodeRes })
-    
-    if (nodeRes === null) {
-      talk.removeSubChannelMessage(mockId)
-    }else{
-      return nodeRes
-    }
-
-    
-    
-  } catch (error) {
-    const timestamp = timeStamp
-    jobs?.node && jobs?.nodes.push({ node, timestamp })
-    const newMessages = talk.activeSubChannel.newMessages
-    const message = newMessages.find((item: any) => item.timestamp === timestamp && item.isMock)
-    if (message) {
-      console.log('message', message)
-
-      message.error = true
-      message.reason = `${(error as any).toString()}`
-      return false
-    }
-  }
-}
-
 const _sendTextMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
   const talkStore = useTalkStore()
@@ -1651,135 +1593,6 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
     // }
   } catch (error) {
     // talkStore.addRetryList({ ...messageDto, mockId })
-  }
-
-  // await tryCreateNode(node,mockId)
-
-  // return
-}
-
-const _sendImageMessageForSubChannel=async (messageDto: MessageDto) => {
-  const userStore = useUserStore()
-  const talkStore = useTalkStore()
-  const chainStore = useChainStore()
-
-  const {
-    groupId,
-    channelId,
-    userName: nickName,
-    attachments,
-    originalFileUrl,
-    reply,
-    channelType,
-  } = messageDto
-
-  // 1. 构建协议数据
-  // 1.1 groupId: done
-  // 1.2 timestamp
-  const timestamp = getTimestampInSeconds()
-  // 1.3 nickName: done
-  // 1.4 fileType
-  const file = attachments![0]
-  const fileType = file.fileType.split('/')[1]
-  // 1.5 encrypt
-  const encrypt = 'aes'
-  const externalEncryption = '0' //channelType == ChannelType.Group ?  '0' : '1'
-
-  // const attachment =attachments//'metafile://$[0]'
-
-  const dataCarrier: any ={
-          timestamp,
-          encrypt,
-          fileType,
-          groupId: groupId,
-          channelId:channelId,
-          nickName,
-          attachment: '',
-          replyPin: reply ? `${reply.txId}i0` : '',
-        }
-
-  // if (messageDto.channelType !== ChannelType.Group) {
-  //   dataCarrier.to = channelId
-  // }
-
-  const nodeName =NodeName.SimpleFileGroupChat
-  const fileEncryption = '0'
-  // 2. 构建节点参数
-  const node = {
-    protocol: nodeName,
-    // dataType: 'application/json',
-    body: dataCarrier,
-    attachments,
-    timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
-    externalEncryption,
-    fileEncryption,
-  }
-
-  // 2.5. mock发送
-  const mockId = realRandomString(12)
-  const mockMessage = {
-    mockId,
-    protocol: nodeName,
-    nodeName,
-    groupId: groupId,
-    channelId:channelId,
-    chatType: ChatType.img,
-    contentType: fileType,
-    content: originalFileUrl,
-    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
-    avatarType: userStore.last?.avatar || 'undefined',
-    avatarTxId: userStore.last?.avatarId || 'undefined',
-    avatarImage: userStore.last?.avatar || '',
-    fromAvatarImage: userStore.last?.avatar || '',
-    metaId: userStore.last?.metaid || 'undefined',
-    from: userStore.last?.metaid,
-    nickName: userStore.last?.name || '',
-    userInfo: userStore.last, // userStore.last?.metaName ? { metaName: userStore.last?.metaName } : {},
-    timestamp: timestamp * 1000, // 服务端返回的是毫秒，所以模拟需要乘以1000
-    txId: '',
-    encryption: encrypt,
-    externalEncryption,
-    isMock: true,
-    replyInfo: reply,
-    type: messageDto.channelType === ChannelType.Group ? 1 : 2,
-  }
-
-  // if(messageDto.channelType == ChannelType.Group || channelId !== userStore.last.metaid ){
-    
-  //     talkStore.addMessage(mockMessage)
-  // }
-
-   talkStore.addSubChannleMessage(mockMessage)
-
-
-
-  // 3. 发送节点
-  // const sdk = userStore.showWallet
-  try {
-    const tryRes = await tryCreateSubChannelNode(node, mockId)
-      if (tryRes === false) {
-      talkStore.addRetryList({ ...messageDto, mockId })
-    } else {
-      if(tryRes?.txids?.length || tryRes?.revealTxIds?.length){
-        
-      if(channelId === userStore.last.metaid ){
-      const txId =(tryRes?.txids && tryRes?.txids[1]) || (tryRes?.revealTxIds && tryRes?.revealTxIds[0])
-      talkStore.updateMessage(mockMessage,txId)
-      }
-      }
-      talkStore.removeRetryList(mockId)
-      return '1'
-    }
-
-
-    // if (!tryRes) {
-    //   talkStore.addRetryList({ ...messageDto, mockId })
-    // } else {
-    //   talkStore.removeRetryList(mockId)
-    //   return
-    // }
-  } catch (error) {
-    talkStore.addRetryList({ ...messageDto, mockId })
   }
 
   // await tryCreateNode(node,mockId)

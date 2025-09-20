@@ -176,9 +176,8 @@ const actions = computed(() => {
         
         if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
           data = {
-            communityId: '', // talk.activeCommunityId,
+            communityId: '', // simpleTalk.activeCommunityId,
             groupId: simpleTalk.activeChannelId,
-            channelId:simpleTalk.activeSubChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -196,7 +195,6 @@ const actions = computed(() => {
           data = {
             communityId: '', // talk.activeCommunityId,
             groupId: simpleTalk.activeChannelId,
-            channelId:simpleTalk.activeSubChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -214,7 +212,6 @@ const actions = computed(() => {
           data = {
             communityId: '', // talk.activeCommunityId,
             groupId: simpleTalk.activeChannelId,
-             channelId:simpleTalk.activeSubChannelId,
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {

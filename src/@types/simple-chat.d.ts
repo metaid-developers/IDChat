@@ -99,6 +99,33 @@ export interface GroupRoomInfoResponse {
   processingTime: number
 }
 
+// 子群聊频道信息
+export interface GroupChannel {
+  channelId: string // 子群聊的唯一标识
+  groupId: string // 所属群聊ID
+  channelName: string // 子群聊名称
+  channelIcon: string // 子群聊图标
+  channelNote: string // 子群聊描述
+  channelType: number // 子群聊类型
+  createUserMetaId: string // 创建者metaId
+  createUserAddress: string // 创建者地址
+  timestamp: number // 创建时间戳
+  chain: string // 区块链类型
+  blockHeight: number // 区块高度
+  index: number // 索引
+}
+
+// 群聊子频道列表 API 响应
+export interface GroupChannelListResponse {
+  code: number
+  message: string
+  data: {
+    total: number
+    list: GroupChannel[]
+  }
+  timestamp: number
+}
+
 // 简化的频道结构
 export interface SimpleChannel {
   id: string
@@ -126,9 +153,12 @@ export interface SimpleChannel {
   // 私聊特有字段
   targetMetaId?: string // 私聊对象的metaId
   publicKeyStr?: string // 私聊加密公钥
+
+  subChannels?:SimpleChannel[]
+  // 子群聊特有字段
+  parentGroupId?: string // 如果是子群聊，指向主群聊ID
   // 保存原始服务端数据
   serverData?: any
-  subChannels?:SimpleChannel[]
 }
 
 // 简化的用户信息
