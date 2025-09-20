@@ -74,7 +74,12 @@
             }}<el-icon><CopyDocument /></el-icon>
           </div>
           <div class="mt-4">
-            <el-button color="#ffffff" size="default" :icon="CirclePlus" @click="showSearch = true"
+            <el-button
+              v-if="isCurrentUserCreator"
+              color="#ffffff"
+              size="default"
+              :icon="CirclePlus"
+              @click="showCreateBroadcastModal = true"
               >Broadcast</el-button
             >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true"
@@ -184,6 +189,9 @@
     :channel-info="currentChannelInfo"
     @updated="handleChannelInfoUpdated"
   />
+
+  <!-- 创建子频道弹窗 -->
+  <CreateBroadcastChannelModal v-model="showCreateBroadcastModal" />
 </template>
 
 <script lang="ts" setup>
@@ -204,6 +212,7 @@ import { useUserStore } from '@/stores/user'
 import ChannelMemberItem from './ChannelMemberItem.vue'
 import EditAnnouncementDrawer from './EditAnnouncementDrawer.vue'
 import EditChannelInfoDrawer from './EditChannelInfoDrawer.vue'
+import CreateBroadcastChannelModal from './CreateBroadcastChannelModal.vue'
 import { useRoute } from 'vue-router'
 import { getChannelMembers, searchChannelMembers } from '@/api/talk'
 import { ElMessage } from 'element-plus'
@@ -238,6 +247,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {})
 const emit = defineEmits(['update:modelValue'])
 const showSearch = ref(false)
+const showCreateBroadcastModal = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
 const cursor = ref(0)

@@ -13,7 +13,20 @@
           An on-chain "Telegram" running on Bitcoin is here! IDChat, based on the...
         </div>
       </div>
-      <div :class="['main-border', 'primary']" @click="goToSubChannel(channel.id)">
+
+      <el-badge
+        :value="getUnreadCount(channel)"
+        class="item"
+        :max="9999"
+        :show-zero="false"
+        v-if="getUnreadCount(channel) > 0"
+      >
+        <div :class="['main-border', 'primary']" @click="goToSubChannel(channel.id)">
+          <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
+        </div>
+      </el-badge>
+
+      <div v-else :class="['main-border', 'primary']" @click="goToSubChannel(channel.id)">
         <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
       </div>
     </div>
@@ -24,6 +37,7 @@
 import { computed } from 'vue'
 import subChannel from '@/assets/images/sub-channel.svg?url'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import type { SimpleChannel } from '@/@types/simple-chat'
 
 const simpleTalkStore = useSimpleTalkStore()
 
@@ -37,6 +51,17 @@ const goToSubChannel = (channelId: string) => {
   console.log('Navigating to sub-channel with ID:', channelId)
   // 这里可以使用路由跳转或其他方式实现导航
   simpleTalkStore.setActiveChannel(channelId)
+}
+
+// 获取子频道的未读消息数
+const getUnreadCount = (channel: SimpleChannel) => {
+  if (!channel.lastMessage || typeof channel.lastMessage.index !== 'number') {
+    console.log('No lastMessage or invalid index for channel:', channel.id)
+    return 0
+  }
+  const lastReadIndex = simpleTalkStore.getLastReadIndex(channel.id)
+  const unreadCount = channel.lastMessage.index - lastReadIndex
+  return Math.max(0, unreadCount)
 }
 </script>
 

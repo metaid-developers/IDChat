@@ -285,6 +285,10 @@
       "edit_consensual_channel": "Edit Pass Channel",
       "announcements": "Announcements",
       "topics": "Topics",
+      "create_broadcast_channel": "Create Broadcast",
+      "create_broadcast_channel_tip": "Create a broadcast subchannel where only admins and whitelisted members can post, while others have read-only access.",
+      "channel_description": "Channel Description",
+      "channel_description_placeholder": "Describe the purpose of this broadcast channel...",
       "DAO": "DAO"
     },
     "Input": {

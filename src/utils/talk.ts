@@ -49,6 +49,7 @@ import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { SimpleChannel } from '@/@types/simple-chat'
+import i18n from './i18n'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -1697,6 +1698,7 @@ export const createBroadcastChannel = async (
   }
 
   console.log({ dataCarrier })
+  debugger
 
   // 2. 构建节点参数
   const node = {

@@ -1,105 +1,189 @@
 <template>
-  <BaseModal>
-    <template #title>
-      {{ $t('Talk.Community.create_broadcast_channel') }}
-    </template>
+  <!-- Temporary: Use div with modal styling until Modal import issue is resolved -->
+  <div
+    v-if="isVisible"
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+    style="z-index: 3000;"
+    @click.self="isVisible = false"
+  >
+    <div
+      class="bg-white dark:bg-gray-800 rounded-3xl p-8 w-full max-w-screen-sm lg:min-w-[456px] mx-4 shadow-lg dark:shadow-blue-100/30"
+    >
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold">
+          {{ $t('Talk.Community.create_broadcast_channel') }}
+        </h3>
+        <button @click="isVisible = false" class="text-gray-500 hover:text-gray-700">
+          <Icon name="close" class="w-5 h-5" />
+        </button>
+      </div>
 
-    <template #body>
-      <div class="flex flex-col h-full">
-        <p class="mt-4.5 text-base text-dark-400 dark:text-gray-200 leading-relaxed text-center">
+      <div class="flex flex-col">
+        <p class="mb-6 text-base text-dark-400 dark:text-gray-200 leading-relaxed text-center">
           {{ $t('Talk.Community.create_broadcast_channel_tip') }}
         </p>
 
-        <!-- <div class="mt-7.5 w-full">
-          <h4 class="text-lg  capitalize">
-            {{ $t('Talk.Community.channel_name') }}
-          </h4>
+        <ElForm :model="form" label-width="0">
+          <!-- 频道名称输入框 -->
+          <ElFormItem>
+            <div class="form-item">
+              <div class="label">{{ $t('Talk.Community.channel_name') }}</div>
+              <ElInput
+                v-model="form.channelName"
+                type="text"
+                :placeholder="$t('Talk.Community.channel_name')"
+                maxlength="50"
+              />
+            </div>
+          </ElFormItem>
 
-          <div class="mt-2">
-            <input
-              type="text"
-              class="outline-0 main-border faded-switch !bg-white dark:!bg-gray-700 still w-full px-4 py-3 text-base leading-[24PX] font-bold placeholder:font-normal"
-              :placeholder="$t('Talk.Community.channel_name')"
-              v-model="form.name"
-            />
-          </div>
+          <!-- 频道描述文本框 -->
+          <ElFormItem>
+            <div class="form-item">
+              <div class="label">{{ $t('Talk.Community.channel_description') }}</div>
+              <ElInput
+                v-model="form.channelNote"
+                type="textarea"
+                :rows="3"
+                :placeholder="$t('Talk.Community.channel_description_placeholder')"
+                maxlength="200"
+                resize="none"
+              />
+            </div>
+          </ElFormItem>
 
-            <SwitchGroup>
-              <div class="flex items-center gap-x-3">
-                <Switch
-                  v-model="form.adminOnly"
-                  :class="form.adminOnly ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-900'"
-                  class="relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
-                >
-                  <span
-                    aria-hidden="true"
-                    :class="form.adminOnly ? 'translate-x-6' : 'translate-x-0'"
-                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-600 shadow-lg ring-0 transition duration-200 ease-in-out"
-                  ></span>
-                </Switch>
-
-                <SwitchLabel class="text-dark-400 dark:text-gray-200 text-sm">
-                  {{ $t('Talk.Modals.admin_only') }}
-                </SwitchLabel>
-              </div>
-            </SwitchGroup>
-          </div>
-        </div> -->
-
-        <div class="flex items-end justify-end grow lg:mt-8">
-          <button
-            class="w-14 h-14 main-border primary flex items-center justify-center"
-            :class="{
-              'faded still text-dark-300  dark:text-gray-400 dark:!bg-gray-700': '',
-            }"
-            @click="tryCreateBroadcastChannel"
-          >
-            <Icon name="arrow_right" class="w-6 h-6" />
-          </button>
-        </div>
+          <ElFormItem>
+            <div class="operate flex flex-pack-end">
+              <a
+                class="main-border primary"
+                :class="{ 'faded still': !canCreate }"
+                @click="tryCreateBroadcastChannel"
+              >
+                <Icon name="arrow_right" />
+              </a>
+            </div>
+          </ElFormItem>
+        </ElForm>
       </div>
-    </template>
-  </BaseModal>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { ChannelPublicityType } from '@/enum'
+import { computed, reactive } from 'vue'
 
 import { useLayoutStore } from '@/stores/layout'
-import { useTalkStore } from '@/stores/talk'
-import { useUserStore } from '@/stores/user'
 import { createBroadcastChannel } from '@/utils/talk'
-import { ShowControl } from '@/enum'
-import BaseModal from './BaseModal.vue'
-import { realRandomString, sleep } from '@/utils/util'
+import { realRandomString } from '@/utils/util'
 
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElForm, ElFormItem, ElInput } from 'element-plus'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+
+interface Props {
+  modelValue: boolean
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits(['update:modelValue'])
+
+// 表单数据
+const form = reactive({
+  channelName: '#Broadcast Chat',
+  channelNote: '',
+})
+
+// 计算属性处理 v-model 双向绑定
+const isVisible = computed({
+  get() {
+    return props.modelValue
+  },
+  set(value: boolean) {
+    emit('update:modelValue', value)
+  },
+})
+
+// 验证是否可以创建
+const canCreate = computed(() => {
+  return form.channelName.trim().length > 0
+})
 
 const router = useRouter()
 const route = useRoute()
 const i18n = useI18n()
-const userStore = useUserStore()
 const layout = useLayoutStore()
 const simpleTalk = useSimpleTalkStore()
 
 const tryCreateBroadcastChannel = async () => {
+  if (!canCreate.value) return
+
   layout.isShowLoading = true
   const subscribeId = realRandomString(32)
   const groupId = route.params.channelId as string
-  const res = await createBroadcastChannel(groupId)
+  const res = await createBroadcastChannel(
+    groupId,
+    '', // channelId 为空，让系统自动生成
+    form.channelName.trim(),
+    '', // channelIcon 暂时为空
+    form.channelNote.trim()
+  )
   console.log('res', res)
 
   // 添加占位頻道
   if (res.status === 'success') {
     await simpleTalk.loadGroupChannels(simpleTalk.activeChannelId)
+    ElMessage.success(`${i18n.t('create_broadcast_success')}`)
+    // 重置表单
+    form.channelName = '#Broadcast Chat'
+    form.channelNote = ''
+    // 关闭弹窗
+    isVisible.value = false
   }
 
   layout.isShowLoading = false
-  ElMessage.success(`${i18n.t('create_broadcast_success')}`)
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.el-form {
+  margin-top: 20px;
+}
+
+.form-item {
+  width: 100%;
+
+  .label {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+}
+
+.operate {
+  width: 100%;
+  margin-top: 20px;
+
+  a {
+    padding: 20px;
+    cursor: pointer;
+    background: var(--el-color-primary);
+    transition: all 0.2s ease;
+
+    &.faded {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+      font-weight: bold;
+
+      :deep(use) {
+        stroke: #000;
+        stroke-width: var(--standard-border-width);
+      }
+    }
+  }
+}
+</style>

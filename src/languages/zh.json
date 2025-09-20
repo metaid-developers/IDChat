@@ -319,6 +319,10 @@
       "general_channels": "功能頻道",
       "announcements": "公告",
       "topics": "話題",
+      "create_broadcast_channel": "創建廣播",
+      "create_broadcast_channel_tip": "創建一個廣播子頻道，只有管理員和白名單成員可以發布內容，其他人只能閱讀。",
+      "channel_description": "頻道描述",
+      "channel_description_placeholder": "描述一下這個廣播頻道的用途...",
       "DAO": "DAO"
     },
     "Input": {

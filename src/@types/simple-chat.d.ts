@@ -52,16 +52,28 @@ export interface GroupRoomInfoResponse {
 
 // 子群聊频道信息
 export interface GroupChannel {
-  channelId: string // 子群聊的唯一标识
   groupId: string // 所属群聊ID
-  channelName: string // 子群聊名称
-  channelIcon: string // 子群聊图标
-  channelNote: string // 子群聊描述
-  channelType: number // 子群聊类型
-  createUserMetaId: string // 创建者metaId
-  createUserAddress: string // 创建者地址
+  channelId: string // 子群聊的唯一标识
+  metanetId: string // MetaNet ID，通常与channelId相同
+  txId: string // 交易ID
+  pinId: string // Pin ID
+  metaId: string // 创建者metaId
+  address: string // 创建者地址
+  userInfo: ChatUserInfo // 创建者用户信息
+  nickName: string // 创建者昵称
+  protocol: string // 协议类型，如 "/protocols/simplegroupchat"
+  content: string // 内容，可能是加密的
+  contentType: string // 内容类型，如 "text/plain"
+  encryption: string // 加密类型，如 "aes"
+  version: string // 版本号
+  chatType: number // 聊天类型
+  data: any // 额外数据，通常为 null
+  replyPin: string // 回复消息的 pin，通常为空字符串
+  replyInfo: any | null // 回复消息的详细信息，通常为 null
+  replyMetaId: string // 回复的 metaId，通常为空字符串
   timestamp: number // 创建时间戳
-  chain: string // 区块链类型
+  params: string // 参数，通常为空字符串
+  chain: string // 区块链类型，如 "mvc" 或 "btc"
   blockHeight: number // 区块高度
   index: number // 索引
 }
