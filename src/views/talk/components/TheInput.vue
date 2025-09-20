@@ -2,7 +2,9 @@
   <div
     class="bg-white dark:bg-gray-700 rounded-lg"
     v-if="
-      simpleTalk.activeChannel?.type === 'private' || simpleTalk.activeChannel?.type === 'group'
+      simpleTalk.activeChannel?.type === 'private' ||
+        simpleTalk.activeChannel?.type === 'group' ||
+        simpleTalk.activeChannel?.type === 'sub-group'
     "
   >
     <!-- 回复/引用 -->
@@ -152,8 +154,10 @@
           :placeholder="
             $t('Talk.Channel.message_to', {
               channel:
-                (simpleTalk.activeChannel?.type === 'group' ? '#' : '@') +
-                (simpleTalk.activeChannel?.name || ''),
+                (simpleTalk.activeChannel?.type === 'group' ||
+                simpleTalk.activeChannel?.type === 'sub-group'
+                  ? '#'
+                  : '@') + (simpleTalk.activeChannel?.name || ''),
             })
           "
           v-model="chatInput"
@@ -179,7 +183,11 @@
         <div :class="[hasInput ? 'hidden lg:flex' : 'flex', 'items-center px-1 mr-2']">
           <div
             class="p-2 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer"
-            v-if="simpleTalk.activeChannel?.type === 'group' && !quote"
+            v-if="
+              (simpleTalk.activeChannel?.type === 'group' ||
+                simpleTalk.activeChannel?.type === 'sub-group') &&
+                !quote
+            "
             @click="openRedPackDialog"
           >
             <Icon name="red_envelope" class="w-full h-full text-dark-800 dark:text-gray-100" />
@@ -662,8 +670,12 @@ const trySendText = async (e: any) => {
   // 私聊会话和頻道群聊的加密方式不同
   let content = ''
 
-  if (simpleTalk.activeChannel?.type === 'group') {
+  if (
+    simpleTalk.activeChannel?.type === 'group' ||
+    simpleTalk.activeChannel?.type === 'sub-group'
+  ) {
     content = encrypt(chatInput.value, simpleTalk.activeChannel.id.substring(0, 16))
+    console.log('sub-group chat content:', content, simpleTalk.activeChannel.id.substring(0, 16))
   } else {
     // 私聊加密
     if (!simpleTalk.activeChannel?.publicKeyStr) {

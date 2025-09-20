@@ -287,7 +287,9 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
-  return simpleTalkStore.activeChannel
+  return simpleTalkStore.activeChannel?.type === 'sub-group'
+    ? simpleTalkStore.getParentGroupChannel(simpleTalkStore.activeChannel.id) || null
+    : simpleTalkStore.activeChannel || null
 })
 
 // 判断当前用户是否是频道创建者

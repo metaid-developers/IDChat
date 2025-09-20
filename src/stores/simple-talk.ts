@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
-import type { SimpleChannel, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData } from '@/@types/simple-chat.d'
+import type { SimpleChannel, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData, GroupChannel } from '@/@types/simple-chat.d'
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
 import { useUserStore } from './user'
 import { useEcdhsStore } from './ecdh'
-import { GetUserEcdhPubkeyForPrivateChat, getChannels } from '@/api/talk'
+import { GetUserEcdhPubkeyForPrivateChat, getChannels, getGroupChannelList } from '@/api/talk'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { decrypt } from '@/utils/crypto'
 import { useChainStore } from './chain'
@@ -246,7 +246,6 @@ class SimpleChatDB {
         targetMetaId: channel.targetMetaId,
         publicKeyStr: channel.publicKeyStr,
         // 群聊特有字段
-        createMetaId: channel.createMetaId,
         userCount: channel.userCount
       }
 
@@ -723,6 +722,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
     // 获取所有频道（按最后活跃时间排序）
     allChannels(): SimpleChannel[] {
+      console.log('🔍 获取所有频道，当前频道数:', this.channels.length)
       return this.channels
         .slice() // 创建副本避免直接修改状态
         .sort((a, b) => (b.lastMessage?.timestamp || b.createdAt) - (a.lastMessage?.timestamp || a.createdAt))
@@ -759,6 +759,68 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return (redPacketId: string) => {
         return this.receivedRedPacketIds.includes(redPacketId)
       }
+    },
+
+    // 获取所有主群聊（不包括子群聊）
+    mainGroupChannels(): SimpleChannel[] {
+      return this.groupChannels.filter(c => !c.parentGroupId)
+    },
+
+    // 获取所有子群聊频道（现在作为独立频道）
+    subGroupChannels(): SimpleChannel[] {
+      return this.channels.filter(c => c.type === 'sub-group')
+    },
+
+    // 根据父群聊ID获取子群聊列表
+    getSubChannelsByParent(): (parentGroupId: string) => SimpleChannel[] {
+      return (parentGroupId: string) => {
+        return this.subGroupChannels.filter(c => c.parentGroupId === parentGroupId)
+      }
+    },
+
+    // 判断频道是否为子群聊
+    isSubGroupChannel(): (channelId: string) => boolean {
+      return (channelId: string) => {
+        const channel = this.channels.find(c => c.id === channelId)
+        return channel?.type === 'sub-group'
+      }
+    },
+
+    // 获取子群聊的父群聊信息
+    getParentGroupChannel(): (channelId: string) => SimpleChannel | null {
+      return (channelId: string) => {
+        const channel = this.channels.find(c => c.id === channelId)
+        if (!channel?.parentGroupId) return null
+        return this.channels.find(c => c.id === channel.parentGroupId) || null
+      }
+    },
+
+    // 获取群聊的广播聊天信息（用于顶部展示）
+    getBroadcastChatInfo(): (groupId: string) => SimpleChannel[] | null {
+      return (groupId: string) => {
+        const groupChannel = this.channels.find(c => c.id === groupId && c.type === 'group' && !c.parentGroupId)
+        if (!groupChannel) return null
+
+        const subChannels = this.getSubChannelsByParent(groupId)
+        const hasSubChannels = subChannels.length > 0
+
+        if (!hasSubChannels) return null
+
+        // 找到最近有消息的子频道
+        const latestSubChannel = subChannels
+          .sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0))
+        return latestSubChannel
+      }
+    },
+
+    // 检查当前激活频道是否需要显示广播聊天区域
+    currSubChannels(): SimpleChannel[] {
+      if (!this.activeChannelId) return []
+      const channel = this.activeChannel
+      if (!channel || channel.type !== 'group' || channel.parentGroupId) return []
+
+      const broadcastInfo = this.getBroadcastChatInfo(this.activeChannelId)
+      return broadcastInfo || []
     }
   },
 
@@ -965,6 +1027,122 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     },
 
     /**
+     * 获取群聊的子频道列表
+     */
+    async fetchGroupChannels(groupId: string): Promise<GroupChannel[]> {
+      try {
+        console.log(`🌐 获取群聊 ${groupId} 的子频道列表...`)
+        const response = await getGroupChannelList({ groupId })
+        
+        if (response.code === 0 && response.data?.list) {
+          console.log(`✅ 获取到 ${response.data.list.length} 个子频道`)
+          return response.data.list
+        } else {
+          console.warn(`⚠️ 获取子频道失败: ${response.message}`)
+          return []
+        }
+      } catch (error) {
+        console.error(`❌ 获取群聊 ${groupId} 子频道失败:`, error)
+        return []
+      }
+    },
+
+    /**
+     * 为群聊加载子频道数据
+     */
+    async loadGroupChannels(groupId: string): Promise<void> {
+      const groupChannel = this.channels.find(c => c.id === groupId && c.type === 'group')
+      if (!groupChannel) {
+        console.warn(`⚠️ 未找到群聊: ${groupId}`)
+        return
+      }
+
+      try {
+        console.log(`🔄 为群聊 ${groupId} 加载子频道...`)
+        const channels = await this.fetchGroupChannels(groupId)
+        
+        // 现在子群聊作为独立频道处理，需要创建独立的子群聊频道
+        for (const channelData of channels) {
+          await this.createSubGroupChannel(groupId, channelData)
+        }
+        
+        console.log(`✅ 群聊 ${groupId} 子频道加载完成，共 ${channels.length} 个独立频道`)
+      } catch (error) {
+        console.error(`❌ 加载群聊 ${groupId} 子频道失败:`, error)
+      }
+    },
+
+    /**
+     * 获取群聊的所有子频道（从本地缓存或服务器获取，现在返回独立频道）
+     */
+    async getGroupChannels(groupId: string): Promise<GroupChannel[]> {
+      // 从独立频道列表中找到属于该群聊的子群聊
+      const subChannels = this.channels.filter(c => 
+        c.type === 'sub-group' && c.parentGroupId === groupId
+      )
+
+      if (subChannels.length > 0) {
+        console.log(`📂 从独立频道获取子频道，共 ${subChannels.length} 个`)
+        // 转换为 GroupChannel 格式
+        return subChannels.map(sc => sc.serverData as GroupChannel).filter(Boolean)
+      }
+
+      // 否则从服务器获取
+      console.log(`📡 本地无子频道，从服务器获取...`)
+      await this.loadGroupChannels(groupId)
+      
+      // 重新获取创建的子频道
+      const newSubChannels = this.channels.filter(c => 
+        c.type === 'sub-group' && c.parentGroupId === groupId
+      )
+      return newSubChannels.map(sc => sc.serverData as GroupChannel).filter(Boolean)
+    },
+
+    /**
+     * 创建子群聊频道（作为独立的聊天频道）
+     */
+    async createSubGroupChannel(parentGroupId: string, channelData: GroupChannel): Promise<SimpleChannel | null> {
+      try {
+        console.log(`📝 为群聊 ${parentGroupId} 创建子群聊频道: ${channelData.channelName}`)
+        
+        // 创建子群聊作为独立频道，和群聊、私聊同一层级
+        const subChannel: SimpleChannel = {
+          id: channelData.channelId, // 使用 channelId 作为独立频道的 ID
+          type: 'sub-group', // 使用新的子群聊类型
+          name: channelData.channelName, // 直接使用子频道名称，简化显示
+          avatar: '', // 暂时置空，如用户要求
+          members: [], // 成员信息暂时置空
+          createdBy: channelData.createUserMetaId,
+          createdAt: channelData.timestamp,
+          unreadCount: 0,
+          roomNote: channelData.channelNote,
+          // 子群聊特有字段
+          parentGroupId: parentGroupId, // 指向父群聊ID
+          serverData: channelData
+        }
+
+        // 添加到频道列表，与群聊、私聊并列
+        const existingIndex = this.channels.findIndex(c => c.id === subChannel.id)
+        if (existingIndex !== -1) {
+          // 更新已存在的子频道
+          this.channels[existingIndex] = { ...this.channels[existingIndex], ...subChannel }
+        } else {
+          // 添加新的子频道
+          this.channels.push(subChannel)
+        }
+
+        // 保存到本地数据库
+        await this.db.saveChannel(subChannel)
+
+        console.log(`✅ 子群聊频道创建成功: ${channelData.channelName} (独立频道)`)
+        return subChannel
+      } catch (error) {
+        console.error('❌ 创建子群聊频道失败:', error)
+        return null
+      }
+    },
+
+    /**
      * 转换最新聊天信息数据格式
      */
     transformLatestChatInfo(serverChannels: any[]): SimpleChannel[] {
@@ -1043,29 +1221,59 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             unreadCount: existing.unreadCount, // 保留本地未读数
             lastReadIndex: existing.lastReadIndex || 0, // 保留本地已读消息索引
             // 使用更新的消息
-            lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage)
+            lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage),
+            // 保留已有的子频道数据（现在作为独立频道处理）
+            subChannels: existing.subChannels || serverChannel.subChannels
           }
 
-          
           mergedChannels.push(merged)
           existingMap.delete(serverChannel.id)
-           await this.db.saveChannel(merged)
+          await this.db.saveChannel(merged)
         } else {
           // 新频道
           mergedChannels.push(serverChannel)
-           // 保存到本地数据库
-        await this.db.saveChannel(serverChannel)
+          // 保存到本地数据库
+          await this.db.saveChannel(serverChannel)
         }
-
-       
       }
 
-      // 保留本地独有频道
-      // existingMap.forEach(localChannel => {
-      //   mergedChannels.push(localChannel)
-      // })
+      // 保留本地独有频道（包括子群聊频道）
+      existingMap.forEach(localChannel => {
+        // 保留本地的子群聊频道
+        if (localChannel.parentGroupId) {
+          console.log(`📂 保留本地子群聊频道: ${localChannel.name} (${localChannel.id})`)
+          mergedChannels.push(localChannel)
+        }
+      })
 
       this.channels = mergedChannels
+
+      // 异步加载群聊的子频道列表
+      this.loadSubChannelsForGroups(mergedChannels)
+    },
+
+    /**
+     * 为所有群聊异步加载子频道
+     */
+    async loadSubChannelsForGroups(channels: SimpleChannel[]): Promise<void> {
+      const groupChannels = channels.filter(c => c.type === 'group' && !c.parentGroupId)
+      
+      console.log(`🔄 开始为 ${groupChannels.length} 个群聊加载子频道...`)
+      
+      // 使用 Promise.allSettled 避免单个失败影响整体
+      const results = await Promise.allSettled(
+        groupChannels.map(async (groupChannel) => {
+          try {
+            await this.loadGroupChannels(groupChannel.id)
+            console.log(`✅ 群聊 ${groupChannel.name} 子频道加载完成`)
+          } catch (error) {
+            console.warn(`⚠️ 群聊 ${groupChannel.name} 子频道加载失败:`, error)
+          }
+        })
+      )
+
+      const successCount = results.filter(r => r.status === 'fulfilled').length
+      console.log(`✅ 子频道加载完成: ${successCount}/${groupChannels.length} 个群聊成功`)
     },
 
     /**
@@ -1241,6 +1449,18 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           })
           serverMessages = result.list || []
           console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
+        } else if (channel.type === 'sub-group') {
+          // 子群聊消息 - 使用 channelId 而不是 parentGroupId
+          console.log(`🌐 获取子群聊 ${channelId} 的服务端消息...`)
+          const { getSubChannelMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getSubChannelMessages({
+            channelId: channelId, // 子群聊使用自己的channelId作为groupId
+            metaId: this.selfMetaId,
+            cursor: '0',
+            size: '50'
+          })
+          serverMessages = result.list || []
+          console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'private') {
           // 私聊消息
           console.log(`🌐 获取私聊 ${channelId} 的服务端消息...`)
@@ -1758,8 +1978,18 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const userStore = useUserStore()
         const channel = this.channels.find(c => c.id === channelId)
         const isPrivateChat = channel?.type === 'private'
+        // 判断是否是子群聊
+        const isSubGroupChat = channel?.type === 'sub-group'
         const mockId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-       const timestamp = getTimestampInSeconds()
+        const timestamp = getTimestampInSeconds()
+        
+        console.log(`📤 准备发送消息到频道 ${channelId}`, {
+          isPrivateChat,
+          isSubGroupChat,
+          channelType: channel?.type,
+          parentGroupId: channel?.parentGroupId,
+          channelName: channel?.name
+        })
         
         // 创建消息对象
         const message: UnifiedChatMessage = {
@@ -1781,18 +2011,18 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           protocol: "/protocols/simplemsg",
           content,
           contentType: 'text/plain',
-          encryption:isPrivateChat?'ecdh': 'aes',
+          encryption: isPrivateChat ? 'ecdh' : 'aes',
           version: '1.0.0',
           chatType: 0,
           data: null,
-          replyPin:  reply ? `${reply.txId}i0` : '',
+          replyPin: reply ? `${reply.txId}i0` : '',
           replyInfo: reply,
           replyMetaId: '',
           timestamp: timestamp,
           params: '',
           chain: chainStore.state.currentChain,
           blockHeight: 0,
-          index: channel?.lastMessage ? (channel.lastMessage.index || 0) + 1 : 1  ,
+          index: channel?.lastMessage ? (channel.lastMessage.index || 0) + 1 : 1,
 
           // 私聊特有字段
           from: isPrivateChat ? this.selfMetaId : undefined,
@@ -1808,73 +2038,77 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           toUserInfo: isPrivateChat ? channel?.serverData?.userInfo : undefined,
 
           // 群聊特有字段
-          groupId: isPrivateChat ? undefined : channelId,
-          channelId: isPrivateChat ? undefined : '',
-          metanetId: isPrivateChat ? undefined : channelId
+          groupId: isPrivateChat ? undefined : (isSubGroupChat ? channel?.parentGroupId : channelId), // 子群聊使用父群聊ID
+          channelId: isPrivateChat ? undefined : (isSubGroupChat ? channelId : ''), // 子群聊使用频道ID
+          metanetId: isPrivateChat ? undefined : (isSubGroupChat ? channel?.parentGroupId : channelId)
         }
+
+        console.log(`📝 消息对象创建完成:`, {
+          groupId: message.groupId,
+          channelId: message.channelId,
+          isSubGroupChat
+        })
 
         // 保存消息到本地
         await this.addMessage(message)
-        if(channel!.type==='group'){
-          
+        
+        if (channel!.type === 'group' || channel!.type === 'sub-group') {
           const contentType = 'text/plain'
           const encryption = 'aes'
-          const externalEncryption = '0'
+          const externalEncryption = '0' as const
+          
+          // 构建发送数据
           const dataCarrier = {
-            groupID: channelId,
+            groupID: isSubGroupChat ? channel?.parentGroupId : channelId, // 子群聊使用父群聊ID发送
+            channelID: isSubGroupChat ? channelId : undefined, // 子群聊需要指定频道ID
             timestamp,
-            nickName: userStore.last?.name||'',
+            nickName: userStore.last?.name || '',
             content,
             contentType,
             encryption,
             replyPin: reply ? `${reply.txId}i0` : '',
           }
-            const node = {
+          
+          const node = {
             protocol: NodeName.SimpleGroupChat,
             body: dataCarrier,
             timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
             externalEncryption,
           }
-           await tryCreateNode(node,mockId)
-        }else{
-          const contentType = 'text/plain'
-  // 1.5 encrypt
-  const encrypt = 'ecdh'
-  const externalEncryption = '0'
-  const dataCarrier = {
-    to: channelId,
-    timestamp,
-    content,
-    contentType,
-    encrypt,
-    replyPin: reply ? `${reply.txId}i0` : '',
-  }
-
-  // 2. 构建节点参数
-  const node = {
-    protocol: NodeName.SimpleMsg,
-    body: dataCarrier,
-    timestamp, // 服务端返回的是毫秒，所以模拟需要乘以1000
-    externalEncryption,
-  }
-  await tryCreateNode(node,mockId)
-        }
           
-        
-          // 2. 构建节点参数
-        
-       
+          console.log(`🚀 发送群聊消息:`, {
+            groupID: dataCarrier.groupID,
+            channelID: dataCarrier.channelID,
+            isSubGroupChat
+          })
+          
+          await tryCreateNode(node, mockId)
+        } else {
+          // 私聊逻辑保持不变
+          const contentType = 'text/plain'
+          const encrypt = 'ecdh'
+          const externalEncryption = '0' as const
+          const dataCarrier = {
+            to: channelId,
+            timestamp,
+            content,
+            contentType,
+            encrypt,
+            replyPin: reply ? `${reply.txId}i0` : '',
+          }
 
-       
+          const node = {
+            protocol: NodeName.SimpleMsg,
+            body: dataCarrier,
+            timestamp,
+            externalEncryption,
+          }
+          
+          console.log(`🚀 发送私聊消息到: ${channelId}`)
+          await tryCreateNode(node, mockId)
+        }
 
-        // 这里应该调用实际的发送 API
-        // const result = await sendMessageAPI(message)
-        // if (result.success) {
-        //   message.serverData = result.serverData
-        //   await this.updateMessage(message)
-        // }
-
-        console.log(`✅ 发送消息到频道 ${channelId}: ${content}`)
+        console.log(`✅ 发送消息到频道 ${channelId} ${isSubGroupChat ? '(子群聊)' : ''}: ${content}`)
         return message
       } catch (error) {
         console.error('发送消息失败:', error)
@@ -1972,12 +2206,26 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async addMessage(message: UnifiedChatMessage): Promise<void> {
       try {
-        // 确定频道ID
-       const isPrivateChat = isPrivateChatMessage(message);
-       const channelId =   isPrivateChat ? (message.to === this.selfMetaId ? message.from : message.to) : message.groupId;
+        // 确定频道ID - 支持子群聊
+        let channelId: string | undefined;
+        
+        const isPrivateChat = isPrivateChatMessage(message);
+        if (isPrivateChat) {
+          // 私聊：使用发送者或接收者的 metaId
+          channelId = message.to === this.selfMetaId ? message.from : message.to;
+        } else {
+          // 群聊：优先使用 channelId（子群聊），其次使用 groupId（主群聊）
+          channelId = message.channelId || message.groupId;
+        }
 
         if (!channelId) {
-          console.error('无法确定消息的频道ID')
+          console.error('无法确定消息的频道ID', {
+            isPrivateChat,
+            channelId: message.channelId,
+            groupId: message.groupId,
+            from: message.from,
+            to: message.to
+          })
           return
         }
 
@@ -1999,7 +2247,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 更新频道信息
         await this.updateChannelLastMessage(channelId, message)
 
-        console.log(`✅ 消息已添加到频道 ${channelId}`)
+        console.log(`✅ 消息已添加到频道 ${channelId} ${message.channelId ? '(子群聊)' : '(主群聊/私聊)'}`)
       } catch (error) {
         console.error('添加消息失败:', error)
         throw error
@@ -2051,14 +2299,66 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async receiveMessage(message: UnifiedChatMessage): Promise<void> {
       try {
         console.log('📩 接收到新消息:', message)
-        // 确定频道ID
+        // 确定频道ID - 支持子群聊
+        let channelId: string | undefined;
+        
         const isPrivateChat = isPrivateChatMessage(message);
-        const channelId =   isPrivateChat ? (message.to === this.selfMetaId ? message.from : message.to) : message.groupId;
+        if (isPrivateChat) {
+          // 私聊：使用发送者或接收者的 metaId
+          channelId = message.to === this.selfMetaId ? message.from : message.to;
+        } else {
+          // 群聊：检查是否是子群聊消息
+          // 如果 channelId 不为空且不是空字符串，则是子群聊消息
+          const hasSubChannel = message.channelId && message.channelId.trim() !== '';
+          channelId = hasSubChannel ? message.channelId : message.groupId;
+          
+          console.log('📩 群聊消息分析:', {
+            channelId: message.channelId,
+            groupId: message.groupId,
+            hasSubChannel,
+            targetChannelId: channelId
+          });
+        }
+        
         if (!channelId) {
-          console.error('无法确定消息的频道ID',message)
+          console.error('无法确定消息的频道ID', {
+            isPrivateChat,
+            channelId: message.channelId,
+            groupId: message.groupId,
+            from: message.from,
+            to: message.to,
+            message
+          })
           return
         }
-         
+
+        // 检查是否是子群聊消息
+        const isSubGroupMessage = !isPrivateChat && message.channelId && message.channelId.trim() !== '';
+        console.log(`📩 消息目标频道: ${channelId} ${isSubGroupMessage ? '(子群聊)' : '(主群聊/私聊)'}`)
+
+        // 如果是子群聊消息，确保子群聊频道存在
+        if (isSubGroupMessage) {
+          const existingChannel = this.channels.find(c => c.id === channelId);
+          if (!existingChannel) {
+            console.log(`🔄 子群聊频道 ${channelId} 不存在，尝试创建...`);
+            // 创建子群聊频道的基本信息
+            const subChannelData = {
+              channelId: message.channelId!,
+              groupId: message.groupId!,
+              channelName: `子频道 ${message.channelId!.substring(0, 8)}...`, // 临时名称
+              channelIcon: '',
+              channelNote: '',
+              channelType: 0,
+              createUserMetaId: message.metaId,
+              createUserAddress: message.address,
+              timestamp: message.timestamp,
+              chain: message.chain,
+              blockHeight: message.blockHeight,
+              index: message.index
+            };
+            await this.createSubGroupChannel(message.groupId!, subChannelData);
+          }
+        }
 
         // 检查消息是否已存在（避免重复）
         const existingMessages = this.messageCache.get(channelId) || []
@@ -2106,10 +2406,27 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async updateMessage(message: UnifiedChatMessage): Promise<void> {
       try {
-        // 确定频道ID
-        const channelId = message.groupId || message.to || message.from
+        // 确定频道ID - 支持子群聊
+        let channelId: string | undefined;
+        
+        const isPrivateChat = isPrivateChatMessage(message);
+        if (isPrivateChat) {
+          // 私聊：使用发送者或接收者的 metaId
+          channelId = message.to === this.selfMetaId ? message.from : message.to;
+        } else {
+          // 群聊：优先使用 channelId（子群聊），其次使用 groupId（主群聊）
+          channelId = message.channelId || message.groupId;
+        }
+        
         if (!channelId) {
-          console.error('无法确定消息的频道ID',message)
+          console.error('无法确定消息的频道ID', {
+            isPrivateChat,
+            channelId: message.channelId,
+            groupId: message.groupId,
+            from: message.from,
+            to: message.to,
+            message
+          })
           return
         }
 
@@ -2125,7 +2442,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
         }
 
-        console.log(`✅ 消息 ${message.txId} 已更新`)
+        console.log(`✅ 消息 ${message.txId} 已更新到频道 ${channelId} ${message.channelId ? '(子群聊)' : '(主群聊/私聊)'}`)
       } catch (error) {
         console.error('更新消息失败:', error)
         throw error
@@ -2170,6 +2487,99 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
     clearActiveMessageMenu() {
       this.activeMessageMenuId = ''
+    },
+
+    /**
+     * 获取群聊的子频道列表（用于广播聊天界面）
+     */
+    async getSubChannelsForBroadcast(groupId: string): Promise<SimpleChannel[]> {
+      try {
+        console.log(`🔍 获取群聊 ${groupId} 的子频道列表`)
+        
+        // 确保子频道数据已加载
+        await this.loadGroupChannels(groupId)
+        
+        // 获取子频道列表
+        const subChannels = this.getSubChannelsByParent(groupId)
+        
+        // 按最后消息时间排序
+        const sortedSubChannels = subChannels.sort((a, b) => {
+          const timeA = a.lastMessage?.timestamp || a.createdAt
+          const timeB = b.lastMessage?.timestamp || b.createdAt
+          return timeB - timeA
+        })
+        
+        console.log(`✅ 获取到 ${sortedSubChannels.length} 个子频道`)
+        return sortedSubChannels
+      } catch (error) {
+        console.error('❌ 获取子频道列表失败:', error)
+        return []
+      }
+    },
+
+    /**
+     * 进入子群聊（从广播聊天区域点击进入）
+     */
+    async enterSubGroupChat(channelId: string): Promise<boolean> {
+      try {
+        console.log(`🚪 进入子群聊: ${channelId}`)
+        
+        // 检查子群聊是否存在
+        const subChannel = this.channels.find(c => c.id === channelId)
+        if (!subChannel) {
+          console.warn(`⚠️ 子群聊 ${channelId} 不存在`)
+          return false
+        }
+        
+        // 设置为当前激活频道
+        await this.setActiveChannel(channelId)
+        
+        console.log(`✅ 成功进入子群聊: ${subChannel.name}`)
+        return true
+      } catch (error) {
+        console.error('❌ 进入子群聊失败:', error)
+        return false
+      }
+    },
+
+    /**
+     * 从子群聊返回主群聊
+     */
+    async backToMainGroup(subChannelId: string): Promise<boolean> {
+      try {
+        const subChannel = this.channels.find(c => c.id === subChannelId)
+        if (!subChannel?.parentGroupId) {
+          console.warn(`⚠️ 无法找到子群聊 ${subChannelId} 的父群聊`)
+          return false
+        }
+        
+        console.log(`🔙 从子群聊 ${subChannel.name} 返回主群聊`)
+        
+        // 切换到主群聊
+        await this.setActiveChannel(subChannel.parentGroupId)
+        
+        console.log(`✅ 成功返回主群聊`)
+        return true
+      } catch (error) {
+        console.error('❌ 返回主群聊失败:', error)
+        return false
+      }
+    },
+
+    /**
+     * 刷新群聊的子频道数据（现在子群聊作为独立频道处理）
+     */
+    async refreshSubChannels(groupId: string): Promise<void> {
+      try {
+        console.log(`🔄 刷新群聊 ${groupId} 的子频道数据`)
+        
+        // 子群聊现在作为独立频道，直接重新加载频道列表即可
+        await this.loadGroupChannels(groupId)
+        
+        console.log(`✅ 子频道数据刷新完成`)
+      } catch (error) {
+        console.error('❌ 刷新子频道数据失败:', error)
+      }
     },
 
     /**

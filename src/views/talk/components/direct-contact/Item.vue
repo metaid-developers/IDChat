@@ -161,7 +161,10 @@ const computeDecryptedMsg = (session: SimpleChannel) => {
 }
 
 const isActive = computed(() => {
-  return simpleTalkStore.activeChannelId === props.session?.id
+  return (
+    simpleTalkStore.activeChannelId === props.session?.id ||
+    simpleTalkStore.activeChannel?.parentGroupId === props.session?.id
+  )
 })
 
 const switchChannel = () => {

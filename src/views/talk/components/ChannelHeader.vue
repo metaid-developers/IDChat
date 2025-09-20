@@ -202,7 +202,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { storeToRefs } from 'pinia'
 
 // const talkStore = useTalkStore()
-const { activeChannel } = storeToRefs(useSimpleTalkStore())
+const { activeChannel: simpleTalkActiveChannel } = storeToRefs(useSimpleTalkStore())
 const layout = useLayoutStore()
 const userStore = useUserStore()
 const WS = useWsStore()
@@ -210,6 +210,12 @@ const route = useRoute()
 const router = useRouter()
 const rootStore = useRootStore()
 const currentChannelId = ref(route.params?.channelId || '')
+
+const activeChannel = computed(() => {
+  return simpleTalkActiveChannel.value?.type === 'sub-group'
+    ? useSimpleTalkStore().getParentGroupChannel(simpleTalkActiveChannel.value.id!)
+    : simpleTalkActiveChannel.value
+})
 
 const currentChannel: { val: Channel | Object } = reactive({
   val: {},

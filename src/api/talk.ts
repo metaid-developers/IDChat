@@ -1,5 +1,6 @@
 import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth } from '@/@types/talk'
+import type { GroupChannel, GroupChannelListResponse } from '@/@types/simple-chat.d'
 import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
@@ -434,6 +435,63 @@ export const getChannelMessages = async ({
   return data.data
 }
 
+export const getSubChannelMessages = async ({
+  channelId,
+  metaId = '',
+  cursor = '0',
+  size = String(ChannelMsg_Size),
+  timestamp = '0',
+}: {
+  channelId: string
+  metaId: string
+  cursor?: string
+  size?: string
+  timestamp?: string
+}): Promise<any> => {
+  const selfMetaId = metaId
+  const query = new URLSearchParams({
+    channelId,
+    metaId,
+    cursor,
+    size,
+    timestamp,
+  }).toString()
+
+  // if (type === 'session') {
+  //   const {
+  //     data: { data: messages },
+  //   } = await TalkApi.get(`/chat/${selfMetaId}/${channelId}?${query}`)
+
+  //   return messages
+  // }
+
+  const data: {
+    data: {
+      total: number
+      nextTimestamp: number
+      list: ChatMessageItem[] | null
+    }
+  } = await TalkApi.get(`/channel-chat-list-v3?${query}`)
+
+  // if (data.data.list?.length) {
+  //   for (let item of data.data.list) {
+  //     if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
+  //     getOneRedPacket({
+  //         groupId: item.groupId,
+  //         pinId: item.pinId,
+  //       }).then((redpackInfo)=>{
+  //           if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
+  //         item.claimOver = true
+  //       }
+  //       }).catch((e)=>console.log('e',e))
+
+  //     }
+  //   }
+  // }
+
+  return data.data
+}
+
 export const getPrivateChatMessages = async (
  {
   metaId='',
@@ -716,4 +774,12 @@ export const generateLuckyBagCode = async (): Promise<{
   }
 }> => {
   return TalkApi.get('/generate-lucky-bag-code')
+}
+
+// 获取群聊的子频道列表
+export const getGroupChannelList = async (params: {
+  groupId: string
+}): Promise<GroupChannelListResponse> => {
+  const query = new URLSearchParams(params).toString()
+  return TalkApi.get(`/group-channel-list?${query}`)
 }

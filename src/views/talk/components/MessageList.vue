@@ -12,6 +12,8 @@
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
   >
+    <!-- 广播聊天头部 - 在消息列表最上方（简化版提示） -->
+
     <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="text-3xl break-all font-black">MetaSo Chat</div>
@@ -34,6 +36,8 @@
     </div>
 
     <div class="app-container">
+      <BroadcastChatHeader />
+      <BroadcastChatHeaderBack />
       <div class="list-container" ref="listContainer" @scroll.passive="handleScroll">
         <!-- 顶部加载指示器 -->
         <div class="loader" v-show="isLoadingTop">
@@ -44,7 +48,7 @@
         <!-- ref 用于在代码中直接访问这个 DOM 元素 -->
         <div ref="listWrapper">
           <!-- 使用 v-for 循环渲染列表项 -->
-          <template v-if="currentChannelType === 'group'">
+          <template v-if="currentChannelType === 'group' || currentChannelType === 'sub-group'">
             <MessageItem
               v-for="message in simpleTalk.activeChannelMessages"
               :key="message.txId || message.timestamp"
@@ -132,6 +136,8 @@ import { useRoute } from 'vue-router'
 import LoadingList from './LoadingList.vue'
 import MessageItem from './MessageItem.vue'
 import MessageItemForSession from './MessageItemForSession.vue'
+import BroadcastChatHeader from '@/components/BroadcastChatHeader.vue'
+import BroadcastChatHeaderBack from '@/components/BroadcastChatHeaderBack.vue'
 import { openLoading, sleep, debounce } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
 import Publish from '@/views/buzz/components/Publish.vue'
@@ -250,7 +256,7 @@ const currentChannelType = computed(() => {
   if (simpleTalk.isInitialized) {
     const channel = simpleTalk.activeChannel
     // simple-talk 的类型是 'group' | 'private'，需要转换为 'group' | 'session'
-    return channel!.type === 'group' ? 'group' : 'session'
+    return channel!.type === 'private' ? 'session' : channel!.type
   }
   return 'group' // 默认值
 })
@@ -534,6 +540,8 @@ function scrollToTimeStamp(timestamp: number) {
   }
 }
 
+// 注：子频道选择功能已简化，现在子群聊作为独立频道显示在频道列表中
+
 async function onToBuzz(data: ShareChatMessageData) {
   const loading = openLoading()
 
@@ -636,7 +644,7 @@ defineExpose({
   flex-grow: 1;
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
-  padding: 20px 0;
+  padding: 20px 0 !important;
   box-sizing: border-box;
   display: flex;
   flex-direction: column-reverse;
