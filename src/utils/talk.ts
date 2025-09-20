@@ -1286,7 +1286,7 @@ const _uploadImage = async (file: File, sdk: SDK) => {
 
 const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
-  const simpleTalkStore = useTalkStore()
+  const simpleTalkStore = useSimpleTalkStore()
   const chainStore = useChainStore()
 
   const {
@@ -1314,15 +1314,17 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   // const attachment =attachments//'metafile://$[0]'
 
   const dataCarrier: any =
-    messageDto.channelType === ChannelType.Group
+    messageDto.channelType === 'group' || messageDto.channelType === 'sub-group'
       ? {
           timestamp,
           encrypt,
           fileType,
-          groupId: channelId,
+          groupId:
+            simpleTalkStore.activeChannel!.parentGroupId || simpleTalkStore.activeChannel!.id,
           nickName,
           attachment: '',
           replyPin: reply ? `${reply.txId}i0` : '',
+          channelId: simpleTalkStore.activeChannel!.id,
         }
       : {
           timestamp,
@@ -1339,10 +1341,11 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   // }
 
   const nodeName =
-    messageDto.channelType === ChannelType.Group
+    messageDto.channelType === 'group' || messageDto.channelType === 'sub-group'
       ? NodeName.SimpleFileGroupChat
       : NodeName.SimpleFileMsg
-  const fileEncryption = messageDto.channelType === ChannelType.Group ? '0' : '1'
+  const fileEncryption =
+    messageDto.channelType === 'group' || messageDto.channelType === 'sub-group' ? '0' : '1'
   // 2. 构建节点参数
   const node = {
     protocol: nodeName,

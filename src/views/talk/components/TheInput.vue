@@ -565,7 +565,7 @@ const trySendImage = async () => {
     attachments,
     content: '',
     originalFileUrl,
-    channelType: simpleTalk.activeChannel?.type === 'group' ? 'group' : 'session',
+    channelType: simpleTalk.activeChannel?.type,
     reply: props.quote,
   }
 

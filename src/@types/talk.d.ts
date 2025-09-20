@@ -156,34 +156,34 @@ declare interface CommunityAuth {
 // }
 
 declare interface Channel {
-      communityId:string
-      groupId:string
-      txId:string
-      id:string
-      metaId:string
-      pinId:string
-      type:string
-      roomName:string
-      roomNote:string
-      roomType:import('@/enum').ChannelPublicityType
-      roomStatus: string
-      roomJoinType: string
-      roomAvatarUrl: string
-      roomNinePersonHash:string
-      roomNewestTxId:string
-      roomNewestPinId:string
-      roomNewestMetaId:string
-      roomNewestUserName:string
-      roomNewestProtocol:string
-      roomNewestProtocol:string
-      roomNewestTimestamp: number
-      createUserMetaId:string
-      userCount:number
-      chatSettingType: 0 | 1
-      deleteStatus: number
-      timestamp:number
-      roomIcon: string
-      publicKeyStr?:string
+  communityId: string
+  groupId: string
+  txId: string
+  id: string
+  metaId: string
+  pinId: string
+  type: string
+  roomName: string
+  roomNote: string
+  roomType: import('@/enum').ChannelPublicityType
+  roomStatus: string
+  roomJoinType: string
+  roomAvatarUrl: string
+  roomNinePersonHash: string
+  roomNewestTxId: string
+  roomNewestPinId: string
+  roomNewestMetaId: string
+  roomNewestUserName: string
+  roomNewestProtocol: string
+  roomNewestProtocol: string
+  roomNewestTimestamp: number
+  createUserMetaId: string
+  userCount: number
+  chatSettingType: 0 | 1
+  deleteStatus: number
+  timestamp: number
+  roomIcon: string
+  publicKeyStr?: string
 }
 
 declare interface MessageDto {
