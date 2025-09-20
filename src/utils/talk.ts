@@ -1693,14 +1693,14 @@ export const createBroadcastChannel = async (
     channelName,
     channelIcon,
     channelNote,
-    channelType: ChannelMode.broadcast,
+    channelType: 1,
   }
 
   console.log({ dataCarrier })
 
   // 2. 构建节点参数
   const node = {
-    protocol: NodeName.SimpleGroupChannel,
+    protocol: 'simplegroupchannel',
     body: dataCarrier,
   }
 
