@@ -1190,13 +1190,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             lastReadIndex: existing.lastReadIndex || 0, // 保留原有的已读索引
             unreadCount: existing.unreadCount || 0 // 保留原有的未读计数
           }
+           await this.db.saveChannel(this.channels[existingIndex])
         } else {
           // 添加新的子频道
           this.channels.push(subChannel)
+           await this.db.saveChannel(subChannel)
         }
 
-        // 保存到本地数据库
-        await this.db.saveChannel(subChannel)
+       
 
         console.log(`✅ 子群聊频道创建成功: ${channelName} (独立频道)`)
         return subChannel
@@ -1871,7 +1872,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         // 只允许设置比当前值更大的索引
         if (messageIndex <= currentIndex) {
-          console.warn(`⚠️ 已读索引 ${messageIndex} 不能小于或等于当前值 ${currentIndex}，跳过设置`)
+          // console.warn(`⚠️ 已读索引 ${messageIndex} 不能小于或等于当前值 ${currentIndex}，跳过设置`)
           return
         }
 
