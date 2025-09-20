@@ -174,7 +174,7 @@ const _welComePage = computed(() => {
 
 const test=computed(()=>{
   console.log("talk.activeSubChannel11111",talk.activeSubChannel?.newMessages)
-  debugger
+  
   return talk.activeSubChannel?.newMessages
 })
 

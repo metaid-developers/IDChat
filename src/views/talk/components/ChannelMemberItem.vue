@@ -89,7 +89,7 @@
 import { ChatChain } from '@/enum'
 import { useChainStore } from '@/stores/chain'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
-import { useTalkStore } from '@/stores/talk'
+// import { useTalkStore } from '@/stores/talk'
 import { useUserStore } from '@/stores/user'
 import { createPinWithBtc } from '@/utils/pin'
 import { createPin } from '@/utils/userInfo'
@@ -112,7 +112,7 @@ function onCancel() {
 const props = defineProps(['member', 'createUserMetaId', 'groupId'])
 const simpleTalk = useSimpleTalkStore()
 const emit = defineEmits(['updated','updateUserAdmin','updateUserWhiteList'])
-const talk = useTalkStore()
+// const talk = useTalkStore()
 const router = useRouter()
 const route =useRoute()
 const isYou = computed(() => {
@@ -120,11 +120,12 @@ const isYou = computed(() => {
 })
 
 const currentChannelInfo = computed(() => {
-  return talk?.activeCommunity?.channels?.find(item => item?.groupId === route.params.channelId || item?.metaId == route.params.channelId)
+  return simpleTalk.activeChannel
 })
 
 const selfPermission=computed(()=>{
-  return talk.getMychannelRule(currentChannelInfo.value?.groupId)
+  return simpleTalk.getMychannelRule
+  // return simpleTalk.getMychannelRule(currentChannelInfo.value?.groupId || route.params.groupId as string)
   //return props.selfRule
 })
 

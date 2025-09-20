@@ -1,13 +1,15 @@
 import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth,SubChannel,MemberListRes } from '@/@types/talk'
+import {GroupUserRoleInfo } from '@/@types/simple-chat.d'
 import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
-import {  NodeName } from '@/enum'
+import {  NodeName,MemberRule } from '@/enum'
 import type { PriviteChatMessageItem } from '@/@types/common'
 import { useEcdhsStore } from '@/stores/ecdh'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+
 export const TESTGROUPID='525b620f60330de2a6943e49d98dc12a4f56444219335c8e9278e8905cd3a094i0'
 
 
@@ -164,6 +166,38 @@ export const getChannelMembership = async (groupId: string, metaId: string): Pro
   const query = new URLSearchParams({ metaId, groupId }).toString()
   return TalkApi.get(`/group-person?${query}`).then(res => {
     return res.data.isInGroup
+  })
+}
+
+
+export const getUserGroupRole= async({
+  groupId,
+  metaId,
+}:{
+  groupId:string,
+  metaId:string,
+}
+):Promise<GroupUserRoleInfo>=>{
+   const query = new URLSearchParams({
+      groupId,
+      metaId,
+  }).toString()
+    return TalkApi.get(`/group-user-role?${query}`).then(async res => {
+    return res.data
+
+    // const {isCreator,isAdmin,isBlocked,isWhitelist}=roleInfo
+
+  //  if(isCreator){
+  //   return MemberRule.Owner
+  //  }else if(isAdmin){
+  //   return MemberRule.Admin
+  //  }else if(isWhitelist){
+  //  return MemberRule.Speaker
+  //  }else if(isBlocked){
+  //  return MemberRule.Block
+  //  }else{
+  //   return MemberRule.Normal
+  //  }
   })
 }
 

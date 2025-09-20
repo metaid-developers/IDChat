@@ -1885,7 +1885,7 @@ const _sendTextMessageForSubChannel = async (messageDto: MessageDto) => {
       : undefined,
     type: 1,
   }
-  debugger
+  
   talkStore.addSubChannleMessage(mockMessage) 
 
   // 3. 发送节点

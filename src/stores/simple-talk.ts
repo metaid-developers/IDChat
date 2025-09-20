@@ -1,15 +1,35 @@
 import { defineStore } from 'pinia'
-import type { SimpleChannel, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData } from '@/@types/simple-chat.d'
+import type { SimpleChannel, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
 import { useUserStore } from './user'
 import { useEcdhsStore } from './ecdh'
-import { GetUserEcdhPubkeyForPrivateChat, getChannels } from '@/api/talk'
+import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole } from '@/api/talk'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { decrypt } from '@/utils/crypto'
 import { useChainStore } from './chain'
 import { tryCreateNode } from '@/utils/talk'
 import { getTimestampInSeconds } from '@/utils/util'
-import { NodeName ,MemberRule} from '@/enum'
+import { NodeName ,MemberRule,RuleOp} from '@/enum'
+
+const getPermission = (rule:MemberRule) =>{
+  switch(rule){
+    case MemberRule.Owner:
+      return [RuleOp.CanSpeak,RuleOp.SetAdmin,RuleOp.RemoveAdmin,RuleOp.SetSpeaker,RuleOp.RemoveSpeaker,RuleOp.DeleteMember,RuleOp.Normal]
+    case MemberRule.Admin:
+      return [RuleOp.CanSpeak,RuleOp.SetSpeaker,RuleOp.RemoveSpeaker,RuleOp.DeleteMember,RuleOp.Normal]
+    case MemberRule.Speaker:
+      return [RuleOp.CanSpeak,RuleOp.Normal]
+    case MemberRule.Normal:
+      return [RuleOp.Normal]
+    default:
+      return [RuleOp.Normal]
+  }
+}
+
+const MuteRoleList=[MemberRule.Normal,MemberRule.Block]
+
+
+
 
 // IndexedDB 管理类
 class SimpleChatDB {
@@ -703,6 +723,15 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           channelId:string,
           rule:MemberRule
         }>,
+
+    channelMemeberList:{
+        admins:[],
+        blockList:[],
+        creator:null,
+        list:[],
+        normalList:[],
+        whiteList:[]
+    } as MemberListRes
   }),
 
   getters: {
@@ -718,8 +747,15 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return userStore.last?.metaid || ''
     },
 
+    //获取频道权限列表
+    activeChannelMemeberList(state): MemberListRes {
+      return state.channelMemeberList
+    },
+
+
     // 获取当前激活的频道
     activeChannel(): SimpleChannel | null {
+      
       return this.channels.find(c => c.id === this.activeChannelId) || null
     },
 
@@ -768,13 +804,32 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
     },
 
-    getMychannelRule() {
-      return (channeId: string) => {
-        console.log("99999999",this.selfChannelRule)
-        const ruleItem=this.selfChannelRule.find(item=>item.channelId == channeId)
-        return ruleItem ? ruleItem.rule : MemberRule.Normal
-      }
+    getMychannelRule(state) {
+
+      const ruleItem=state.selfChannelRule.find(item=>item.channelId == state.activeChannelId)
+      return ruleItem ? ruleItem.rule : MemberRule.Normal
+      // return (channeId: string) => {
+       
+      //   this.selfChannelRule.find(item=>item.channelId == channeId)
+      //    console.log("99999999",ruleItem)
+      //    
+        
+      // }
     },
+
+    getMySpeakingPermission(){
+      
+      const isMute= MuteRoleList.includes(this.getMychannelRule)
+      
+      console.log("isMute",isMute)
+      if(isMute){
+        return false
+      }else{
+        return true
+      }
+
+    }
+
   },
 
   actions: {
@@ -2235,6 +2290,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     },
 
     updateMyChannelRule(channelId:string,rule:MemberRule){
+      
           const ruleItem=this.selfChannelRule.find(item=>item.channelId == channelId)
           if(ruleItem){
              this.selfChannelRule.forEach(((item)=>{
@@ -2250,5 +2306,119 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
           
         },
+
+      handleWsUserRole(message: GroupUserRoleInfo){
+        
+        
+
+         const {isCreator,isAdmin,isBlocked,isWhitelist,isRemoved,userInfo,metaId,address,groupId}=message
+        if(groupId !== this.activeChannelId) return
+
+        if(metaId == this.selfMetaId){
+            let role=MemberRule.Normal
+            if(isBlocked){
+            role=MemberRule.Block
+            }
+            if(isWhitelist){
+            role=MemberRule.Speaker
+            }
+            //预防两个身份的时候优先级应该是管理员
+            if(isAdmin){
+            role=MemberRule.Admin
+            }
+            if(isCreator){
+            role=MemberRule.Owner
+            }
+            if(!isWhitelist && !isAdmin && !isCreator){
+            role=MemberRule.Normal
+            }
+            this.updateMyChannelRule(groupId,role)
+        }
+
+
+         const InAdminList= this.channelMemeberList.admins.find((item)=>item.metaId == metaId)
+         const InWhiteList= this.channelMemeberList.whiteList.find((item)=>item.metaId == metaId)
+          const InNormalList=this.channelMemeberList.normalList.find((item)=>item.metaId == metaId)
+
+         if(isAdmin){
+          if(!InAdminList){
+          const insertInfo={
+            metaId,
+            address,
+            userInfo,
+            rule:MemberRule.Admin,
+            permission:getPermission(MemberRule.Admin),
+            }
+            this.channelMemeberList.admins.push(insertInfo)
+          }
+
+          if(InNormalList){
+            this.channelMemeberList.normalList=this.channelMemeberList.normalList.filter((item)=>item.metaId !== metaId)
+
+         }
+
+         } 
+         
+         if(isWhitelist){
+          if(!InWhiteList){
+          const insertInfo={
+            metaId,
+            address,
+            userInfo,
+            rule:MemberRule.Speaker,
+            permission:getPermission(MemberRule.Speaker),
+            }
+            this.channelMemeberList.whiteList.push(insertInfo)
+          }
+
+          if(InNormalList){
+            this.channelMemeberList.normalList=this.channelMemeberList.normalList.filter((item)=>item.metaId !== metaId)
+         }
+         }
+         
+         if(isRemoved){
+            if(InAdminList){
+              this.channelMemeberList.admins=this.channelMemeberList.admins.filter((item)=>item.metaId !== metaId)
+            }
+
+             if(InWhiteList){
+            this.channelMemeberList.whiteList=this.channelMemeberList.whiteList.filter((item)=>item.metaId !== metaId)
+            }
+
+            this.channelMemeberList.normalList=this.channelMemeberList.normalList.filter((item)=>item.metaId !== metaId)
+            this.channelMemeberList.list=this.channelMemeberList.list.filter((item)=>item.metaId !== metaId)
+
+
+         }
+
+         if(!isAdmin && !isWhitelist && !isRemoved){
+
+            if(InAdminList){
+              this.channelMemeberList.admins=this.channelMemeberList.admins.filter((item)=>item.metaId !== metaId)
+            }
+
+             if(InWhiteList){
+              this.channelMemeberList.whiteList=this.channelMemeberList.whiteList.filter((item)=>item.metaId !== metaId)
+            }
+
+            if(!InNormalList){
+                const insertInfo={
+                metaId,
+                address,
+                userInfo,
+                rule:MemberRule.Normal,
+                permission:getPermission(MemberRule.Normal),
+                }
+              this.channelMemeberList.normalList.unshift(insertInfo)
+            }
+         }
+
+         
+         
+       
+
+
+
+      },
   }
 })

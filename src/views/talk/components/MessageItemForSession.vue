@@ -559,7 +559,7 @@ const isChatGroupLink = computed(() => {
     props.message.isMock,
     true
   )
-  debugger
+  
   // 检测群聊链接的正则表达式
   const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
   const isGroupLink = groupLinkPattern.test(messageContent)

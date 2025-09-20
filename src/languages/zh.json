@@ -277,7 +277,8 @@
       "SetAdmin": "设置为管理员",
       "WhiteList": "添加到白名单",
       "removeAdmin": "移除管理员",
-      "remove_WhiteList": "移除白名单"
+      "remove_WhiteList": "移除白名单",
+      "getRoleError": "获取用户权限信息错误,请刷新重试"
     },
     "Community": {
       "optional": "（可選）",
@@ -1438,5 +1439,6 @@
   "Non_permission_set_whitelist": "权限不足，只有群主或管理员有权设置白名单",
   "set_admin_fail": "设置管理员失败",
   "set_whitelist_fail": "设置白名单失败",
-  "channle_memeber_whitelist": "发言人"
+  "channle_memeber_whitelist": "发言人",
+  "Mute": "禁言中"
 }

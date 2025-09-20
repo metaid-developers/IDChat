@@ -1,7 +1,56 @@
+import {MemberRule,RuleOp} from '@/enum'
+
 // 简化的聊天类型定义
 export type ChatType = 'group' | 'private'
 
 // export type MessageType = 'text' | 'image' | 'reply'
+
+export interface GroupUserRoleInfo{
+  metaId:string
+  address:string
+  userInfo:ChatUserInfo
+  groupId:string
+  channelId:string
+  isCreator:boolean
+  isAdmin:boolean
+  isBlocked:boolean
+  isWhitelist:boolean
+  isRemoved:boolean
+
+}
+
+
+export interface MemberItem  {
+  id?: string
+  index?: number
+  start?: number
+  rule:MemberRule
+  permission:RuleOp[]
+  address?:string
+  metaId?:string
+  timeStr?:string
+  timestamp?:number
+  userInfo?:{
+    address:string
+    avatar:string
+    avatarImage:string
+    chatPublicKey:string
+    chatPublicKeyId:string
+    metaid:string
+    name:string
+  }
+  [key: string]: unknown
+}
+
+export interface MemberListRes {
+  admins:MemberItem[]
+  blockList:MemberItem[]
+  creator:MemberItem | null
+  list:MemberItem[]
+  normalList:MemberItem[]
+  whiteList:MemberItem[]
+}
+
 
 export enum MessageType {
   msg = 0,

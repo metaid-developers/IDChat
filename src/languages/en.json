@@ -243,7 +243,8 @@
       "SetAdmin": "Set as Admin",
       "WhiteList": "Add to Whitelist",
       "removeAdmin": "Remove From Admin",
-      "remove_WhiteList": "Remove From Whitelist"
+      "remove_WhiteList": "Remove From Whitelist",
+      "getRoleError": "Failed to retrieve user permission information. Please refresh and try again"
     },
     "Community": {
       "optional": "",
@@ -1440,5 +1441,6 @@
   "Non_permission_set_whitelist": "Insufficient permissions. Only the group owner or administrators have the authority to manage the whitelist",
   "set_admin_fail": "Failed to set administrator",
   "set_whitelist_fail": "Failed to set whitelist",
-  "channle_memeber_whitelist": "Speaker"
+  "channle_memeber_whitelist": "Speaker",
+  "Mute": "Mute"
 }

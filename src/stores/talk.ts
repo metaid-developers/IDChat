@@ -205,15 +205,15 @@ export const useTalkStore = defineStore('talk', {
       //       return channel.subChannels[0]
       //     }
       //   })
-      //   debugger
+      //   
       //   return activeSubRes.length && activeSubRes[0]
 
       // }
 
       //   if (this.canAccessActiveChannel) {
-      //     debugger
+      //     
       //   const currentChannel = this.activeCommunity?.channels?.find((channel: any) => {
-      //     debugger
+      //     
       //     return channel.id && channel.id === state.activeChannelId
       //   })
       //   if(currentChannel?.subChannels?.length) return currentChannel?.subChannels[0]
@@ -909,7 +909,7 @@ export const useTalkStore = defineStore('talk', {
 
     async handleNewGroupMessage(message: any) {
 
-      debugger
+      
 
       const messageType=message.channelId ? GroupMessageType.SubChannel : GroupMessageType.Group
       const messageMetaId = messageType == GroupMessageType.SubChannel ? message.channelId : message.groupId
@@ -972,7 +972,7 @@ export const useTalkStore = defineStore('talk', {
       let mockMessage: any
 
       if (containsString(message.protocol, NodeName.SimpleGroupChat)) {
-        debugger
+        
         mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
           (item: Message) =>
             item.txId === '' &&
@@ -989,7 +989,7 @@ export const useTalkStore = defineStore('talk', {
             containsString(message.protocol, item?.protocol!)
         )
 
-        debugger
+        
       } else if (containsString(message.protocol, NodeName.SimpleFileGroupChat)) {
         mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
           (item: Message) =>
@@ -1247,7 +1247,7 @@ export const useTalkStore = defineStore('talk', {
            
           })
         } else {
-          debugger
+          
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
@@ -1668,7 +1668,7 @@ export const useTalkStore = defineStore('talk', {
 
       this.activeSubChannel.newMessages.push(message)
        //this.activeChannel.subChannels[0].newMessages.push(message)
-      debugger
+      
     },
 
     updateMessage(message: any,txid:string) {

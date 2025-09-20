@@ -284,7 +284,7 @@ import ChannelMemberItem from './ChannelMemberItem.vue'
 import EditAnnouncementDrawer from './EditAnnouncementDrawer.vue'
 import EditChannelInfoDrawer from './EditChannelInfoDrawer.vue'
 import { useRoute } from 'vue-router'
-import { getChannelMembers, searchChannelMembers } from '@/api/talk'
+import { getChannelMembers, searchChannelMembers,getUserGroupRole } from '@/api/talk'
 import { ElMessage } from 'element-plus'
 import copy from 'copy-to-clipboard'
 import {
@@ -306,37 +306,11 @@ import { createSinglePin } from '@/utils/pin'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import { setChannelAdmins,setChannelWhiteList } from '@/utils/talk'
+import type {MemberListRes,MemberItem } from '@/@types/simple-chat.d'
+import Item from './direct-contact/Item.vue'
+import { useI18n } from 'vue-i18n'
 
-interface MemberItem  {
-  id?: string
-  index: number
-  start: number
-  rule:MemberRule
-  permission:RuleOp[]
-  address?:string
-  metaId?:string
-  timeStr?:string
-  timestamp?:number
-  userInfo?:{
-    address:string
-    avatar:string
-    avatarImage:string
-    chatPublicKey:string
-    chatPublicKeyId:string
-    metaid:string
-    name:string
-  }
-  [key: string]: unknown
-}
 
-interface MemberListRes {
-  admins:MemberItem[]
-  blockList:MemberItem[]
-  creator:MemberItem | null
-  list:MemberItem[]
-  normalList:MemberItem[]
-  whiteList:MemberItem[]
-}
 
  
 interface Props {
@@ -344,6 +318,7 @@ interface Props {
 }
 const props = withDefaults(defineProps<Props>(), {})
 const emit = defineEmits(['update:modelValue'])
+const i18n=useI18n()
 const showSearch = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
@@ -352,15 +327,17 @@ const cursor = ref(0)
 const pageSize = 20
 const route = useRoute()
 const permissionMemberList=reactive<string[]>([])
-
-const memberList =ref<MemberListRes>({
-  admins:[],
-  blockList:[],
-  creator:null,
-  list:[],
-  normalList:[],
-  whiteList:[]
+const curentMemberList=computed(()=>{
+  return simpleTalkStore.activeChannelMemeberList
 })
+// const memberList =ref<MemberListRes>({
+//   admins:[],
+//   blockList:[],
+//   creator:null,
+//   list:[],
+//   normalList:[],
+//   whiteList:[]
+// })
 // const adminList=ref<MemberItem[]>([])
 // const speakerWhiteList=ref<MemberItem[]>([])   
 // const normalList=ref<MemberItem[]>([])  
@@ -418,8 +395,17 @@ const scrollToTop = () => {
 }
 
 const currentChannelInfo = computed(() => {
+  console.log("simpleTalkStore.activeChannel",simpleTalkStore.activeChannel)
+  
   return simpleTalkStore.activeChannel
 })
+
+ watch(()=>currentChannelInfo.value?.id,(newVal,oldVal)=>{
+  if(newVal && newVal !== oldVal){
+    
+     resetAndLoad()
+ }
+ })
 
 // 判断当前用户是否是频道创建者
 const isCurrentUserCreator = computed(() => {
@@ -495,24 +481,43 @@ const handleChannelInfoUpdated = (updatedInfo: {
 
 const handleDeleteSuccess = (metaid: string) => {
   console.log(metaid)
-  cursor.value = 0
-  noMore.value = false
-  memberList.value = {
-    admins:[],
-    blockList:[],
-    creator:null,
-    list:[],
-    normalList:[],
-    whiteList:[]
-  }
+  // cursor.value = 0
+  // noMore.value = false
+  // memberList.value = {
+  //   admins:[],
+  //   blockList:[],
+  //   creator:null,
+  //   list:[],
+  //   normalList:[],
+  //   whiteList:[]
+  // }
+    // memberList.value.admins= memberList.value.admins.filter((item)=>item.metaId !== metaid)
+    // memberList.value.whiteList= memberList.value.whiteList.filter((item)=>item.metaId !== metaid)
+    // memberList.value.normalList= memberList.value.normalList.filter((item)=>item.metaId !== metaid)
+    // memberList.value.list= memberList.value.list.filter((item)=>item.metaId !== metaid)
+
 
   // 如果当前在搜索状态，重新执行搜索
   if (searchKey.value.trim()) {
     performSearch(searchKey.value.trim())
   } else {
+    const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+     setTimeout(() => {
+      getUserGroupRole({
+      groupId:groupId,
+      metaId:metaid
+    }).then((res)=>{
+
+      
+      simpleTalkStore.handleWsUserRole(res)
+    }).catch((e)=>ElMessage.error(`${i18n.t('Talk.Channel.getRoleError')}`))
+    
+   }, 500);
+
+
     // 立即滚动到顶部
-    scrollToTop()
-    load()
+    // scrollToTop()
+    // load()
   }
 }
 
@@ -547,11 +552,8 @@ const handleLeave = async () => {
 
 const handleAdmin=async(member:MemberItem)=>{
   try {
-   
-
-  
   let admins:string[]=[]
-  memberList.value.admins.forEach((item)=>{
+  curentMemberList.value.admins.forEach((item)=>{
     if(item.rule != MemberRule.Owner){
       admins.push(item?.metaId) 
     }
@@ -568,41 +570,60 @@ const handleAdmin=async(member:MemberItem)=>{
   
   const updateRes=await setChannelAdmins(groupId,admins) 
   if(updateRes.status == 'success' && updateRes.txid){
-  cursor.value = 0
-  noMore.value = false
-  memberList.value = {
-    admins:[],
-    blockList:[],
-    creator:null,
-    list:[],
-    normalList:[],
-    whiteList:[]
-  }
+   setTimeout(() => {
+      getUserGroupRole({
+      groupId:groupId,
+      metaId:member.metaId!
+    }).then((res)=>{
+
+      
+      simpleTalkStore.handleWsUserRole(res)
+    }).catch((e)=>ElMessage.error(`${i18n.t('Talk.Channel.getRoleError')}`))
+    
+   }, 500);
+  // if(admins.includes(member?.metaId)){
+    
+  //   memberList.value.admins=memberList.value.admins.filter((admin)=>admin.metaId !== member.metaId)
+  // }else{
+    
+  //    memberList.value.admins.push(member)
+  // }
+
+  // cursor.value = 0
+  // noMore.value = false
+  // memberList.value = {
+  //   admins:[],
+  //   blockList:[],
+  //   creator:null,
+  //   list:[],
+  //   normalList:[],
+  //   whiteList:[]
+  // }
 
   // 如果当前在搜索状态，重新执行搜索
   if (searchKey.value.trim()) {
     performSearch(searchKey.value.trim())
   } else {
     // 立即滚动到顶部
-    scrollToTop()
-    load()
-    nextTick(()=>{
+    // scrollToTop()
+    // load()
+    // nextTick(()=>{
       
-      const observeInterval= setInterval(() => {
+    //   const observeInterval= setInterval(() => {
       
-      if (loadTrigger.value && observer && !searchKey.value.trim()) {
+    //   if (loadTrigger.value && observer && !searchKey.value.trim()) {
       
-      observer.observe(loadTrigger.value)
+    //   observer.observe(loadTrigger.value)
 
-      console.log("进来清除定时器",1111)
-      clearInterval(observeInterval)
-      }
+    //   console.log("进来清除定时器",1111)
+    //   clearInterval(observeInterval)
+    //   }
 
       
-      }, 3000)
+    //   }, 3000)
 
      
-      })
+    //   })
    
 
   }
@@ -621,8 +642,8 @@ const handleWhiteList=async(member:MemberItem)=>{
   
   
   let whiteList:string[]=[]
-  memberList.value.whiteList.forEach((item)=>{
-    if(item.rule != MemberRule.Owner || item.rule != MemberRule.Admin){
+  curentMemberList.value.whiteList.forEach((item)=>{
+    if((item.rule != MemberRule.Admin  ) ){
       whiteList.push(item?.metaId) 
     }
   })
@@ -638,38 +659,51 @@ const handleWhiteList=async(member:MemberItem)=>{
   
   const updateRes=await setChannelWhiteList(groupId,whiteList) 
   if(updateRes.status == 'success' && updateRes.txid){
-  cursor.value = 0
-  noMore.value = false
-  memberList.value = {
-    admins:[],
-    blockList:[],
-    creator:null,
-    list:[],
-    normalList:[],
-    whiteList:[]
-  }
+
+     setTimeout(() => {
+      getUserGroupRole({
+      groupId:groupId,
+      metaId:member.metaId!
+    }).then((res)=>{
+
+      
+      simpleTalkStore.handleWsUserRole(res)
+    }).catch((e)=>ElMessage.error(`${i18n.t('Talk.Channel.getRoleError')}`))
+    
+   }, 500);
+
+  // cursor.value = 0
+  // noMore.value = false
+  // memberList.value = {
+  //   admins:[],
+  //   blockList:[],
+  //   creator:null,
+  //   list:[],
+  //   normalList:[],
+  //   whiteList:[]
+  // }
 
   // 如果当前在搜索状态，重新执行搜索
   if (searchKey.value.trim()) {
     performSearch(searchKey.value.trim())
   } else {
     // 立即滚动到顶部
-    scrollToTop()
-    load()
-    nextTick(()=>{
+    // scrollToTop()
+    // load()
+    // nextTick(()=>{
       
-      const observeInterval= setInterval(() => {
+    //   const observeInterval= setInterval(() => {
       
-      if (loadTrigger.value && observer && !searchKey.value.trim()) {
+    //   if (loadTrigger.value && observer && !searchKey.value.trim()) {
       
-      observer.observe(loadTrigger.value)
-      console.log("进来清除定时器",1111)
-      clearInterval(observeInterval)
-      }
-      }, 3000)
+    //   observer.observe(loadTrigger.value)
+    //   console.log("进来清除定时器",1111)
+    //   clearInterval(observeInterval)
+    //   }
+    //   }, 3000)
 
      
-      })
+    //   })
   }
   }else{
     
@@ -682,17 +716,18 @@ const handleWhiteList=async(member:MemberItem)=>{
 
 
 // 监听currentChannelInfo变化，重新拉取成员数据
-watch(
-  () => currentChannelInfo.value?.id, // 直接监听 channelId 变化
-  (newChannelId, oldChannelId) => {
-    // 只有在抽屉打开状态下且频道ID确实发生变化时才执行
-    if (props.modelValue && newChannelId && newChannelId !== oldChannelId) {
-      console.log('频道切换，重新加载成员列表:', oldChannelId, '->', newChannelId)
-      resetAndLoad()
-    }
-  },
-  { immediate: false }
-)
+// watch(
+//   () => currentChannelInfo.value?.id, // 直接监听 channelId 变化
+//   (newChannelId, oldChannelId) => {
+//     
+//     // 只有在抽屉打开状态下且频道ID确实发生变化时才执行
+//     if (props.modelValue && newChannelId && newChannelId !== oldChannelId) {
+//       console.log('频道切换，重新加载成员列表:', oldChannelId, '->', newChannelId)
+//       //resetAndLoad()
+//     }
+//   },
+//   { immediate: false }
+// )
 
 // 监听抽屉开关状态
 watch(
@@ -702,6 +737,7 @@ watch(
       console.log('抽屉打开，初始化成员列表')
       // 抽屉打开时，如果有频道信息就加载数据
       if (currentChannelInfo.value?.id) {
+        
         resetAndLoad()
       } else {
         // 没有频道信息时，至少要设置 observer
@@ -719,16 +755,26 @@ watch(
 // 重置数据并加载的统一方法
 const resetAndLoad = async () => {
   // 重置分页状态
+  
   cursor.value = 0
   noMore.value = false
-  memberList.value = {
-        admins:[],
+  simpleTalkStore.$patch({channelMemeberList:{
+       admins:[],
         blockList:[],
         creator:null,
         list:[],
         normalList:[],
         whiteList:[]
-      }
+  }})
+  
+  // memberList.value = {
+  //       admins:[],
+  //       blockList:[],
+  //       creator:null,
+  //       list:[],
+  //       normalList:[],
+  //       whiteList:[]
+  //     }
   // list.value = []
   searchList.value = []
   isSearching.value = false
@@ -748,6 +794,7 @@ const resetAndLoad = async () => {
 
   // 开始加载数据
   try {
+    
     await getMoreMember()
   } catch (error) {
     console.error('重置并加载数据失败:', error)
@@ -824,16 +871,16 @@ const disabled = computed(() => loading.value || noMore.value || searchKey.value
 
 // 计算当前显示的列表（搜索结果或默认列表）
 const currentDisplayList = computed(() => {
-  return searchKey.value.trim() ? searchList.value : memberList.value.normalList//list.value.filter((member)=>member.rule!==MemberRule.Owner && member.rule!==MemberRule.Admin)
+  return searchKey.value.trim() ? searchList.value : curentMemberList.value.normalList//list.value.filter((member)=>member.rule!==MemberRule.Owner && member.rule!==MemberRule.Admin)
 })
 
 
 const currentSpeakerList = computed(() => {
-  return memberList.value.whiteList//list.value.filter((member)=>member.rule===MemberRule.Admin || member.rule===MemberRule.Owner)
+  return curentMemberList.value.whiteList//list.value.filter((member)=>member.rule===MemberRule.Admin || member.rule===MemberRule.Owner)
 })
 
 const currentAdminList = computed(() => {
-  return memberList.value.admins//list.value.filter((member)=>member.rule===MemberRule.Admin || member.rule===MemberRule.Owner)
+  return curentMemberList.value.admins//list.value.filter((member)=>member.rule===MemberRule.Admin || member.rule===MemberRule.Owner)
 })
 
 // 设置 IntersectionObserver
@@ -854,7 +901,7 @@ const setupIntersectionObserver = () => {
         loading: loading.value,
         noMore: noMore.value,
         searchKey: searchKey.value,
-        listLength: list.value.length,
+        listLength: curentMemberList.value.list?.length,
         cursor: cursor.value,
       })
 
@@ -912,9 +959,41 @@ const load = () => {
 }
 
 // 组件挂载时的初始化已由 watch 监听器处理
-// onMounted(() => {
-//   // 初始化逻辑已移至 watch 监听器中
-// })
+onMounted(() => {
+  // 初始化逻辑已移至 watch 监听器中
+  const groupId=simpleTalkStore.activeChannel?.id || route.params.channelId as string
+  getUserGroupRole({
+    groupId,
+    metaId:simpleTalkStore.selfMetaId
+  }).then((res)=>{
+    const {isCreator,isAdmin,isBlocked,isWhitelist,isRemoved,userInfo,metaId,address,groupId}=res
+    let role=MemberRule.Normal
+    
+    if(isBlocked){
+      role=MemberRule.Block
+    }
+    if(isWhitelist){
+      role=MemberRule.Speaker
+    }
+    //预防两个身份的时候优先级应该是管理员
+    if(isAdmin){
+       role=MemberRule.Admin
+    }
+    if(isCreator){
+      role=MemberRule.Owner
+    }
+    if(!isWhitelist && !isAdmin && !isCreator){
+      role=MemberRule.Normal
+    }
+
+
+    simpleTalkStore.updateMyChannelRule(groupId,role)
+  })
+
+  
+
+
+})
 
 
 
@@ -928,6 +1007,7 @@ onUnmounted(() => {
 })
 
 async function getMoreMember() {
+  
   console.log('📋 getMoreMember 调用:', {
     hasChannelInfo: !!currentChannelInfo.value,
     loading: loading.value,
@@ -968,7 +1048,17 @@ async function getMoreMember() {
    
     if (members.list.length) {
       if (cursor.value === 0) {
-        memberList.value.creator={
+        const memberList:MemberListRes={
+              admins:[],
+              blockList:[],
+              creator:{},
+              list:[],
+              normalList:[],
+              whiteList:[]
+        }
+        
+
+        memberList.creator={
           ...members.creator,
           index: 0,
           rule:MemberRule.Owner,
@@ -976,10 +1066,11 @@ async function getMoreMember() {
           start: 0, // 60px = 50px height + 10px margin-top
         }
 
-        if(members.creator.metaId == simpleTalkStore.selfMetaId){
-          simpleTalkStore.updateMyChannelRule(currentChannelInfo.value?.groupId,MemberRule.Owner)
-          //selfRule.value=MemberRule.Owner
-        }
+        // if(members.creator.metaId == simpleTalkStore.selfMetaId){
+        //   const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+        //   simpleTalkStore.updateMyChannelRule(groupId,MemberRule.Owner)
+        
+        // }
 
         permissionMemberList.push(members.creator.metaId)
         // memberList.value.admins.push({
@@ -997,11 +1088,12 @@ async function getMoreMember() {
 
           members.admins.forEach((admin,index)=>{
              permissionMemberList.push(admin.metaId)
-             if(admin.metaId == simpleTalkStore.selfMetaId){
-               simpleTalkStore.updateMyChannelRule(currentChannelInfo.value?.groupId,MemberRule.Admin)
-                //selfRule.value=MemberRule.Admin
-                }
-             memberList.value.admins.push({
+            //  if(admin.metaId == simpleTalkStore.selfMetaId){
+            //    const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
+            //    simpleTalkStore.updateMyChannelRule(groupId,MemberRule.Admin)
+            //     //selfRule.value=MemberRule.Admin
+            //     }
+             memberList.admins.push({
               ...admin,
               index: (index + 1),
               rule:MemberRule.Admin,
@@ -1012,7 +1104,7 @@ async function getMoreMember() {
           })
         }
 
-           memberList.value.admins.unshift({
+           memberList.admins.unshift({
           ...members.creator,
           index: 0,
           rule:MemberRule.Owner,
@@ -1023,24 +1115,25 @@ async function getMoreMember() {
         
 
         if(members.whiteList){
+            const groupId=currentChannelInfo.value?.groupId || route.params.channelId as string
           members.whiteList.forEach((speaker,index)=>{
-             if(speaker.metaId == simpleTalkStore.selfMetaId){
-              const existRule= simpleTalkStore.getMychannelRule(currentChannelInfo?.value?.groupId)
-              if(existRule != MemberRule.Admin){
-                
-                simpleTalkStore.updateMyChannelRule(currentChannelInfo?.value?.groupId,MemberRule.Speaker)
-              }
+            //  if(speaker.metaId == simpleTalkStore.selfMetaId){
+            //   const existRule= simpleTalkStore.getMychannelRule(groupId)
+            //   if(existRule != MemberRule.Admin){
+               
+            //     simpleTalkStore.updateMyChannelRule(groupId,MemberRule.Speaker)
+            //   }
               
               
-                //selfRule.value=MemberRule.Speaker
-              }
+            //     //selfRule.value=MemberRule.Speaker
+            //   }
              permissionMemberList.push(speaker.metaId)
-             memberList.value.whiteList.push({
+             memberList.whiteList.push({
               ...speaker,
-              index: (index + 1 + memberList.value.admins.length),
+              index: (index + 1 + memberList.admins.length),
               rule:MemberRule.Speaker,
               permission:getPermission(MemberRule.Speaker),
-              start: (index + 1 + memberList.value.admins.length) * 60, // 60px = 50px height + 10px margin-top
+              start: (index + 1 + memberList.admins.length) * 60, // 60px = 50px height + 10px margin-top
             })
             
           })
@@ -1050,17 +1143,17 @@ async function getMoreMember() {
           let tempIndex=0
           members.list.forEach((normal,index)=>{
               if(!permissionMemberList.includes(normal.metaId)){
-                  memberList.value.normalList.push({
+                  memberList.normalList.push({
                   ...normal,
-                  index: (tempIndex + 1 + memberList.value.admins.length + memberList.value.whiteList.length),
+                  index: (tempIndex + 1 + memberList.admins.length + memberList.whiteList.length),
                   rule:MemberRule.Normal,
                   permission:getPermission(MemberRule.Normal),
-                  start: (tempIndex + 1 + memberList.value.admins.length + memberList.value.whiteList.length) * 60, // 60px = 50px height + 10px margin-top
+                  start: (tempIndex + 1 + memberList.admins.length + memberList.whiteList.length) * 60, // 60px = 50px height + 10px margin-top
                   })
                   tempIndex++
               }
 
-              memberList.value.list.push({
+              memberList.list.push({
               ...normal,
               index: index,
               rule:MemberRule.Normal,
@@ -1071,7 +1164,7 @@ async function getMoreMember() {
           })
         }
         console.log("memberList",memberList)
-        
+        simpleTalkStore.$patch({channelMemeberList:memberList})
 
         //  list.value=members.map((member: any,index:number) => {
         //   return {
@@ -1083,7 +1176,7 @@ async function getMoreMember() {
 
         cursor.value = members.list.length // 修复：使用实际接收到的成员数量
       } else {
-        const startIndex = memberList.value.list.length
+        const startIndex = curentMemberList.value.list.length
         const newMembers = members.list.map((member: any, index: number) => ({
           ...member,
           rule:MemberRule.Normal,
@@ -1094,7 +1187,7 @@ async function getMoreMember() {
         let tempIndex=0
         newMembers.forEach((member)=>{
           if(!permissionMemberList.includes(member.metaId)){
-              memberList.value.normalList.push({
+              curentMemberList.value.normalList.push({
               ...member,
               rule:MemberRule.Normal,
               permission:getPermission(MemberRule.Normal),
@@ -1106,7 +1199,8 @@ async function getMoreMember() {
         })
 
         //memberList.value.normalList = [...memberList.value.normalList, ...newMembers]
-        memberList.value.list = [...memberList.value.list, ...newMembers]
+        const memberList = [...curentMemberList.value.list, ...newMembers]
+        simpleTalkStore.$patch({channelMemeberList:memberList})
         cursor.value += members.list.length // 修复：使用实际接收到的成员数量，而不是固定的 pageSize
       }
 

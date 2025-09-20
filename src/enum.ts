@@ -4,8 +4,12 @@ export enum MemberRule{
   Owner=0,
   Admin=1,
   Speaker=2,
-  Normal=3
+  Normal=3,
+  Block= -1
 }
+
+
+
 
 export enum RuleOp{
   CanSpeak=0,
