@@ -74,6 +74,9 @@
             }}<el-icon><CopyDocument /></el-icon>
           </div>
           <div class="mt-4">
+            <el-button color="#ffffff" size="default" :icon="CirclePlus" @click="showSearch = true"
+              >Broadcast</el-button
+            >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true"
               >Search</el-button
             >
@@ -208,6 +211,7 @@ import copy from 'copy-to-clipboard'
 import {
   ArrowRight,
   CircleClose,
+  CirclePlus,
   Close,
   CloseBold,
   CopyDocument,
