@@ -1676,3 +1676,59 @@ export function decryptedMessage(
     return decrypt(content, secretKeyStr || simpleTalk.activeChannelId.substring(0, 16))
   }
 }
+
+export const createBroadcastChannel = async (
+  groupId: string,
+  channelId: string = '',
+  channelName: string = '',
+  channelIcon: string = '',
+  channelNote: string = ''
+) => {
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
+
+  const dataCarrier = {
+    groupId,
+    channelId: channelId ? channelId : '',
+    channelName,
+    channelIcon,
+    channelNote,
+    channelType: ChannelMode.broadcast,
+  }
+
+  console.log({ dataCarrier })
+
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleGroupChannel,
+    body: dataCarrier,
+  }
+
+  // 3. 发送节点
+  try {
+    const { protocol, body } = node
+    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const res = await buildTx.createBroadcastChannel({
+      protocol,
+      body,
+      isBroadcast: true,
+    })
+    console.log('res', res)
+
+    console.log({ res })
+
+    if (res === null) {
+      return { status: 'canceled' }
+    }
+
+    if (chainStore.state.currentChain == ChatChain.btc) {
+      return { status: 'success', channelId: channelId ? channelId : res?.revealTxIds[0] }
+    } else {
+      return { status: 'success', channelId: channelId ? channelId : res?.txids[0] }
+    }
+  } catch (err) {
+    console.log(err)
+    ElMessage.error(`${i18n.global.t('create_broadcast_fail')}`)
+    return { status: 'failed' }
+  }
+}
