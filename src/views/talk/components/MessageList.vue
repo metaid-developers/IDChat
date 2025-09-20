@@ -11,6 +11,7 @@
     ref="messagesScroll"
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
+    :class="[layout.isShowLeftNav ? 'hidden lg:block' : '']"
   >
     <!-- 广播聊天头部 - 在消息列表最上方（简化版提示） -->
 
