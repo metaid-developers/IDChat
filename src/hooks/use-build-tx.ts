@@ -789,6 +789,34 @@ export const useBulidTx = createGlobalState(() => {
 
   }
 
+    const createBroadcastChannel=async(params:{
+    body:any,
+    protocol:string,
+    isBroadcast:boolean
+  })=>{
+    const {body,protocol,isBroadcast}=params
+    
+    try {
+      const metaidData={
+        body:JSON.stringify(body),
+        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        flag: MetaFlag.metaid,
+        version: '1.0.0',
+        operation:body.channelId ? Operation.modify : Operation.create,
+        contentType: 'application/json',
+        encryption:'0', //body.encryption || body.encrypt,
+        encoding: 'utf-8',
+      }
+      
+      const pinRes= await createPin(metaidData,isBroadcast)
+      return pinRes
+
+    } catch (error) {
+     
+      throw new Error(error as any)
+    }
+  }
+
 
 
   return {
@@ -802,7 +830,8 @@ export const useBulidTx = createGlobalState(() => {
     joinGrop,
     transfer,
     createRedPacket,
-    txBroadcast
+    txBroadcast,
+    createBroadcastChannel
    
   }
 })

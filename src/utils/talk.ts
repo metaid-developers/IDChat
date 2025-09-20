@@ -50,6 +50,7 @@ import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { SimpleChannel } from '@/@types/simple-chat'
+import i18n from './i18n'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -691,66 +692,66 @@ export const createChannel = async (
   }
 }
 
-export const createBroadcastChannel = async (
-  groupId: string,
-  channelId: string = '',
-  channelName: string = '',
-  channelIcon: string = '',
-  channelNote:string = '',
-) => {
-  const buildTx = useBulidTx()
-  const chainStore = useChainStore()
+// export const createBroadcastChannel = async (
+//   groupId: string,
+//   channelId: string = '',
+//   channelName: string = '',
+//   channelIcon: string = '',
+//   channelNote:string = '',
+// ) => {
+//   const buildTx = useBulidTx()
+//   const chainStore = useChainStore()
 
 
  
 
-  const dataCarrier = {
-    groupId,
-    channelId:channelId ? channelId : '',
-    channelName,
-    channelIcon,
-    channelNote,
-    channelType:ChannelMode.broadcast,
-  }
+//   const dataCarrier = {
+//     groupId,
+//     channelId:channelId ? channelId : '',
+//     channelName,
+//     channelIcon,
+//     channelNote,
+//     channelType:ChannelMode.broadcast,
+//   }
 
 
-  console.log({ dataCarrier })
+//   console.log({ dataCarrier })
   
-  // 2. 构建节点参数
-  const node = {
-    protocol: NodeName.SimpleGroupChannel,
-    body: dataCarrier,
+//   // 2. 构建节点参数
+//   const node = {
+//     protocol: NodeName.SimpleGroupChannel,
+//     body: dataCarrier,
    
-  }
+//   }
 
-  // 3. 发送节点
-  try {
-    const { protocol, body } = node
-    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
-    const res = await buildTx.createBroadcastChannel({
-      protocol,
-      body,
-      isBroadcast: true,
-    })
-    console.log('res', res)
+//   // 3. 发送节点
+//   try {
+//     const { protocol, body } = node
+//     // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+//     const res = await buildTx.createBroadcastChannel({
+//       protocol,
+//       body,
+//       isBroadcast: true,
+//     })
+//     console.log('res', res)
 
-    console.log({ res })
+//     console.log({ res })
 
-    if (res === null) {
-      return { status: 'canceled' }
-    }
+//     if (res === null) {
+//       return { status: 'canceled' }
+//     }
 
-    if (chainStore.state.currentChain == ChatChain.btc) {
-      return { status: 'success',channelId:channelId ? channelId : res?.revealTxIds[0] }
-    } else {
-      return { status: 'success',channelId:channelId ? channelId : res?.txids[0] }
-    }
-  } catch (err) {
-    console.log(err)
-    ElMessage.error(`${i18n.global.t('create_broadcast_fail')}`)
-    return { status: 'failed' }
-  }
-}
+//     if (chainStore.state.currentChain == ChatChain.btc) {
+//       return { status: 'success',channelId:channelId ? channelId : res?.revealTxIds[0] }
+//     } else {
+//       return { status: 'success',channelId:channelId ? channelId : res?.txids[0] }
+//     }
+//   } catch (err) {
+//     console.log(err)
+//     ElMessage.error(`${i18n.global.t('create_broadcast_fail')}`)
+//     return { status: 'failed' }
+//   }
+// }
 
 
 export const setChannelAdmins = async (
@@ -1484,7 +1485,7 @@ const _uploadImage = async (file: File, sdk: SDK) => {
 
 const _sendImageMessage = async (messageDto: MessageDto) => {
   const userStore = useUserStore()
-  const simpleTalkStore = useTalkStore()
+  const simpleTalkStore = useSimpleTalkStore()
   const chainStore = useChainStore()
 
   const {
@@ -1512,15 +1513,17 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   // const attachment =attachments//'metafile://$[0]'
 
   const dataCarrier: any =
-    messageDto.channelType === ChannelType.Group
+    messageDto.channelType === 'group' || messageDto.channelType === 'sub-group'
       ? {
           timestamp,
           encrypt,
           fileType,
-          groupId: channelId,
+          groupId:
+            simpleTalkStore.activeChannel!.parentGroupId || simpleTalkStore.activeChannel!.id,
           nickName,
           attachment: '',
           replyPin: reply ? `${reply.txId}i0` : '',
+          channelId: simpleTalkStore.activeChannel!.id,
         }
       : {
           timestamp,
@@ -1537,10 +1540,11 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
   // }
 
   const nodeName =
-    messageDto.channelType === ChannelType.Group
+    messageDto.channelType === 'group' || messageDto.channelType === 'sub-group'
       ? NodeName.SimpleFileGroupChat
       : NodeName.SimpleFileMsg
-  const fileEncryption = messageDto.channelType === ChannelType.Group ? '0' : '1'
+  const fileEncryption =
+    messageDto.channelType === 'group' || messageDto.channelType === 'sub-group' ? '0' : '1'
   // 2. 构建节点参数
   const node = {
     protocol: nodeName,
@@ -1993,51 +1997,59 @@ export function decryptedMessage(
   }
 }
 
-export function decryptedMessageForSubChannel(
-  content: string,
-  encryption: string,
-  protocol: string,
-  isMock = false,
-  secretKeyStr = '',
+export const createBroadcastChannel = async (
+  groupId: string,
+  channelId: string = '',
+  channelName: string = '',
+  channelIcon: string = '',
+  channelNote: string = ''
+) => {
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
 
-) {
-  if (!content) return
-  const talk = useTalkStore()
-
-  if (encryption === '0') {
-    // return decrypt(content,secretKeyStr ? secretKeyStr : talk.activeChannelId.substring(0, 16))
-    return content
+  const dataCarrier = {
+    groupId,
+    channelId: channelId ? channelId : '',
+    channelName,
+    channelIcon,
+    channelNote,
+    channelType: 1,
   }
 
-  if (
-    containsString(protocol, NodeName.SimpleFileGroupChat) ||
-    containsString(protocol, NodeName.SimpleFileMsg)
-  ) {
-    return content
+  console.log({ dataCarrier })
+  debugger
+
+  // 2. 构建节点参数
+  const node = {
+    protocol: 'simplegroupchannel',
+    body: dataCarrier,
   }
-  console.log("decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16))",decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16)))
-  
-  return decrypt(content, secretKeyStr || talk.activeSubChannel?.channelId?.substring(0, 16))
 
-  // if (isSession) {
-  //   if (!talk.activeChannel) return ''
-  //   // const credentialsStore = useCredentialsStore()
-  //   // const connectionStore = useConnectionStore()
-  //   const ecdhsStore = useEcdhsStore()
-  //   // console.log("talk.activeChannel.publicKeyStr",talk.activeChannel.publicKeyStr)
-  //   const ecdhPubkey = publicKeyStr ? publicKeyStr : talk.activeChannel.publicKeyStr
-  //   let ecdh = ecdhsStore.getEcdh(ecdhPubkey)
+  // 3. 发送节点
+  try {
+    const { protocol, body } = node
+    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const res = await buildTx.createBroadcastChannel({
+      protocol,
+      body,
+      isBroadcast: true,
+    })
+    console.log('res', res)
 
-  //   try {
-  //     const sharedSecret = ecdh?.sharedSecret
+    console.log({ res })
 
-  //     return ecdhDecrypt(content, sharedSecret)
-  //   } catch (error) {
-  //     throw new Error((error as any).toString())
-  //   }
-  // } else {
-    
-  // }
+    if (res === null) {
+      return { status: 'canceled' }
+    }
+
+    if (chainStore.state.currentChain == ChatChain.btc) {
+      return { status: 'success', channelId: channelId ? channelId : res?.revealTxIds[0] }
+    } else {
+      return { status: 'success', channelId: channelId ? channelId : res?.txids[0] }
+    }
+  } catch (err) {
+    console.log(err)
+    ElMessage.error(`${i18n.global.t('create_broadcast_fail')}`)
+    return { status: 'failed' }
+  }
 }
-
-

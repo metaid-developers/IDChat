@@ -74,8 +74,13 @@
             }}<el-icon><CopyDocument /></el-icon>
           </div>
           <div class="mt-4">
-            <el-button v-if="isCurrentUserCreator" color="#ffffff" size="default" :icon="CirclePlus" @click="openBroadcastMode"
-              >{{ $t('Talk.Channel.broadcast') }}</el-button
+            <el-button
+              v-if="isCurrentUserCreator"
+              color="#ffffff"
+              size="default"
+              :icon="CirclePlus"
+              @click="showCreateBroadcastModal = true"
+              >Broadcast</el-button
             >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true"
               >{{ $t('Talk.Channel.search') }}</el-button
@@ -260,6 +265,9 @@
     :channel-info="currentChannelInfo"
     @updated="handleChannelInfoUpdated"
   />
+
+  <!-- 创建子频道弹窗 -->
+  <CreateBroadcastChannelModal v-model="showCreateBroadcastModal" />
 </template>
 
 <script lang="ts" setup>
@@ -283,6 +291,7 @@ import { useUserStore } from '@/stores/user'
 import ChannelMemberItem from './ChannelMemberItem.vue'
 import EditAnnouncementDrawer from './EditAnnouncementDrawer.vue'
 import EditChannelInfoDrawer from './EditChannelInfoDrawer.vue'
+import CreateBroadcastChannelModal from './CreateBroadcastChannelModal.vue'
 import { useRoute } from 'vue-router'
 import { getChannelMembers, searchChannelMembers,getUserGroupRole } from '@/api/talk'
 import { ElMessage } from 'element-plus'
@@ -290,6 +299,7 @@ import copy from 'copy-to-clipboard'
 import {
   ArrowRight,
   CircleClose,
+  CirclePlus,
   Close,
   CloseBold,
   CopyDocument,
@@ -320,6 +330,7 @@ const props = withDefaults(defineProps<Props>(), {})
 const emit = defineEmits(['update:modelValue'])
 const i18n=useI18n()
 const showSearch = ref(false)
+const showCreateBroadcastModal = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
 const layout=useLayoutStore()

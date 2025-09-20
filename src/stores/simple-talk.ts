@@ -1172,29 +1172,91 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async createSubGroupChannel(parentGroupId: string, channelData: GroupChannel): Promise<SimpleChannel | null> {
       try {
-        console.log(`📝 为群聊 ${parentGroupId} 创建子群聊频道: ${channelData.channelName}`)
+        // 从内容中解析频道信息，如果内容是加密的则需要解密
+        let channelName = `子频道 ${channelData.channelId.substring(0, 8)}...` // 默认名称
+        let channelNote = ''
+        
+        // 尝试解密内容获取真实的频道信息
+        if (channelData.content && channelData.encryption === 'aes') {
+          try {
+            const decryptedContent = decrypt(channelData.content, parentGroupId.substring(0, 16))
+            console.log('解密后的子群聊内容:', decryptedContent)
+            
+            // 尝试解析为 JSON（新的格式）
+            try {
+              const contentData = JSON.parse(decryptedContent)
+              if (contentData.channelName) {
+                channelName = contentData.channelName
+              }
+              if (contentData.channelNote) {
+                channelNote = contentData.channelNote
+              }
+            } catch (jsonError) {
+              // 如果不是 JSON 格式，可能是纯文本频道名称
+              if (decryptedContent && decryptedContent.trim()) {
+                channelName = decryptedContent.trim()
+              }
+            }
+          } catch (e) {
+            console.warn('解密子群聊内容失败，使用默认名称', e)
+          }
+        } else if (channelData.content && channelData.encryption === '0') {
+          // 未加密的内容，直接解析
+          try {
+            const contentData = JSON.parse(channelData.content)
+            if (contentData.channelName) {
+              channelName = contentData.channelName
+            }
+            if (contentData.channelNote) {
+              channelNote = contentData.channelNote
+            }
+          } catch (jsonError) {
+            // 如果不是 JSON，当作纯文本处理
+            if (channelData.content && channelData.content.trim()) {
+              channelName = channelData.content.trim()
+            }
+          }
+        }
+        
+        console.log(`📝 为群聊 ${parentGroupId} 创建子群聊频道: ${channelName}`)
         
         // 创建子群聊作为独立频道，和群聊、私聊同一层级
         const subChannel: SimpleChannel = {
           id: channelData.channelId, // 使用 channelId 作为独立频道的 ID
           type: 'sub-group', // 使用新的子群聊类型
-          name: channelData.channelName, // 直接使用子频道名称，简化显示
+          name: channelName, // 使用解析出的频道名称
           avatar: '', // 暂时置空，如用户要求
           members: [], // 成员信息暂时置空
-          createdBy: channelData.createUserMetaId,
-          createdAt: channelData.timestamp,
+          createdBy: channelData.metaId, // 使用新结构的 metaId
+          createdAt: channelData.timestamp * 1000, // 转换为毫秒
           unreadCount: 0,
-          roomNote: channelData.channelNote,
+          lastReadIndex: 0, // 初始化已读索引为 0，与群聊、私聊保持一致
+          roomNote: channelNote, // 使用解析出的频道描述
           // 子群聊特有字段
           parentGroupId: parentGroupId, // 指向父群聊ID
-          serverData: channelData
+          serverData: channelData,
+          
+          lastMessage:  {
+              content: channelData.content,
+              sender: channelData.metaId,
+              type: channelData.chatType,
+              senderName: channelData.userInfo?.name || channelData.nickName || '',
+              timestamp: channelData.timestamp * 1000 || 0,
+              index: channelData.index || 0
+            },
         }
 
         // 添加到频道列表，与群聊、私聊并列
         const existingIndex = this.channels.findIndex(c => c.id === subChannel.id)
         if (existingIndex !== -1) {
-          // 更新已存在的子频道
-          this.channels[existingIndex] = { ...this.channels[existingIndex], ...subChannel }
+          // 更新已存在的子频道，保留 lastReadIndex 和 unreadCount
+          const existing = this.channels[existingIndex]
+          this.channels[existingIndex] = { 
+            ...existing, 
+            ...subChannel,
+            lastReadIndex: existing.lastReadIndex || 0, // 保留原有的已读索引
+            unreadCount: existing.unreadCount || 0 // 保留原有的未读计数
+          }
         } else {
           // 添加新的子频道
           this.channels.push(subChannel)
@@ -1203,7 +1265,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 保存到本地数据库
         await this.db.saveChannel(subChannel)
 
-        console.log(`✅ 子群聊频道创建成功: ${channelData.channelName} (独立频道)`)
+        console.log(`✅ 子群聊频道创建成功: ${channelName} (独立频道)`)
         return subChannel
       } catch (error) {
         console.error('❌ 创建子群聊频道失败:', error)
@@ -1290,9 +1352,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             unreadCount: existing.unreadCount, // 保留本地未读数
             lastReadIndex: existing.lastReadIndex || 0, // 保留本地已读消息索引
             // 使用更新的消息
-            lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage),
-            // 保留已有的子频道数据（现在作为独立频道处理）
-            subChannels: existing.subChannels || serverChannel.subChannels
+            lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage)
           }
 
           mergedChannels.push(merged)
@@ -1526,7 +1586,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             channelId: channelId, // 子群聊使用自己的channelId作为groupId
             metaId: this.selfMetaId,
             cursor: '0',
-            size: '50'
+            size: '20'
           })
           serverMessages = result.list || []
           console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
@@ -1705,7 +1765,19 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           })
           console.log(`📡 分页群聊API返回:`, result)
           serverMessages = result.list || []
-        } else if (channel.type === 'private') {
+        }else if (channel.type === 'sub-group') {
+          // 子群聊消息
+          const { getSubChannelMessages } = await import('@/api/talk')
+          const result = await getSubChannelMessages({
+            channelId: channelId, // 子群聊使用自己的channelId作为groupId
+            metaId: this.selfMetaId,
+            cursor: '0', // cursor 保持默认
+            timestamp: timestamp, // 使用 timestamp 参数进行分页
+            size: '20' // 每次加载20条
+          })
+          console.log(`📡 分页子群聊API返回:`, result)
+          serverMessages = result.list || []
+        }else if (channel.type === 'private') {
           // 私聊消息  
           const { getPrivateChatMessages } = await import('@/api/talk')
           const result = await getPrivateChatMessages({
@@ -1905,7 +1977,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           members: [this.selfMetaId, ...members],
           createdBy: this.selfMetaId,
           createdAt: Date.now(),
-          unreadCount: 0
+          unreadCount: 0,
+          lastReadIndex: 0 // 显式初始化已读索引为 0
         }
 
         this.channels.unshift(newGroup)
@@ -1955,6 +2028,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           createdBy: this.selfMetaId,
           createdAt: Date.now(),
           unreadCount: 0,
+          lastReadIndex: 0, // 显式初始化已读索引为 0
           targetMetaId,
           publicKeyStr: userInfo.chatPublicKey
         }
@@ -2410,17 +2484,29 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           const existingChannel = this.channels.find(c => c.id === channelId);
           if (!existingChannel) {
             console.log(`🔄 子群聊频道 ${channelId} 不存在，尝试创建...`);
-            // 创建子群聊频道的基本信息
-            const subChannelData = {
-              channelId: message.channelId!,
+            // 创建子群聊频道的基本信息，使用新的 GroupChannel 结构
+            const subChannelData: GroupChannel = {
               groupId: message.groupId!,
-              channelName: `子频道 ${message.channelId!.substring(0, 8)}...`, // 临时名称
-              channelIcon: '',
-              channelNote: '',
-              channelType: 0,
-              createUserMetaId: message.metaId,
-              createUserAddress: message.address,
-              timestamp: message.timestamp,
+              channelId: message.channelId!,
+              metanetId: message.channelId!, // 与channelId相同
+              txId: message.txId,
+              pinId: message.txId + 'i0', // 构造pinId
+              metaId: message.metaId,
+              address: message.address,
+              userInfo: message.userInfo,
+              nickName: message.userInfo?.name || '',
+              protocol: message.protocol || '/protocols/simplegroupchat',
+              content: `{"channelName":"子频道 ${message.channelId!.substring(0, 8)}...","channelNote":""}`, // 将频道信息作为内容
+              contentType: 'application/json',
+              encryption: 'aes',
+              version: '',
+              chatType: message.chatType || 0,
+              data: null,
+              replyPin: '',
+              replyInfo: null,
+              replyMetaId: '',
+              timestamp: Math.floor(message.timestamp / 1000), // 转换为秒
+              params: '',
               chain: message.chain,
               blockHeight: message.blockHeight,
               index: message.index
