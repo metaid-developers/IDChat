@@ -1,7 +1,10 @@
 <template>
   <div
     class="bg-white dark:bg-gray-700 fixed  inset-0 fullscreen w-screen  lg:relative lg:shrink-0 lg:w-auto"
-    :class="[layout.isShowLeftNav ? '' : 'hidden lg:block',layout.isShowSubChannelDrawer ? 'z-[9990]' : 'z-40']"
+    :class="[
+      layout.isShowLeftNav ? '' : 'hidden lg:block',
+      layout.isShowSubChannelDrawer ? 'z-[9990]' : 'z-40',
+    ]"
   >
     <div class="w-full h-full flex">
       <!-- 占位 -->
@@ -44,7 +47,6 @@ import { useLayoutStore } from '@/stores/layout'
 import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import SearchModal from './SearchModal.vue'
-import { useTalkStore } from '@/stores/talk'
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 
@@ -56,7 +58,6 @@ import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import Welcome from '@/components/Welcome/welcome.vue'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 const layout = useLayoutStore()
-const talkStore = useTalkStore()
 const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
 const needModifyPubkey = ref(false)
