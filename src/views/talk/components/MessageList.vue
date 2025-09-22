@@ -57,7 +57,7 @@
               :id="message.timestamp"
               :data-message-index="message.index"
               :ref="el => setMessageRef(el, message)"
-              @quote="(message) => emit('quote', message)"
+              @quote="message => emit('quote', message)"
               @toBuzz="onToBuzz"
               @to-time-stamp="scrollToIndex"
             />
@@ -69,7 +69,7 @@
               :message="message"
               :data-message-index="message.index"
               :ref="el => setMessageRef(el, message)"
-              @quote="(message) => emit('quote', message)"
+              @quote="message => emit('quote', message)"
               :id="message.timestamp"
               @toBuzz="onToBuzz"
               @to-time-stamp="scrollToIndex"
@@ -316,9 +316,12 @@ const loadItems = async (isPrepending = false) => {
 }
 
 const unReadCount = computed(() => {
-  if (activeChannel.value && activeChannel.value.lastMessage && 
-      typeof activeChannel.value.lastMessage.index === 'number' &&
-      typeof activeChannel.value.lastReadIndex === 'number') {
+  if (
+    activeChannel.value &&
+    activeChannel.value.lastMessage &&
+    typeof activeChannel.value.lastMessage.index === 'number' &&
+    typeof activeChannel.value.lastReadIndex === 'number'
+  ) {
     return activeChannel.value.lastMessage.index - activeChannel.value.lastReadIndex
   }
   return 0
@@ -346,7 +349,10 @@ const handleScroll = (event: Event) => {
 
     // 检查是否滚动到底部
     const threshold = 100 // 预加载阈值
-    if (container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight < threshold) {
+    if (
+      container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
+      threshold
+    ) {
       console.log('滚动到底部，准备加载更多数据...')
       loadItems(false).catch(error => {
         console.error('加载更多数据失败:', error)
@@ -581,7 +587,7 @@ async function onToBuzz(data: ShareChatMessageData) {
     encoding: 'utf-8' as any,
   }
 
-  const res = await buildTx.createPin(metaidData, true,false).catch(error => {
+  const res = await buildTx.createPin(metaidData, true, false).catch(error => {
     loading.close()
     ElMessage.error(error.message)
   })

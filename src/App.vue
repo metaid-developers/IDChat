@@ -148,7 +148,7 @@ const metaletNetworkChangedHandler = (network: Network) => {
 async function connectMetalet() {
 
 
- 
+
     const connection = await connectionStore.connect('metalet').catch((err) => {
     ElMessage.warning({
       message: err.message,
@@ -157,13 +157,13 @@ async function connectMetalet() {
   })
     if (connection?.status === 'connected') {
     await credentialsStore.login()
-    
-  
-    
-    
+
+
+
+
     await sleep(300)
 
-  
+
 
     const channelId=route.params.channelId
     const communityId=route.params.communityId
@@ -191,7 +191,7 @@ async function connectMetalet() {
       newChannelId=myChannelList[0].groupId
 
     }else{
-   
+
       newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
       layout.$patch({showJoinView:true})
     }
@@ -219,7 +219,7 @@ onMounted(async () => {
     try {
       if (window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized) {
         const res = await window.metaidwallet.getAddress()
-        
+
         if ((res as any)?.status === 'not-connected' || userStore.last?.address !== res) {
           connectionStore.disconnect(router)
           ElMessage.warning({
@@ -236,7 +236,7 @@ onMounted(async () => {
 
   if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
       rootStore.checkBtcAddressSameAsMvc().then().catch((err)=>{
-          
+
             ElMessage.warning({
               message:i18n.t('btcSameAsMvcError'),
               type: 'warning',
@@ -244,7 +244,7 @@ onMounted(async () => {
               setTimeout(() => {
                  connectionStore.disconnect(router)
               }, 3000);
-            
+
         })
 
   }
@@ -363,11 +363,6 @@ onBeforeUnmount(async () => {
 //     }
 //   }, 500)
 // })
-
-
-
-
-
 </script>
 <style lang="css" src="@/assets/styles/tailwind.css"></style>
 <style lang="scss" scoped>

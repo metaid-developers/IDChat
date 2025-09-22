@@ -1,8 +1,8 @@
 <template>
-  <div >
+  <div>
     <div
       class="w-full relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150   group message-item"
-      :class="[{replying: reply.val?.timestamp === message.timestamp}]"
+      :class="[{ replying: reply.val?.timestamp === message.timestamp }]"
       :data-message-id="messageId"
       @touchstart="handleTouchStart"
       @touchmove="handleTouchMove"
@@ -26,23 +26,23 @@
           "
           v-model:translateStatus="translateStatus"
           v-model:translatedContent="translatedContent"
-          @quote="(message) => emit('quote', message)"
-          @toBuzz="(data) => emit('toBuzz', data)"
+          @quote="message => emit('quote', message)"
+          @toBuzz="data => emit('toBuzz', data)"
           :isMyMessage="isMyMessage"
           v-if="isText"
         />
-        <MessageMenu 
-          :message="props.message" 
-          :message-id="messageId" 
-          @quote="(message) => emit('quote', message)"
-          @toBuzz="(data) => emit('toBuzz', data)"
+        <MessageMenu
+          :message="props.message"
+          :message-id="messageId"
+          @quote="message => emit('quote', message)"
+          @toBuzz="data => emit('toBuzz', data)"
           :isMyMessage="isMyMessage"
-          v-else />
+          v-else
+        />
       </template>
 
       <!-- quote -->
       <MessageItemQuote
-      
         v-if="message.replyInfo"
         :quote="{ avatarImage: message.replyInfo?.userInfo?.avatar,
         index: message.replyInfo?.index,
@@ -73,7 +73,10 @@
           @click="toPrivateChat(props.message)"
           class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
         />
-        <div class="grow" :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']" >
+        <div
+          class="grow"
+          :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']"
+        >
           <div class="flex items-baseline space-x-2" :class="[isMyMessage ? 'justify-end' : '']">
             <!--message?.userInfo?.metaName-->
             <UserName
@@ -131,7 +134,6 @@
           <div class="w-full" v-else-if="isNftEmoji">
             <ChatImage
               :src="
-               
                 decryptedMessage(
                   message?.content,
                   message?.encryption,
@@ -145,7 +147,11 @@
             <NftLabel class="w-8 mt-1" />
           </div>
 
-          <div class="w-full flex py-0.5 items-center" :class="[isMyMessage ? 'flex-row-reverse' : '']"  v-else-if="isImage">
+          <div
+            class="w-full flex py-0.5 items-center"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isImage"
+          >
             <div
               class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200 relative"
               @click="previewImage(message.content)"
@@ -178,14 +184,17 @@
             {{ redPacketReceiveInfo }}
           </div>
 
-          <div class="w-full py-0.5 flex" :class="[isMyMessage ? 'flex-row-reverse' : '']" v-else-if="isGiveawayRedPacket">
+          <div
+            class="w-full py-0.5 flex"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isGiveawayRedPacket"
+          >
             <div
               class="max-w-full sm:max-w-[300PX] shadow rounded-xl cursor-pointer origin-center hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-700 group"
               :class="[
                 hasRedPacketReceived || redPackClaimOver
                   ? 'opacity-50'
                   : 'hover:animate-wiggle-subtle',
-                 
               ]"
               @click="handleOpenRedPacket"
             >
@@ -225,7 +234,11 @@
           </div>
 
           <!-- 群聊邀请链接 -->
-          <div class="w-full py-0.5 flex" :class="[isMyMessage ? 'flex-row-reverse' : '']" v-else-if="isChatGroupLink">
+          <div
+            class="w-full py-0.5 flex"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isChatGroupLink"
+          >
             <div
               class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
               @click="handleGroupLinkClick"
@@ -277,7 +290,11 @@
             </div>
           </div>
 
-          <div class="my-1.5 max-w-full flex" :class="[isMyMessage ? 'flex-row-reverse' : '']" v-else>
+          <div
+            class="my-1.5 max-w-full flex"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else
+          >
             <div
               class="text-sm  text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
               :class="[
@@ -346,8 +363,6 @@
       </div>
     </div>
   </div>
-  
-  
 </template>
 
 <script setup lang="ts">
@@ -488,7 +503,7 @@ const translatedContent = ref('')
 
 function toPrivateChat(message:ChatMessageItem){
   // if(message.userInfo.metaid == userStore.last.metaid){
-  //    return 
+  //    return
   // }
   if(!userStore.last?.chatpubkey){
      return ElMessage.error(`${i18n.t('self_private_chat_unsupport')}`)
@@ -610,7 +625,7 @@ const handleOpenRedPacket = async() => {
     groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannel?.id,
     pinId: `${props.message?.txId}i0`,
   }
-  
+
   const redPacketType = props.message?.data?.requireType
   console.log({ redPacketType })
   if (redPacketType === '2') {
@@ -619,7 +634,7 @@ const handleOpenRedPacket = async() => {
     // params.address = userStore.user?.evmAddress
   }
   console.log("props.message",props.message)
-  
+
   const redPacketInfo = await getOneRedPacket(params)
   const hasReceived = redPacketInfo.payList.some(
     (item: any) => item.userInfo?.metaid === simpleTalk.selfMetaId
