@@ -257,8 +257,6 @@ class SimpleChatDB {
       // 使用深拷贝并处理可能的问题数据
       const cloneable: SimpleChannel = {
         id: channel.id,
-        groupId:channel.groupId,
-        channelId:channel.channelId,
         type: channel.type,
         name: channel.name,
         avatar: channel.avatar,
@@ -771,7 +769,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
     // 获取所有频道（按最后活跃时间排序）
     allChannels(): SimpleChannel[] {
-      console.log('🔍 获取所有频道，当前频道数:', this.channels.length)
       return this.channels
         .slice() // 创建副本避免直接修改状态
         .sort((a, b) => (b.lastMessage?.timestamp || b.createdAt) - (a.lastMessage?.timestamp || a.createdAt))
@@ -810,26 +807,21 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
     },
 
-    getMychannelRule(state) {
-      
-      const ruleItem=state.selfChannelRule.find(item=>(item.channelId == this.activeChannel?.parentGroupId) || (item.channelId == this.activeChannel?.id) )
+    getMychannelRule(): MemberRule {
+      const ruleItem = this.selfChannelRule.find(item => 
+        (item.channelId == this.activeChannel?.parentGroupId) || 
+        (item.channelId == this.activeChannel?.id)
+      )
       
       return ruleItem ? ruleItem.rule : MemberRule.Normal
-    
     },
 
-    getMySpeakingPermission(){
+    getMySpeakingPermission(): boolean {
+      const isMute = MuteRoleList.includes(this.getMychannelRule)
+      console.log("this.getMychannelRule", this.getMychannelRule)
+      console.log("isMute", isMute)
       
-      const isMute= MuteRoleList.includes(this.getMychannelRule)
-      console.log("this.getMychannelRule",this.getMychannelRule)
-      
-      console.log("isMute",isMute)
-      if(isMute){
-        return false
-      }else{
-        return true
-      }
-
+      return !isMute
     },
 
     // 获取所有主群聊（不包括子群聊）
@@ -2380,19 +2372,21 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         await this.db.saveMessage(message)
 
         // 更新内存缓存
-        if (this.messageCache.has(channelId)) {
-          const messages = this.messageCache.get(channelId)!
-          messages.push(message) // 新消息在前
-          // 限制缓存大小
-          if (messages.length > 5000) {
-            messages.splice(5000)
+        if(channelId ===this.activeChannelId){
+          if (this.messageCache.has(channelId)) {
+            const messages = this.messageCache.get(channelId)!
+            messages.push(message) // 新消息在前
+            // 限制缓存大小
+            if (messages.length > 5000) {
+              messages.splice(5000)
+            }
+          } else {
+            this.messageCache.set(channelId, [message])
           }
-        } else {
-          this.messageCache.set(channelId, [message])
-        }
+      }
 
-        // 更新频道信息
-        await this.updateChannelLastMessage(channelId, message)
+      // 更新频道信息
+      await this.updateChannelLastMessage(channelId, message)
 
         console.log(`✅ 消息已添加到频道 ${channelId} ${message.channelId ? '(子群聊)' : '(主群聊/私聊)'}`)
       } catch (error) {

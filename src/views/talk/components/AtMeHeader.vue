@@ -8,9 +8,11 @@
         class="w-6 h-6 text-dark-800 dark:text-gray-100 shrink-0 lg:hidden mr-2"
         @click="layout.isShowLeftNav = true"
       /> -->
-      <a class="mt-1 text-center lg:hidden" @click="layout.$patch({ isShowLeftNav: true,isShowContactList:true })">
-     
-      <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
+      <a
+        class="mt-1 text-center lg:hidden"
+        @click="layout.$patch({ isShowLeftNav: true, isShowContactList: true })"
+      >
+        <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
       </a>
 
       <div class="flex shrink-0 items-center">
@@ -65,8 +67,7 @@ const talkStore = useTalkStore()
 const userStore = useUserStore()
 const layout = useLayoutStore()
 const activeChannel = computed(() => talkStore.activeChannel)
-const activeChannelId=computed(() => talkStore.activeChannel && talkStore.activeChannel.groupId)
-
+const activeChannelId = computed(() => talkStore.activeChannel && talkStore.activeChannel.id)
 
 const shortenMetaId = (id: string) => {
   return id.substring(0, 6) + '...' + id.substring(id.length - 6)

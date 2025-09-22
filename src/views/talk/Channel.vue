@@ -20,11 +20,6 @@
       :key="($route.params.channelId as string)"
     />
 
-     <SubChannelDrawer
-      v-model="layout.isShowSubChannelDrawer"
-      
-    />
-
     <!-- modals -->
     <PasswordModal v-if="layout.isShowPasswordModal" />
     <RequireNftModal v-if="layout.isShowRequireNftModal" />
@@ -64,7 +59,6 @@ import ChannelHeader from './components/ChannelHeader.vue'
 import CommunityInfo from './components/CommunityInfo.vue'
 import ChannelMemberListWrap from './components/ChannelMemberListWrap.vue'
 import ChannelMemberListDrawer from './components/ChannelMemberListDrawer.vue'
-import SubChannelDrawer from './components/SubChannelDrawer.vue'
 import PasswordModal from './components/modals/consensus/Password.vue'
 import CommunitySettingsModal from './components/modals/community/settings/Index.vue'
 import RequireNftModal from './components/modals/consensus/RequireNft.vue'

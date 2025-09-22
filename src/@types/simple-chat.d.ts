@@ -1,56 +1,53 @@
-import {MemberRule,RuleOp} from '@/enum'
+import { MemberRule, RuleOp } from '@/enum'
 
 // 简化的聊天类型定义
-export type ChatType = 'group' | 'private'
+export type ChatType = 'group' | 'private' | 'sub-group'
 
 // export type MessageType = 'text' | 'image' | 'reply'
 
-export interface GroupUserRoleInfo{
-  metaId:string
-  address:string
-  userInfo:ChatUserInfo
-  groupId:string
-  channelId:string
-  isCreator:boolean
-  isAdmin:boolean
-  isBlocked:boolean
-  isWhitelist:boolean
-  isRemoved:boolean
-
+export interface GroupUserRoleInfo {
+  metaId: string
+  address: string
+  userInfo: ChatUserInfo
+  groupId: string
+  channelId: string
+  isCreator: boolean
+  isAdmin: boolean
+  isBlocked: boolean
+  isWhitelist: boolean
+  isRemoved: boolean
 }
 
-
-export interface MemberItem  {
+export interface MemberItem {
   id?: string
   index?: number
   start?: number
-  rule:MemberRule
-  permission:RuleOp[]
-  address?:string
-  metaId?:string
-  timeStr?:string
-  timestamp?:number
-  userInfo?:{
-    address:string
-    avatar:string
-    avatarImage:string
-    chatPublicKey:string
-    chatPublicKeyId:string
-    metaid:string
-    name:string
+  rule: MemberRule
+  permission: RuleOp[]
+  address?: string
+  metaId?: string
+  timeStr?: string
+  timestamp?: number
+  userInfo?: {
+    address: string
+    avatar?: string // 改为可选
+    avatarImage?: string // 改为可选
+    chatPublicKey: string
+    chatPublicKeyId?: string // 改为可选
+    metaid: string
+    name: string
   }
   [key: string]: unknown
 }
 
 export interface MemberListRes {
-  admins:MemberItem[]
-  blockList:MemberItem[]
-  creator:MemberItem | null
-  list:MemberItem[]
-  normalList:MemberItem[]
-  whiteList:MemberItem[]
+  admins: MemberItem[]
+  blockList: MemberItem[]
+  creator: MemberItem | null
+  list: MemberItem[]
+  normalList: MemberItem[]
+  whiteList: MemberItem[]
 }
-
 
 export enum MessageType {
   msg = 0,
@@ -143,8 +140,6 @@ export interface SimpleChannel {
   id: string
   type: ChatType
   name: string
-  groupId:string
-  channelId:string
   avatar?: string
   members?: string[] // metaId列表，私聊时只有两个成员
   createdBy: string
@@ -165,8 +160,6 @@ export interface SimpleChannel {
   // 私聊特有字段
   targetMetaId?: string // 私聊对象的metaId
   publicKeyStr?: string // 私聊加密公钥
-
-  subChannels?:SimpleChannel[]
   // 子群聊特有字段
   parentGroupId?: string // 如果是子群聊，指向主群聊ID
   // 保存原始服务端数据
