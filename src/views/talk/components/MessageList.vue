@@ -11,6 +11,7 @@
     ref="messagesScroll"
     id="messagesScroll"
     v-show="!layout.isShowMessagesLoading"
+    :class="[layout.isShowLeftNav ? 'hidden lg:block' : '']"
   >
     <!-- 广播聊天头部 - 在消息列表最上方（简化版提示） -->
 
@@ -318,7 +319,6 @@ const unReadCount = computed(() => {
 const handleScroll = event => {
   const container = event.target
   // 检查是否滚动到顶部
-  console.log('handleScroll', { scrollTop: container.scrollTop })
   if (container.scrollTop === 0) {
     console.log('滚动到顶部，准备加载新数据...')
     // loadItems(true) // true 表示下拉刷新
