@@ -1,7 +1,7 @@
 <template>
   <div
-    class="message-menu absolute bg-white dark:bg-gray-700 right-0 -top-[5PX] -translate-x-4 px-1.5 py-0.5 rounded-xl shadow hidden lg:group-hover:flex hover:shadow-md transition-all duration-200 z-10"
-    :class="{ '!flex': showMenu }"
+    class="message-menu absolute bg-white dark:bg-gray-700  -top-[5PX] px-1.5 py-0.5 rounded-xl shadow hidden lg:group-hover:flex hover:shadow-md transition-all duration-200 z-10"
+    :class="[{ '!flex': showMenu },isMyMessage ? 'left-0  translate-x-4 ' : 'right-0  -translate-x-4 ' ]"
     v-if="actions.length > 0"
   >
     <button
@@ -44,7 +44,8 @@ const props = defineProps([
   'translateStatus',
   'translatedContent',
   'messageId',
-  'isSubChannelMsg'
+  'isSubChannelMsg',
+  'isMyMessage'
 ])
 
 const emit = defineEmits<{

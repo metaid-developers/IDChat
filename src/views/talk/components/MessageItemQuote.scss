@@ -58,11 +58,89 @@
         width: calc(100% - 40PX - 8PX);
 
         .line-warp {
-            margin-left: calc(0px - (8PX + (40PX / 2)));
+            margin-right: calc(0px - (8PX + (40PX / 2)));
         }
     }
 
 }
+
+.my_msg_quote {
+    position: relative;
+  
+  
+    // margin-right: calc(54PX + 16PX);
+   width: calc(100% - 16PX);
+  
+    //width: calc(100% - 54PX - 16PX);
+    font-size: 14px;
+
+    .line-warp {
+        width: 30px;
+        height: 20px;
+        //margin-right:16PX;
+          margin-right: 16PX;
+        position: absolute;
+        right: 0;
+        top: 12px;
+
+    }
+
+    .quote-warp {
+        display: flex;
+        flex-direction: row-reverse;
+        
+    }
+
+    .quote-content {
+        max-width: 100%;
+        padding: 3px 6px;
+        border-radius: 6px;
+         margin-right: calc((32PX + (54PX / 2)));
+        background: rgba(var(--themeTextColorRgb), 0.1);
+        box-sizing: border-box;
+        display: inline-flex;
+        
+    }
+
+    .avatar {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        margin-right: 5px;
+        position: relative;
+
+        @media only screen and (max-width: 750px) {
+            margin-left: calc(40px / 2 - 10px);
+        }
+
+
+    }
+
+    .attachment {
+        color: var(--color-hover);
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .content {
+        color: var(--themeFadedTextColor);
+        @include text-many-ellipsis(1);
+        min-width: 0;
+    }
+
+    @media only screen and (max-width: 750px) {
+        margin-left:24PX;
+        // width: calc(100% - 40PX - 8PX);
+        //width: calc(100% - 40PX - 8PX);
+        .line-warp {
+            margin-right: 16PX;
+            // margin-left: calc(0px - (8PX + (40PX / 2)));
+        }
+        
+    }
+
+}
+
 
 .replying {
     background: rgba(var(--themeTextColorRgb), 0.1);

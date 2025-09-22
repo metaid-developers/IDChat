@@ -1,6 +1,6 @@
 <template>
-  <div class="quote mb-2 pr-8 lg:pr-12">
-    <Icon name="quote_line" class="line-warp"></Icon>
+  <div class="mb-2 " :class="[isMyMessage ? 'my_msg_quote pl-8 lg:pl-12' : 'quote pr-8 lg:pr-12']">
+    <Icon :name="isMyMessage ? 'quote_line_right' : 'quote_line' " class="line-warp"></Icon>
     <div class="quote-warp">
       <ElPopover :width="'auto'">
         <template #reference>
@@ -63,9 +63,11 @@ interface Props {
   }
   isSession?: boolean // 是否私聊
   isSubChannelMsg?:boolean
+  isMyMessage?:boolean
 }
 const props = withDefaults(defineProps<Props>(), {
-  isSubChannelMsg:false
+  isSubChannelMsg:false,
+  isMyMessage:false
 })
 
 

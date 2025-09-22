@@ -20,9 +20,10 @@
       v-model:translateStatus="translateStatus"
       v-model:translatedContent="translatedContent"
       v-bind="$attrs"
+      :isMyMessage="isMyMessage"
       v-if="isText"
     />
-    <MessageMenu :message="props.message" v-bind="$attrs" v-else />
+    <MessageMenu :isMyMessage="isMyMessage" :message="props.message" v-bind="$attrs" v-else />
 
     <!-- Quout -->
     <MessageItemQuote
@@ -40,12 +41,14 @@
         timestamp: message.replyInfo.timestamp,
         isMock: message.isMock,
         index: message.replyInfo.index,
+        
       }"
       :isSession="true"
       v-bind="$attrs"
+      :isMyMessage="(isMyMessage as boolean)"
     />
 
-    <div class="flex">
+    <div class="flex" :class="[isMyMessage ? 'flex-row-reverse' : '']">
       <UserAvatar
         :image="messageAvatarImage"
         :meta-id="'undefined'"
@@ -54,8 +57,8 @@
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none"
         :disabled="true"
       />
-      <div class="ml-2 lg:ml-4 grow pr-8 lg:pr-12">
-        <div class="flex items-baseline space-x-2">
+      <div class="grow" :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']">
+        <div class="flex items-baseline space-x-2" :class="[isMyMessage ? 'justify-end' : '']">
           <UserName
             :name="message?.fromUserInfo?.name"
             :meta-name="''"
@@ -287,7 +290,7 @@
           </div>
         </div>
 
-        <div class="w-full py-0.5 flex items-center" v-else-if="isImage">
+        <div class="w-full py-0.5 flex items-center" :class="[isMyMessage ? 'flex-row-reverse' : '']"  v-else-if="isImage">
           <div
             class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200"
             :class="[message.error && 'opacity-50']"
@@ -324,7 +327,7 @@
           {{ redEnvelopeReceiveInfo }}
         </div>
 
-        <div class="w-full py-0.5" v-else-if="isGiveawayRedEnvelope">
+        <div class="w-full flex py-0.5" :class="[isMyMessage ? 'flex-row-reverse' : '']"  v-else-if="isGiveawayRedEnvelope">
           <div
             class="max-w-full md:max-w-[50%] lg:max-w-[400px] shadow-lg rounded-xl cursor-pointer origin-top-left hover:shadow-xl hover:scale-105  transition-all duration-300"
           >
@@ -342,7 +345,7 @@
         </div>
 
            <!-- 群聊邀请链接 -->
-        <div class="w-full py-0.5" v-else-if="isChatGroupLink">
+        <div class="w-full flex py-0.5" :class="[isMyMessage ? 'flex-row-reverse' : '']" v-else-if="isChatGroupLink">
           <div
             class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
             @click="handleGroupLinkClick"
@@ -394,7 +397,7 @@
           </div>
         </div>
 
-        <div class="my-1.5 max-w-full flex" v-else>
+        <div class="my-1.5 max-w-full flex"  :class="[isMyMessage ? 'flex-row-reverse' : '']" v-else>
           <div
             class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
             :class="[

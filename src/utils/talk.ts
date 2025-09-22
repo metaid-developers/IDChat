@@ -561,7 +561,7 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
     domain: import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
     luckyBagAddress: address,
     createTime,
-    groupId: channel.parentGroupId || '',
+    groupId:channel.parentGroupId ? channel.parentGroupId : channel.id ,
     img: '',
     imgType: '',
     subId,
@@ -577,9 +577,9 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
     requireTickId: '',
     requireCollectionId: '',
     limitAmount: 0,
-    channelId: channel.id,
+    channelId:channel.parentGroupId ? channel.id : ''  //channel.id,
   }
-
+  
   // 2.1 nft红包处理
   if (form.nft && form.chain) {
     if (form.chain === 'eth' || form.chain === 'goerli') {
