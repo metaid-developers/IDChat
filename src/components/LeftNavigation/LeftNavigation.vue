@@ -111,7 +111,6 @@
 
 <script setup lang="ts">
 import { useLayoutStore } from '@/stores/layout'
-import { useTalkStore } from '@/stores/talk'
 import { useUserStore } from '@/stores/user'
 import { isMobile, useRootStore } from '@/stores/root'
 import CreateCommunityModal from '@/views/talk/components/modals/community/Create.vue'

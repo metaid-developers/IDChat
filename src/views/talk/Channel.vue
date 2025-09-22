@@ -1,7 +1,7 @@
 <template>
   <div class="relative lg:flex text-base fullscreen overscroll-y-none">
     <DirectContactList />
-    <CommunityInfo v-if="!isPublicChannel(communityId)" />
+    <!-- <CommunityInfo v-if="!isPublicChannel(communityId)" /> -->
 
     <div class="lg:grow fullscreen lg:!h-screen lg:relative lg:flex">
       <ChannelHeader />

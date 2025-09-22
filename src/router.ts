@@ -12,9 +12,9 @@ import { KeepAlive } from 'vue'
 //import.meta.env.VITE_BASE_URL
 //export const routerHistory = createWebHistory()
 
-
-
-export const routerHistory =createWebHistory(import.meta.env.MODE == 'development' ? '/' : '/chat/') //'/chat/'//createWebHistory(import.meta.env.MODE == 'mainnet' ? '/chat/' : '/')
+export const routerHistory = createWebHistory(
+  import.meta.env.MODE == 'development' ? '/' : '/chat/'
+) //'/chat/'//createWebHistory(import.meta.env.MODE == 'mainnet' ? '/chat/' : '/')
 export const router = createRouter({
   history: routerHistory,
   strict: true,
@@ -168,35 +168,17 @@ export const router = createRouter({
     //   meta: { isAuth: true },
     // },
     {
-      //path: '/talk/channels/public/:channelId?',
-      path: '/talk/@me/:channelId?',
-      name: 'talkAtMe',
-      component: () => import('@/views/talk/AtMe.vue'),
+      path: '/talk/@me',
+      component: () => import('@/views/talk/Channel.vue'),
       meta: { isAuth: true },
-      // beforeEnter:async(to,from,next)=>{
-      //   const userStore=useUserStore()
-      //   const talk=useTalkStore()
-      //   const {channelId} = to.params
-      //   if(channelId){
-      //      const toUserCanPrivate= await talk.checkUserOpenPrivate(channelId as string)
-      //      if(!toUserCanPrivate){
-      //         ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
-      //         next('/')
-      //      }
-      //   }else{
-      //      ElMessage.error(`${i18n.global.t('user_private_chat_metaid_error')}`)
-      //         next('/')
-      //   }
-
-      //   if(!userStore.last?.chatpubkey){
-      //      ElMessage.error(`${i18n.global.t('self_private_chat_unsupport')}`)
-
-      //      next('/')
-      //   }
-
-      //   next()
-
-      // }
+      children: [
+        {
+          path: ':channelId',
+          name: 'talkAtMe',
+          component: () => import('@/views/talk/components/ChannelBody.vue'),
+          meta: { isAuth: true, KeepAlive: true },
+        },
+      ],
     },
 
     // .meta解析
@@ -344,7 +326,7 @@ export const router = createRouter({
           path: ':channelId',
           name: 'talkChannel',
           component: () => import('@/views/talk/components/ChannelBody.vue'),
-           meta: { KeepAlive: true },
+          meta: { KeepAlive: true },
           // children:[
           //    {
           //     path: 'sub/:subId',
