@@ -1,4 +1,4 @@
-import { ChannelType, MessageType,ChannelMode,ChatChain} from '@/enum'
+import { ChannelType, MessageType, ChannelMode, ChatChain } from '@/enum'
 import { Address, HDPrivateKey, PrivateKey, PublicKey, Script } from 'meta-contract/dist/mvc'
 import { AttachmentItem } from './hd-wallet'
 declare interface Message {
@@ -21,28 +21,28 @@ declare interface Message {
   to?: string
 }
 
-declare interface MemberListItem{
-  address:string
-  metaId:string
-  timeStr:string
-  timestamp:number
-  userInfo:{
-    address:string
-    avatar:string
-    avatarImage:string
-    chatPublicKey:string
-    chatPublicKeyId:string
-    metaid:string
-    name:string
+declare interface MemberListItem {
+  address: string
+  metaId: string
+  timeStr: string
+  timestamp: number
+  userInfo: {
+    address: string
+    avatar: string
+    avatarImage: string
+    chatPublicKey: string
+    chatPublicKeyId: string
+    metaid: string
+    name: string
   }
 }
 
-declare interface MemberListRes{
-  admins:MemberListItem[]
-  blockList:MemberListItem[]
-  creator:MemberListItem
-  list:MemberListItem[]
-  whiteList:MemberListItem[]
+declare interface MemberListRes {
+  admins: MemberListItem[]
+  blockList: MemberListItem[]
+  creator: MemberListItem
+  list: MemberListItem[]
+  whiteList: MemberListItem[]
 }
 
 declare interface TalkError {
@@ -210,26 +210,26 @@ declare interface Channel {
   publicKeyStr?: string
 }
 
-declare interface SubChannel{
-  channelId: string,
-     groupId: string,
-        channelName:string,
-        channelIcon:string,
-       channelNote:string,
-        channelType: ChannelMode,
-        channelNewestTxId: string,
-       channelNewestPinId: string,
-       channelNewestMetaId:string,
-        channelNewestUserName: string,
-        channelNewestProtocol:string,
-        channelNewestContent:string,
-        channelNewestTimestamp: number,
-        createUserMetaId: string,
-        createUserAddress: string,
-        timestamp: number,
-        chain: ChatChain,
-        blockHeight: number,
-        index: number
+declare interface SubChannel {
+  channelId: string
+  groupId: string
+  channelName: string
+  channelIcon: string
+  channelNote: string
+  channelType: ChannelMode
+  channelNewestTxId: string
+  channelNewestPinId: string
+  channelNewestMetaId: string
+  channelNewestUserName: string
+  channelNewestProtocol: string
+  channelNewestContent: string
+  channelNewestTimestamp: number
+  createUserMetaId: string
+  createUserAddress: string
+  timestamp: number
+  chain: ChatChain
+  blockHeight: number
+  index: number
 }
 
 declare interface MessageDto {
@@ -240,7 +240,7 @@ declare interface MessageDto {
   userName: string
   attachments?: AttachmentItem[]
   originalFileUrl?: any
-  channelType?: ChannelType
+  channelType?: 'private' | 'group' | 'sub-group'
   reply?: ChatMessageItem
   mockId?: string
   reason?: string

@@ -3,11 +3,12 @@
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
     <div class="max-w-[50%] flex items-center justify-center ">
-       <a class="mt-1 text-center  lg:hidden"   @click="layout.$patch({ isShowLeftNav: true,isShowContactList:true })">
-     
-      <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
-          </a>
-     
+      <a
+        class="mt-1 text-center  lg:hidden"
+        @click="layout.$patch({ isShowLeftNav: true, isShowContactList: true })"
+      >
+        <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
+      </a>
 
       <div class="flex shrink-0 items-center">
         <div class=" hidden lg:block" v-if="activeChannel?.type === 'private'">
@@ -262,7 +263,8 @@ const shortenMetaId = (id: string) => {
 }
 
 const popInvite = () => {
-  layout.inviteLink = `${location.origin}/talk/channels/public/${activeChannel.value?.id}`
+  layout.inviteLink = `${location.origin}/talk/channels/public/${activeChannel.value
+    ?.parentGroupId || activeChannel.value?.id}`
   layout.isShowInviteModal = true
 }
 

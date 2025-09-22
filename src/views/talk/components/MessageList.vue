@@ -1,7 +1,13 @@
 <template>
   <div
     class="h-full overflow-y-hidden"
-    v-show="layout.isShowMessagesLoading || simpleTalk.isInitialized === false"
+    v-show="
+      user.isAuthorized &&
+        (layout.isShowMessagesLoading ||
+          simpleTalk.isInitialized === false ||
+          (simpleTalk.activeChannelMessages.length === 0 &&
+            simpleTalk.activeChannel?.lastMessage?.index > 0))
+    "
   >
     <LoadingList />
   </div>
@@ -182,6 +188,9 @@ const { activeChannel } = storeToRefs(useSimpleTalkStore())
 const messageRefs = ref<Map<number, HTMLElement>>(new Map())
 const messageObserver = ref<IntersectionObserver | null>(null)
 const _welComePage = computed(() => {
+  if (user.isAuthorized === false) {
+    return true
+  }
   // 检查 simple-talk 的状态
   if (simpleTalk.isInitialized) {
     const hasMessages = simpleTalk.activeChannelMessages.length > 0

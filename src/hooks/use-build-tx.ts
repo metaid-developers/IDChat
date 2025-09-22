@@ -134,7 +134,7 @@ export const useBulidTx = createGlobalState(() => {
         if(payTo.length){
           for(let item of payTo){
                 pinTxComposer.appendP2PKHOutput({
-                address:new mvc.Address(item.address,import.meta.env.VITE_NET_WORK),
+                address:new mvc.Address(item.address,'mainnet'),
                 satoshis: item.amount,
                 })
           }
@@ -279,7 +279,7 @@ export const useBulidTx = createGlobalState(() => {
         if(payTo.length){
           for(let item of payTo){
                 pinTxComposer.appendP2PKHOutput({
-                address:new mvc.Address(item.address,import.meta.env.VITE_NET_WORK),
+                address:new mvc.Address(item.address,'mainnet'),
                 satoshis: item.amount,
                 })
           }
@@ -726,7 +726,7 @@ export const useBulidTx = createGlobalState(() => {
       
       if(utxo){
         const _options: any = {
-        network: import.meta.env.VITE_NET_WORK ?? 'testnet',
+        network: 'mainnet',
         signMessage: 'Join Group',
         serialAction: 'finish',
         assistDomain: 'https://www.metaso.network/assist-open-api',

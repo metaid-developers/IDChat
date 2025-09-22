@@ -1473,7 +1473,8 @@ const _sendImageMessage = async (messageDto: MessageDto) => {
           nickName,
           attachment: '',
           replyPin: reply ? `${reply.txId}i0` : '',
-          channelId: simpleTalkStore.activeChannel!.id,
+          channelId:
+            messageDto.channelType === 'sub-group' ? simpleTalkStore.activeChannel!.id : '',
         }
       : {
           timestamp,
@@ -1608,7 +1609,7 @@ export const openRedPacket = async (redPacket: any, sdk: SDK) => {
   const talkStore = useTalkStore()
   const userStore = useUserStore()
   const userAddressStr = userStore.user!.address as any
-  const userAddress = new Address(userAddressStr, import.meta.env.VITE_NET_WORK || 'mainnet')
+  const userAddress = new Address(userAddressStr, 'mainnet')
   const { subId, code, createTime } = redPacket
   const dataCarrier = {
     createTime,
@@ -1620,7 +1621,7 @@ export const openRedPacket = async (redPacket: any, sdk: SDK) => {
 
   // 使用红包的钱构建交易本身
   const key = `${subId.toLocaleLowerCase()}${code.toLocaleLowerCase()}${createTime}`
-  const net = import.meta.env.VITE_NET_WORK || 'mainnet'
+  const net = 'mainnet'
   const redPacketCrypto = buildCryptoInfo(key, net)
 
   // const
