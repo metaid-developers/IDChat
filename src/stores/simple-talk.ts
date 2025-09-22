@@ -28,7 +28,7 @@ const getPermission = (rule:MemberRule) =>{
   }
 }
 
-const MuteRoleList=[MemberRule.Normal,MemberRule.Block]
+const MuteRoleList=[MemberRule.Normal,MemberRule.Block,MemberRule.Leave]
 
 
 
@@ -812,7 +812,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
     getMychannelRule(state) {
       
-      const ruleItem=state.selfChannelRule.find(item=>item.channelId == this.activeChannel?.parentGroupId || this.activeChannel?.id)
+      const ruleItem=state.selfChannelRule.find(item=>(item.channelId == this.activeChannel?.parentGroupId) || (item.channelId == this.activeChannel?.id) )
       
       return ruleItem ? ruleItem.rule : MemberRule.Normal
     
@@ -1445,6 +1445,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         // 1. 先从本地 IndexedDB 加载
         const localMessages = await this.db.getMessages(channelId)
+        
         console.log(`📂 从本地加载了 ${localMessages.length} 条消息`,localMessages)
         
         // 2. 查找频道信息
@@ -2403,6 +2404,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 更新频道的最后一条消息信息
      */
     async updateChannelLastMessage(channelId: string, message: UnifiedChatMessage): Promise<void> {
+
+      
       const channel = this.channels.find(c => c.id === channelId)
       if (!channel) {
         console.warn(`频道 ${channelId} 不存在`)
@@ -2417,7 +2420,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         timestamp: message.timestamp,
         type: message.chatType,
         chatPublicKey: message.userInfo?.chatPublicKey || '',
-        index: message.index || (channel.lastMessage?.index??0) + 1
+        index: message.index || (channel.lastMessage?.index ?? 0) + 1
       }
 
       // 如果不是当前激活频道，增加未读数

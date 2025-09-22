@@ -37,8 +37,8 @@ function toQuote() {
 const mute=computed(()=>{
  
   if(simpleTalk.activeChannel?.type === 'sub-group'){
-    console.log(" simpleTalk.getMySpeakingPermission ", simpleTalk.getMySpeakingPermission )
-    
+    console.log("simpleTalk.getMySpeakingPermission", simpleTalk.getMySpeakingPermission )
+      
      return simpleTalk.getMySpeakingPermission 
   }else{
     return true

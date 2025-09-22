@@ -5,7 +5,8 @@ export enum MemberRule{
   Admin=1,
   Speaker=2,
   Normal=3,
-  Block= -1
+  Block= -1,
+  Leave= -2
 }
 
 

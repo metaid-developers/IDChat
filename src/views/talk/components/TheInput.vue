@@ -716,6 +716,9 @@ const trySendText = async (e: any) => {
   try {
     // 使用 simple-talk 的 sendMessage 方法
     await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content, 0, props.quote)
+    if(props.quote){
+      emit('update:quote', undefined)
+    }
     console.log('Message sent successfully via simpleTalk')
   } catch (error) {
     console.error('Failed to send message via simpleTalk:', error)

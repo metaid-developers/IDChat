@@ -1,15 +1,15 @@
 <template>
-  <div class="broadcast-chat-header text-dark-800 dark:text-white" v-if="simpleTalkStore.activeChannel?.type === 'sub-group'">
+  <div class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white" v-if="simpleTalkStore.activeChannel?.type === 'sub-group'">
     <div class="broadcast-chat-container">
-      <div class="broadcast-icon" @click="goChannel">
+      <div class="broadcast-icon hover:scale-110" @click="goChannel">
         <el-icon><Back /></el-icon>
       </div>
 
       <div class="broadcast-content ">
-        <div class="broadcast-title ">
+        <div class="broadcast-title text-base">
           # Broadcast Chat
         </div>
-        <div class="broadcast-description ">
+        <div class="broadcast-description text-xs text-dark-300 dark:text-gray-400 ">
           An on-chain "Telegram" running on Bitcoin is here! IDChat, based on the...
         </div>
       </div>
@@ -40,10 +40,10 @@ const goChannel = () => {
 .broadcast-chat-header {
   position: sticky;
   top: 0px;
-  z-index: 100;
-  background: transparent;
+  z-index: 40;
+  /* background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px); */
  
 }
 
@@ -57,7 +57,7 @@ const goChannel = () => {
 }
 
 .broadcast-chat-container:hover {
-  background: rgba(255, 255, 255, 0.1);
+
 }
 
 .broadcast-icon {
@@ -67,9 +67,9 @@ const goChannel = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
+
   border-radius: 12px;
-  /* color: white; */
+
   margin-right: 12px;
 }
 
@@ -79,9 +79,9 @@ const goChannel = () => {
 }
 
 .broadcast-title {
-  font-size: 16px;
-  font-weight: 600;
-  /* color: white; */
+
+  font-weight: 500;
+
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -91,15 +91,13 @@ const goChannel = () => {
 .channel-count {
   font-size: 12px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.2);
-  /* color: white; */
+
   padding: 2px 6px;
   border-radius: 10px;
 }
 
 .broadcast-description {
-  font-size: 13px;
-  /* color: rgba(255, 255, 255, 0.8); */
+
   line-height: 1.4;
   margin-bottom: 4px;
   overflow: hidden;
@@ -108,18 +106,17 @@ const goChannel = () => {
 }
 
 .broadcast-note {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+
   font-style: italic;
-  background: rgba(255, 255, 255, 0.1);
+  
   padding: 4px 8px;
   border-radius: 6px;
-  border-left: 3px solid rgba(255, 255, 255, 0.3);
+  
 }
 
 .broadcast-latest {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
+
   display: flex;
   align-items: center;
   gap: 8px;
@@ -135,14 +132,14 @@ const goChannel = () => {
 
 .broadcast-arrow {
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.6);
+
   margin-left: 8px;
   transition: transform 0.2s ease;
 }
 
 .broadcast-chat-container:hover .broadcast-arrow {
   transform: translateX(2px);
-  color: white;
+
 }
 
 /* 响应式设计 */
@@ -158,7 +155,7 @@ const goChannel = () => {
   }
 
   .broadcast-title {
-    font-size: 14px;
+    
   }
 
   .broadcast-description {

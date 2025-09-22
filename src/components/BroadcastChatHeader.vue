@@ -1,15 +1,15 @@
 <template>
-  <div class="broadcast-chat-header text-dark-800 dark:text-white" v-if="subchannels.length > 0">
+  <div class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white" v-if="subchannels.length > 0">
     <div class="broadcast-chat-container" v-for="channel in subchannels" :key="channel.id">
       <div class="broadcast-icon">
         <img :src="subChannel" alt="" />
       </div>
 
       <div class="broadcast-content">
-        <div class="broadcast-title">
+        <div class="broadcast-title text-base">
           # Broadcast Chat
         </div>
-        <div class="broadcast-description">
+        <div class="broadcast-description text-xs text-dark-300 dark:text-gray-400">
           An on-chain "Telegram" running on Bitcoin is here! IDChat, based on the...
         </div>
       </div>
@@ -69,10 +69,10 @@ const getUnreadCount = (channel: SimpleChannel) => {
 .broadcast-chat-header {
   position: sticky;
   top: 0px;
-  z-index: 100;
-  background: transparent;
+  z-index: 40;
+ /* background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px); */
 }
 
 .broadcast-chat-container {
@@ -83,9 +83,9 @@ const getUnreadCount = (channel: SimpleChannel) => {
   transition: all 0.2s ease;
 }
 
-.broadcast-chat-container:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
+/* .broadcast-chat-container:hover {
+  //background: rgba(255, 255, 255, 0.1);
+} */
 
 .broadcast-icon {
   flex-shrink: 0;
@@ -94,7 +94,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
+ 
   border-radius: 12px;
  
   margin-right: 12px;
@@ -106,8 +106,8 @@ const getUnreadCount = (channel: SimpleChannel) => {
 }
 
 .broadcast-title {
-  font-size: 16px;
-  font-weight: 600;
+  /* font-size: 16px; */
+  font-weight: 500;
  
   margin-bottom: 4px;
   display: flex;
@@ -118,7 +118,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 .channel-count {
   font-size: 12px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.2);
+  
 
   padding: 2px 6px;
   border-radius: 10px;
@@ -138,10 +138,10 @@ const getUnreadCount = (channel: SimpleChannel) => {
   font-size: 12px;
   
   font-style: italic;
-  background: rgba(255, 255, 255, 0.1);
+  
   padding: 4px 8px;
   border-radius: 6px;
-  border-left: 3px solid rgba(255, 255, 255, 0.3);
+
 }
 
 .broadcast-latest {
@@ -185,11 +185,11 @@ const getUnreadCount = (channel: SimpleChannel) => {
   }
 
   .broadcast-title {
-    font-size: 14px;
+   
   }
 
   .broadcast-description {
-    font-size: 12px;
+ 
   }
 }
 </style>

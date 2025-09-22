@@ -32,6 +32,8 @@ const productionEnvs = ['mainnet']
 export default ({ mode, command }) => {
   // 加载环境配置文件
   const env = loadEnv(mode, process.cwd())
+
+
   // const sentryConfig: ViteSentryPluginOptions = {
   //   url: env.VITE_SENTRY_URL,
   //   authToken: env.VITE_SENTRY_AUTH_TOKEN,
@@ -52,9 +54,9 @@ export default ({ mode, command }) => {
   // }
   // const isProduction = productionEnvs.includes(mode) && command === 'build' ? true : false
   const isProduction = command === 'build'
-  
+ 
   return defineConfig({
-    //base:'/chat/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
+    base:isProduction ? '/chat/' : '/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({
@@ -68,13 +70,15 @@ export default ({ mode, command }) => {
         }),
         enforce: 'post',
       },
-      //   createHtmlPlugin({
-      //   inject: {
-      //     data: {
-      //       basePath:'/chat/'//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
-      //     }
-      //   }
-      // }),
+
+    
+        createHtmlPlugin({
+        inject: {
+          data: {
+            basePath:isProduction ? '/chat/' : ''//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
+          }
+        }
+      }),
     //      createHtmlPlugin({
     //   inject: {
     //     data: {
