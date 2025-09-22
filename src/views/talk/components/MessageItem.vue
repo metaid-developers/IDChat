@@ -26,13 +26,18 @@
           "
           v-model:translateStatus="translateStatus"
           v-model:translatedContent="translatedContent"
-          v-bind="$attrs"
+          @quote="(message) => emit('quote', message)"
+          @toBuzz="(data) => emit('toBuzz', data)"
           :isMyMessage="isMyMessage"
           v-if="isText"
         />
-        <MessageMenu :message="props.message" :message-id="messageId" v-bind="$attrs"
-        :isMyMessage="isMyMessage"
-        v-else />
+        <MessageMenu 
+          :message="props.message" 
+          :message-id="messageId" 
+          @quote="(message) => emit('quote', message)"
+          @toBuzz="(data) => emit('toBuzz', data)"
+          :isMyMessage="isMyMessage"
+          v-else />
       </template>
 
       <!-- quote -->
@@ -464,7 +469,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 
 
-const emit = defineEmits<{}>()
+const emit = defineEmits<{
+  (e: 'quote', message: any): void
+  (e: 'toBuzz', data: any): void
+  (e: 'to-time-stamp', timestamp: number): void
+}>()
 
 // 为每个消息生成唯一ID
 const messageId = computed(() => {

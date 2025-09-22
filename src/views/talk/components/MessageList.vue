@@ -57,7 +57,7 @@
               :id="message.timestamp"
               :data-message-index="message.index"
               :ref="el => setMessageRef(el, message)"
-              v-bind="$attrs"
+              @quote="(message) => emit('quote', message)"
               @toBuzz="onToBuzz"
               @to-time-stamp="scrollToIndex"
             />
@@ -69,7 +69,7 @@
               :message="message"
               :data-message-index="message.index"
               :ref="el => setMessageRef(el, message)"
-              v-bind="$attrs"
+              @quote="(message) => emit('quote', message)"
               :id="message.timestamp"
               @toBuzz="onToBuzz"
               @to-time-stamp="scrollToIndex"
@@ -119,6 +119,11 @@
 </template>
 
 <script setup lang="ts">
+// 定义组件的自定义事件
+const emit = defineEmits<{
+  (e: 'quote', message: any): void
+}>()
+
 import { getChannelMessages, getPrivateChatMessages } from '@/api/talk'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
@@ -277,13 +282,17 @@ const loadItems = async (isPrepending = false) => {
 
   // ** 核心逻辑：保持下拉加载时的滚动位置 **
   let scrollHeightBefore = 0
-  if (!isPrepending) {
+  if (!isPrepending && listWrapper.value) {
     // 在添加新内容前，记录当前列表的总高度
     scrollHeightBefore = listWrapper.value.scrollHeight
   }
   const beforeLength = simpleTalk.activeChannelMessages.length
 
-  await simpleTalk.loadMoreMessages(simpleTalk.activeChannelId)
+  try {
+    await simpleTalk.loadMoreMessages(simpleTalk.activeChannelId)
+  } catch (error) {
+    console.error('加载消息失败:', error)
+  }
 
   // 等待 DOM 更新
   await nextTick()
@@ -294,7 +303,7 @@ const loadItems = async (isPrepending = false) => {
     isNoMoreTop.value = true
   }
 
-  if (isPrepending) {
+  if (isPrepending && listWrapper.value && listContainer.value) {
     // 添加新内容后，列表总高度会增加
     const scrollHeightAfter = listWrapper.value.scrollHeight
     // 将滚动条位置设置为新内容的高度，这样旧内容就回到了原来的位置
@@ -307,7 +316,9 @@ const loadItems = async (isPrepending = false) => {
 }
 
 const unReadCount = computed(() => {
-  if (activeChannel.value) {
+  if (activeChannel.value && activeChannel.value.lastMessage && 
+      typeof activeChannel.value.lastMessage.index === 'number' &&
+      typeof activeChannel.value.lastReadIndex === 'number') {
     return activeChannel.value.lastMessage.index - activeChannel.value.lastReadIndex
   }
   return 0
@@ -316,25 +327,33 @@ const unReadCount = computed(() => {
 /**
  * 滚动事件处理
  */
-const handleScroll = event => {
-  const container = event.target
-  // 检查是否滚动到顶部
-  if (container.scrollTop === 0) {
-    console.log('滚动到顶部，准备加载新数据...')
-    // loadItems(true) // true 表示下拉刷新
-  }
+const handleScroll = (event: Event) => {
+  const container = event.target as HTMLElement
+  if (!container) return
 
-  if (Math.abs(container.scrollTop) > 500) {
-    showScrollToBottom.value = true
-  } else {
-    showScrollToBottom.value = false
-  }
+  try {
+    // 检查是否滚动到顶部
+    if (container.scrollTop === 0) {
+      console.log('滚动到顶部，准备加载新数据...')
+      // loadItems(true) // true 表示下拉刷新
+    }
 
-  // 检查是否滚动到底部
-  const threshold = 100 // 预加载阈值
-  if (container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight < threshold) {
-    console.log('滚动到底部，准备加载更多数据...')
-    loadItems(false)
+    if (Math.abs(container.scrollTop) > 500) {
+      showScrollToBottom.value = true
+    } else {
+      showScrollToBottom.value = false
+    }
+
+    // 检查是否滚动到底部
+    const threshold = 100 // 预加载阈值
+    if (container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight < threshold) {
+      console.log('滚动到底部，准备加载更多数据...')
+      loadItems(false).catch(error => {
+        console.error('加载更多数据失败:', error)
+      })
+    }
+  } catch (error) {
+    console.error('滚动事件处理失败:', error)
   }
 }
 
@@ -467,9 +486,13 @@ const scrollToMessagesBottom = async () => {
     await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
     await nextTick()
     await sleep(100)
-    listContainer.value.scrollTop = 0
+    if (listContainer.value) {
+      listContainer.value.scrollTop = 0
+    }
   } else {
-    listContainer.value.scrollTop = 0
+    if (listContainer.value) {
+      listContainer.value.scrollTop = 0
+    }
   }
 }
 

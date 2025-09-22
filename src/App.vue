@@ -120,21 +120,24 @@ function handleNetworkChanged(network: Network) {
 }
 
 const metaletAccountsChangedHandler = () => {
+  try {
+    if (useConnectionStore().last.wallet !== 'metalet') return
 
-  if (useConnectionStore().last.wallet !== 'metalet') return
+    // sync here to prevent chronological error
+    //connectionStore.sync()
 
-  // sync here to prevent chronological error
-  //connectionStore.sync()
+    connectionStore.disconnect(router)
 
-  connectionStore.disconnect(router)
-
-  ElMessage.warning({
-    message:i18n.t('account.change'),
-    type: 'warning',
-    onClose: () => {
-      completeReload()
-    },
-  })
+    ElMessage.warning({
+      message: i18n.t('account.change'),
+      type: 'warning',
+      onClose: () => {
+        completeReload()
+      },
+    })
+  } catch (error) {
+    console.error('Error in metaletAccountsChangedHandler:', error)
+  }
 }
 const metaletNetworkChangedHandler = (network: Network) => {
   if (useConnectionStore().last.wallet !== 'metalet') return
@@ -210,24 +213,25 @@ async function connectMetalet() {
 
 onMounted(async () => {
   let retryCount = 0
-  let timeoutId: number
+  let timeoutId: NodeJS.Timeout | undefined
   //document.addEventListener('visibilitychange', handleVisibilityChange);
-  accountInterval.value=setInterval(async()=>{
-    if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
-
-         window.metaidwallet.getAddress().then((res)=>{
-
-             if (res?.status == 'not-connected' || userStore.last?.address !== res) {
-              connectionStore.disconnect(router)
-              ElMessage.warning({
-              message:i18n.t('account.change'),
-              type: 'warning',
-              })
+  accountInterval.value = setInterval(async () => {
+    try {
+      if (window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized) {
+        const res = await window.metaidwallet.getAddress()
+        
+        if ((res as any)?.status === 'not-connected' || userStore.last?.address !== res) {
+          connectionStore.disconnect(router)
+          ElMessage.warning({
+            message: i18n.t('account.change'),
+            type: 'warning',
+          })
+        }
       }
-        })
-
+    } catch (error) {
+      console.error('Error checking account status:', error)
     }
-  },5 * 1000)
+  }, 5 * 1000)
 
 
   if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
@@ -250,43 +254,39 @@ onMounted(async () => {
     if (window.metaidwallet) {
 
       try {
-         window.metaidwallet?.on('accountsChanged', metaletAccountsChangedHandler)
-         window.metaidwallet?.on('networkChanged', metaletNetworkChangedHandler)
+         (window.metaidwallet as any)?.on('accountsChanged', metaletAccountsChangedHandler)
+         ;(window.metaidwallet as any)?.on('networkChanged', metaletNetworkChangedHandler)
 
-  window.metaidwallet?.on('LoginSuccess',async(data)=>{
-    
+        ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
+          try {
+            if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
+              await connectMetalet()
 
-  if(rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized ){
-       await connectMetalet()
+              if (!userStore.last.chatpubkey) {
+                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+                if (ecdhRes?.chatPublicKey) {
+                  userStore.updateUserInfo({
+                    chatpubkey: ecdhRes?.chatPublicKey
+                  })
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error in LoginSuccess handler:', error)
+          }
+        })
 
-       if(!userStore.last.chatpubkey){
-           const ecdhRes= await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
-        if(ecdhRes?.chatPublicKey ){
-          userStore.updateUserInfo({
-            chatpubkey:ecdhRes?.chatPublicKey
-          })
-
-
-
-  }
-       }
-      }
-   
-  
-
-  })
-
-   window.metaidwallet?.on('Logout',async(data)=>{
-    
-      console.log("退出登录成功",data)
-  if(rootStore.isWebView && connectionStore.last.status == 'connected' && userStore.isAuthorized ){
-        await connectionStore.disconnect(router)
-        closeConnectionModal()
-  
-  }
-  
-
-  })
+        ;(window.metaidwallet as any)?.on('Logout', async (data: any) => {
+          try {
+            console.log("退出登录成功", data)
+            if (rootStore.isWebView && connectionStore.last.status == 'connected' && userStore.isAuthorized) {
+              await connectionStore.disconnect(router)
+              closeConnectionModal()
+            }
+          } catch (error) {
+            console.error('Error in Logout handler:', error)
+          }
+        })
 
 
       } catch (err) {
@@ -307,36 +307,33 @@ onMounted(async () => {
 
 
   onUnmounted(() => {
-
-    clearTimeout(timeoutId)
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
   })
 })
 
 
 
-onBeforeUnmount(async() => {
+onBeforeUnmount(async () => {
   // remove event listener
+  try {
+    ;(window.metaidwallet as any)?.removeListener(
+      'accountsChanged',
+      metaletAccountsChangedHandler,
+    )
+    ;(window.metaidwallet as any)?.removeListener(
+      'networkChanged',
+      metaletNetworkChangedHandler,
+    )
 
-  window.metaidwallet?.removeListener(
-    'accountsChanged',
-    metaletAccountsChangedHandler,
-  )
-  window.metaidwallet.removeListener(
-    'networkChanged',
-    metaletNetworkChangedHandler,
-  )
+    ;(window.metaidwallet as any)?.removeListener('LoginSuccess')
+    ;(window.metaidwallet as any)?.removeListener('Logout')
 
-   window.metaidwallet?.removeListener(
-    'LoginSuccess'
-  )
-
-   window.metaidwallet?.removeListener(
-    'Logout'
-  )
-
-  clearInterval(accountInterval.value)
-
-
+    clearInterval(accountInterval.value)
+  } catch (error) {
+    console.error('Error removing event listeners:', error)
+  }
 })
 
 // if (!localStorage.getItem('showDiffLang')) {

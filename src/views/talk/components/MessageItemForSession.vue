@@ -19,11 +19,17 @@
       "
       v-model:translateStatus="translateStatus"
       v-model:translatedContent="translatedContent"
-      v-bind="$attrs"
+      @quote="(message) => emit('quote', message)"
+      @toBuzz="(data) => emit('toBuzz', data)"
       :isMyMessage="isMyMessage"
       v-if="isText"
     />
-    <MessageMenu :isMyMessage="isMyMessage" :message="props.message" v-bind="$attrs" v-else />
+    <MessageMenu 
+      :isMyMessage="isMyMessage" 
+      :message="props.message" 
+      @quote="(message) => emit('quote', message)"
+      @toBuzz="(data) => emit('toBuzz', data)"
+      v-else />
 
     <!-- Quout -->
     <MessageItemQuote
@@ -514,6 +520,14 @@ interface Props {
   message:UnifiedChatMessage //ChatSessionMessageItem
 }
 const props = withDefaults(defineProps<Props>(), {})
+
+// 定义事件发射器
+const emit = defineEmits<{
+  (e: 'quote', message: any): void
+  (e: 'toBuzz', data: any): void
+  (e: 'to-time-stamp', timestamp: number): void
+}>()
+
 const userStore = useUserStore()
 const simpleTalkStore = useSimpleTalkStore()
 const activeChannel = computed(() => simpleTalkStore.activeChannel)

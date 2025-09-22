@@ -124,7 +124,7 @@ export const useWsStore = defineStore('ws', {
           jobsStore.playNotice()
           return
         case 'WS_SERVER_NOTIFY_GROUP_ROLE':
-          await simpleTalkStore.handleWsUserRole(messageWrapper.D)
+          await simpleTalkStore.receiveUserRoleMessage(messageWrapper.D)
           return
         case 'WS_SERVER_NOTIFY_TX_TASK':
           await jobsStore.handleWsMessage(messageWrapper.D)

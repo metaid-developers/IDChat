@@ -7,7 +7,7 @@
     :append-to-body="true"
     :lock-scroll="true"
     :close-on-click-modal="false"
-    custom-class="none-padding"
+    class="none-padding"
   >
     <div class="flex flex-col h-full">
       <header class="flex items-center justify-between">

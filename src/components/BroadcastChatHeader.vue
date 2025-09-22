@@ -1,5 +1,8 @@
 <template>
-  <div class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white" v-if="subchannels.length > 0">
+  <div
+    class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white"
+    v-if="subchannels.length > 0"
+  >
     <div class="broadcast-chat-container" v-for="channel in subchannels" :key="channel.id">
       <div class="broadcast-icon">
         <img :src="subChannel" alt="" />
@@ -7,10 +10,10 @@
 
       <div class="broadcast-content">
         <div class="broadcast-title text-base">
-          # Broadcast Chat
+          {{ channel.name || '# Broadcast Chat' }}
         </div>
         <div class="broadcast-description text-xs text-dark-300 dark:text-gray-400">
-          An on-chain "Telegram" running on Bitcoin is here! IDChat, based on the...
+          {{ channel.roomNote || '' }}
         </div>
       </div>
 
@@ -70,7 +73,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
   position: sticky;
   top: 0px;
   z-index: 40;
- /* background: transparent;
+  /* background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px); */
 }
@@ -94,9 +97,9 @@ const getUnreadCount = (channel: SimpleChannel) => {
   display: flex;
   align-items: center;
   justify-content: center;
- 
+
   border-radius: 12px;
- 
+
   margin-right: 12px;
 }
 
@@ -108,7 +111,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 .broadcast-title {
   /* font-size: 16px; */
   font-weight: 500;
- 
+
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -118,7 +121,6 @@ const getUnreadCount = (channel: SimpleChannel) => {
 .channel-count {
   font-size: 12px;
   font-weight: 500;
-  
 
   padding: 2px 6px;
   border-radius: 10px;
@@ -126,7 +128,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 
 .broadcast-description {
   font-size: 13px;
-  
+
   line-height: 1.4;
   margin-bottom: 4px;
   overflow: hidden;
@@ -136,17 +138,16 @@ const getUnreadCount = (channel: SimpleChannel) => {
 
 .broadcast-note {
   font-size: 12px;
-  
+
   font-style: italic;
-  
+
   padding: 4px 8px;
   border-radius: 6px;
-
 }
 
 .broadcast-latest {
   font-size: 11px;
- 
+
   display: flex;
   align-items: center;
   gap: 8px;
@@ -169,7 +170,6 @@ const getUnreadCount = (channel: SimpleChannel) => {
 
 .broadcast-chat-container:hover .broadcast-arrow {
   transform: translateX(2px);
- 
 }
 
 /* 响应式设计 */
@@ -185,11 +185,9 @@ const getUnreadCount = (channel: SimpleChannel) => {
   }
 
   .broadcast-title {
-   
   }
 
   .broadcast-description {
- 
   }
 }
 </style>

@@ -45,7 +45,6 @@ export interface MemberListRes {
   blockList: MemberItem[]
   creator: MemberItem | null
   list: MemberItem[]
-  normalList: MemberItem[]
   whiteList: MemberItem[]
 }
 
@@ -162,6 +161,9 @@ export interface SimpleChannel {
   publicKeyStr?: string // 私聊加密公钥
   // 子群聊特有字段
   parentGroupId?: string // 如果是子群聊，指向主群聊ID
+  // 群聊权限信息
+  memberPermissions?: MemberListRes // 存储群成员权限信息
+  permissionsLastUpdated?: number // 权限信息最后更新时间
   // 保存原始服务端数据
   serverData?: any
 }

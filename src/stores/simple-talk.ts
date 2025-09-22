@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { SimpleChannel, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
-import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList } from '@/api/talk'
+import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers } from '@/api/talk'
 
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
 import { useUserStore } from './user'
@@ -251,6 +251,40 @@ class SimpleChatDB {
     })
   }
 
+  // 创建可以安全克隆的成员数据
+  private createCloneableMemberItem(member: any): any {
+    if (!member) return null
+    
+    try {
+      return {
+        id: member.id ? String(member.id) : undefined,
+        index: typeof member.index === 'number' ? member.index : undefined,
+        rule: typeof member.rule === 'number' ? member.rule : 0,
+        permission: Array.isArray(member.permission) ? [...member.permission] : [],
+        address: member.address ? String(member.address) : undefined,
+        metaId: member.metaId ? String(member.metaId) : undefined,
+        timeStr: member.timeStr ? String(member.timeStr) : undefined,
+        timestamp: typeof member.timestamp === 'number' ? member.timestamp : undefined,
+        userInfo: member.userInfo ? {
+          address: member.userInfo.address ? String(member.userInfo.address) : '',
+          avatar: member.userInfo.avatar ? String(member.userInfo.avatar) : undefined,
+          avatarImage: member.userInfo.avatarImage ? String(member.userInfo.avatarImage) : undefined,
+          chatPublicKey: member.userInfo.chatPublicKey ? String(member.userInfo.chatPublicKey) : '',
+          chatPublicKeyId: member.userInfo.chatPublicKeyId ? String(member.userInfo.chatPublicKeyId) : undefined,
+          metaid: member.userInfo.metaid ? String(member.userInfo.metaid) : '',
+          name: member.userInfo.name ? String(member.userInfo.name) : ''
+        } : undefined
+      }
+    } catch (error) {
+      console.warn('创建安全成员数据失败:', error)
+      return {
+        metaId: member.metaId ? String(member.metaId) : '',
+        rule: 0,
+        permission: []
+      }
+    }
+  }
+
   // 创建可以安全克隆的频道数据
   private createCloneableChannel(channel: SimpleChannel): SimpleChannel {
     try {
@@ -268,8 +302,23 @@ class SimpleChatDB {
         targetMetaId: channel.targetMetaId,
         publicKeyStr: channel.publicKeyStr,
         // 群聊特有字段
+        roomNote: channel.roomNote,
         userCount: channel.userCount,
         parentGroupId: channel.parentGroupId,
+        // 权限信息字段 - 深度清理所有嵌套数据
+        memberPermissions: channel.memberPermissions ? {
+          admins: Array.isArray(channel.memberPermissions.admins) ? 
+            channel.memberPermissions.admins.map(admin => this.createCloneableMemberItem(admin)) : [],
+          blockList: Array.isArray(channel.memberPermissions.blockList) ? 
+            channel.memberPermissions.blockList.map(member => this.createCloneableMemberItem(member)) : [],
+          creator: channel.memberPermissions.creator ? 
+            this.createCloneableMemberItem(channel.memberPermissions.creator) : null,
+          list: Array.isArray(channel.memberPermissions.list) ? 
+            channel.memberPermissions.list.map(member => this.createCloneableMemberItem(member)) : [],
+          whiteList: Array.isArray(channel.memberPermissions.whiteList) ? 
+            channel.memberPermissions.whiteList.map(member => this.createCloneableMemberItem(member)) : []
+        } : undefined,
+        permissionsLastUpdated: channel.permissionsLastUpdated
       }
 
       // 安全处理 lastMessage
@@ -719,20 +768,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     
     // 全局消息菜单状态管理
     activeMessageMenuId: '', // 当前显示菜单的消息ID
-
-    selfChannelRule:[] as Array<{
-          channelId:string,
-          rule:MemberRule
-        }>,
-
-    channelMemeberList:{
-        admins:[],
-        blockList:[],
-        creator:null,
-        list:[],
-        normalList:[],
-        whiteList:[]
-    } as MemberListRes
   }),
 
   getters: {
@@ -747,16 +782,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       console.log('🚀 获取当前用户 MetaId', userStore.last?.metaid)
       return userStore.last?.metaid || ''
     },
-
-    //获取频道权限列表
-    activeChannelMemeberList(state): MemberListRes {
-      return state.channelMemeberList
-    },
-
-
-    // // 获取当前激活的频道
-    
-      
+  
     // 获取当前激活的频道
     activeChannel(): SimpleChannel | null {
       return this.channels.find(c => c.id === this.activeChannelId) || null
@@ -807,22 +833,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
     },
 
-    getMychannelRule(): MemberRule {
-      const ruleItem = this.selfChannelRule.find(item => 
-        (item.channelId == this.activeChannel?.parentGroupId) || 
-        (item.channelId == this.activeChannel?.id)
-      )
-      
-      return ruleItem ? ruleItem.rule : MemberRule.Normal
-    },
-
-    getMySpeakingPermission(): boolean {
-      const isMute = MuteRoleList.includes(this.getMychannelRule)
-      console.log("this.getMychannelRule", this.getMychannelRule)
-      console.log("isMute", isMute)
-      
-      return !isMute
-    },
 
     // 获取所有主群聊（不包括子群聊）
     mainGroupChannels(): SimpleChannel[] {
@@ -866,9 +876,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         const subChannels = this.getSubChannelsByParent(groupId)
         const hasSubChannels = subChannels.length > 0
-
         if (!hasSubChannels) return null
-
         // 找到最近有消息的子频道
         const latestSubChannel = subChannels
           .sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0))
@@ -884,6 +892,36 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
       const broadcastInfo = this.getBroadcastChatInfo(this.activeChannelId)
       return broadcastInfo || []
+    },
+
+    // 获取当前用户在指定群聊中的角色信息
+    getCurrentUserRoleInGroup(): (groupId: string) => { isCreator: boolean; isAdmin: boolean; isBlocked: boolean; isWhitelist: boolean; memberInfo: MemberItem | null } {
+      return (groupId: string) => {
+        const channel = this.channels.find(c => c.id === groupId && c.type === 'group')
+        if (!channel || !channel.memberPermissions) {
+          return { isCreator: false, isAdmin: false, isBlocked: false, isWhitelist: false, memberInfo: null }
+        }
+
+        const currentUserMetaId = this.selfMetaId
+        const permissions = channel.memberPermissions
+
+        // 检查是否是创建者
+        const isCreator = permissions.creator?.metaId === currentUserMetaId
+
+        // 检查是否是管理员
+        const isAdmin = permissions.admins.some(admin => admin.metaId === currentUserMetaId)
+
+        // 检查是否被阻止
+        const isBlocked = permissions.blockList.some(blocked => blocked.metaId === currentUserMetaId)
+
+        // 检查是否在白名单
+        const isWhitelist = permissions.whiteList.some(whitelisted => whitelisted.metaId === currentUserMetaId)
+
+        // 获取成员信息
+        const memberInfo = permissions.list.find(member => member.metaId === currentUserMetaId) || null
+
+        return { isCreator, isAdmin, isBlocked, isWhitelist, memberInfo }
+      }
     }
   },
 
@@ -1111,6 +1149,91 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     },
 
     /**
+     * 获取并存储群聊成员权限信息
+     */
+    async fetchGroupMemberPermissions(groupId: string): Promise<MemberListRes | null> {
+      try {
+        console.log(`🔄 获取群聊 ${groupId} 成员权限信息...`)
+        
+        const apiResponse = await getChannelMembers({
+          groupId,
+          size: '1' // 可以根据需要调整每次获取的数量
+        })
+        
+        // 转换 MemberListItem 到 MemberItem 格式
+        const convertMemberItem = (item: any): MemberItem => ({
+          id: item.metaId,
+          metaId: item.metaId,
+          address: item.address,
+          timeStr: item.timeStr,
+          timestamp: item.timestamp,
+          rule: 0, // 默认规则，可根据实际需求调整
+          permission: [], // 默认权限，可根据实际需求调整
+          userInfo: item.userInfo
+        })
+        
+        const memberPermissions: MemberListRes = {
+          admins: (apiResponse.admins || []).map(convertMemberItem),
+          blockList: (apiResponse.blockList || []).map(convertMemberItem),
+          creator: apiResponse.creator ? convertMemberItem(apiResponse.creator) : null,
+          list: (apiResponse.list || []).map(convertMemberItem),
+          whiteList: (apiResponse.whiteList || []).map(convertMemberItem)
+        }
+        
+        // 找到对应的群聊频道
+        const channelIndex = this.channels.findIndex(c => c.id === groupId && c.type === 'group')
+        if (channelIndex === -1) {
+          console.warn(`⚠️ 未找到群聊频道: ${groupId}`)
+          return null
+        }
+        
+        // 更新频道的权限信息
+        this.channels[channelIndex] = {
+          ...this.channels[channelIndex],
+          memberPermissions,
+          permissionsLastUpdated: Date.now()
+        }
+        
+        // 安全保存到数据库，移除可能导致序列化错误的字段
+        const channelToSave = { ...this.channels[channelIndex] }
+        delete channelToSave.serverData // 移除可能包含不可序列化数据的字段
+        await this.db.saveChannel(channelToSave)
+        
+        console.log(`✅ 群聊 ${groupId} 权限信息已更新并保存`)
+        return memberPermissions
+        
+      } catch (error) {
+        console.error(`❌ 获取群聊 ${groupId} 权限信息失败:`, error)
+        return null
+      }
+    },
+
+    /**
+     * 获取群聊成员权限信息（优先从本地缓存获取）
+     */
+    async getGroupMemberPermissions(groupId: string, forceRefresh: boolean = false): Promise<MemberListRes | null> {
+      const channel = this.channels.find(c => c.id === groupId && c.type === 'group')
+      if (!channel) {
+        console.warn(`⚠️ 未找到群聊频道: ${groupId}`)
+        return null
+      }
+      
+      // 如果有缓存的权限信息且不强制刷新，检查是否过期
+      if (channel.memberPermissions && !forceRefresh) {
+        const cacheAge = Date.now() - (channel.permissionsLastUpdated || 0)
+        const cacheExpiry = 5 * 60 * 1000 // 5分钟过期
+        
+        if (cacheAge < cacheExpiry) {
+          console.log(`📋 使用缓存的权限信息 (${Math.round(cacheAge / 1000)}s ago)`)
+          return channel.memberPermissions
+        }
+      }
+      
+      // 从服务器获取最新权限信息
+      return await this.fetchGroupMemberPermissions(groupId)
+    },
+
+    /**
      * 为群聊加载子频道数据
      */
     async loadGroupChannels(groupId: string): Promise<void> {
@@ -1167,7 +1290,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async createSubGroupChannel(parentGroupId: string, channelData: GroupChannel): Promise<SimpleChannel | null> {
       try {
         // 从内容中解析频道信息，如果内容是加密的则需要解密
-        let channelName = `子频道 ${channelData.channelId.substring(0, 8)}...` // 默认名称
+        let channelName = `` // 默认名称
         let channelNote = ''
         
         // 尝试解密内容获取真实的频道信息
@@ -1251,11 +1374,17 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             lastReadIndex: existing.lastReadIndex || 0, // 保留原有的已读索引
             unreadCount: existing.unreadCount || 0 // 保留原有的未读计数
           }
-           await this.db.saveChannel(this.channels[existingIndex])
+          // 安全保存，移除可能有问题的字段
+          const channelToSave = { ...this.channels[existingIndex] }
+          delete channelToSave.serverData
+          await this.db.saveChannel(channelToSave)
         } else {
           // 添加新的子频道
           this.channels.push(subChannel)
-           await this.db.saveChannel(subChannel)
+          // 安全保存，移除可能有问题的字段
+          const subChannelToSave = { ...subChannel }
+          delete subChannelToSave.serverData
+          await this.db.saveChannel(subChannelToSave)
         }
 
        
@@ -1346,18 +1475,26 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             ...serverChannel,
             unreadCount: existing.unreadCount, // 保留本地未读数
             lastReadIndex: existing.lastReadIndex || 0, // 保留本地已读消息索引
+            // 保留本地的权限信息和缓存时间
+            memberPermissions: existing.memberPermissions,
+            permissionsLastUpdated: existing.permissionsLastUpdated,
             // 使用更新的消息
             lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage)
           }
 
           mergedChannels.push(merged)
           existingMap.delete(serverChannel.id)
-          await this.db.saveChannel(merged)
+          // 安全保存，移除可能有问题的字段
+          const mergedToSave = { ...merged }
+          delete mergedToSave.serverData
+          await this.db.saveChannel(mergedToSave)
         } else {
           // 新频道
           mergedChannels.push(serverChannel)
-          // 保存到本地数据库
-          await this.db.saveChannel(serverChannel)
+          // 安全保存，移除可能有问题的字段
+          const serverToSave = { ...serverChannel }
+          delete serverToSave.serverData
+          await this.db.saveChannel(serverToSave)
         }
       }
 
@@ -1421,6 +1558,15 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       console.log(`🔄 设置激活频道并加载消息: ${channelId}`)
       await this.loadMessages(channelId)
       console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
+
+      // 如果是群聊，获取权限信息
+      const channel = this.channels.find(c => c.id === channelId)
+      if (channel && channel.type === 'group') {
+        // 在后台获取权限信息，不阻塞界面
+        this.getGroupMemberPermissions(channelId).catch(error => {
+          console.warn(`⚠️ 获取群聊 ${channelId} 权限信息失败:`, error)
+        })
+      }
 
       // 标记为已读
       this.markAsRead(channelId)
@@ -1914,6 +2060,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       const channel = this.channels.find(c => c.id === channelId)
       if (channel && channel.unreadCount > 0) {
         channel.unreadCount = 0
+        // saveChannel 方法内部会调用 createCloneableChannel 来安全序列化
         this.db.saveChannel(channel)
       }
     },
@@ -1941,8 +2088,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 更新内存中的 lastReadIndex
         channel.lastReadIndex = messageIndex
 
-        // 保存到本地数据库
-        await this.db.saveChannel(channel)
+        // 使用安全的序列化方法保存到数据库
+        await this.db.saveChannel(channel)  // saveChannel 方法内部会调用 createCloneableChannel
 
         console.log(`✅ 频道 ${channelId} 已读索引已从 ${currentIndex} 更新为: ${messageIndex}`)
       } catch (error) {
@@ -1979,6 +2126,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         this.channels.unshift(newGroup)
         await this.db.saveChannel(newGroup)
+
+        // 在后台获取新群聊的权限信息
+        this.getGroupMemberPermissions(groupId).catch(error => {
+          console.warn(`⚠️ 获取新群聊 ${groupId} 权限信息失败:`, error)
+        })
 
         console.log(`✅ 创建群聊: ${name}`)
         return newGroup
@@ -2096,7 +2248,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           return true
         }
 
-        // 保存到本地数据库
+        // saveChannel 方法内部会调用 createCloneableChannel 来安全序列化
         await this.db.saveChannel(channel)
         
         console.log(`✅ 频道 ${channelId} 信息更新成功`)
@@ -2423,7 +2575,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         channel.unreadCount = (channel.unreadCount || 0) + 1
       }
 
-      // 保存到数据库
+      // saveChannel 方法内部会调用 createCloneableChannel 来安全序列化
       await this.db.saveChannel(channel)
 
       // 重新排序频道列表（最新消息的频道在前）
@@ -2783,151 +2935,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         lastSyncTime: this.lastSyncTime
       }
     },
-
-    updateMyChannelRule(channelId:string,rule:MemberRule){
-      
-          const ruleItem=this.selfChannelRule.find(item=>item.channelId == channelId)
-          if(ruleItem){
-             this.selfChannelRule.forEach(((item)=>{
-            if(item.channelId == channelId){
-              item.rule=rule
-            }
-          }))
-          }else{
-            this.selfChannelRule.push({
-            channelId:channelId,
-            rule:rule
-            })
-          }
-          
-        },
-
-      handleWsUserRole(message: GroupUserRoleInfo){
-        
-        
-
-         const {isCreator,isAdmin,isBlocked,isWhitelist,isRemoved,userInfo,metaId,address,groupId}=message
-         
-          if(this.activeChannel?.parentGroupId){
-           if( groupId !== this.activeChannel?.parentGroupId){
-            
-            return
-           }
-          }else if(this.activeChannel?.id){
-            
-            if( groupId !== this.activeChannel?.id){
-            
-            return
-           }
-          }
-
-       
-
-        if(metaId == this.selfMetaId){
-            let role=MemberRule.Normal
-            if(isBlocked){
-            role=MemberRule.Block
-            }
-            if(isWhitelist){
-            role=MemberRule.Speaker
-            }
-            //预防两个身份的时候优先级应该是管理员
-            if(isAdmin){
-            role=MemberRule.Admin
-            }
-            if(isCreator){
-            role=MemberRule.Owner
-            }
-            if(!isWhitelist && !isAdmin && !isCreator){
-            role=MemberRule.Normal
-            }
-            this.updateMyChannelRule(groupId,role)
-        }
-
-
-         const InAdminList= this.channelMemeberList.admins.find((item)=>item.metaId == metaId)
-         const InWhiteList= this.channelMemeberList.whiteList.find((item)=>item.metaId == metaId)
-          const InNormalList=this.channelMemeberList.normalList.find((item)=>item.metaId == metaId)
-
-         if(isAdmin){
-          if(!InAdminList){
-          const insertInfo={
-            metaId,
-            address,
-            userInfo,
-            rule:MemberRule.Admin,
-            permission:getPermission(MemberRule.Admin),
-            }
-            this.channelMemeberList.admins.push(insertInfo)
-          }
-
-          if(InNormalList){
-            this.channelMemeberList.normalList=this.channelMemeberList.normalList.filter((item)=>item.metaId !== metaId)
-
-         }
-
-         } 
-         
-         if(isWhitelist){
-          if(!InWhiteList){
-          const insertInfo={
-            metaId,
-            address,
-            userInfo,
-            rule:MemberRule.Speaker,
-            permission:getPermission(MemberRule.Speaker),
-            }
-            this.channelMemeberList.whiteList.push(insertInfo)
-          }
-
-          if(InNormalList){
-            this.channelMemeberList.normalList=this.channelMemeberList.normalList.filter((item)=>item.metaId !== metaId)
-         }
-         }
-         
-         if(isRemoved){
-            if(InAdminList){
-              this.channelMemeberList.admins=this.channelMemeberList.admins.filter((item)=>item.metaId !== metaId)
-            }
-
-             if(InWhiteList){
-            this.channelMemeberList.whiteList=this.channelMemeberList.whiteList.filter((item)=>item.metaId !== metaId)
-            }
-
-            this.channelMemeberList.normalList=this.channelMemeberList.normalList.filter((item)=>item.metaId !== metaId)
-            this.channelMemeberList.list=this.channelMemeberList.list.filter((item)=>item.metaId !== metaId)
-
-
-         }
-
-         if(!isAdmin && !isWhitelist && !isRemoved){
-
-            if(InAdminList){
-              this.channelMemeberList.admins=this.channelMemeberList.admins.filter((item)=>item.metaId !== metaId)
-            }
-
-             if(InWhiteList){
-              this.channelMemeberList.whiteList=this.channelMemeberList.whiteList.filter((item)=>item.metaId !== metaId)
-            }
-
-            if(!InNormalList){
-                const insertInfo={
-                metaId,
-                address,
-                userInfo,
-                rule:MemberRule.Normal,
-                permission:getPermission(MemberRule.Normal),
-                }
-              this.channelMemeberList.normalList.unshift(insertInfo)
-            }
-         }
-
-         
-         
-       
-
-
-
-      },
+    async receiveUserRoleMessage(message: GroupUserRoleInfo) {
+      console.log('📩 接收到用户角色消息:', message)
+      if(message && message.groupId && message.metaId){
+        await this.getGroupMemberPermissions(message.groupId, true)
+      }
+    }
   }
 })

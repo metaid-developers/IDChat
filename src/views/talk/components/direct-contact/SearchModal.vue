@@ -272,7 +272,7 @@ export default defineComponent({
   },
   emits: ['update:modelValue', 'select'],
   setup(props, { emit }) {
-    const { channels } = storeToRefs(useSimpleTalkStore())
+    const { channels: _channels } = storeToRefs(useSimpleTalkStore())
     const simpleTalkStore = useSimpleTalkStore()
     const { t } = useI18n()
 
@@ -287,6 +287,8 @@ export default defineComponent({
       get: () => props.modelValue,
       set: value => emit('update:modelValue', value),
     })
+
+    const channels = computed(() => _channels.value.filter(c => c.type !== 'sub-group'))
 
     // 远程搜索群组
     const searchRemoteGroups = async (searchValue: string) => {

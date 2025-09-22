@@ -1,14 +1,7 @@
 <template>
-  <BaseModal
-    v-model="layout[ShowControl.isShowCreateBroadcastChannelModal]"
-   
-  >
+  <BaseModal v-model="layout[ShowControl.isShowCreateBroadcastChannelModal]">
     <template #title>
-      {{
-       
-         $t('Talk.Community.create_broadcast_channel')
-         
-      }}
+      {{ $t('Talk.Community.create_broadcast_channel') }}
     </template>
 
     <template #body>
@@ -59,7 +52,6 @@
             :class="{
               'faded still text-dark-300  dark:text-gray-400 dark:!bg-gray-700': '',
             }"
-            
             @click="tryCreateBroadcastChannel"
           >
             <Icon name="arrow_right" class="w-6 h-6" />
@@ -84,51 +76,48 @@ import { realRandomString, sleep } from '@/utils/util'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
-
 const router = useRouter()
-const route=useRoute()
+const route = useRoute()
 const i18n = useI18n()
 const userStore = useUserStore()
 const layout = useLayoutStore()
 const talk = useTalkStore()
 
 const tryCreateBroadcastChannel = async () => {
-  
-  
   layout.isShowCreateBroadcastChannelModal = false
   layout.isShowLoading = true
   //const subscribeId = form.uuid || realRandomString(32)
   // talk.activeCommunityId == '@me' ? '' : talk.activeCommunityId
-   const subscribeId = realRandomString(32)
-   const groupId=route.params.channelId as string
-   
+  const subscribeId = realRandomString(32)
+  const groupId = route.params.channelId as string
+
   const res = await createBroadcastChannel(groupId)
-  console.log("res",res)
-    
+  console.log('res', res)
+
   // 添加占位頻道
   if (res.status === 'success') {
- 
     const newChannel = {
       id: 'placeholder_' + realRandomString(8),
       name: '',
       isPlaceHolder: true,
       roomType: ChannelPublicityType.Broadcast,
       uuid: subscribeId,
-      roomPublicKey:'',
-      chatSettingType:0,
-      txId:`${res.channelId}i0`//form.txId,
+      roomPublicKey: '',
+      chatSettingType: 0,
+      txId: `${res.channelId}i0`, //form.txId,
     }
-    
+
     // 将占位頻道添加到頻道列表最前面
     if (res.channelId) {
-      console.log("talk.activeCommunityChannels",talk.activeCommunityChannels)
-      const index = talk.activeCommunityChannels.findIndex(item => item.txId === `${res.channelId}i0`)
-      
+      console.log('talk.activeCommunityChannels', talk.activeCommunityChannels)
+      const index = talk.activeCommunityChannels.findIndex(
+        item => item.txId === `${res.channelId}i0`
+      )
+
       if (index !== -1) {
         talk.activeCommunityChannels[index] = newChannel
       }
     } else {
-        
       talk.activeCommunityChannels.unshift(newChannel)
     }
   }
@@ -138,15 +127,12 @@ const tryCreateBroadcastChannel = async () => {
 
   sleep(2000).then(() => {
     // 跳转刷新
-     //
-
+    //
     //  router.push(`/talk/channels/public/${res.channelId}i0`)
     //  talk.refetchChannels()
-     //window.location.reload()
+    //window.location.reload()
   })
 }
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>

@@ -1,6 +1,10 @@
 <template>
   <TransitionRoot :show="layout.isShowRedPacketResultModal" :unmount="true">
-    <Dialog @close="closeModal" class="relative " :class="[layout.isShowSubChannelDrawer ? 'z-[9999]' : 'z-50']">
+    <Dialog
+      @close="closeModal"
+      class="relative "
+      :class="[layout.isShowSubChannelDrawer ? 'z-[9999]' : 'z-50']"
+    >
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -241,15 +245,15 @@ import { useLayoutStore } from '@/stores/layout'
 import { useModalsStore } from '@/stores/modals'
 import GiftRibbonImg from '@/assets/images/gift_ribbon.svg?url'
 import { formatTimestamp } from '@/utils/talk'
-import { useTalkStore } from '@/stores/talk'
 import { GetNFT } from '@/api/aggregation'
 import { nftSeries } from '@/utils/series'
 import Decimal from 'decimal.js-light'
 // import { toMvcScan } from '@/utils/util'
 import { GrabStatus } from '@/enum'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 const layout = useLayoutStore()
 const modals = useModalsStore()
-const talk = useTalkStore()
+const talk = useSimpleTalkStore()
 const i18n = useI18n()
 const requireNft = ref()
 const toMvcScan = (txId: string) => {
