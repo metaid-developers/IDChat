@@ -288,6 +288,10 @@ onMounted(async () => {
           }
         })
 
+        (window.metaidwallet as any)?.on('onRefresh',()=>{
+          window.location.reload()
+        })
+
 
       } catch (err) {
         console.error('Failed to setup Metalet listeners:', err)
