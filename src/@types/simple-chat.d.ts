@@ -4,12 +4,11 @@ import { MemberRule, RuleOp } from '@/enum'
 export type ChatType = 'group' | 'private' | 'sub-group'
 
 // export type MessageType = 'text' | 'image' | 'reply'
-export interface MuteNotifyItem{
-  groupId:string
-  groupType:'group' | 'private'
-  status:boolean
+export interface MuteNotifyItem {
+  groupId: string
+  groupType: 'group' | 'private'
+  status: boolean
 }
-
 
 export interface GroupUserRoleInfo {
   metaId: string
@@ -172,8 +171,8 @@ export interface SimpleChannel {
   permissionsLastUpdated?: number // 权限信息最后更新时间
   // 保存原始服务端数据
   serverData?: any
-  //是否已开通发布频道
-  //hasSubChannel?:boolean
+  // 临时频道标识
+  isTemporary?: boolean // 标识是否为临时创建的频道（不在默认channels列表中）
 }
 
 // 简化的用户信息

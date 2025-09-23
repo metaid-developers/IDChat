@@ -515,19 +515,28 @@ function toPrivateChat(message:ChatMessageItem){
      return ElMessage.error(`${i18n.t('self_private_chat_unsupport')}`)
   }
 
-  getUserInfoByAddress(message.userInfo.address).then((res)=>{
-    if(res.chatpubkey){
-       router.push({
+//   getUserInfoByAddress(message.userInfo.address).then((res)=>{
+//     if(res.chatpubkey){
+//        router.push({
+//   name:'talkAtMe',
+//   params:{
+//     channelId:message.userInfo.metaid,
+//     // metaid:message.userInfo.metaid
+//   }
+//  })
+//     }else{
+//       return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
+//     }
+//   })
+
+router.push({
   name:'talkAtMe',
   params:{
     channelId:message.userInfo.metaid,
     // metaid:message.userInfo.metaid
   }
  })
-    }else{
-      return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
-    }
-  })
+ simpleTalk.setActiveChannel(message.userInfo.metaid)
 
 
 

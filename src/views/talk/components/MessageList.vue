@@ -19,6 +19,13 @@
     v-show="!layout.isShowMessagesLoading"
     :class="[layout.isShowLeftNav ? 'hidden lg:block' : '']"
   >
+    <el-alert
+      :title="$t('user_private_chat_unsupport')"
+      type="error"
+      show-icon
+      :closable="false"
+      v-if="activeChannel?.type === 'private' && !activeChannel.publicKeyStr"
+    />
     <!-- 广播聊天头部 - 在消息列表最上方（简化版提示） -->
 
     <div v-if="_welComePage && layout.showWelcomeDescView">
@@ -661,11 +668,11 @@ defineExpose({
 }
 
 /* 确保消息容器正常渲染 */
-#messagesScroll > div {
-  min-height: 100%;
-  height: calc(100vh - 128px);
-  overflow: hidden;
-}
+//#messagesScroll > div {
+//  min-height: 100%;
+//  height: calc(100vh - 128px);
+//   overflow: hidden;
+// }
 
 /* 加载指示器样式 */
 // .loading-indicator {

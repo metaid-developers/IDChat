@@ -212,32 +212,32 @@ resolve(communityId, channelId)
 // )
 
 // 监听路由参数变化，激活对应的频道
-watch(
-  () => route.params.channelId,
-  async (newChannelId: string | string[]) => {
-    if (user.isAuthorized && simpleTalk.isInitialized && newChannelId) {
-      const channelId = Array.isArray(newChannelId) ? newChannelId[0] : newChannelId
-      console.log('🔄 路由变化，切换到频道:', channelId)
+// watch(
+//   () => route.params.channelId,
+//   async (newChannelId: string | string[]) => {
+//     if (user.isAuthorized && simpleTalk.isInitialized && newChannelId) {
+//       const channelId = Array.isArray(newChannelId) ? newChannelId[0] : newChannelId
+//       console.log('🔄 路由变化，切换到频道:', channelId)
 
-      // 设置激活的频道
-      simpleTalk.activeChannelId = channelId
+//       // 设置激活的频道
+//       simpleTalk.activeChannelId = channelId
 
-      // 如果频道不存在于本地，尝试创建或获取
-      const existingChannel = simpleTalk.channels.find(c => c.id === channelId)
-      if (!existingChannel) {
-        console.log('🔍 频道不存在于本地，尝试获取或创建...')
-        // 这里可能需要根据 channelId 的类型判断是私聊还是群聊
-        // 暂时先同步一下服务器数据
-        try {
-          await simpleTalk.syncFromServer()
-        } catch (error) {
-          console.warn('同步服务器数据失败:', error)
-        }
-      }
-    }
-  },
-  { immediate: true }
-)
+//       // 如果频道不存在于本地，尝试创建或获取
+//       const existingChannel = simpleTalk.channels.find(c => c.id === channelId)
+//       if (!existingChannel) {
+//         console.log('🔍 频道不存在于本地，尝试获取或创建...')
+//         // 这里可能需要根据 channelId 的类型判断是私聊还是群聊
+//         // 暂时先同步一下服务器数据
+//         try {
+//           await simpleTalk.syncFromServer()
+//         } catch (error) {
+//           console.warn('同步服务器数据失败:', error)
+//         }
+//       }
+//     }
+//   },
+//   { immediate: true }
+// )
 
 // onBeforeUnmount(() => {
 //   talk.saveReadPointers()

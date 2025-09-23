@@ -396,7 +396,7 @@ export default defineComponent({
     const selectRemoteGroup = (group: RemoteSearchGroup) => {
       // 转换远程群组数据格式以匹配本地联系人格式
       const remoteContact = {
-        roomId: group.groupId,
+        id: group.groupId || group.metaId || '',
         roomName: group.groupName,
         memberCount: group.memberCount || 0,
         isRemote: true, // 标记这是远程群组

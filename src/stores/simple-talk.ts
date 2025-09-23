@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { SimpleChannel,MuteNotifyItem, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
-import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers } from '@/api/talk'
+import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers, getOneChannel } from '@/api/talk'
 
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
 import { useUserStore } from './user'
@@ -11,26 +11,11 @@ import { decrypt } from '@/utils/crypto'
 import { useChainStore } from './chain'
 import { tryCreateNode } from '@/utils/talk'
 import { getTimestampInSeconds } from '@/utils/util'
-import { NodeName ,MemberRule,RuleOp} from '@/enum'
+import { NodeName } from '@/enum'
 
 
 
-const getPermission = (rule:MemberRule) =>{
-  switch(rule){
-    case MemberRule.Owner:
-      return [RuleOp.CanSpeak,RuleOp.SetAdmin,RuleOp.RemoveAdmin,RuleOp.SetSpeaker,RuleOp.RemoveSpeaker,RuleOp.DeleteMember,RuleOp.Normal]
-    case MemberRule.Admin:
-      return [RuleOp.CanSpeak,RuleOp.SetSpeaker,RuleOp.RemoveSpeaker,RuleOp.DeleteMember,RuleOp.Normal]
-    case MemberRule.Speaker:
-      return [RuleOp.CanSpeak,RuleOp.Normal]
-    case MemberRule.Normal:
-      return [RuleOp.Normal]
-    default:
-      return [RuleOp.Normal]
-  }
-}
 
-const MuteRoleList=[MemberRule.Normal,MemberRule.Block,MemberRule.Leave]
 
 
 
@@ -834,6 +819,24 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return this.allChannels.filter(c => c.type === 'private')
     },
 
+    // 获取临时频道列表
+    temporaryChannels(): SimpleChannel[] {
+      return this.channels.filter(c => c.isTemporary === true)
+    },
+
+    // 获取常规频道列表（非临时）
+    regularChannels(): SimpleChannel[] {
+      return this.channels.filter(c => !c.isTemporary)
+    },
+
+    // 检查指定频道是否为临时频道
+    isTemporaryChannel(): (channelId: string) => boolean {
+      return (channelId: string) => {
+        const channel = this.channels.find(c => c.id === channelId)
+        return channel?.isTemporary === true
+      }
+    },
+
     // 获取未读消息总数
     totalUnreadCount(): number {
       return this.channels.reduce((sum, channel) => sum + channel.unreadCount, 0)
@@ -957,6 +960,16 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       const userStore = useUserStore()
       const currentUserMetaId = userStore.last?.metaid
       
+      // 确保 Map 对象正确初始化（处理持久化恢复问题）
+      if (!(this.messageCache instanceof Map)) {
+        console.log('🔧 修复消息缓存 Map 对象')
+        this.messageCache = new Map<string, UnifiedChatMessage[]>()
+      }
+      if (!(this.userCache instanceof Map)) {
+        console.log('🔧 修复用户缓存 Map 对象')
+        this.userCache = new Map<string, SimpleUser>()
+      }
+      
       if (!currentUserMetaId) {
         console.warn('⚠️ 用户未登录，无法初始化聊天系统')
         return
@@ -984,15 +997,16 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         // 1. 初始化IndexedDB（带用户隔离）
         await this.db.init(currentUserMetaId)
-        
+        console.log('✅ IndexedDB 初始化成功')
         // 2. 加载本地缓存数据（快速显示）
         await this.loadFromLocal()
-        
+        console.log('✅ 本地数据加载完成')
         // 3. 异步同步服务端数据
         console.log('🚀 开始后台同步服务端数据...')
         await this.syncFromServer().catch(error => {
           console.warn('⚠️ 后台同步失败:', error)
         })
+        console.log('✅ 服务端数据同步完成')
 
         // 4. 恢复上次的激活频道（异步）
         await this.restoreLastActiveChannel()
@@ -1220,7 +1234,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         // 安全保存到数据库，移除可能导致序列化错误的字段
         const channelToSave = { ...this.channels[channelIndex] }
-        delete channelToSave.serverData // 移除可能包含不可序列化数据的字段
+        // delete channelToSave.serverData // 移除可能包含不可序列化数据的字段
         await this.db.saveChannel(channelToSave)
         
         console.log(`✅ 群聊 ${groupId} 权限信息已更新并保存`)
@@ -1404,14 +1418,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
           // 安全保存，移除可能有问题的字段
           const channelToSave = { ...this.channels[existingIndex] }
-          delete channelToSave.serverData
+          // delete channelToSave.serverData
           await this.db.saveChannel(channelToSave)
         } else {
           // 添加新的子频道
           this.channels.push(subChannel)
           // 安全保存，移除可能有问题的字段
           const subChannelToSave = { ...subChannel }
-          delete subChannelToSave.serverData
+          // delete subChannelToSave.serverData
           await this.db.saveChannel(subChannelToSave)
         }
 
@@ -1514,14 +1528,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           existingMap.delete(serverChannel.id)
           // 安全保存，移除可能有问题的字段
           const mergedToSave = { ...merged }
-          delete mergedToSave.serverData
+          // delete mergedToSave.serverData
           await this.db.saveChannel(mergedToSave)
         } else {
           // 新频道
           mergedChannels.push(serverChannel)
           // 安全保存，移除可能有问题的字段
           const serverToSave = { ...serverChannel }
-          delete serverToSave.serverData
+          // delete serverToSave.serverData
           await this.db.saveChannel(serverToSave)
         }
       }
@@ -1580,6 +1594,25 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async setActiveChannel(channelId: string): Promise<void> {
       if (this.activeChannelId === channelId) return
 
+      // 检查频道是否存在于当前channels列表中
+      let channel = this.channels.find(c => c.id === channelId)
+      
+      // 如果频道不存在，尝试创建临时频道
+      if (!channel) {
+        console.log(`🔍 频道 ${channelId} 不在当前列表中，尝试创建临时频道...`)
+        const temporaryChannel = await this.createTemporaryChannel(channelId)
+        
+        if (!temporaryChannel) {
+          console.error(`❌ 无法创建临时频道: ${channelId}`)
+          return
+        }
+        
+        channel = temporaryChannel
+        // 将临时频道添加到频道列表中
+        this.channels.unshift(channel)
+        console.log(`✅ 临时频道已创建并添加到列表: ${channel.name} (${channel.type})`)
+      }
+
       this.activeChannelId = channelId
 
       // 总是重新加载消息以确保数据最新
@@ -1588,7 +1621,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
 
       // 如果是群聊，获取权限信息
-      const channel = this.channels.find(c => c.id === channelId)
       if (channel && channel.type === 'group') {
         // 在后台获取权限信息，不阻塞界面
         this.getGroupMemberPermissions(channelId).catch(error => {
@@ -1601,6 +1633,98 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
       // 保存到本地存储
       localStorage.setItem(`lastActiveChannel-${this.selfMetaId}`, channelId)
+    },
+
+    /**
+     * 创建临时频道
+     * 当 channelId 不在当前 channels 列表中时，尝试从服务器获取信息并创建临时频道
+     */
+    async createTemporaryChannel(channelId: string): Promise<SimpleChannel | null> {
+      try {
+        const userStore = useUserStore()
+        const ecdhsStore = useEcdhsStore()
+        
+        // 判断是否是 64 位长度的 metaId（私聊）
+        if (channelId.length === 64) {
+          console.log(`🔍 检测到私聊 channelId: ${channelId}`)
+          
+          try {
+            const userInfo = await GetUserEcdhPubkeyForPrivateChat(channelId)
+            
+            // if (!userInfo.chatPublicKey) {
+            //   console.warn(`⚠️ 用户 ${channelId} 未开启私聊功能`)
+            //   return null
+            // }
+
+            // 设置 ECDH 密钥
+            // let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
+            // if (!ecdh) {
+            //   ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+            //   if (ecdh) {
+            //     ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
+            //   }
+            // }
+
+            const privateChannel: SimpleChannel = {
+              id: channelId,
+              type: 'private',
+              name: userInfo.name || '私聊用户',
+              avatar: userInfo.avatarImage,
+              members: [this.selfMetaId, channelId],
+              createdBy: this.selfMetaId,
+              createdAt: Date.now(),
+              unreadCount: 0,
+              targetMetaId: channelId,
+              publicKeyStr: userInfo.chatPublicKey,
+              isTemporary: true, // 标记为临时频道
+              serverData: {
+                userInfo
+              }
+            }
+
+            console.log(`✅ 创建临时私聊频道: ${privateChannel.name}`)
+            return privateChannel
+          } catch (error) {
+            console.error(`❌ 获取私聊用户信息失败 ${channelId}:`, error)
+            return null
+          }
+        } else {
+          // 群聊频道
+          console.log(`🔍 检测到群聊 channelId: ${channelId}`)
+          
+          try {
+            const channelInfo = await getOneChannel(channelId)
+            
+            if (!channelInfo) {
+              console.warn(`⚠️ 群聊 ${channelId} 不存在或无权访问`)
+              return null
+            }
+
+            const groupChannel: SimpleChannel = {
+              id: channelInfo.groupId || channelId,
+              type: 'group',
+              name: channelInfo.roomName || '群聊',
+              avatar: channelInfo.roomAvatarUrl,
+              createdBy: channelInfo.createUserMetaId || '',
+              createdAt: channelInfo.timestamp || Date.now(),
+              roomNote: channelInfo.roomNote,
+              userCount: channelInfo.userCount,
+              unreadCount: 0,
+              isTemporary: true, // 标记为临时频道
+              serverData: channelInfo
+            }
+
+            console.log(`✅ 创建临时群聊频道: ${groupChannel.name}`)
+            return groupChannel
+          } catch (error) {
+            console.error(`❌ 获取群聊信息失败 ${channelId}:`, error)
+            return null
+          }
+        }
+      } catch (error) {
+        console.error(`❌ 创建临时频道失败 ${channelId}:`, error)
+        return null
+      }
     },
 
     /**
@@ -2553,12 +2677,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         // 更新内存缓存
         if(channelId ===this.activeChannelId){
-          if (this.messageCache.has(channelId)) {
-            if(message.index && message.index > (this.messageCache.get(channelId)![0]?.index || 0) +1){
-              // 如果新消息的 index 比当前最新消息的 index 大超过1，说明中间有缺失，触发从服务器拉取最新消息
-              console.log(`⚠️ 检测到消息缺失，触发从服务器拉取最新消息: 频道 ${channelId}, 新消息 index ${message.index}, 当前最新消息 index ${this.messageCache.get(channelId)![0]?.index || 0}`)
 
-            }else{
+          if (this.messageCache.has(channelId)) {
+             const messages = this.messageCache.get(channelId)!
+            if(message.index && message.index > (messages[messages.length -1]?.index || 0) +1){
+// 如果新消息的 index 比当前最新消息的 index 大超过1，说明中间有缺失，触发从服务器拉取最新消息
+              const currentLatestIndex = messages[messages.length-1]?.index || 0
+              console.log(`⚠️ 检测到消息缺失，触发从服务器拉取最新消息: 频道 ${channelId}, 新消息 index ${message.index}, 当前最新消息 index ${currentLatestIndex}`)
+              }else{
               const messages = this.messageCache.get(channelId)!
               messages.push(message) // 新消息在前
               // 限制缓存大小
@@ -2716,9 +2842,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           mockMsg.timestamp = message.timestamp
           mockMsg.mockId = '' // 清空mockId，表示已发送成功
           // 更新数据库
-          if(message.index === 0 && this.channels.find(c => c.id === channelId)?.lastMessage){
-            const channel = this.channels.find(c => c.id === channelId)
-            mockMsg.index = (channel?.lastMessage?.index || 0) + 1
+          if(message.index === 0 ){
+            mockMsg.index = mockMsg.index
           }
 
           await this.updateMessage(mockMsg)
@@ -3002,6 +3127,52 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     clearMuteNotifyList(){
       this.muteNotifyList=[]
        localStorage.removeItem('muteNotifyList')
+    },
+
+    /**
+     * 清理临时频道
+     * 移除指定的临时频道或所有非活跃的临时频道
+     */
+    cleanupTemporaryChannels(channelId?: string): void {
+      if (channelId) {
+        // 移除指定的临时频道
+        const index = this.channels.findIndex(c => c.id === channelId && c.isTemporary)
+        if (index > -1) {
+          this.channels.splice(index, 1)
+          console.log(`🗑️ 已移除临时频道: ${channelId}`)
+          
+          // 如果移除的是当前活跃频道，清除活跃状态
+          if (this.activeChannelId === channelId) {
+            this.activeChannelId = ''
+          }
+        }
+      } else {
+        // 移除所有非活跃的临时频道（保留当前活跃的临时频道）
+        const initialLength = this.channels.length
+        this.channels = this.channels.filter(c => 
+          !c.isTemporary || c.id === this.activeChannelId
+        )
+        const removedCount = initialLength - this.channels.length
+        if (removedCount > 0) {
+          console.log(`🗑️ 已清理 ${removedCount} 个非活跃临时频道`)
+        }
+      }
+    },
+
+    /**
+     * 将临时频道转换为常规频道
+     * 当用户主动加入频道时，可以将临时频道转为常规频道
+     */
+    convertTemporaryToRegular(channelId: string): boolean {
+      const channel = this.channels.find(c => c.id === channelId && c.isTemporary)
+      if (channel) {
+        channel.isTemporary = false
+        console.log(`✅ 临时频道 ${channelId} 已转换为常规频道`)
+        return true
+      }
+      return false
     }
-  }
+  },
+  
 })
+
