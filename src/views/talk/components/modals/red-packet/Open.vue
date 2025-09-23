@@ -1,6 +1,10 @@
 <template>
   <TransitionRoot :show="layout.isShowRedPacketOpenModal" :unmount="true">
-    <Dialog @close="closeModal" class="relative" :class="[layout.isShowSubChannelDrawer ? 'z-[9999]' : 'z-50']">
+    <Dialog
+      @close="closeModal"
+      class="relative"
+      :class="[layout.isShowSubChannelDrawer ? 'z-[9999]' : 'z-50']"
+    >
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -243,9 +247,8 @@ const tryOpenRedPacket = async () => {
     layout.isShowLoading = false
     await viewDetails()
   } catch (error) {
-    
     layout.isShowLoading = false
-    layout.isShowRedPacketOpenModal=false
+    layout.isShowRedPacketOpenModal = false
     ElMessage.error(`${i18n.t('redpack_claim_over')}`)
   }
 }
@@ -255,7 +258,7 @@ const viewDetails = async () => {
    simpleTalk.addReceivedRedPacketId(message?.txId)
   
   const redPacketInfo = await getOneRedPacket({
-    groupId:simpleTalk.activeChannel?.parentGroupId ?  simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
+    groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannel?.id,
     pinId: `${message?.txId}i0`,
   })
   modals.redPacketResult = redPacketInfo

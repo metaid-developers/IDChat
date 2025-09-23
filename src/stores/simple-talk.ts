@@ -2554,12 +2554,19 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 更新内存缓存
         if(channelId ===this.activeChannelId){
           if (this.messageCache.has(channelId)) {
-            const messages = this.messageCache.get(channelId)!
-            messages.push(message) // 新消息在前
-            // 限制缓存大小
-            if (messages.length > 5000) {
-              messages.splice(5000)
+            if(message.index && message.index > (this.messageCache.get(channelId)![0]?.index || 0) +1){
+              // 如果新消息的 index 比当前最新消息的 index 大超过1，说明中间有缺失，触发从服务器拉取最新消息
+              console.log(`⚠️ 检测到消息缺失，触发从服务器拉取最新消息: 频道 ${channelId}, 新消息 index ${message.index}, 当前最新消息 index ${this.messageCache.get(channelId)![0]?.index || 0}`)
+
+            }else{
+              const messages = this.messageCache.get(channelId)!
+              messages.push(message) // 新消息在前
+              // 限制缓存大小
+              if (messages.length > 5000) {
+                messages.splice(5000)
+              }
             }
+           
           } else {
             this.messageCache.set(channelId, [message])
           }
