@@ -398,6 +398,8 @@ const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const hasInput = computed(() => chatInput.value.length > 0)
 
+
+
 /** 输入框样式 */
 const isShowingButtonGroup = computed(() => {
   const isMobile = window.innerWidth <= 1024

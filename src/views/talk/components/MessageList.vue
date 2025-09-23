@@ -271,7 +271,7 @@ const currentChannelType = computed(() => {
   if (simpleTalk.isInitialized) {
     const channel = simpleTalk.activeChannel
     // simple-talk 的类型是 'group' | 'private'，需要转换为 'group' | 'session'
-    return channel!.type === 'private' ? 'session' : channel!.type
+    return channel?.type === 'private' ? 'session' : channel?.type
   }
   return 'group' // 默认值
 })

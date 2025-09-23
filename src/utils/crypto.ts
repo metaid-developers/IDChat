@@ -5,7 +5,12 @@ import { CryptoInfo } from '@/@types/talk'
 import * as cryptojs from 'crypto-js'
 const Utf8 = enc.Utf8
 const iv = Utf8.parse('0000000000000000')
-
+/**
+ * 群聊解密
+ * @param message 
+ * @param secretKeyStr 
+ * @returns 
+ */
 export function decrypt(message: string, secretKeyStr: string): string {
   const secretKey = Utf8.parse(secretKeyStr)
 
@@ -24,7 +29,12 @@ export function decrypt(message: string, secretKeyStr: string): string {
     return message
   }
 }
-
+/**
+ * 群聊加密
+ * @param message 
+ * @param secretKeyStr 
+ * @returns 
+ */
 export function encrypt(message: string, secretKeyStr: string): string {
   const messageWordArray = Utf8.parse(message)
   const secretKey = Utf8.parse(secretKeyStr)
@@ -183,14 +193,23 @@ function isLikelyBase64(str: string): boolean {
 }
 
 
-
+/**
+ * 私聊加密
+ * @param message 
+ * @param secretKey 
+ * @returns 
+ */
 export function ecdhEncrypt(message: string, secretKey: string): string {
-
 
   return AES.encrypt(message, secretKey).toString()
 
 }
-
+/**
+ * 私聊解密
+ * @param message 
+ * @param secretKey 
+ * @returns 
+ */
 export function ecdhDecrypt(message: string, secretKey: string): string {
 
  try {
@@ -205,7 +224,12 @@ export function ecdhDecrypt(message: string, secretKey: string): string {
 }
 
 
-
+/**
+ * 私聊图片加密
+ * @param message 
+ * @param secretKey 
+ * @returns 
+ */
 export function ecdhEncryptForPrivateImg(message: string, secretKey: string): string {
   // 将hex字符串转换为WordArray
   

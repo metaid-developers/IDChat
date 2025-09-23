@@ -67,24 +67,30 @@
         class="grow"
         :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']"
       >
-        <div class="flex items-baseline space-x-2" :class="[isMyMessage ? 'justify-end' : '']">
+        <div class="flex  space-x-2" :class="[isMyMessage ? 'flex-row-reverse items-center' : 'items-baseline']">
           <UserName
             :name="message?.fromUserInfo?.name"
             :meta-name="''"
             :text-class="'text-sm font-medium dark:text-gray-100'"
+            :class="[isMyMessage ? 'ml-2' : '']"
           />
           <div
-            class=" text-xs shrink-0 inline-flex gap-1 whitespace-nowrap"
+            class=" text-xs shrink-0 flex  whitespace-nowrap items-center"
             :class="[
+                isMyMessage ? 'flex-row-reverse  justify-center' : 'gap-1 ',
               msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
             ]"
           >
-            {{ formatTimestamp(message.timestamp, i18n) }}
-            <img
+           <span> {{ formatTimestamp(message.timestamp, i18n) }}</span>
+          <div class="flex " >
+            <Icon name="btc" v-if="msgChain == ChatChain.btc" class="chain-icon-menu w-[16px] h-[16px]"  :class="isMyMessage ? 'mr-1' : ''"></Icon>
+              <!-- <img
               :src="btcIcon"
-              class="chain-icon-menu w-[16px] h-[16px]"
-              v-if="msgChain == ChatChain.btc"
-            />
+              
+             
+              
+            /> -->
+          </div>
           </div>
         </div>
 
@@ -420,10 +426,10 @@
 
         <div class="my-1.5 max-w-full flex" :class="[isMyMessage ? 'flex-row-reverse' : '']" v-else>
           <div
-            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
+              isMyMessage ? 'bg-primary dark:text-gray-800 rounded-tr' : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-if="translateStatus === 'showing'"
@@ -435,10 +441,10 @@
           </div>
 
           <div
-            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
+              isMyMessage ? 'bg-primary dark:text-gray-800 rounded-tr' : 'not-mine bg-white dark:bg-gray-700 rounded-tl ',
 
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
@@ -456,10 +462,10 @@
             "
           ></div>
           <div
-            class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl rounded-tl transition-all duration-200"
+            class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800' : 'not-mine bg-white dark:bg-gray-700',
+              isMyMessage ? 'bg-primary dark:text-gray-800 rounded-tr' : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else

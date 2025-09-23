@@ -60,11 +60,12 @@
           <div class="mt-4">
             <el-button
               v-if="isCurrentUserCreator"
-              color="#ffffff"
+              color="#fff"
               size="default"
               :icon="CirclePlus"
-              @click="showCreateBroadcastModal = true"
-              >Broadcast</el-button
+              :class="[hasSubChannelList.length ? 'cursor-not-allowed' : 'cursor-pointer']"
+              @click="openBroadcastDialog"
+              >{{$t('broadcast_channel_create')}}</el-button
             >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true">{{
               $t('Talk.Channel.search')
@@ -94,11 +95,11 @@
           </div>
         </div>
 
-        <div class="mt-3 bg-white dark:bg-black px-4 py-5" @click="copyLink">
+        <div class="mt-3  bg-white dark:bg-black px-4 py-5" @click="copyLink">
           <div class="flex items-center justify-between text-md font-medium">
             {{ $t('Talk.Channel.ShareLink') }}
           </div>
-          <div class="mt-2 text-dark-300 dark:text-gray-400 flex items-center justify-between">
+          <div class="mt-2  text-dark-700 dark:text-gray-800 px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-200  flex items-center justify-between">
             <div class="word-break break-all">
               {{ currentLink }}
             </div>
@@ -106,6 +107,14 @@
               class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-gray-400"
               ><Link
             /></el-icon>
+          </div>
+        </div>
+
+
+        <div  class="mt-3 mb-3 bg-white dark:bg-black px-4 py-5" >
+          <div class="flex items-center justify-between">
+            <div>{{ $t('mute_notifiy') }}</div>
+            <ElSwitch v-model="triggleMuteNotify" @change="trggleMuteMode"></ElSwitch>
           </div>
         </div>
       </div>
@@ -271,7 +280,7 @@ import {
   reactive,
   onUpdated,
 } from 'vue'
-
+import { ElSwitch } from 'element-plus'
 import { useTalkStore } from '@/stores/talk'
 import { useUserStore } from '@/stores/user'
 import ChannelMemberItem from './ChannelMemberItem.vue'
@@ -282,6 +291,7 @@ import { useRoute } from 'vue-router'
 import { getChannelMembers, searchChannelMembers,getUserGroupRole } from '@/api/talk'
 import { ElMessage } from 'element-plus'
 import copy from 'copy-to-clipboard'
+import {addMyBlockChatList} from '@/api/chat-notify'
 import {
   ArrowRight,
   CircleClose,
@@ -307,6 +317,7 @@ import { useI18n } from 'vue-i18n'
 
 
 
+
 interface Props {
   modelValue: boolean
 }
@@ -317,6 +328,7 @@ const showSearch = ref(false)
 const showCreateBroadcastModal = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
+
 
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadTrigger = ref<HTMLElement | null>(null)
@@ -339,6 +351,7 @@ const currentPage = ref(0)
 // 每页大小
 const pageSize = 20
 
+const i18n=useI18n()
 
 
 
@@ -350,12 +363,23 @@ const showEditChannelInfoDrawer = ref(false)
 
 
 
+const hasSubChannelList=computed(()=>{
+  return simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.activeChannel?.parentGroupId || [] :
+  simpleTalkStore.getSubChannelsByParent(simpleTalkStore.activeChannel?.id) || []
+})
+
 const currentChannelInfo = computed(() => {
   return simpleTalkStore.activeChannel?.type === 'sub-group'
     ? simpleTalkStore.getParentGroupChannel(simpleTalkStore.activeChannel.id) || null
     : simpleTalkStore.activeChannel || null
 })
 
+
+const triggleMuteNotify=computed(()=>{
+  return simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.parentGroupId) : 
+  simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.id)
+
+})
 
 
 // 判断当前用户是否是频道创建者
@@ -403,7 +427,46 @@ const currentDisplayList = computed(() => {
   return memberList.value || []
 })
 
+const openBroadcastDialog=()=>{
+  if(hasSubChannelList.value.length){
+     ElMessage.warning(`${i18n.t('sub_channel_created')}`)
+  }else{
+    showCreateBroadcastModal.value = true
+  }
 
+
+}
+
+const trggleMuteMode=(e:boolean)=>{
+     simpleTalkStore.updateMuteNotify({
+    groupId:currentChannelInfo.value.id,
+    groupType:'group',
+    status:e
+  })
+
+
+  // debugger
+  //  addMyBlockChatList({
+  //   chatId:currentChannelInfo.value.id,
+  //   chatType:'group',
+  //   metaId:simpleTalkStore.selfMetaId
+  //  },{
+  //   ['X-Signature']:'',
+  //   ['X-Public-Key']:""
+  //  }).then((res)=>{
+  //   console.log("res",res)
+  //   debugger
+  //     simpleTalkStore.updateMuteNotify({
+  //   groupId:currentChannelInfo.value.id,
+  //   groupType:'group',
+  //   status:e
+  // })
+  //  })
+
+
+  
+
+}
 
 
 const copyLink = () => {
@@ -669,7 +732,7 @@ const handleAdmin = async (member: MemberItem) => {
 
   try {
     let admins: string[] = []
-
+    
     // 获取当前管理员列表（排除群主）
     if (memberPermissions.value?.admins) {
       memberPermissions.value.admins.forEach((item: MemberItem) => {
@@ -694,7 +757,7 @@ const handleAdmin = async (member: MemberItem) => {
 
     const groupId = currentChannelInfo.value.id
     const updateRes = await setChannelAdmins(groupId, admins)
-
+    
     if (updateRes.status === 'success' && updateRes.txid) {
       await simpleTalkStore.getGroupMemberPermissions(groupId, true)
       // 重新加载权限信息

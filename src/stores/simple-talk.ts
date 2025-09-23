@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { SimpleChannel, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
+import type { SimpleChannel,MuteNotifyItem, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
 import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers } from '@/api/talk'
 
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
@@ -12,6 +12,8 @@ import { useChainStore } from './chain'
 import { tryCreateNode } from '@/utils/talk'
 import { getTimestampInSeconds } from '@/utils/util'
 import { NodeName ,MemberRule,RuleOp} from '@/enum'
+
+
 
 const getPermission = (rule:MemberRule) =>{
   switch(rule){
@@ -377,6 +379,7 @@ class SimpleChatDB {
         const channels = (request.result || []).map(({ userPrefix, ...channel }) => channel)
         resolve(channels)
       }
+      
       request.onerror = () => resolve([])
     })
   }
@@ -740,6 +743,8 @@ class SimpleChatDB {
 
 export const useSimpleTalkStore = defineStore('simple-talk', {
   state: () => ({
+
+    muteNotifyList: JSON.parse(localStorage.getItem('muteNotifyList') || JSON.stringify([])) || [] as MuteNotifyItem[],  //localStorage.getItem('isMuteNotify') || false,
     // 所有聊天频道（群聊+私聊）
     channels: [] as SimpleChannel[],
     
@@ -771,6 +776,25 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
   }),
 
   getters: {
+
+    getMuteNotifyList(state){
+      return state.muteNotifyList || JSON.parse(localStorage.getItem('muteNotifyList') || JSON.stringify([]))
+    },
+
+    getOneChannelMuteStatus():(channelId: string) => boolean {
+      return (channelId: string) => {
+        if(this.muteNotifyList.length){
+            const channel:MuteNotifyItem= this.muteNotifyList.find((c:MuteNotifyItem) => c.groupId === channelId)
+        if(channel){
+          return channel.status
+        }else{
+          return false
+        }
+        }else{  
+          return false
+        }
+      }
+    },
 
      selfAddress(): string {
       const userStore = useUserStore()
@@ -1015,7 +1039,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const channels = await this.db.getChannels()
         this.channels = channels
         console.log(`📂 从本地加载了 ${channels.length} 个频道`)
-        
+       
         // 加载已领取的红包ID
         await this.initReceivedRedPacketIds()
       } catch (error) {
@@ -1212,6 +1236,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 获取群聊成员权限信息（优先从本地缓存获取）
      */
     async getGroupMemberPermissions(groupId: string, forceRefresh: boolean = false): Promise<MemberListRes | null> {
+      
+      console.log("this.channels",this.channels)
+      console.log("this.channels",this.allChannels)
+      
       const channel = this.channels.find(c => c.id === groupId && c.type === 'group')
       if (!channel) {
         console.warn(`⚠️ 未找到群聊频道: ${groupId}`)
@@ -2936,10 +2964,37 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
     },
     async receiveUserRoleMessage(message: GroupUserRoleInfo) {
+      
       console.log('📩 接收到用户角色消息:', message)
+       // 2. 加载本地缓存数据（快速显示）
+     
+    
       if(message && message.groupId && message.metaId){
         await this.getGroupMemberPermissions(message.groupId, true)
       }
+    },
+
+    updateMuteNotify(payload:MuteNotifyItem){
+       
+      const hasRecord=this.muteNotifyList.length && this.muteNotifyList.find((item:MuteNotifyItem)=>item.groupId == payload.groupId)
+
+      if(hasRecord){
+          this.muteNotifyList=this.muteNotifyList.map((c:MuteNotifyItem) => {
+        if(c.groupId === payload.groupId){
+          c.status=payload.status
+        }
+        return c
+      })
+      }else{
+        this.muteNotifyList.push(payload)
+      }
+  
+      localStorage.setItem('muteNotifyList',JSON.stringify(this.muteNotifyList))
+    },
+
+    clearMuteNotifyList(){
+      this.muteNotifyList=[]
+       localStorage.removeItem('muteNotifyList')
     }
   }
 })

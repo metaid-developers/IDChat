@@ -239,6 +239,7 @@ const tryOpenRedPacket = async () => {
 
     await grabRedPacket(params)
     await sleep(1000)
+    
     layout.isShowLoading = false
     await viewDetails()
   } catch (error) {
@@ -250,18 +251,26 @@ const tryOpenRedPacket = async () => {
 }
 
 const viewDetails = async () => {
-  simpleTalk.addReceivedRedPacketId(message?.txId)
-
+ try {
+   simpleTalk.addReceivedRedPacketId(message?.txId)
+  
   const redPacketInfo = await getOneRedPacket({
-    groupId: simpleTalk.activeChannelId,
+    groupId:simpleTalk.activeChannel?.parentGroupId ?  simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
     pinId: `${message?.txId}i0`,
   })
-
   modals.redPacketResult = redPacketInfo
+ } catch (error) {
+  
+  throw new Error(error as any)
+  
+ }finally{
+  
 
   modals.openRedPacket = null
   layout.isShowRedPacketOpenModal = false
   layout.isShowRedPacketResultModal = true
+ }
+
 }
 
 const closeModal = () => {

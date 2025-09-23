@@ -1444,5 +1444,8 @@
   "set_admin_fail": "Failed to set administrator",
   "set_whitelist_fail": "Failed to set whitelist",
   "channle_memeber_whitelist": "Speaker",
-  "Mute": "Mute"
+  "Mute": "Mute",
+  "sub_channel_created": "Do not create duplicate broadcast channels",
+  "broadcast_channel_create": "Broadcast",
+  "mute_notifiy": "Mute Notifications"
 }

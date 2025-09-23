@@ -63,7 +63,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { MessageType, SimpleChannel, SimpleMessage } from '@/@types/simple-chat.d'
+import { MessageType, SimpleChannel } from '@/@types/simple-chat.d'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 export default defineComponent({
   name: 'DirectContactItem',

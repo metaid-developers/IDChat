@@ -15,6 +15,7 @@ import { useApprovedStore } from './approved'
 import { useTalkStore } from './talk'
 import { useEcdhsStore } from './ecdh'
 import { useLayoutStore } from './layout'
+import { useSimpleTalkStore } from './simple-talk'
 function getWalletAdapter(wallet: Wallet) {
   switch (wallet) {
     case 'metalet':
@@ -251,8 +252,10 @@ export const useConnectionStore = defineStore('connection', {
       // const talkStore = useTalkStore()
       const approvedStore = useApprovedStore()
       const ecdhsStore=useEcdhsStore()
-      console.log('router', router)
-
+     const simpleTalkStore=useSimpleTalkStore()
+     
+      simpleTalkStore.clearMuteNotifyList()
+       console.log('router', router)
       await userStore.clearUserInfo()
       ecdhsStore.clear()
      
