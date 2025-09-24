@@ -752,6 +752,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     
     // 系统状态
     isInitialized: false,
+    isInitializing: false,
     isLoading: false,
     lastSyncTime: 0,
     
@@ -959,6 +960,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 初始化聊天系统
      */
     async init(): Promise<void> {
+      if (this.isInitializing) {
+        console.log('⏳ 聊天系统正在初始化中...')
+        return
+      }
+      this.isInitializing = true
       const userStore = useUserStore()
       const currentUserMetaId = userStore.last?.metaid
       
@@ -974,6 +980,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       
       if (!currentUserMetaId) {
         console.warn('⚠️ 用户未登录，无法初始化聊天系统')
+        this.isInitializing = false
         return
       }
 
@@ -982,6 +989,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       
       if (!needReinit) {
         console.log('✅ 聊天系统已为当前用户初始化')
+        this.isInitializing = false
         return
       }
 
@@ -1018,6 +1026,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       } catch (error) {
         console.error('❌ 聊天系统初始化失败:', error)
         throw error
+      }
+      finally {
+        this.isInitializing = false
       }
     },
 

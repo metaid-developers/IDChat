@@ -173,6 +173,7 @@ import { storeToRefs } from 'pinia'
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
 const isLoadingBottom = ref(false) // 控制底部加载器
+const isNoMoreBottom = ref(false) // 控制底部没有更多数据
 const listContainer = ref<HTMLElement | null>(null)
 const bottomSpacer = ref<HTMLElement | null>(null)
 const listWrapper = ref<HTMLElement | null>(null)
@@ -293,6 +294,9 @@ const loadItems = async (isPrepending = false) => {
     }
     isLoadingTop.value = true
   } else {
+    if (isNoMoreBottom.value) {
+      return
+    }
     isLoadingBottom.value = true
   }
 
@@ -320,7 +324,7 @@ const loadItems = async (isPrepending = false) => {
   const afterLength = simpleTalk.activeChannelMessages.length
 
   if (beforeLength === afterLength) {
-    isNoMoreTop.value = true
+    isPrepending ? (isNoMoreBottom.value = true) : (isNoMoreTop.value = true)
   }
 
   if (isPrepending && listWrapper.value && listContainer.value) {
@@ -361,9 +365,9 @@ const handleScroll = (event: Event) => {
 
   try {
     // 检查是否滚动到顶部
-    if (container.scrollTop === 0) {
-      console.log('滚动到顶部，准备加载新数据...')
-      loadItems(true) // true 表示下拉刷新
+    if (Math.abs(container.scrollTop) === 0 && !isNoMoreBottom.value && !isLoadingBottom.value) {
+      console.log('滚动到底部，准备加载新数据...')
+      loadItems(true) // true 表示上滑加载
     }
     console.log('container.scrollTop', container.scrollTop)
 
@@ -379,7 +383,7 @@ const handleScroll = (event: Event) => {
       container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
       threshold
     ) {
-      console.log('滚动到底部，准备加载更多数据...')
+      console.log('滚动到顶部，准备加载更多数据...')
       loadItems(false).catch(error => {
         console.error('加载更多数据失败:', error)
       })
@@ -459,6 +463,9 @@ watch(
       await simpleTalk.setActiveChannel(newChannelId as string)
       console.log('✅ 频道切换完成:', newChannelId)
       await nextTick()
+      if (listContainer.value) {
+        listContainer.value.scrollTop = 0
+      }
       // scrollToMessagesBottom()
     }
   },
