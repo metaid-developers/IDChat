@@ -266,6 +266,7 @@ onMounted(async () => {
         ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
           try {
             if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
+               ElMessage.success('调用了loginsucess')
               await connectMetalet()
 
               if (!userStore.last.chatpubkey) {
@@ -295,22 +296,23 @@ onMounted(async () => {
         })
 
         (window.metaidwallet as any)?.on('onRefresh',async()=>{
+            ElMessage.success('成功调用了app刷新功能')
           //监听APP数据刷新
-          if(connectionStore.last.status == 'connected' && userStore.isAuthorized){
-              ElMessage.success('成功调用了app刷新功能')
+          if(userStore.isAuthorized){
+          
               const loading = openLoading({
                 text: i18n.t('reload'),
               })
             try{
              
-            
+          
               if(!wsStore.isConnected){
                 ElMessage.success('重新连接socket')
                 wsStore.init()
               }
 
               await simpleTalkStore.init()
-              console.log('✅ Simple-talk store 初始化成功')
+              ElMessage.success('✅ Simple-talk store 初始化成功')
               loading.close()
             }catch{
               loading.close()
