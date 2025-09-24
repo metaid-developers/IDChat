@@ -65,7 +65,7 @@
               :icon="CirclePlus"
               :class="[hasSubChannelList.length ? 'cursor-not-allowed' : 'cursor-pointer']"
               @click="openBroadcastDialog"
-              >{{$t('broadcast_channel_create')}}</el-button
+              >{{ $t('broadcast_channel_create') }}</el-button
             >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true">{{
               $t('Talk.Channel.search')
@@ -99,7 +99,9 @@
           <div class="flex items-center justify-between text-md font-medium">
             {{ $t('Talk.Channel.ShareLink') }}
           </div>
-          <div class="mt-2  text-dark-700 dark:text-gray-800 px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-200  flex items-center justify-between">
+          <div
+            class="mt-2  text-dark-700 dark:text-gray-800 px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-200  flex items-center justify-between"
+          >
             <div class="word-break break-all">
               {{ currentLink }}
             </div>
@@ -110,8 +112,7 @@
           </div>
         </div>
 
-
-        <div  class="mt-3 mb-3 bg-white dark:bg-black px-4 py-5" >
+        <div class="mt-3 mb-3 bg-white dark:bg-black px-4 py-5">
           <div class="flex items-center justify-between">
             <div>{{ $t('mute_notifiy') }}</div>
             <ElSwitch v-model="triggleMuteNotify" @change="trggleMuteMode" :loading="muteNotifyLoading"></ElSwitch>
@@ -237,12 +238,13 @@
         <p v-if="!isSearching && searchKey.trim() && !searchList.length" class="text-center">
           No results found
         </p>
-        <!-- IntersectionObserver 触发元素 - 只在非搜索状态下显示 -->
-        <div
-          ref="loadTrigger"
-          class="load-trigger"
-          v-if="!noMore && !searchKey.trim() && memberList.length > 0"
-        ></div>
+        <!-- 使用新的 InfiniteScroll 组件 -->
+        <InfiniteScroll
+          v-if="!noMore && !searchKey.trim() && memberList.length > 0 && !loading"
+          id="member-load-trigger"
+          :on-more="handleLoadMore"
+          ref="infiniteScrollRef"
+        />
       </div>
     </div>
   </ElDrawer>
@@ -273,12 +275,7 @@ import {
   defineProps,
   defineEmits,
   withDefaults,
-  onMounted,
-  onUnmounted,
   nextTick,
-  toRaw,
-  reactive,
-  onUpdated,
 } from 'vue'
 import { ElSwitch } from 'element-plus'
 import { useTalkStore } from '@/stores/talk'
@@ -287,6 +284,7 @@ import ChannelMemberItem from './ChannelMemberItem.vue'
 import EditAnnouncementDrawer from './EditAnnouncementDrawer.vue'
 import EditChannelInfoDrawer from './EditChannelInfoDrawer.vue'
 import CreateBroadcastChannelModal from './CreateBroadcastChannelModal.vue'
+import InfiniteScroll from '@/components/InfiniteScroll/InfiniteScroll.vue'
 import { useRoute } from 'vue-router'
 import { getChannelMembers, searchChannelMembers,getUserGroupRole } from '@/api/talk'
 import { ElMessage } from 'element-plus'
@@ -332,7 +330,7 @@ const userStore = useUserStore()
 const muteNotifyLoading=ref(false)
 
 const scrollContainer = ref<HTMLElement | null>(null)
-const loadTrigger = ref<HTMLElement | null>(null)
+const infiniteScrollRef = ref<{ resetLoading: () => void } | null>(null)
 
 const searchKey = ref('')
 // 搜索结果列表
@@ -377,7 +375,7 @@ const currentChannelInfo = computed(() => {
 
 
 const triggleMuteNotify=computed(()=>{
-  return simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.parentGroupId) : 
+  return simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.parentGroupId) :
   simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.id)
 
 })
@@ -475,7 +473,7 @@ const trggleMuteMode=async(e:boolean)=>{
  
 
 
-  
+
 
 }
 
@@ -660,11 +658,6 @@ const loadMemberList = async (reset: boolean = false) => {
         // 更新页码到下一页
         currentPage.value += 1
       }
-
-      // 重新设置滚动观察器
-      nextTick(() => {
-        setupInfiniteScroll()
-      })
     } else {
       noMore.value = true
     }
@@ -686,12 +679,12 @@ watch(() => props.modelValue, async (newValue) => {
 })
 
 // 监听当前频道变化，重新加载权限信息和成员列表
-watch(() => currentChannelInfo.value?.id, async (newChannelId) => {
-  if (newChannelId && props.modelValue) {
-    await loadMemberPermissions()
-    await loadMemberList(true) // 重置并加载第一页
-  }
-})
+// watch(() => currentChannelInfo.value?.id, async (newChannelId) => {
+//   if (newChannelId && props.modelValue) {
+//     await loadMemberPermissions()
+//     await loadMemberList(true) // 重置并加载第一页
+//   }
+// })
 
 // 搜索成员
 const searchMembers = async () => {
@@ -728,6 +721,21 @@ const searchMembers = async () => {
   }
 }
 
+// 处理无限滚动加载更多
+const handleLoadMore = async () => {
+  if (loading.value || noMore.value || searchKey.value.trim()) {
+    return
+  }
+
+  try {
+    await loadMemberList(false)
+  } catch (error) {
+    console.error('加载更多成员失败:', error)
+    // 如果加载失败，重置 InfiniteScroll 的状态
+    infiniteScrollRef.value?.resetLoading()
+  }
+}
+
 // 监听搜索关键词变化
 watch(() => searchKey.value, () => {
   if (searchKey.value.trim()) {
@@ -743,7 +751,7 @@ const handleAdmin = async (member: MemberItem) => {
 
   try {
     let admins: string[] = []
-    
+
     // 获取当前管理员列表（排除群主）
     if (memberPermissions.value?.admins) {
       memberPermissions.value.admins.forEach((item: MemberItem) => {
@@ -768,7 +776,7 @@ const handleAdmin = async (member: MemberItem) => {
 
     const groupId = currentChannelInfo.value.id
     const updateRes = await setChannelAdmins(groupId, admins)
-    
+
     if (updateRes.status === 'success' && updateRes.txid) {
       await simpleTalkStore.getGroupMemberPermissions(groupId, true)
       // 重新加载权限信息
@@ -833,60 +841,6 @@ const handleWhiteList = async (member: MemberItem) => {
     ElMessage.error((error as any).message || 'Failed to update whitelist')
   }
 }
-
-// 无限滚动 - 设置 IntersectionObserver
-let observer: IntersectionObserver | null = null
-
-const setupInfiniteScroll = () => {
-  if (observer) {
-    observer.disconnect()
-  }
-
-  if (!loadTrigger.value) {
-    return
-  }
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !loading.value && !noMore.value && !searchKey.value.trim()) {
-          // 加载更多数据
-          loadMemberList(false)
-        }
-      })
-    },
-    {
-      root: scrollContainer.value,
-      rootMargin: '20px',
-      threshold: 0.1,
-    }
-  )
-
-  observer.observe(loadTrigger.value)
-}
-
-// 在组件挂载时设置无限滚动
-onMounted(() => {
-  nextTick(() => {
-    setupInfiniteScroll()
-  })
-})
-
-// 监听 loadTrigger 的变化，重新设置观察器
-watch(() => loadTrigger.value, () => {
-  if (loadTrigger.value) {
-    nextTick(() => {
-      setupInfiniteScroll()
-    })
-  }
-})
-
-// 组件卸载时清理观察器
-onUnmounted(() => {
-  if (observer) {
-    observer.disconnect()
-  }
-})
 </script>
 
 <style lang="scss" scoped>
@@ -928,11 +882,6 @@ onUnmounted(() => {
 }
 .infinite-list-wrapper .list-item + .list-item {
   margin-top: 10px;
-}
-
-.load-trigger {
-  height: 1px;
-  width: 100%;
 }
 
 .members-header {
