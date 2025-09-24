@@ -171,8 +171,6 @@ watch(
 async function resolve(communityId: string, channelId: string) {
   // init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
 
-  console.log('🔍 resolve 函数被调用:', { communityId, channelId })
-
   if (isPublicChannel(communityId)) {
     if (!simpleTalk.isInitialized) {
       await simpleTalk.init()

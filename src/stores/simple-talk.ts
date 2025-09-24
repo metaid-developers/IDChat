@@ -1264,8 +1264,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async getGroupMemberPermissions(groupId: string, forceRefresh: boolean = false): Promise<MemberListRes | null> {
       
-      console.log("this.channels",this.channels)
-      console.log("this.channels",this.allChannels)
       
       const channel = this.channels.find(c => c.id === groupId && c.type === 'group')
       if (!channel) {

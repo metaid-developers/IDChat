@@ -203,11 +203,6 @@ const _welComePage = computed(() => {
   if (simpleTalk.isInitialized) {
     const hasMessages = simpleTalk.activeChannelMessages.length > 0
     const hasActiveChannel = !!simpleTalk.activeChannel
-    console.log('🏠 WelcomePage check (simple-talk):', {
-      hasActiveChannel,
-      hasMessages,
-      shouldShowWelcome: !hasActiveChannel || !hasMessages,
-    })
     return !hasActiveChannel || !hasMessages
   }
 
