@@ -49,7 +49,7 @@ export const getMyBlockChatList = async (): Promise<any> => {
     const query = new URLSearchParams({
     metaId:simpleTalkStore.selfMetaId,
   }).toString()
-
+  
   const data: {
     data: {
       userId: string
@@ -71,11 +71,39 @@ export const addMyBlockChatList = async (params:{
     'X-Public-Key': string
   },): Promise<any> => {
   params = params || {}
-debugger
+
   const data = await ChatNotifyApi.post(`/v1/push/add_blocked_chat`,params,{
     headers:signature
   })
   console.log("data",data)
-  debugger
-  return data
+  
+  if(data?.code == 0){
+      return data.data
+  }else{
+    throw new Error(data?.data?.message)
+  }
+
+}
+
+export const removeMyBlockChat = async (params:{
+    chatId:string,
+    metaId:string,
+},signature: {
+    'X-Signature': string
+    'X-Public-Key': string
+  },): Promise<any> => {
+  params = params || {}
+
+  const data = await ChatNotifyApi.post(`/v1/push/remove_blocked_chat`,params,{
+    headers:signature
+  })
+  console.log("data",data)
+  
+  if(data?.code == 0){
+    
+      return data.data
+  }else{
+    throw new Error(data?.data?.message)
+  }
+
 }

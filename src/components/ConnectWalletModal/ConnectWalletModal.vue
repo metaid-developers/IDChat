@@ -199,6 +199,7 @@ import {
 } from '@/api/talk'
 import { useApprovedStore } from '@/stores/approved'
 import { useLayoutStore } from '@/stores/layout'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 
 
 const rootStore = useRootStore()
@@ -230,6 +231,7 @@ const buzzResult = reactive({
 const setBaseInfoRef = ref()
 const MetaidWalletRef = ref()
 const MnemonicRef = ref()
+const simpleChatStore=useSimpleTalkStore()
 const enum ConnectWalletStatus {
   Watting,
   WallteConnect,
@@ -1174,6 +1176,11 @@ async function connectMetalet() {
       newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
       layout.$patch({showJoinView:true})
     }
+    simpleChatStore.initMuteNotify().then().catch((e)=>{
+    
+    })
+
+
     router.push({
         name: 'talkChannel',
         params:{

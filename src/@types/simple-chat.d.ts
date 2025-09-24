@@ -10,6 +10,14 @@ export interface MuteNotifyItem {
   status: boolean
 }
 
+export interface BlockedChats {
+  userId: string
+  chatId:string
+  chatType: 'group' | 'private'
+  blockedAt: number
+  reason:string
+}
+
 export interface GroupUserRoleInfo {
   metaId: string
   address: string

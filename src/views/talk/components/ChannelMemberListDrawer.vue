@@ -114,7 +114,7 @@
         <div  class="mt-3 mb-3 bg-white dark:bg-black px-4 py-5" >
           <div class="flex items-center justify-between">
             <div>{{ $t('mute_notifiy') }}</div>
-            <ElSwitch v-model="triggleMuteNotify" @change="trggleMuteMode"></ElSwitch>
+            <ElSwitch v-model="triggleMuteNotify" @change="trggleMuteMode" :loading="muteNotifyLoading"></ElSwitch>
           </div>
         </div>
       </div>
@@ -291,7 +291,7 @@ import { useRoute } from 'vue-router'
 import { getChannelMembers, searchChannelMembers,getUserGroupRole } from '@/api/talk'
 import { ElMessage } from 'element-plus'
 import copy from 'copy-to-clipboard'
-import {addMyBlockChatList} from '@/api/chat-notify'
+import {addMyBlockChatList,removeMyBlockChat} from '@/api/chat-notify'
 import {
   ArrowRight,
   CircleClose,
@@ -313,6 +313,7 @@ import { useLayoutStore } from '@/stores/layout'
 import { setChannelAdmins,setChannelWhiteList } from '@/utils/talk'
 import type {MemberListRes,MemberItem } from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
+import { signMvcMessage,getMvcPublickey } from "@/wallet-adapters/metalet";
 
 
 
@@ -328,7 +329,7 @@ const showSearch = ref(false)
 const showCreateBroadcastModal = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
-
+const muteNotifyLoading=ref(false)
 
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadTrigger = ref<HTMLElement | null>(null)
@@ -437,31 +438,58 @@ const openBroadcastDialog=()=>{
 
 }
 
-const trggleMuteMode=(e:boolean)=>{
-     simpleTalkStore.updateMuteNotify({
+const trggleMuteMode=async(e:boolean)=>{
+  muteNotifyLoading.value=true
+ 
+  
+  const sig=await signMvcMessage({
+    message:'idchat.io'
+  })
+  const publicKey=await getMvcPublickey()
+
+  console.log("sig",sig)
+  
+  
+  muteNotifyLoading.value=false
+  if(e){
+      addMyBlockChatList({
+    chatId:currentChannelInfo.value.id,
+    chatType:'group',
+    metaId:simpleTalkStore.selfMetaId
+   },{
+    ['X-Signature']:sig,
+    ['X-Public-Key']:publicKey
+   }).then((res)=>{
+    console.log("res",res)
+    
+      simpleTalkStore.updateMuteNotify({
     groupId:currentChannelInfo.value.id,
     groupType:'group',
     status:e
   })
-
-
-  // debugger
-  //  addMyBlockChatList({
-  //   chatId:currentChannelInfo.value.id,
-  //   chatType:'group',
-  //   metaId:simpleTalkStore.selfMetaId
-  //  },{
-  //   ['X-Signature']:'',
-  //   ['X-Public-Key']:""
-  //  }).then((res)=>{
-  //   console.log("res",res)
-  //   debugger
-  //     simpleTalkStore.updateMuteNotify({
-  //   groupId:currentChannelInfo.value.id,
-  //   groupType:'group',
-  //   status:e
-  // })
-  //  })
+   }).catch((e)=>{
+    ElMessage.error(e)
+   })
+  }else{
+    removeMyBlockChat({
+    chatId:currentChannelInfo.value.id,
+    metaId:simpleTalkStore.selfMetaId
+   },{
+    ['X-Signature']:sig,
+    ['X-Public-Key']:publicKey
+   }).then((res)=>{
+    console.log("res",res)
+    
+      simpleTalkStore.updateMuteNotify({
+    groupId:currentChannelInfo.value.id,
+    groupType:'group',
+    status:e
+  })
+   }).catch((e)=>{
+    ElMessage.error(e)
+   })
+  }
+ 
 
 
   

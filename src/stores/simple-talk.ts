@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { SimpleChannel,MuteNotifyItem, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
+import type { SimpleChannel,MuteNotifyItem,BlockedChats, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
 import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers, getOneChannel } from '@/api/talk'
 
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
@@ -12,6 +12,7 @@ import { useChainStore } from './chain'
 import { tryCreateNode } from '@/utils/talk'
 import { getTimestampInSeconds } from '@/utils/util'
 import { NodeName } from '@/enum'
+import { getMyBlockChatList} from "@/api/chat-notify";
 
 
 
@@ -2491,7 +2492,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           channelId: message.channelId,
           isSubGroupChat
         })
-
+        
         // 保存消息到本地
         await this.addMessage(message)
         
@@ -3104,6 +3105,26 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       if(message && message.groupId && message.metaId){
         await this.getGroupMemberPermissions(message.groupId, true)
       }
+    },
+
+   async initMuteNotify(){
+      const blockedChats:BlockedChats[] =await getMyBlockChatList()
+      
+      if(!blockedChats.length){
+        return
+      }else{
+        this.muteNotifyList=[]
+      }
+
+      for(let item of blockedChats){
+        this.muteNotifyList.push({
+          groupId: item.chatId,
+          groupType: item.chatType,
+          status:true
+        })
+
+      }
+      localStorage.setItem('muteNotifyList',JSON.stringify(this.muteNotifyList))
     },
 
     updateMuteNotify(payload:MuteNotifyItem){
