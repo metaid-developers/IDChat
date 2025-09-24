@@ -11,14 +11,14 @@
       </a>
 
       <div class="flex shrink-0 items-center">
-        <div class=" hidden lg:block" v-if="activeChannel?.type === 'private'">
+        <div class="  lg:block" v-if="activeChannel?.type === 'private'">
           <div class="flex shrink-0 items-center">
             <UserAvatar
               :image="activeChannel?.avatar || ''"
               :meta-id="activeChannel?.id"
               :name="activeChannel?.name"
               :meta-name="''"
-              class="w-8 h-8 shrink-0 select-none hidden lg:block mr-2"
+              class="lg:w-8 lg:h-8 shrink-0 select-none w-6 h-6 lg:block mr-2"
               :disabled="true"
             />
             <div
@@ -26,19 +26,9 @@
               @click="layout.isShowUserInfo = !layout.isShowUserInfo"
             >
               <UserName :name="activeChannel?.name" :meta-name="''" :text-class="'!text-base'" />
-              <!-- {{ activeChannel?.name }} -->
             </div>
           </div>
         </div>
-
-        <!-- 功能頻道头 -->
-        <!-- <div class="" v-if="talkStore.isActiveChannelGeneral && talkStore.activeChannel?.nameKey">
-          {{
-            talkStore.activeChannel.id === 'DAO' && talkStore.activeCommunity?.dao
-              ? talkStore.activeCommunity?.dao.daoName
-              : $t(talkStore.activeChannel.nameKey)
-          }}
-        </div> -->
 
         <template v-else>
           <div
@@ -69,27 +59,6 @@
     </div>
     <div class="flex flex-row-reverse items-center justify-between grow">
       <div class="shrink-0 flex items-center">
-        <!-- <div class="indicator-container mr-3" v-if="hasWS">
-          <div
-            class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-lime-500 animate-pulse-glow"
-          >
-            <span
-              class="w-1 h-1 rounded-full bg-lime-600 animate-pulse-glow"
-              style="animation-delay: 0.2s"
-            ></span>
-          </div>
-        </div>
-
-        <div class="indicator-container mr-3" v-else>
-          <div
-            class="w-2 h-2 rounded-full flex items-center justify-center border-2 border-rose-500 animate-pulse-glow-2"
-          >
-            <span
-              class="w-1 h-1 rounded-full bg-rose-600 animate-pulse-glow-2"
-              style="animation-delay: 0.2s"
-            ></span>
-          </div>
-        </div> -->
         <LoginedUserOperate />
         <div
           class="ml-1 cursor-pointer "
@@ -112,15 +81,6 @@
         >
           {{ shortenMetaId(activeChannel.id) }}
         </div>
-        <!-- <button
-          class=" w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
-        >
-          <Icon
-            name="arrow_up_right"
-            class="w-3 h-3 p-1 box-content text-gray-500  cursor-pointer"
-            @click="goCheckTxId(currentChannel.val?.txId, currentChannel.val?.chain)"
-          />
-        </button> -->
 
         <button
           class="mr-5 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
@@ -130,56 +90,7 @@
         </button>
       </div>
 
-      <!-- <div
-        class="ml-1 hidden lg:flex lg:items-center group"
-        v-else-if="talkStore.isActiveChannelReserved && talkStore.activeCommunityId"
-      >
-        <div
-          class="text-xs text-dark-300 dark:text-gray-400 bg-dark-100 dark:bg-gray-800 px-3 py-1 rounded"
-        >
-          {{ shortenMetaId(talkStore.activeCommunityId) }}
-        </div>
-        <Icon
-          name="arrow_up_right"
-          class="w-3 h-3 p-1 box-content text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 hidden group-hover:block cursor-pointer"
-          @click="goCheckTxId(talkStore.activeCommunity?.txId)"
-        />
-      </div> -->
-
-      <!-- 占位 -->
       <div v-else class="w-1"></div>
-
-      <!-- <div
-        class="grow-0 pl-3 pr-2 truncate text-xs leading-tight overflow-x-hidden py-1 text-dark-800"
-        @click="showDescModal = true"
-      >
-        {{ channel.description }}
-      </div>
-      <Teleport to="body">
-        <ScreenModal
-          v-if="showDescModal"
-          :name="name"
-          :description="description"
-          @close-modal="showDescModal = false"
-        />
-      </Teleport> -->
-
-      <!-- <div class="flex gap-x-4">
-        <div class="" @click="doNothing()">
-          <Icon
-            name="share"
-            class="w-5 h-5 transition-all ease-in-out duration-300 lg:hover:text-primary cursor-pointer"
-          />
-        </div>
-
-        <div class="w-5 h-5" @click="$emit('toggleMemberList')">
-          <Icon
-            name="users"
-            class="w-5 h-5 transition-all ease-in-out duration-300 lg:hover:text-primary cursor-pointer"
-            :class="[showMembers ? 'text-primary lg:text-dark-800' : 'text-dark-800']"
-          />
-        </div>
-      </div> -->
     </div>
   </div>
 </template>
