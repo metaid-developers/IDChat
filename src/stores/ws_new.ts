@@ -4,6 +4,7 @@ import { useUserStore } from './user'
 import { SocketIOClient } from '@/lib/socket'
 import { disconnect } from 'process'
 import { useSimpleTalkStore } from './simple-talk'
+import { useRootStore } from './root'
 interface MessageData {
   message: string
   timestamp: number
@@ -14,6 +15,7 @@ interface SocketConfig {
   url: string
   path: string
   metaid: string
+  type:'pc' | 'app'
 }
 
 export const useWsStore = defineStore('ws', {
@@ -39,12 +41,15 @@ export const useWsStore = defineStore('ws', {
   actions: {
     async init() {
       const selfMetaId = this.selfMetaId
+      const rootStore=useRootStore()
       if (!selfMetaId) return
       const config: SocketConfig = {
         url: `${import.meta.env.VITE_SHOW_NOW_WS}`,
         path: '/socket-test/socket.io',
         metaid: selfMetaId,
+        type:!rootStore.isWebView ? 'pc' : 'app'
       }
+      
       this.ws = new SocketIOClient(config)
       // this.ws=client
       this.ws.connect()

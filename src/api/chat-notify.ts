@@ -11,6 +11,7 @@ import type { PriviteChatMessageItem } from '@/@types/common'
 import { useEcdhsStore } from '@/stores/ecdh'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { useSimpleTalkStore } from '@/stores/simple-talk';
+import { useCredentialsStore } from '@/stores/credentials';
 
 
 
@@ -66,12 +67,14 @@ export const addMyBlockChatList = async (params:{
     chatType:'group' | 'private',
     metaId:string,
     reason?:string
-},signature: {
-    'X-Signature': string
-    'X-Public-Key': string
-  },): Promise<any> => {
+}): Promise<any> => {
   params = params || {}
-
+  const credentialsStore =useCredentialsStore() 
+  const signInfo=credentialsStore.get
+  const signature={
+    'X-Signature':signInfo?.signature,
+    'X-Public-Key': signInfo?.publicKey
+  }
   const data = await ChatNotifyApi.post(`/v1/push/add_blocked_chat`,params,{
     headers:signature
   })
@@ -88,11 +91,14 @@ export const addMyBlockChatList = async (params:{
 export const removeMyBlockChat = async (params:{
     chatId:string,
     metaId:string,
-},signature: {
-    'X-Signature': string
-    'X-Public-Key': string
-  },): Promise<any> => {
+}): Promise<any> => {
   params = params || {}
+    const credentialsStore =useCredentialsStore() 
+  const signInfo=credentialsStore.get
+  const signature={
+    'X-Signature':signInfo?.signature,
+    'X-Public-Key': signInfo?.publicKey
+  }
 
   const data = await ChatNotifyApi.post(`/v1/push/remove_blocked_chat`,params,{
     headers:signature

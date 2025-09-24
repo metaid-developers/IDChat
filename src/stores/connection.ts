@@ -253,11 +253,13 @@ export const useConnectionStore = defineStore('connection', {
       const approvedStore = useApprovedStore()
       const ecdhsStore=useEcdhsStore()
      const simpleTalkStore=useSimpleTalkStore()
+     const credentialsStore=useCredentialsStore()
      
       simpleTalkStore.clearMuteNotifyList()
        console.log('router', router)
       await userStore.clearUserInfo()
       ecdhsStore.clear()
+      credentialsStore.clear()
      
       if (window.metaidwallet?.smallPay) {
         await approvedStore.clear()

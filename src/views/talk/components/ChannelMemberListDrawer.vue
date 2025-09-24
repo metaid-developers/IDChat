@@ -439,26 +439,12 @@ const openBroadcastDialog=()=>{
 }
 
 const trggleMuteMode=async(e:boolean)=>{
-  muteNotifyLoading.value=true
- 
-  
-  const sig=await signMvcMessage({
-    message:'idchat.io'
-  })
-  const publicKey=await getMvcPublickey()
 
-  console.log("sig",sig)
-  
-  
-  muteNotifyLoading.value=false
   if(e){
       addMyBlockChatList({
     chatId:currentChannelInfo.value.id,
     chatType:'group',
     metaId:simpleTalkStore.selfMetaId
-   },{
-    ['X-Signature']:sig,
-    ['X-Public-Key']:publicKey
    }).then((res)=>{
     console.log("res",res)
     
@@ -474,9 +460,6 @@ const trggleMuteMode=async(e:boolean)=>{
     removeMyBlockChat({
     chatId:currentChannelInfo.value.id,
     metaId:simpleTalkStore.selfMetaId
-   },{
-    ['X-Signature']:sig,
-    ['X-Public-Key']:publicKey
    }).then((res)=>{
     console.log("res",res)
     

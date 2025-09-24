@@ -81,6 +81,10 @@ export const useCredentialsStore =defineStore('credentials', {
       this.credentials = this.credentials.filter((s) => s.address !== address)
     },
 
+    clear(){
+      this.credentials=[]
+    },
+
     update(shareSecret: string){
         const connectionStore = useConnectionStore()
         const connected = connectionStore.connected
