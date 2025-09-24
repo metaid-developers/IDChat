@@ -67,7 +67,10 @@
         class="grow"
         :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']"
       >
-        <div class="flex  space-x-2" :class="[isMyMessage ? 'flex-row-reverse items-center' : 'items-baseline']">
+        <div
+          class="flex  space-x-2"
+          :class="[isMyMessage ? 'flex-row-reverse items-center' : 'items-baseline']"
+        >
           <UserName
             :name="message?.fromUserInfo?.name"
             :meta-name="''"
@@ -77,20 +80,25 @@
           <div
             class=" text-xs shrink-0 flex  whitespace-nowrap items-center"
             :class="[
-                isMyMessage ? 'flex-row-reverse  justify-center' : 'gap-1 ',
+              isMyMessage ? 'flex-row-reverse  justify-center' : 'gap-1 ',
               msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
             ]"
           >
-           <span> {{ formatTimestamp(message.timestamp, i18n) }}</span>
-          <div class="flex " >
-            <Icon name="btc" v-if="msgChain == ChatChain.btc" class="chain-icon-menu w-[16px] h-[16px]"  :class="isMyMessage ? 'mr-1' : ''"></Icon>
+            <span> {{ formatTimestamp(message.timestamp, i18n) }}</span>
+            <div class="flex ">
+              <Icon
+                name="btc"
+                v-if="msgChain == ChatChain.btc"
+                class="chain-icon-menu w-[16px] h-[16px]"
+                :class="isMyMessage ? 'mr-1' : ''"
+              ></Icon>
               <!-- <img
               :src="btcIcon"
               
              
               
             /> -->
-          </div>
+            </div>
           </div>
         </div>
 
@@ -429,7 +437,9 @@
             class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800 rounded-tr' : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
+              isMyMessage
+                ? 'bg-primary dark:text-gray-800 rounded-tr'
+                : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-if="translateStatus === 'showing'"
@@ -444,7 +454,9 @@
             class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800 rounded-tr' : 'not-mine bg-white dark:bg-gray-700 rounded-tl ',
+              isMyMessage
+                ? 'bg-primary dark:text-gray-800 rounded-tr'
+                : 'not-mine bg-white dark:bg-gray-700 rounded-tl ',
 
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
@@ -465,7 +477,9 @@
             class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage ? 'bg-primary dark:text-gray-800 rounded-tr' : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
+              isMyMessage
+                ? 'bg-primary dark:text-gray-800 rounded-tr'
+                : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else
@@ -788,7 +802,7 @@ const messageAvatarImage = computed(() => {
     return userStore.last?.avatar
   }
 
-  return activeChannel.value?.userInfo?.avatarImage
+  return activeChannel.value?.avatar
 })
 
 const nftPrice = computed(() => {

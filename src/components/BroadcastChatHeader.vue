@@ -12,11 +12,19 @@
         <div class="broadcast-title text-base">
           {{ channel.name || '# Broadcast Chat' }}
         </div>
-        <!-- <div class="broadcast-description text-xs flex items-center " v-if="channel.lastMessage">
-          <span class="font-medium text-dark-600 dark:text-gray-700  mr-1">{{ channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0,6) ||  '' }}:</span>
-          <span class="text-dark-300 dark:text-gray-400 ">{{ lastMsgContentType(channel.lastMessage?.type,channel.lastMessage?.content,channel.id.slice(0,6)) }}</span>
-       
-        </div> -->
+        <div
+          class="broadcast-description text-xs flex items-center "
+          v-if="channel.lastMessage?.sender"
+        >
+          <span class="text-dark-300 dark:text-gray-400"
+            >{{
+              channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0, 6) || ''
+            }}:</span
+          >
+          <span class="text-dark-300 dark:text-gray-400 ">{{
+            lastMsgContentType(channel.lastMessage?.type, channel.lastMessage?.content, channel.id)
+          }}</span>
+        </div>
       </div>
 
       <el-badge
@@ -42,46 +50,36 @@
 import { computed } from 'vue'
 import subChannel from '@/assets/images/sub-channel.svg?url'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
-import type { SimpleChannel } from '@/@types/simple-chat'
-import {MessageType} from '@/@types/simple-chat'
+import type { SimpleChannel } from '@/@types/simple-chat.d'
+import {MessageType} from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
 import { decrypt, ecdhDecrypt } from '@/utils/crypto'
 const simpleTalkStore = useSimpleTalkStore()
 const i18n=useI18n()
 // 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
 const subchannels = computed(() => {
-  console.log('simpleTalkStore.currSubChannels', simpleTalkStore.currSubChannels)
   return simpleTalkStore.currSubChannels
 })
 
+const lastMsgContentType = (type: MessageType, content: string, channelId: string) => {
+  let secretKeyStr = channelId?.substring(0, 16) || ''
+      switch (type) {
+        case MessageType.msg:
+          return decrypt(content, secretKeyStr)
+        case MessageType.red:
+          return content
+        case MessageType.img:
+          return `[${i18n.t('new_msg_img')}]`
+        default:
+          return ''
+      }
+}
 
-// const subChannelsLastMsg=computed(()=>{
-//   console.log("simpleTalkStore.currSubChannels[0]",subchannels.value[0])
-//   debugger
-//   return subchannels.value[0] || null
-// })
 
-
-// const lastMsgContentType=(type:number,content:string,secretKey:string)=>{
-//   console.log("subChannelsLastMsg",subChannelsLastMsg.value)
-//   debugger
-//   //  switch (type) {
-//   //       case MessageType.msg:
-//   //         return decrypt(content, secretKey)
-//   //       case MessageType.red:
-//   //         return `🧧 ${content}`
-//   //       case MessageType.img:
-//   //         return `[${i18n.t('new_msg_img')}]`
-//   //       default:
-//   //         return ''
-//   //     }
-// }
 
 const goToSubChannel = (channelId: string) => {
   // 跳转到子频道的逻辑
-  console.log('Navigating to sub-channel with ID:', channelId)
-  // 这里可以使用路由跳转或其他方式实现导航
-  simpleTalkStore.setActiveChannel(channelId)
+  simpleTalkStore.enterSubGroupChat(channelId)
 }
 
 // 获取子频道的未读消息数
