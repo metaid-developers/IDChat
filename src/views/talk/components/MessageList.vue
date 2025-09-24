@@ -365,7 +365,7 @@ const handleScroll = (event: Event) => {
 
   try {
     // 检查是否滚动到顶部
-    if (Math.abs(container.scrollTop) === 0 && !isNoMoreBottom.value && !isLoadingBottom.value) {
+    if (Math.abs(container.scrollTop) < 50 && !isNoMoreBottom.value && !isLoadingBottom.value) {
       console.log('滚动到底部，准备加载新数据...')
       loadItems(true) // true 表示上滑加载
     }
@@ -431,46 +431,13 @@ onMounted(async () => {
   // 初始化消息观察器
   initMessageObserver()
 
-  // 监听路由变化，激活对应频道
-  const { channelId } = route.params as { channelId: string }
-  if (channelId && simpleTalk.isInitialized) {
-    await simpleTalk.setActiveChannel(channelId)
-
-    // 添加详细的频道和消息调试信息
-  }
-  // await nextTick()
-  // scrollToMessagesBottom()
+  // 等待 DOM 更新后自动加载最新消息
+  await nextTick()
 
   if (isMobile) {
     document.addEventListener('click', handleGlobalClick)
   }
 })
-
-// 监听路由参数变化，处理频道切换
-watch(
-  () => route.params.channelId,
-  async (newChannelId, oldChannelId) => {
-    if (newChannelId && newChannelId !== oldChannelId) {
-      console.log('🔄 频道切换:', { from: oldChannelId, to: newChannelId })
-
-      // 确保 simple-talk 已初始化
-      if (!simpleTalk.isInitialized) {
-        console.log('📋 频道切换时初始化 simple-talk')
-        await simpleTalk.init()
-      }
-
-      // 激活新频道
-      await simpleTalk.setActiveChannel(newChannelId as string)
-      console.log('✅ 频道切换完成:', newChannelId)
-      await nextTick()
-      if (listContainer.value) {
-        listContainer.value.scrollTop = 0
-      }
-      // scrollToMessagesBottom()
-    }
-  },
-  { immediate: false }
-)
 
 // 监听消息变化，确保在有消息时滚动到底部
 watch(
@@ -511,17 +478,17 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-const hasTooFewMessages = computed(() => {
-  // 检查 simple-talk 数据
-  if (simpleTalk.isInitialized && simpleTalk.activeChannelMessages.length > 0) {
-    return simpleTalk.activeChannelMessages.length < 10
+const notLoadAll = computed(() => {
+  const maxIndex =
+    simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1].index
+  if (maxIndex !== simpleTalk.activeChannel?.lastMessage?.index) {
+    return true
   }
-
   return false
 })
 
 const scrollToMessagesBottom = async () => {
-  if (unReadCount.value > 0) {
+  if (unReadCount.value > 0 || notLoadAll.value) {
     await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
     await nextTick()
     await sleep(100)

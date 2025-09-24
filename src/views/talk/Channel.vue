@@ -178,9 +178,10 @@ async function resolve(communityId: string, channelId: string) {
       await simpleTalk.init()
     }
     if (simpleTalk.channels.find(c => c.id === channelId)) {
-      console.log('频道已存在，直接激活:', channelId)
-      await simpleTalk.setActiveChannel(channelId)
-      return
+      if (simpleTalk.activeChannelId !== channelId) {
+        console.log('频道已存在，直接激活:', channelId)
+        await simpleTalk.setActiveChannel(channelId)
+      }
     } else {
       if (channelId !== 'welcome') {
         // layout.isShowChannelAcceptInviteModal = true
