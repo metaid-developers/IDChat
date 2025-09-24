@@ -183,7 +183,7 @@ async function resolve(communityId: string, channelId: string) {
       return
     } else {
       if (channelId !== 'welcome') {
-        layout.isShowChannelAcceptInviteModal = true
+        // layout.isShowChannelAcceptInviteModal = true
       }
     }
   }

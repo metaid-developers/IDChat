@@ -61,7 +61,7 @@ const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
 const needModifyPubkey = ref(false)
-const { allChannels } = storeToRefs(useSimpleTalkStore())
+const { channels } = storeToRefs(useSimpleTalkStore())
 
 // console.log('talkStore', simpleTalkStore.allChannels)
 
@@ -72,14 +72,15 @@ const getSessionKey = (session: any) => {
 }
 
 const _allChannels = computed(() => {
-  return allChannels.value.filter(channel => channel.type === 'private' || channel.type === 'group')
+  return channels.value.filter(
+    channel => (channel.type === 'private' || channel.type === 'group') && !channel.isTemporary
+  )
 })
 
 onMounted(async () => {
   const pubkey = userStore.last.chatpubkey
   const ecdh = await getEcdhPublickey()
   await useSimpleTalkStore().init()
-  console.log('🚀 简化聊天列表组件加载', allChannels.value)
   if (pubkey && pubkey !== ecdh.ecdhPubKey) {
     needModifyPubkey.value = true
   }
