@@ -36,6 +36,10 @@ export const useWsStore = defineStore('ws', {
       const simpleTalk = useSimpleTalkStore()
       return simpleTalk.activeChannelId
     },
+
+    isConnected(state){
+      return state.ws?.isConnected()
+    }
   },
 
   actions: {

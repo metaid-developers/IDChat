@@ -1445,5 +1445,6 @@
   "Mute": "禁言中",
   "sub_channel_created": "请勿重复创建发布频道",
   "broadcast_channel_create": "发布频道",
-  "mute_notifiy": "免打扰模式切换"
+  "mute_notifiy": "免打扰模式切换",
+  "reload": "加载中"
 }

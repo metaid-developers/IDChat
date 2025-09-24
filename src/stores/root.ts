@@ -158,7 +158,7 @@ export const useRootStore = defineStore('root', {
     async checkBtcAddressSameAsMvc(){
       const connectionStore=useConnectionStore()
       const userStore=useUserStore()
-      const mvcAddress= userStore.last.address
+      const mvcAddress=await connectionStore.adapter.getMvcAddress() //userStore.last.address
       const btcAddress= await connectionStore.adapter.getBtcAddress()
       if(mvcAddress && btcAddress && mvcAddress !== btcAddress){
        

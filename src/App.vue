@@ -68,10 +68,12 @@ import {
   getChannels,
   GetUserEcdhPubkeyForPrivateChat
 } from '@/api/talk'
-
+import { openLoading } from '@/utils/util'
 import { ElMessage } from 'element-plus'
 import { useLayoutStore } from './stores/layout'
 import { settings } from 'cluster'
+import { useSimpleTalkStore } from './stores/simple-talk'
+import { useWsStore } from './stores/ws_new'
 const { closeConnectionModal } =
   useConnectionModal()
 const MAX_RETRY_TIME = 5000 // 最大等待时间（毫秒）
@@ -82,9 +84,11 @@ const route = useRoute()
 const blackRoute = reactive(['home'])
 const router = useRouter()
 const isNetworkChanging = ref(false)
+const simpleTalkStore=useSimpleTalkStore()
 const i18n = useI18n()
 const accountInterval=ref()
 const layout=useLayoutStore()
+const wsStore=useWsStore()
 const routeKey = (route: any) => {
   if (route.params.communityId) return route.params.communityId
   return route.fullPath
@@ -247,6 +251,8 @@ onMounted(async () => {
 
         })
 
+
+
   }
 
 
@@ -288,8 +294,33 @@ onMounted(async () => {
           }
         })
 
-        (window.metaidwallet as any)?.on('onRefresh',()=>{
-          window.location.reload()
+        (window.metaidwallet as any)?.on('onRefresh',async()=>{
+          //监听APP数据刷新
+          if(connectionStore.last.status == 'connected' && userStore.isAuthorized){
+              ElMessage.success('成功调用了app刷新功能')
+              const loading = openLoading({
+                text: i18n.t('reload'),
+              })
+            try{
+             
+            
+              if(!wsStore.isConnected){
+                ElMessage.success('重新连接socket')
+                wsStore.init()
+              }
+
+              await simpleTalkStore.init()
+              console.log('✅ Simple-talk store 初始化成功')
+              loading.close()
+            }catch{
+              loading.close()
+            }
+
+          }
+         
+
+
+          //window.location.reload()
         })
 
 

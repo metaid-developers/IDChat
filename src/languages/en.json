@@ -1447,5 +1447,6 @@
   "Mute": "Mute",
   "sub_channel_created": "Do not create duplicate broadcast channels",
   "broadcast_channel_create": "Broadcast",
-  "mute_notifiy": "Mute Notifications"
+  "mute_notifiy": "Mute Notifications",
+  "reload": "Loading"
 }
