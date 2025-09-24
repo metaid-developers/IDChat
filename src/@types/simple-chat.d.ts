@@ -1,4 +1,5 @@
 import { MemberRule, RuleOp } from '@/enum'
+import { SubChannel } from './talk'
 
 // 简化的聊天类型定义
 export type ChatType = 'group' | 'private' | 'sub-group'
@@ -12,10 +13,10 @@ export interface MuteNotifyItem {
 
 export interface BlockedChats {
   userId: string
-  chatId:string
+  chatId: string
   chatType: 'group' | 'private'
   blockedAt: number
-  reason:string
+  reason: string
 }
 
 export interface GroupUserRoleInfo {
@@ -142,7 +143,7 @@ export interface GroupChannelListResponse {
   message: string
   data: {
     total: number
-    list: GroupChannel[]
+    list: SubChannel[]
   }
   timestamp: number
 }

@@ -223,6 +223,7 @@ declare interface SubChannel {
   channelNewestUserName: string
   channelNewestProtocol: string
   channelNewestContent: string
+  channelNote?: string
   channelNewestTimestamp: number
   createUserMetaId: string
   createUserAddress: string
