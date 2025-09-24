@@ -2123,9 +2123,205 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       })
     },
 
-    async loadNewsterMessages(): Promise<void> {
-      //
+    /**
+     * 加载更多最新消息（向前获取）
+     */
+    async loadMoreNewestMessages(channelId: string, afterTimestamp?: number): Promise<boolean> {
+      try {
+        console.log(`📜 加载更多最新消息: ${channelId}, 晚于时间: ${afterTimestamp ? new Date(afterTimestamp).toLocaleString() : '无'}`)
+        
+        const channel = this.channels.find(c => c.id === channelId)
+        if (!channel) {
+          console.warn(`⚠️ 未找到频道 ${channelId}`)
+          return false
+        }
 
+        // 私聊暂时不支持
+        if (channel.type === 'private') {
+          console.log(`⚠️ 私聊暂时不支持向前获取历史记录`)
+          return false
+        }
+
+        // 获取当前消息
+        const currentMessages = this.messageCache.get(channelId) || []
+        
+        // 第一步：尝试从本地加载连续的最新消息
+        if (currentMessages.length > 0) {
+          // 找到当前最大的 index
+          const maxIndex = Math.max(...currentMessages.map(msg => msg.index || 0))
+          console.log(`📊 当前消息中最大的 index: ${maxIndex}`)
+          
+          // 查找本地是否有比最大index大的连续20条消息
+          const localNewestMessages = await this.loadLocalNewestMessages(channelId, maxIndex + 1, 20)
+          
+          if (localNewestMessages.length > 0) {
+            console.log(`📂 从本地找到 ${localNewestMessages.length} 条最新消息`)
+            
+            // 检查是否连续
+            const sortedLocalMessages = localNewestMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
+            const isConsecutive = this.checkConsecutiveIndexes(sortedLocalMessages, maxIndex + 1)
+            
+            if (isConsecutive) {
+              console.log(`✅ 本地最新消息 index 连续，直接使用本地数据`)
+              
+              // 合并到现有消息中
+              const allMessagesMap = new Map<string, UnifiedChatMessage>()
+              
+              // 添加现有消息
+              currentMessages.forEach(msg => allMessagesMap.set(msg.txId, msg))
+              
+              // 添加本地最新消息
+              localNewestMessages.forEach(msg => allMessagesMap.set(msg.txId, msg))
+              
+              // 重新排序
+              const mergedMessages = Array.from(allMessagesMap.values()).sort((a, b) => a.timestamp - b.timestamp)
+              
+              // 更新缓存
+              this.messageCache.set(channelId, mergedMessages)
+              
+              console.log(`✅ 本地最新消息加载完成，新增 ${localNewestMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
+              return true
+            } else {
+              console.log(`⚠️ 本地最新消息 index 不连续，需要从服务器加载`)
+            }
+          } else {
+            console.log(`📭 本地没有找到更多最新消息`)
+          }
+        }
+        
+        // 第二步：从服务器加载最新消息
+        console.log(`🌐 开始从服务器加载最新消息...`)
+        
+        // 确定起始 index
+        let startIndex = 1
+        if (currentMessages.length > 0) {
+          // 使用最新消息的 index + 1
+          const latestMessage = currentMessages[currentMessages.length - 1] // 因为是升序排列
+          startIndex = (latestMessage.index || 0) + 1
+        }
+
+        console.log(`📄 分页参数: startIndex=${startIndex}, size=20`)
+
+        // 使用 fetchServerNewsterMessages 获取最新消息
+        const serverMessages = await this.fetchServerNewsterMessages(channelId, channel, startIndex)
+
+        console.log(`📡 分页加载获取了 ${serverMessages.length} 条最新消息`)
+
+        if (serverMessages.length === 0) {
+          console.log(`📭 没有更多最新消息了`)
+          return false // 没有更多消息
+        }
+
+        // 转换消息格式（serverMessages 已经是正确格式）
+        const convertedMessages = serverMessages
+        
+        // 合并到现有消息中（去重）
+        const allMessagesMap = new Map<string, UnifiedChatMessage>()
+        
+        // 添加现有消息
+        currentMessages.forEach(msg => allMessagesMap.set(msg.txId, msg))
+        
+        // 添加新加载的消息
+        convertedMessages.forEach(msg => allMessagesMap.set(msg.txId, msg))
+        
+        // 重新排序
+        const mergedMessages = Array.from(allMessagesMap.values()).sort((a, b) => a.timestamp - b.timestamp)
+
+        // 更新缓存
+        this.messageCache.set(channelId, mergedMessages)
+        
+        // 保存新消息到本地
+        for (const msg of convertedMessages) {
+          await this.db.saveMessage(msg)
+        }
+        
+        console.log(`✅ 服务器分页加载完成，新增 ${convertedMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
+        
+        return true // 成功加载了更多消息
+        
+      } catch (error) {
+        console.error('❌ 分页加载最新消息失败:', error)
+        return false
+      }
+    },
+
+    /**
+     * 从本地数据库加载最新消息（按 index 范围）
+     */
+    async loadLocalNewestMessages(channelId: string, minIndex: number, limit: number): Promise<UnifiedChatMessage[]> {
+      if (!this.db.database) return []
+      
+      return new Promise((resolve) => {
+        const transaction = this.db.database!.transaction(['messages'], 'readonly')
+        const store = transaction.objectStore('messages')
+        const request = store.getAll()
+        
+        request.onsuccess = () => {
+          const allMessages = request.result || []
+          
+          const newestMessages = allMessages
+            .filter((msg: any) => {
+              const matchUser = msg.userPrefix === this.db.prefix
+              const matchChannel = msg.channelId === channelId
+              const matchIndex = (msg.index || 0) >= minIndex
+              return matchUser && matchChannel && matchIndex
+            })
+            .map(({ userPrefix, id, ...message }: any) => message) // 移除额外字段
+            .sort((a: any, b: any) => (a.index || 0) - (b.index || 0)) // 按 index 升序
+            .slice(0, limit) // 限制数量
+          
+          console.log(`📊 本地最新消息查询: channelId=${channelId}, minIndex=${minIndex}, 找到 ${newestMessages.length} 条消息`)
+          resolve(newestMessages)
+        }
+        
+        request.onerror = () => {
+          console.error('❌ 加载本地最新消息失败:', request.error)
+          resolve([])
+        }
+      })
+    },
+
+
+      /**
+     * 获取服务器消息
+     */
+    async fetchServerNewsterMessages(channelId: string, channel: SimpleChannel,startIndex:number): Promise<UnifiedChatMessage[]> {
+      let serverMessages: any[] = []
+      
+      try {
+        if (channel.type === 'group') {
+          // 群聊消息
+          console.log(`🌐 获取群聊 ${channelId} 的服务端消息...`)
+          const { getChannelNewestMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getChannelNewestMessages({
+            groupId: channelId,
+            startIndex: String(startIndex),
+            size: '20' 
+          })
+          serverMessages = result.list || []
+          console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
+        } else if (channel.type === 'sub-group') {
+          // 子群聊消息 - 使用 channelId 而不是 parentGroupId
+          console.log(`🌐 获取子群聊 ${channelId} 的服务端消息...`)
+          const { getSubChannelNewestMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getSubChannelNewestMessages({
+            channelId: channelId, // 子群聊使用自己的channelId作为groupId
+            startIndex: String(startIndex),
+            size: '5'
+          })
+          serverMessages = result.list || []
+          console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
+        } else if (channel.type === 'private') {
+          //TODO  私聊消息 
+         
+          
+        }
+      } catch (apiError) {
+        console.error(`❌ API调用失败:`, apiError)
+        serverMessages = []
+      }
+      
+      return serverMessages
     },
 
     /**
