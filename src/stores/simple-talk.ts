@@ -3225,6 +3225,15 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
         }
 
+        if(isPrivateChat){
+          const existingPrivate = this.channels.find(c => c.type === 'private' && c.id === channelId);
+          if(existingPrivate&&existingPrivate?.isTemporary){
+            this.convertTemporaryToRegular(existingPrivate.id)
+          }else{
+            await this.syncFromServer()
+          }
+        }
+
         // 检查消息是否已存在（避免重复）
         const existingMessages = this.messageCache.get(channelId) || []
         const exists = existingMessages.some(m => m.txId === message.txId)
