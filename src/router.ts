@@ -9,6 +9,7 @@ import { useUserStore } from './stores/user'
 import { GetBandProposalList } from '@/api/strapi'
 import { useLayoutStore } from './stores/layout'
 import { KeepAlive } from 'vue'
+
 //import.meta.env.VITE_BASE_URL
 //export const routerHistory = createWebHistory()
 //import.meta.env.MODE == 'development' ? '/' : '/chat/'
@@ -548,7 +549,8 @@ window._go = go
 // })
 router.beforeEach(async (to, from, next) => {
   const layout = useLayoutStore()
-
+  const rootStore=useRootStore()
+  rootStore.checkWebViewBridge()
   if (to.path === '/') {
     const userStore = useUserStore()
     // const talk = useTalkStore()
