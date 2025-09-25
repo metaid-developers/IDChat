@@ -319,7 +319,7 @@ class SimpleChatDB {
           timestamp: Number(channel.lastMessage.timestamp || 0),
           type: channel.lastMessage.type,
           chatPublicKey: channel.lastMessage.chatPublicKey ? String(channel.lastMessage.chatPublicKey) : undefined,
-          index: Number(channel.lastMessage.index || 0) // 保留消息索引
+          index: Number(channel.lastMessage.index || 0) < 1 ? 0 : Number(channel.lastMessage.index || 0) // 保留消息索引
         }
       }
 
@@ -510,7 +510,7 @@ class SimpleChatDB {
         params: String(message.params || ''),
         chain: String(message.chain || 'btc'),
         blockHeight: Number(message.blockHeight || 0),
-        index: Number(message.index || 0),
+        index: Number(message.index || 0)<1 ? 0 : Number(message.index || 0), // 确保index不为负数
 
         // 本地状态字段
         mockId: message.mockId ? String(message.mockId) : undefined,
@@ -589,14 +589,52 @@ class SimpleChatDB {
           return matchUser && matchChannel
         })
         
-        console.log(`📝 找到 ${userMessages.length} 条匹配的消息`,userMessages)
+        console.log(`📝 找到 ${userMessages.length} 条匹配的消息`)
         
+        // 按 index 升序排序（index 应该对应消息在频道中的顺序）
         const messages = userMessages
           .map(({ userPrefix, id, ...message }) => message) // 同时移除userPrefix和id字段
-          .sort((a, b) => b.index - a.index) // 按时间升序：旧消息在前，新消息在后
-          .slice(0, limit).sort((a, b) => a.index - b.index)
+          .sort((a, b) => a.index - b.index) // 按index升序：旧消息在前，新消息在后
+          .slice(0, limit)
         
-        console.log(`📋 消息排序: 按时间升序排列，共 ${messages.length} 条消息`)
+        console.log(`📋 消息排序: 按index升序排列，共 ${messages.length} 条消息`)
+        resolve(messages)
+      }
+      request.onerror = () => {
+        console.error('❌ 获取消息失败:', request.error)
+        resolve([])
+      }
+    })
+  }
+
+  /**
+   * 获取指定索引范围的消息
+   */
+  async getMessagesInRange(channelId: string, startIndex: number, endIndex: number): Promise<UnifiedChatMessage[]> {
+    if (!this.db) return []
+    
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['messages'], 'readonly')
+      const store = transaction.objectStore('messages')
+      const request = store.getAll()
+      
+      request.onsuccess = () => {
+        const allMessages = request.result || []
+        
+        const userMessages = allMessages.filter(msg => {
+          const matchUser = msg.userPrefix === this.userPrefix
+          const matchChannel = msg.channelId === channelId
+          const inRange = msg.index >= startIndex && msg.index <= endIndex
+          
+          return matchUser && matchChannel && inRange
+        })
+        
+        // 按 index 升序排序
+        const messages = userMessages
+          .map(({ userPrefix, id, ...message }) => message)
+          .sort((a, b) => a.index - b.index)
+        
+        console.log(`📋 获取索引范围 [${startIndex}-${endIndex}] 的消息: ${messages.length} 条`)
         resolve(messages)
       }
       request.onerror = () => {
@@ -1706,29 +1744,36 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         console.log(`📝 开始加载频道 ${channelId} 的消息...`)
         
-        // 1. 先从本地 IndexedDB 加载
-        const localMessages = await this.db.getMessages(channelId)
-        
-        console.log(`📂 从本地加载了 ${localMessages.length} 条消息`,localMessages)
-        
-        // 2. 查找频道信息
+        // 1. 查找频道信息
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
           console.warn(`⚠️ 未找到频道 ${channelId}`)
-          this.messageCache.set(channelId, localMessages)
+          this.messageCache.set(channelId, [])
           return
         }
 
-        // 3. 如果有本地消息，直接展示，不从服务器拉取
-        if (localMessages.length > 20) {
-          console.log(`🚀 检测到本地消息 ${localMessages.length} 条，直接展示，跳过服务器请求`)
+        const lastReadIndex = channel.lastReadIndex || 0
+        console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
+
+        // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
+        const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
+        console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
+        
+        // 3. 检查本地消息是否充足且连续
+        console.log(`🔍 检查本地消息连续性...`)
+        const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
+        if (localMessages.length >= 20 && messagesAreContinuous) {
+          console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
           this.messageCache.set(channelId, localMessages)
           return
+        } else if (localMessages.length >= 20) {
+          console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
+        } else {
+          console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
         }
 
-        // 4. 只有在没有本地消息时，才从服务器获取
-        console.log(`📡 本地无消息，从服务器获取...`)
-        await this.loadServerMessagesSync(channelId, channel, localMessages)
+        // 4. 本地消息不足或不连续，需要从服务器获取
+        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages)
         
       } catch (error) {
         console.error('❌ 加载消息失败:', error)
@@ -1736,6 +1781,241 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const fallbackMessages = await this.db.getMessages(channelId).catch(() => [])
         this.messageCache.set(channelId, fallbackMessages)
       }
+    },
+
+    /**
+     * 检查消息是否连续
+     * 基于消息的 index 字段判断是否存在缺失的消息
+     */
+    checkMessagesContinuity(messages: UnifiedChatMessage[], lastReadIndex: number): boolean {
+      if (messages.length === 0) {
+        return false
+      }
+
+      // 按 index 升序排序
+      const sortedMessages = messages.sort((a, b) => a.index - b.index)
+      
+      // 检查消息索引是否连续
+      for (let i = 1; i < sortedMessages.length; i++) {
+        const prevIndex = sortedMessages[i - 1].index
+        const currentIndex = sortedMessages[i].index
+        
+        // 如果索引不连续（中间有缺失的消息）
+        if (currentIndex - prevIndex > 1) {
+          console.log(`⚠️ 消息不连续: index ${prevIndex} -> ${currentIndex}, 缺失 ${currentIndex - prevIndex - 1} 条消息`)
+          return false
+        }
+      }
+
+      // 检查是否包含 lastReadIndex 附近足够的上下文
+      const minIndex = sortedMessages[0].index
+      const maxIndex = sortedMessages[sortedMessages.length - 1].index
+      
+      // 确保已读消息在范围内，或者已读索引为0（初始状态）
+      if (lastReadIndex > 0 && (lastReadIndex < minIndex || lastReadIndex > maxIndex)) {
+        console.log(`⚠️ 已读索引 ${lastReadIndex} 不在消息范围 [${minIndex}-${maxIndex}] 内`)
+        return false
+      }
+
+      console.log(`✅ 消息连续性检查通过: 索引范围 [${minIndex}-${maxIndex}], 共 ${messages.length} 条消息`)
+      return true
+    },
+
+    /**
+     * 根据 lastReadIndex 从本地数据库加载消息
+     */
+    async loadMessagesAroundReadIndex(channelId: string, lastReadIndex: number): Promise<{
+      messages: UnifiedChatMessage[],
+      readMessage: UnifiedChatMessage | null
+    }> {
+      // 获取所有本地消息
+      const allLocalMessages = await this.db.getMessages(channelId, 1000) // 获取更多消息用于查找
+      
+      if (allLocalMessages.length === 0) {
+        return { messages: [], readMessage: null }
+      }
+
+      // 按 index 升序排序（index 对应消息在频道中的顺序）
+      const sortedMessages = allLocalMessages.sort((a, b) => a.index - b.index)
+      
+      // 找到 lastReadIndex 对应的消息（根据消息的index字段匹配）
+      let readMessage: UnifiedChatMessage | null = null
+      let readMessageArrayIndex = -1
+
+      // 查找 msg.index === lastReadIndex 的消息
+      for (let i = 0; i < sortedMessages.length; i++) {
+        if (sortedMessages[i].index === lastReadIndex) {
+          readMessage = sortedMessages[i]
+          readMessageArrayIndex = i
+          console.log(`📖 找到已读消息 (msg.index: ${lastReadIndex}, 数组位置: ${i})`)
+          break
+        }
+      }
+
+      // 如果没有找到精确匹配的已读消息，找到最接近的消息
+      if (!readMessage && sortedMessages.length > 0) {
+        // 找到index小于等于lastReadIndex的最大消息
+        for (let i = sortedMessages.length - 1; i >= 0; i--) {
+          if (sortedMessages[i].index <= lastReadIndex) {
+            readMessage = sortedMessages[i]
+            readMessageArrayIndex = i
+            console.log(`📖 找到最接近的已读消息 (msg.index: ${sortedMessages[i].index}, 期望: ${lastReadIndex}, 数组位置: ${i})`)
+            break
+          }
+        }
+      }
+
+      // 如果还是没有找到，使用第一条消息
+      if (!readMessage && sortedMessages.length > 0) {
+        readMessage = sortedMessages[0]
+        readMessageArrayIndex = 0
+        console.log(`📖 使用第一条消息作为参考 (msg.index: ${sortedMessages[0].index})`)
+      }
+
+      // 计算要显示的消息范围：以已读消息为中心，向上取更多历史消息
+      let startIndex: number
+      let endIndex: number
+      
+      if (readMessage && readMessageArrayIndex >= 0) {
+        // 从已读消息位置向上取15条，向下取5条，总共20条左右
+        startIndex = Math.max(0, readMessageArrayIndex - 15)
+        endIndex = Math.min(sortedMessages.length - 1, readMessageArrayIndex + 5)
+        
+        // 如果向下不足5条，向上补充
+        const downCount = endIndex - readMessageArrayIndex
+        if (downCount < 5) {
+          startIndex = Math.max(0, readMessageArrayIndex - (20 - downCount - 1))
+        }
+        
+        // 如果向上不足15条，向下补充
+        const upCount = readMessageArrayIndex - startIndex
+        if (upCount < 15) {
+          endIndex = Math.min(sortedMessages.length - 1, readMessageArrayIndex + (20 - upCount - 1))
+        }
+      } else {
+        // 没有已读消息，取最新的20条
+        startIndex = Math.max(0, sortedMessages.length - 20)
+        endIndex = sortedMessages.length - 1
+      }
+
+      // 提取目标范围的消息
+      const messages = sortedMessages.slice(startIndex, endIndex + 1)
+      
+      console.log(`📋 基于已读索引 ${lastReadIndex} 加载消息:`)
+      console.log(`   - 已读消息: ${readMessage ? `index=${readMessage.index}, 数组位置=${readMessageArrayIndex}` : '未找到'}`)
+      console.log(`   - 消息范围: 数组[${startIndex}-${endIndex}]，共 ${messages.length} 条`)
+      console.log(`   - index范围: [${messages[0]?.index || 'N/A'}-${messages[messages.length-1]?.index || 'N/A'}]`)
+      
+      return { messages, readMessage }
+    },
+
+    /**
+     * 从服务器加载基于 lastReadIndex 的消息
+     */
+    async loadServerMessagesAroundReadIndex(
+      channelId: string, 
+      channel: SimpleChannel, 
+      lastReadIndex: number,
+      readMessage: UnifiedChatMessage | null,
+      localMessages: UnifiedChatMessage[]
+    ): Promise<void> {
+      try {
+        let serverMessages: UnifiedChatMessage[] = []
+        
+        if (readMessage) {
+          // 如果有已读消息，以其时间戳为基准获取服务器消息
+          console.log(` 基于已读消息时间戳 ${readMessage.timestamp} 获取服务器消息`)
+          serverMessages = await this.fetchServerMessagesFromTimestamp(channelId, channel, readMessage.timestamp)
+        } else {
+          // 没有已读消息，获取最新消息
+          console.log(`📡 获取最新服务器消息`)
+          serverMessages = await this.fetchServerMessages(channelId, channel)
+        }
+
+        // 合并本地和服务器消息
+        const mergedMessages = await this.mergeAndSaveMessages(channelId, localMessages, serverMessages)
+        
+        // 如果有已读消息，重新基于 lastReadIndex 筛选消息
+        let finalMessages = mergedMessages
+        if (readMessage && mergedMessages.length > 0) {
+          const sortedMerged = mergedMessages.sort((a, b) => a.timestamp - b.timestamp)
+          const readIndex = sortedMerged.findIndex(msg => msg.txId === readMessage.txId)
+          
+          if (readIndex >= 0) {
+            // 从已读消息位置向上取20条
+            const startIndex = Math.max(0, readIndex - 19)
+            finalMessages = sortedMerged.slice(startIndex, startIndex + 20)
+          } else {
+            // 如果找不到已读消息，取最新20条
+            finalMessages = sortedMerged.slice(-20)
+          }
+        }
+        
+        // 更新缓存
+        this.messageCache.set(channelId, finalMessages)
+        console.log(`✅ 基于已读索引加载完成，共 ${finalMessages.length} 条消息`)
+        
+      } catch (error) {
+        console.error('❌ 从服务器加载消息失败:', error)
+        // 出错时使用本地消息
+        this.messageCache.set(channelId, localMessages)
+      }
+    },
+
+    /**
+     * 从指定时间戳开始获取服务器消息
+     */
+    async fetchServerMessagesFromTimestamp(channelId: string, channel: SimpleChannel, fromTimestamp: number): Promise<UnifiedChatMessage[]> {
+      let serverMessages: any[] = []
+      
+      try {
+        if (channel.type === 'group') {
+          // 群聊消息 - 使用timestamp参数从指定时间点获取消息
+          console.log(`🌐 获取群聊 ${channelId} 从时间戳 ${fromTimestamp} 开始的服务端消息...`)
+          const { getChannelMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getChannelMessages({
+            groupId: channelId,
+            metaId: this.selfMetaId,
+            cursor: '0',
+            size: '50',
+            timestamp: fromTimestamp.toString()
+          })
+          serverMessages = result.list || []
+          console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
+        } else if (channel.type === 'sub-group') {
+          // 子群聊消息 - 使用timestamp参数从指定时间点获取消息
+          console.log(`🌐 获取子群聊 ${channelId} 从时间戳 ${fromTimestamp} 开始的服务端消息...`)
+          const { getSubChannelMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getSubChannelMessages({
+            channelId: channelId,
+            metaId: this.selfMetaId,
+            cursor: '0',
+            size: '50',
+            timestamp: fromTimestamp.toString()
+          })
+          serverMessages = result.list || []
+          console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
+        } else if (channel.type === 'private') {
+          // 私聊消息 - 使用timestamp参数从指定时间点获取消息
+          console.log(`🌐 获取私聊 ${channelId} 从时间戳 ${fromTimestamp} 开始的服务端消息...`)
+          const { getPrivateChatMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getPrivateChatMessages({
+            metaId: this.selfMetaId,
+            otherMetaId: channelId,
+            cursor: '0',
+            size: '50',
+            timestamp: fromTimestamp.toString()
+          })
+          serverMessages = result.list || []
+          console.log(`📡 私聊API返回 ${serverMessages.length} 条消息`)
+        }
+      } catch (apiError) {
+        console.error(`❌ 基于时间戳的API调用失败:`, apiError)
+        // 如果基于时间戳的查询失败，回退到普通查询
+        return this.fetchServerMessages(channelId, channel)
+      }
+      
+      return serverMessages
     },
 
     /**
@@ -2855,14 +3135,20 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
           if (this.messageCache.has(channelId)) {
              const messages = this.messageCache.get(channelId)!
-            if(message.index && message.index > (messages[messages.length -1]?.index || 0) +1){
-// 如果新消息的 index 比当前最新消息的 index 大超过1，说明中间有缺失，触发从服务器拉取最新消息
-              const currentLatestIndex = messages[messages.length-1]?.index || 0
-              console.log(`⚠️ 检测到消息缺失，触发从服务器拉取最新消息: 频道 ${channelId}, 新消息 index ${message.index}, 当前最新消息 index ${currentLatestIndex}`)
-              }else{
-              const messages = this.messageCache.get(channelId)!
-              messages.push(message) // 新消息在前
-              // 限制缓存大小
+            if(message.index>=1 && message.index > (messages[messages.length -1]?.index || 0) +1){
+              // 如果新消息的 index 比当前最新消息的 index 大超过1，说明中间有缺失
+              const currentLatestIndex = messages[messages.length-1]?.index || 0;
+              if(message.index-currentLatestIndex ===1){
+                messages.push(message) // 新消息在前
+                // 限制缓存大小
+                if (messages.length > 5000) {
+                  messages.splice(5000)
+                }
+              }
+              
+            }else{
+                messages.push(message) // 新消息在前
+                // 限制缓存大小
               if (messages.length > 5000) {
                 messages.splice(5000)
               }
@@ -2903,7 +3189,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         timestamp: message.timestamp,
         type: message.chatType,
         chatPublicKey: message.userInfo?.chatPublicKey || '',
-        index: message.index || (channel.lastMessage?.index ?? 0) + 1
+        index: message.index < 1 ? (channel.lastMessage?.index ?? 0) + 1 : message.index
       }
 
       // 如果不是当前激活频道，增加未读数
@@ -2991,7 +3277,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           mockMsg.timestamp = message.timestamp
           mockMsg.mockId = '' // 清空mockId，表示已发送成功
           // 更新数据库
-          if(message.index === 0 ){
+          if(message.index <1 ){
             mockMsg.index = mockMsg.index
           }
 
@@ -3002,7 +3288,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         
         if (!exists) {
-          if(message.index === 0 && this.channels.find(c => c.id === channelId)?.lastMessage){
+          if(message.index <1 && this.channels.find(c => c.id === channelId)?.lastMessage){
             const channel = this.channels.find(c => c.id === channelId)
             message.index = (channel?.lastMessage?.index || 0) + 1
           }
