@@ -93,7 +93,9 @@
                       />
                     </div>
                     <div class="flex flex-col grow overflow-hidden">
-                      <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <div
+                        class="text-sm font-medium text-gray-900 dark:text-gray-100 max-w-[200px] truncate"
+                      >
                         {{ contact.name }}
                       </div>
                       <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -288,7 +290,9 @@ export default defineComponent({
       set: value => emit('update:modelValue', value),
     })
 
-    const channels = computed(() => _channels.value.filter(c => c.type !== 'sub-group'))
+    const channels = computed(() =>
+      _channels.value.filter(c => c.type !== 'sub-group' && c.isTemporary !== false)
+    )
 
     // 远程搜索群组
     const searchRemoteGroups = async (searchValue: string) => {

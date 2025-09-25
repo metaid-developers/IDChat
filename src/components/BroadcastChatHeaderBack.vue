@@ -1,16 +1,17 @@
 <template>
-  <div class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white" v-if="simpleTalkStore.activeChannel?.type === 'sub-group'">
+  <div
+    class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white"
+    v-if="simpleTalkStore.activeChannel?.type === 'sub-group'"
+    @click="goChannel"
+  >
     <div class="broadcast-chat-container">
-      <div class="broadcast-icon hover:scale-110" @click="goChannel">
+      <div class="broadcast-icon hover:scale-110">
         <el-icon><Back /></el-icon>
       </div>
 
       <div class="broadcast-content ">
         <div class="broadcast-title text-base">
-          # Broadcast Chat
-        </div>
-        <div class="broadcast-description text-xs text-dark-300 dark:text-gray-400 ">
-          An on-chain "Telegram" running on Bitcoin is here! IDChat, based on the...
+          Back to Main Channel
         </div>
       </div>
     </div>
@@ -44,20 +45,18 @@ const goChannel = () => {
   /* background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px); */
- 
 }
 
 .broadcast-chat-container {
   display: flex;
   align-items: center;
-  
+
   padding: 12px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .broadcast-chat-container:hover {
-
 }
 
 .broadcast-icon {
@@ -79,7 +78,6 @@ const goChannel = () => {
 }
 
 .broadcast-title {
-
   font-weight: 500;
 
   margin-bottom: 4px;
@@ -97,7 +95,6 @@ const goChannel = () => {
 }
 
 .broadcast-description {
-
   line-height: 1.4;
   margin-bottom: 4px;
   overflow: hidden;
@@ -106,12 +103,10 @@ const goChannel = () => {
 }
 
 .broadcast-note {
-
   font-style: italic;
-  
+
   padding: 4px 8px;
   border-radius: 6px;
-  
 }
 
 .broadcast-latest {
@@ -139,7 +134,6 @@ const goChannel = () => {
 
 .broadcast-chat-container:hover .broadcast-arrow {
   transform: translateX(2px);
-
 }
 
 /* 响应式设计 */
@@ -155,7 +149,6 @@ const goChannel = () => {
   }
 
   .broadcast-title {
-    
   }
 
   .broadcast-description {

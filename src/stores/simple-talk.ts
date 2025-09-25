@@ -10,10 +10,11 @@ import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { decrypt } from '@/utils/crypto'
 import { useChainStore } from './chain'
 import { tryCreateNode } from '@/utils/talk'
-import { getTimestampInSeconds } from '@/utils/util'
+import { getTimestampInSeconds, sleep } from '@/utils/util'
 import { NodeName } from '@/enum'
 import { getMyBlockChatList} from "@/api/chat-notify";
 import { SubChannel } from '@/@types/talk'
+
 
 
 
@@ -287,7 +288,7 @@ class SimpleChatDB {
         createdBy: channel.createdBy,
         createdAt: channel.createdAt,
         unreadCount: channel.unreadCount,
-        lastReadIndex: channel.lastReadIndex, // 保留已读索引
+        lastReadIndex: channel.lastReadIndex||0, // 保留已读索引
         targetMetaId: channel.targetMetaId,
         publicKeyStr: channel.publicKeyStr,
         // 群聊特有字段
@@ -1478,7 +1479,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               senderName: userInfo?.name || '',
               timestamp: channel.timestamp || 0,
               chatPublicKey: userInfo?.chatPublicKey,
-              index: channel.index || 0
+              index: channel.index || 1
             },
             serverData: channel
           }
@@ -1502,7 +1503,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               type: channel.chatType,
               senderName: channel.userInfo?.name || channel.createUserInfo?.name || '',
               timestamp: channel.timestamp || 0,
-              index: channel.index || 0
+              index: channel.index || 1
             },
             serverData: channel
           }
@@ -1542,7 +1543,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           await this.db.saveChannel(mergedToSave)
         } else {
           // 新频道
-          mergedChannels.push(serverChannel)
+          mergedChannels.push({...serverChannel, unreadCount: 0, lastReadIndex: 0})
           // 安全保存，移除可能有问题的字段
           const serverToSave = { ...serverChannel }
           // delete serverToSave.serverData
@@ -1888,7 +1889,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         let serverMessages: UnifiedChatMessage[] = []
         
-        if (readMessage) {
+        if (readMessage&&lastReadIndex>20) {
           // 如果有已读消息，以其时间戳为基准获取服务器消息
           console.log(` 基于已读消息时间戳 ${readMessage.timestamp} 获取服务器消息`)
           serverMessages = await this.fetchServerMessagesFromTimestamp(channelId, channel, readMessage.timestamp)
@@ -2837,6 +2838,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const chainStore = useChainStore()
         const userStore = useUserStore()
         const channel = this.channels.find(c => c.id === channelId)
+
+         if((channel!.lastReadIndex ?? 0) < (channel!.lastMessage?.index || 0)){
+            await this.loadNewestMessages(channelId)
+            await sleep(500)
+          }
         const isPrivateChat = channel?.type === 'private'
         // 判断是否是子群聊
         const isSubGroupChat = channel?.type === 'sub-group'
@@ -3180,6 +3186,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         console.log('📩 接收到新消息:', message)
         // 确定频道ID - 支持子群聊
         let channelId: string | undefined;
+        // 如果消息是自己发的 并且消息页面不在最下面 让消息滚到最下面；
+        if(message.metaId === this.selfMetaId && this.activeChannel){
+          if((this.activeChannel!.lastReadIndex ?? 0) < (this.activeChannel!.lastMessage?.index || 0)){
+            await this.loadNewestMessages(this.activeChannelId)
+            await sleep(500)
+          }
+        }
+
         
         const isPrivateChat = isPrivateChatMessage(message);
         if (isPrivateChat) {
@@ -3229,8 +3243,12 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           const existingPrivate = this.channels.find(c => c.type === 'private' && c.id === channelId);
           if(existingPrivate&&existingPrivate?.isTemporary){
             this.convertTemporaryToRegular(existingPrivate.id)
-          }else{
+          }
+          if(!existingPrivate){
+            console.log(`🔄 私聊频道 ${channelId} 不存在，尝试创建...`);
+            await sleep(3000)
             await this.syncFromServer()
+            return
           }
         }
 

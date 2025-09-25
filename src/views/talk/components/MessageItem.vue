@@ -77,7 +77,10 @@
           class="grow"
           :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']"
         >
-          <div class="flex space-x-2" :class="[isMyMessage ? 'flex-row-reverse itmes-center' : 'items-baseline ']">
+          <div
+            class="flex space-x-2"
+            :class="[isMyMessage ? 'flex-row-reverse itmes-center' : 'items-baseline ']"
+          >
             <!--message?.userInfo?.metaName-->
             <UserName
               :name="
@@ -92,20 +95,25 @@
             <div
               class="text-xs shrink-0 whitespace-nowrap flex   "
               :class="[
-                isMyMessage ? 'flex-row-reverse justify-center items-center'  : 'gap-1 ',
+                isMyMessage ? 'flex-row-reverse justify-center items-center' : 'gap-1 ',
                 msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
               ]"
             >
-             <span> {{ formatTimestamp(message.timestamp, i18n) }}</span>
-            <div class="flex " >
-               <Icon name="btc" v-if="msgChain == ChatChain.btc" class="chain-icon-menu w-[16px] h-[16px]"  :class="isMyMessage ? 'mr-1' : ''"></Icon>
-                   <!-- <img
+              <span> {{ formatTimestamp(message.timestamp, i18n) }}</span>
+              <div class="flex ">
+                <Icon
+                  name="btc"
+                  v-if="msgChain == ChatChain.btc"
+                  class="chain-icon-menu w-[16px] h-[16px]"
+                  :class="isMyMessage ? 'mr-1' : ''"
+                ></Icon>
+                <!-- <img
                 :src="btcIcon"
                 class="chain-icon-menu w-[16px] h-[16px] "
                 :class="isMyMessage ? 'mr-1' : ''"
                 v-if="msgChain == ChatChain.btc"
               /> -->
-            </div>
+              </div>
             </div>
           </div>
 
@@ -224,7 +232,9 @@
                   <div class="text-dark-800 text-base font-medium">
                     {{ $t('Talk.Channel.come_get_red_envelope') }}
                   </div>
-                  <div class="text-dark-300 text-sm mt-1 truncate max-w-[150PX] lg:max-w-[180PX]">
+                  <div
+                    class="text-dark-300 text-sm mt-1 truncate max-w-[150PX] lg:max-w-[180PX] min-w-[150px]"
+                  >
                     {{ redPacketMessage }}
                   </div>
                 </div>

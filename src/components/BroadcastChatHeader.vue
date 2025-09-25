@@ -3,7 +3,12 @@
     class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white"
     v-if="subchannels.length > 0"
   >
-    <div class="broadcast-chat-container" v-for="channel in subchannels" :key="channel.id">
+    <div
+      class="broadcast-chat-container"
+      v-for="channel in subchannels"
+      :key="channel.id"
+      @click="goToSubChannel(channel.id)"
+    >
       <div class="broadcast-icon">
         <img :src="subChannel" alt="" />
       </div>
@@ -34,12 +39,12 @@
         :show-zero="false"
         v-if="getUnreadCount(channel) > 0"
       >
-        <div :class="['main-border', 'primary']" @click="goToSubChannel(channel.id)">
+        <div :class="['main-border', 'primary']">
           <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
         </div>
       </el-badge>
 
-      <div v-else :class="['main-border', 'primary']" @click="goToSubChannel(channel.id)">
+      <div v-else :class="['main-border', 'primary']">
         <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
       </div>
     </div>

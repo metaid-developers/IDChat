@@ -1,7 +1,7 @@
 <template>
   <div
     class="p-3 flex w-full max-w-[100vw] items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer"
-    :class="[isActive ? 'bg-gray-200 dark:bg-gray-900': '']"
+    :class="[isActive ? 'bg-gray-200 dark:bg-gray-900' : '']"
     @click="switchChannel"
   >
     <div class="rounded-3xl w-12 h-12 shrink-0  relative">
@@ -13,20 +13,16 @@
     </div>
 
     <div class="flex flex-col items-stretch grow space-y-1 overflow-x-hidden">
-      <div class="flex relative items-baseline justify-between self-stretch">
+      <div class="flex relative items-center justify-between self-stretch">
         <div class="flex items-center justify-center">
           <Icon
             name="group_chat_1"
             v-show="session?.type === ChannelType.Group"
             class="w-[20PX] h-[15PX] mr-1 shrink-0 text-gray-500 dark:text-white"
           />
-          <UserName
-            :name="session.name"
-            :meta-name="''"
-            :no-tag="true"
-            class="mr-2"
-            :text-class="'font-medium dark:text-gray-100 max-w-[200px] truncate'"
-          />
+          <div class=" font-medium dark:text-gray-100 max-w-[150px] truncate">
+            {{ session.name }}
+          </div>
         </div>
 
         <div class="shrink-0  text-dark-250 dark:text-gray-400 text-xs">
@@ -49,9 +45,9 @@
           </span>
         </div>
         <el-badge
-          v-show="session?.lastMessage.index - session?.lastReadIndex > 0"
+          v-show="unReadCount(session) > 0"
           class="item"
-          :value="session?.lastMessage.index - session?.lastReadIndex"
+          :value="unReadCount(session)"
           :offset="[10, 5]"
           :max="999"
         >
@@ -90,14 +86,25 @@ const i18n = useI18n()
 
 const layout = useLayoutStore()
 const router = useRouter()
-const route=useRoute()
+const route = useRoute()
 
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 const simpleTalkStore = useSimpleTalkStore()
-
+const unReadCount = (session: SimpleChannel) => {
+  if (
+    session &&
+    session.lastMessage &&
+    typeof session.lastMessage.index === 'number' &&
+    typeof session.lastReadIndex === 'number'
+  ) {
+    return session.lastMessage.index - session.lastReadIndex
+  }
+  return 0
+}
 const computeDecryptedMsg = (session: SimpleChannel) => {
   try {
+    console.log(props.session, 'props.sessionprops.sessionprops.session')
     if (!session.lastMessage || !session.lastMessage.content) {
       return ''
     }
@@ -163,9 +170,10 @@ const computeDecryptedMsg = (session: SimpleChannel) => {
 
 const isActive = computed(() => {
   return (
-    simpleTalkStore.activeChannelId === props.session?.id ||
-    simpleTalkStore.activeChannel?.parentGroupId === props.session?.id
-  ) && route.params?.channelId !== 'welcome'
+    (simpleTalkStore.activeChannelId === props.session?.id ||
+      simpleTalkStore.activeChannel?.parentGroupId === props.session?.id) &&
+    route.params?.channelId !== 'welcome'
+  )
 })
 
 const switchChannel = () => {
@@ -176,9 +184,7 @@ const switchChannel = () => {
 
   if (props.session?.type === ChannelType.Group) {
     router.push(`/talk/channels/public/${props.session?.id}`)
-    
   } else {
-    
     router.push(`/talk/@me/${props.session?.id}`)
   }
 }
