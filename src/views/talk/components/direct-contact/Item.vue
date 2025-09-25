@@ -1,7 +1,7 @@
 <template>
   <div
     class="p-3 flex w-full max-w-[100vw] items-center space-x-3 overflow-x-hidden lg:hover:bg-gray-200 lg:hover:dark:bg-gray-900 cursor-pointer"
-    :class="{ 'bg-gray-200 dark:bg-gray-900': isActive }"
+    :class="[isActive ? 'bg-gray-200 dark:bg-gray-900': '']"
     @click="switchChannel"
   >
     <div class="rounded-3xl w-12 h-12 shrink-0  relative">
@@ -75,7 +75,7 @@ import { formatTimestamp, decryptedMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
 import { computed, toRaw, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
 import { decrypt, ecdhDecrypt } from '@/utils/crypto'
@@ -90,6 +90,7 @@ const i18n = useI18n()
 
 const layout = useLayoutStore()
 const router = useRouter()
+const route=useRoute()
 
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
@@ -164,7 +165,7 @@ const isActive = computed(() => {
   return (
     simpleTalkStore.activeChannelId === props.session?.id ||
     simpleTalkStore.activeChannel?.parentGroupId === props.session?.id
-  )
+  ) && route.params?.channelId !== 'welcome'
 })
 
 const switchChannel = () => {

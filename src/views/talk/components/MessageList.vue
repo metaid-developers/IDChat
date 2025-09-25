@@ -28,7 +28,7 @@
     />
     <!-- 广播聊天头部 - 在消息列表最上方（简化版提示） -->
 
-    <div v-if="_welComePage && layout.showWelcomeDescView">
+    <!-- <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="">
           <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon>
@@ -38,10 +38,10 @@
           A Decentralized Messaging App Built on Bitcoin
          </span>
         </div>
-        <!-- <div class="text-xl mt-5 text-zinc-600 break-all ">
+        <div class="text-xl mt-5 text-zinc-600 break-all ">
           Fully Decentralized,Immutable,Uncensorable,and Unhackable
-        </div> -->
-        <!-- <div class="flex flex-col mt-5">
+        </div>
+        <div class="flex flex-col mt-5">
           <div class="font-medium flex flex-row items-center text-lg">
             <span>{{ $t('link.metaid.group') }}</span
             ><el-icon><CaretBottom /></el-icon>
@@ -49,9 +49,9 @@
           <a class="main-border mt-5 text-lg primary p-3" @click="toMetaIdGrop">{{
             $t('MetaID.official_group')
           }}</a>
-        </div> -->
+        </div>
       </div>
-    </div>
+    </div> -->
 
     <div class="app-container">
       <BroadcastChatHeader />
@@ -199,19 +199,19 @@ const { activeChannel } = storeToRefs(useSimpleTalkStore())
 // 消息元素引用和观察器
 const messageRefs = ref<Map<number, HTMLElement>>(new Map())
 const messageObserver = ref<IntersectionObserver | null>(null)
-const _welComePage = computed(() => {
-  if (user.isAuthorized === false) {
-    return true
-  }
-  // 检查 simple-talk 的状态
-  if (simpleTalk.isInitialized) {
-    const hasMessages = simpleTalk.activeChannelMessages.length > 0
-    const hasActiveChannel = !!simpleTalk.activeChannel
-    return !hasActiveChannel || !hasMessages
-  }
+// const _welComePage = computed(() => {
+//   if (user.isAuthorized === false) {
+//     return true
+//   }
+//   // 检查 simple-talk 的状态
+//   if (simpleTalk.isInitialized) {
+//     const hasMessages = simpleTalk.activeChannelMessages.length > 0
+//     const hasActiveChannel = !!simpleTalk.activeChannel
+//     return !hasActiveChannel || !hasMessages
+//   }
 
-  return false
-})
+//   return false
+// })
 
 // 设置消息元素引用
 const setMessageRef = (el: any, message: any) => {
@@ -658,9 +658,7 @@ defineExpose({
 // .loading-indicator {
 //   transition: opacity 0.3s ease;
 // }
-.welcome-desc{
-  font-family: 'J20' !important;
-}
+
 
 
 .app-container {

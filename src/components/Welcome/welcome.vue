@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <template v-else>
+    <!-- <template v-else>
       <div
         v-if="layoutStore.showJoinView"
         class=" flex flex-col items-center justify-center px-3 py-6 "
@@ -42,7 +42,7 @@
           </div>
         </div>
       </div>
-    </template>
+    </template> -->
   </div>
 </template>
 <script setup lang="ts">

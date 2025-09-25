@@ -552,109 +552,121 @@ router.beforeEach(async (to, from, next) => {
   const rootStore=useRootStore()
   rootStore.checkWebViewBridge()
   if (to.path === '/') {
-    debugger
     
-    const userStore = useUserStore()
-    // const talk = useTalkStore()
-
-    if (userStore.isAuthorized) {
-      const myChannelList = await getChannels({
-        metaId: userStore.last.metaid,
-      })
-
-      let channelId
-      if (myChannelList.length) {
-        if(Number(myChannelList[0].type) == 2){
-          channelId=myChannelList[0].metaId
-             next({
-          name: 'talkAtMe',
-          params: { channelId },
-        })
-        }else{
-          channelId = myChannelList[0].groupId
-           next({
-          name: 'talkChannel',
-          params: { communityId: 'public', channelId },
-        })
-
-        
-        }
-
-
-        channelId = myChannelList[0].groupId
-        layout.$patch({ showJoinView: false })
-        layout.$patch({ showWelcomeDescView: false })
-        //layout.$patch({ isShowLeftNav: true })
-      } else {
-        layout.$patch({ isShowLeftNav: true })
-        layout.$patch({ showJoinView: true })
-        channelId = 'welcome'
-           next({
-        name: 'talkChannel',
-        params: { communityId: 'public', channelId },
-      })
-      }
-
-   
-    } else {
-      layout.$patch({ isShowLeftNav: true })
-      layout.$patch({ showJoinView: false })
-      layout.$patch({ showWelcomeDescView: true })
+    layout.$patch({ isShowLeftNav: true })
+      // layout.$patch({ showJoinView: false })
+      //layout.$patch({ showWelcomeDescView: true })
       next({
         name: 'talkChannel',
         params: { communityId: 'public', channelId: 'welcome' },
       })
-    }
+    // const userStore = useUserStore()
+    // const talk = useTalkStore()
+
+    // if (userStore.isAuthorized) {
+    
+    //   // const myChannelList = await getChannels({
+    //   //   metaId: userStore.last.metaid,
+    //   // })
+
+    //   // let channelId
+    //   // if (myChannelList.length) {
+    //   //   if(Number(myChannelList[0].type) == 2){
+    //   //     channelId=myChannelList[0].metaId
+    //   //        next({
+    //   //     name: 'talkAtMe',
+    //   //     params: { channelId },
+    //   //   })
+    //   //   }else{
+    //   //     channelId = myChannelList[0].groupId
+    //   //      next({
+    //   //     name: 'talkChannel',
+    //   //     params: { communityId: 'public', channelId },
+    //   //   })
+
+        
+    //   //   }
+
+
+    //   //   channelId = myChannelList[0].groupId
+    //   //   layout.$patch({ showJoinView: false })
+    //   //   layout.$patch({ showWelcomeDescView: false })
+    //   //   //layout.$patch({ isShowLeftNav: true })
+    //   // } else {
+    //   //   layout.$patch({ isShowLeftNav: true })
+    //   //   layout.$patch({ showJoinView: true })
+    //   //   channelId = 'welcome'
+    //   //      next({
+    //   //   name: 'talkChannel',
+    //   //   params: { communityId: 'public', channelId },
+    //   // })
+    //   // }
+
+   
+    // } else {
+    //   layout.$patch({ isShowLeftNav: true })
+    //   layout.$patch({ showJoinView: false })
+    //   layout.$patch({ showWelcomeDescView: true })
+    //   next({
+    //     name: 'talkChannel',
+    //     params: { communityId: 'public', channelId: 'welcome' },
+    //   })
+    // }
   } else if (to.path == '/talk/channels/public/welcome') {
-    const userStore = useUserStore()
-    debugger
-    if (userStore.isAuthorized) {
+     layout.$patch({ isShowLeftNav: true })
+        ///layout.$patch({ showJoinView: true })
+        //layout.$patch({ showWelcomeDescView: true })
+       
+        next()
+    //const userStore = useUserStore()
+    // 
+    // if (userStore.isAuthorized) {
       
-      const myChannelList = await getChannels({
-        metaId: userStore.last.metaid,
-      })
+    //   const myChannelList = await getChannels({
+    //     metaId: userStore.last.metaid,
+    //   })
 
-      let channelId
-      if (myChannelList.length) {
+    //   let channelId
+    //   if (myChannelList.length) {
         
-        if(Number(myChannelList[0].type) == 2){
-          channelId=myChannelList[0].metaId
-             next({
-          name: 'talkAtMe',
-          params: { channelId },
-        })
-        }else{
-          debugger
-          channelId = myChannelList[0].groupId
-           next({
-          name: 'talkChannel',
-          params: { communityId: 'public', channelId },
-        })
-        }
+    //     if(Number(myChannelList[0].type) == 2){
+    //       channelId=myChannelList[0].metaId
+    //          next({
+    //       name: 'talkAtMe',
+    //       params: { channelId },
+    //     })
+    //     }else{
+    //       
+    //       channelId = myChannelList[0].groupId
+    //        next({
+    //       name: 'talkChannel',
+    //       params: { communityId: 'public', channelId },
+    //     })
+    //     }
 
         
         
-        layout.$patch({ showWelcomeDescView: false })
-        layout.$patch({ showJoinView: false })
+    //     layout.$patch({ showWelcomeDescView: false })
+    //     layout.$patch({ showJoinView: false })
 
 
        
-        //layout.$patch({ isShowLeftNav: true })
-      } else {
-        debugger
-        layout.$patch({ isShowLeftNav: true })
-        layout.$patch({ showJoinView: true })
-        layout.$patch({ showWelcomeDescView: true })
-        channelId = 'welcome'
-        next()
-      }
-    } else {
-      layout.$patch({ showJoinView: false })
-      layout.$patch({ showWelcomeDescView: true })
-      next()
-    }
+    //     //layout.$patch({ isShowLeftNav: true })
+    //   } else {
+    //     
+    //     layout.$patch({ isShowLeftNav: true })
+    //     layout.$patch({ showJoinView: true })
+    //     layout.$patch({ showWelcomeDescView: true })
+    //     channelId = 'welcome'
+    //     next()
+    //   }
+    // } else {
+    //   layout.$patch({ showJoinView: false })
+    //   layout.$patch({ showWelcomeDescView: true })
+    //   next()
+    // }
 
-    layout.$patch({ isShowLeftNav: true })
+    // layout.$patch({ isShowLeftNav: true })
   } else {
     if(from.name !== to.name && !from.name){
       layout.$patch({isShowLeftNav:true})

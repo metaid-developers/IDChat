@@ -224,7 +224,7 @@ async function connectMetalet() {
     }else{
 
       newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
-      layout.$patch({showJoinView:true})
+      //layout.$patch({showJoinView:true})
     }
     router.push({
         name: 'talkChannel',

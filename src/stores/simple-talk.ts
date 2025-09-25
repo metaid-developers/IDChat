@@ -2932,7 +2932,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             encryption,
             replyPin: reply ? `${reply.txId}i0` : '',
           }
-          debugger
+          
           const node = {
             protocol: NodeName.SimpleGroupChat,
             body: dataCarrier,
@@ -3494,7 +3494,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
    async initMuteNotify(){
       const blockedChats:BlockedChats[] =await getMyBlockChatList()
-      debugger
+      
       if(!blockedChats.length){
         return
       }else{

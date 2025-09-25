@@ -1,12 +1,26 @@
 <template>
   <!-- <ChannelWelcome v-if="talk.isActiveChannelTheVoid" />
   <ChannelSettings v-else-if="talk.isActiveChannelTheVoid" /> -->
-  <ChannelContent />
+     <div v-if="isWelcomePage">
+      <div v-if="showWelcomeDesc" class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
+        <div class="">
+          <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon>
+        </div>
+        <div class="text-2xl welcome-desc text-zinc-800 mt-3 break-all flex items-center justify-center max-w-[326px]">
+         <span>
+          A Decentralized Messaging App Built on Bitcoin
+         </span>
+        </div>
+     
+      </div>
+      
+    </div>
+  <ChannelContent v-else />
 </template>
 
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
-import { nextTick, onBeforeUnmount, onMounted, onUnmounted, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, onUnmounted, watch,computed } from 'vue'
 
 import { useTalkStore } from '@/stores/talk'
 import { GroupChannelType } from '@/enum'
@@ -20,13 +34,32 @@ import ChannelSettings from './ChannelSettings.vue'
 import ChannelWelcome from './ChannelWelcome.vue'
 import ChannelContent from './ChannelContent.vue'
 import { GetOwnerStakeInfo } from '@/api/dao'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 // const talk = useTalkStore()
 const layout = useLayoutStore()
 const user = useUserStore()
 const route = useRoute()
+const simpleTalk=useSimpleTalkStore()
 const { communityId, channelId } = route.params
 
+const isWelcomePage=computed(()=>{
+  if(channelId == 'welcome'){
+    return true
+  }else return false
+})
 
+const showWelcomeDesc = computed(() => {
+
+  // 检查 simple-talk 的状态
+  if (simpleTalk.isInitialized) {
+    
+    const hasMessages = simpleTalk.activeChannelMessages.length > 0
+    const hasActiveChannel = !!simpleTalk.activeChannel
+    return !hasActiveChannel || !hasMessages
+  }
+
+  return false
+})
 
 // const tryInitChannel = async (status: string) => {
 //   if (status !== 'ready') return
@@ -419,7 +452,13 @@ const { communityId, channelId } = route.params
 //     talk.resetCurrentChannel()
 // })
 // onBeforeUnmount(() => {
-//   debugger
+//   
 //   talk.resetCurrentChannel()
 // })
 </script>
+
+<style lang="scss" scoped>
+.welcome-desc{
+  font-family: 'J20' !important;
+}
+</style>

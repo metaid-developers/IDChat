@@ -2,7 +2,7 @@
   <div
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
-    <div class="max-w-[50%] flex items-center justify-center ">
+    <div class="max-w-[50%] flex items-center justify-center " v-if="!isWelcomePage">
       <a
         class="mt-1 text-center  lg:hidden"
         @click="layout.$patch({ isShowLeftNav: true, isShowContactList: true })"
@@ -62,7 +62,7 @@
         <LoginedUserOperate />
         <div
           class="ml-1 cursor-pointer "
-          v-if="userStore.isAuthorized && activeChannel?.type === 'group'"
+          v-if="userStore.isAuthorized && activeChannel?.type === 'group' && !isWelcomePage"
           @click="handleChannelNameClick"
         >
           <Icon
@@ -75,7 +75,7 @@
         </div>
       </div>
 
-      <div class="ml-1 hidden lg:flex lg:items-center group" v-if="activeChannel?.type === 'group'">
+      <div class="ml-1 hidden lg:flex lg:items-center group" v-if="activeChannel?.type === 'group' && !isWelcomePage">
         <div
           class="text-xs text-dark-300 dark:text-gray-400 bg-dark-100 dark:bg-gray-800 px-3 py-1 rounded"
         >
@@ -129,6 +129,12 @@ const activeChannel = computed(() => {
   return simpleTalkActiveChannel.value?.type === 'sub-group'
     ? useSimpleTalkStore().getParentGroupChannel(simpleTalkActiveChannel.value.id!)
     : simpleTalkActiveChannel.value
+})
+
+const isWelcomePage=computed(()=>{
+  if(route.params?.channelId == 'welcome'){
+    return true
+  }else return false
 })
 
 const currentChannel: { val: Channel | Object } = reactive({

@@ -1159,52 +1159,63 @@ async function connectMetalet() {
        window.location.reload()
      }, 2000);
     }else{
-        let newChannelId
-        let channleType=1
-    const myChannelList= await getChannels({
-      metaId:userStore.last.metaid
-    })
-
-    if(myChannelList.length){
-      if(Number(myChannelList[0]?.type) == 2){
-        channleType=2
-          newChannelId=myChannelList[0].metaId
-      }else{
-        
-          newChannelId=myChannelList[0].groupId
-      }
-    
-
-    }else{
-    //    const allChannelList= await getAllChannels({
+      
+      simpleChatStore.init()
+      // router.push({
+      //   name: 'talkChannel',
+      //   params:{
+      //     communityId:'public',
+      //     channelId:'welcome'
+      //   }
+      // })
+    //     let newChannelId
+    //     let channleType=1
+    // const myChannelList= await getChannels({
     //   metaId:userStore.last.metaid
     // })
 
-      newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
-      layout.$patch({showJoinView:true})
+    // if(myChannelList.length){
+    //   // if(Number(myChannelList[0]?.type) == 2){
+    //   //   channleType=2
+    //   //     newChannelId=myChannelList[0].metaId
+    //   // }else{
+        
+    //   //     newChannelId=myChannelList[0].groupId
+    //   // }
+    
+
+    // }else{
+    // //    const allChannelList= await getAllChannels({
+    // //   metaId:userStore.last.metaid
+    // // })
+
+    //   newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
+    //   //layout.$patch({showJoinView:true})
+    // }
+   
+    // if(channleType == 1){
+    //     router.push({
+    //     name: 'talkChannel',
+    //     params:{
+    //       communityId:'public',
+    //       channelId:newChannelId
+    //     }
+    //   })
+    // }else{
+    //     router.push({
+    //     name: 'talkAtMe',
+    //     params:{
+    //       channelId:newChannelId
+    //     }
+    //   })
+    // }
+  
     }
-    simpleChatStore.initMuteNotify().then().catch((e)=>{
+
+     simpleChatStore.initMuteNotify().then().catch((e)=>{
     
     })
 
-    if(channleType == 1){
-        router.push({
-        name: 'talkChannel',
-        params:{
-          communityId:'public',
-          channelId:newChannelId
-        }
-      })
-    }else{
-        router.push({
-        name: 'talkAtMe',
-        params:{
-          channelId:newChannelId
-        }
-      })
-    }
-  
-    }
 
 
   }

@@ -245,7 +245,7 @@ const save = async () => {
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
     setTimeout(() => {
-      layoutStore.$patch({showJoinView:true})
+      //layoutStore.$patch({showJoinView:true})
     
       if(route.name !== 'talkAtMe'){
         const channelId=route.params?.channelId
