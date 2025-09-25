@@ -31,14 +31,16 @@
     <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="">
-          <img :src="welcomeIcon" alt="">
+          <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon>
         </div>
-        <div class="text-lg text-zinc-500 mt-3 break-all">
-          A Messaging Service Built on Bitcoin and its Sidechains
+        <div class="text-2xl welcome-desc text-zinc-800 mt-3 break-all flex items-center justify-center max-w-[326px]">
+         <span>
+          A Decentralized Messaging App Built on Bitcoin
+         </span>
         </div>
-        <div class="text-xl mt-5 text-zinc-600 break-all ">
+        <!-- <div class="text-xl mt-5 text-zinc-600 break-all ">
           Fully Decentralized,Immutable,Uncensorable,and Unhackable
-        </div>
+        </div> -->
         <!-- <div class="flex flex-col mt-5">
           <div class="font-medium flex flex-row items-center text-lg">
             <span>{{ $t('link.metaid.group') }}</span
@@ -171,7 +173,7 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-import welcomeIcon from "@/assets/images/welcome.png";
+
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
 const isLoadingBottom = ref(false) // 控制底部加载器
@@ -656,6 +658,11 @@ defineExpose({
 // .loading-indicator {
 //   transition: opacity 0.3s ease;
 // }
+.welcome-desc{
+  font-family: 'J20' !important;
+}
+
+
 .app-container {
   width: 100%;
   height: 100%;
@@ -672,6 +679,8 @@ defineExpose({
   display: flex;
   flex-direction: column-reverse;
 }
+
+
 .loader {
   display: flex;
   justify-content: center;
