@@ -14,12 +14,13 @@ export const useEcdhsStore =defineStore('ecdhs', {
         Array<ECDH_TYPE>,
       ) as RemovableRef<
         Array<ECDH_TYPE>
-      >
+      > || []
     }
   },
 
   getters: {
     getEcdh: (state) => {
+      
       return (ecdhPubKey: string) => {
         
         return state.ecdhList.find((s) => s.externalPubKey === ecdhPubKey)
@@ -29,6 +30,7 @@ export const useEcdhsStore =defineStore('ecdhs', {
 
   actions: {
     insert(ecdh:ECDH_TYPE,ecdhPubKey:string) {
+      
       if (this.ecdhList.find((s) => s.externalPubKey === ecdhPubKey)) return
        this.ecdhList.push(ecdh)
       

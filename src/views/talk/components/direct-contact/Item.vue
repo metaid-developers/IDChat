@@ -175,7 +175,9 @@ const switchChannel = () => {
 
   if (props.session?.type === ChannelType.Group) {
     router.push(`/talk/channels/public/${props.session?.id}`)
+    
   } else {
+    
     router.push(`/talk/@me/${props.session?.id}`)
   }
 }

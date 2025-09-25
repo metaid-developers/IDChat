@@ -327,7 +327,7 @@ export const getChannels = async ({
  //latest-group-list
  const ecdhsStore=useEcdhsStore()
   return TalkApi.get(`/user/latest-chat-info-list?${params}`).then(
-    (res) => {
+    async (res) => {
       
      if(res.data.list){
       const list=[]
@@ -341,11 +341,16 @@ export const getChannels = async ({
         if(Number(channel.type) == 2){
           if(channel?.userInfo){
                if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
-            
-                getEcdhPublickey(channel.userInfo.chatPublicKey).then((ecdh)=>{
+                const ecdh=await getEcdhPublickey(channel.userInfo.chatPublicKey)
+                if(ecdh){
                   
-                    ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
-                })
+                      ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+                }
+                
+                // getEcdhPublickey(channel.userInfo.chatPublicKey).then((ecdh)=>{
+                  
+                //     ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
+                // })
               
           }
           }else{

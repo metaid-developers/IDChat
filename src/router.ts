@@ -171,7 +171,7 @@ export const router = createRouter({
     {
       path: '/talk/@me',
       component: () => import('@/views/talk/Channel.vue'),
-      meta: { isAuth: true },
+      meta: { isAuth: true,KeepAlive: true  },
       children: [
         {
           path: ':channelId',
@@ -552,6 +552,7 @@ router.beforeEach(async (to, from, next) => {
   const rootStore=useRootStore()
   rootStore.checkWebViewBridge()
   if (to.path === '/') {
+    
     const userStore = useUserStore()
     // const talk = useTalkStore()
 
@@ -589,19 +590,35 @@ router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore()
 
     if (userStore.isAuthorized) {
+      
       const myChannelList = await getChannels({
         metaId: userStore.last.metaid,
       })
 
       let channelId
       if (myChannelList.length) {
-        channelId = myChannelList[0].groupId
-        layout.$patch({ showWelcomeDescView: false })
-        layout.$patch({ showJoinView: false })
-        next({
+        
+        if(Number(myChannelList[0].type) == 2){
+          channelId=myChannelList[0].metaId
+             next({
+          name: 'talkAtMe',
+          params: { channelId },
+        })
+        }else{
+          channelId = myChannelList[0].groupId
+           next({
           name: 'talkChannel',
           params: { communityId: 'public', channelId },
         })
+        }
+
+        
+        
+        layout.$patch({ showWelcomeDescView: false })
+        layout.$patch({ showJoinView: false })
+
+
+       
         //layout.$patch({ isShowLeftNav: true })
       } else {
         layout.$patch({ isShowLeftNav: true })
@@ -618,8 +635,13 @@ router.beforeEach(async (to, from, next) => {
 
     layout.$patch({ isShowLeftNav: true })
   } else {
+    if(from.name !== to.name && !from.name){
+      layout.$patch({isShowLeftNav:true})
+    }
+    
     next()
-    //layout.$patch({ isShowLeftNav: true })
+    
+   
   }
 })
 

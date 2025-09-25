@@ -224,6 +224,7 @@ export const useRootStore = defineStore('root', {
     },
 
     checkWebViewBridge():boolean{
+      
       if(isIOS || isAndroid){
         if (window?.navigator) {  
           const userAgent=window?.navigator?.userAgent || ''

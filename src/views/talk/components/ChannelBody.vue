@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
-import { nextTick, onBeforeUnmount, onUnmounted, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, onUnmounted, watch } from 'vue'
 
 import { useTalkStore } from '@/stores/talk'
 import { GroupChannelType } from '@/enum'
@@ -25,6 +25,8 @@ const layout = useLayoutStore()
 const user = useUserStore()
 const route = useRoute()
 const { communityId, channelId } = route.params
+
+
 
 // const tryInitChannel = async (status: string) => {
 //   if (status !== 'ready') return

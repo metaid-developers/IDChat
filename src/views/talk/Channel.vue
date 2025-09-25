@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onUnmounted, watch } from 'vue'
+import { onBeforeUnmount, onUnmounted, watch,onMounted,onActivated } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useTalkStore } from '@/stores/talk'
@@ -89,6 +89,14 @@ const user = useUserStore()
 const route = useRoute()
 const layout = useLayoutStore()
 console.log('route', route)
+// onMounted(()=>{
+  
+//   // if(route.path.indexOf('@me') < 0){
+//   //   layout.$patch({isShowLeftNav:true})
+//   // }
+//   debugger
+// })
+
 
 // 初始化 simple-talk store
 const initSimpleTalk = async () => {

@@ -123,7 +123,7 @@ function handleNetworkChanged(network: Network) {
   isNetworkChanging.value = false
 }
 
-const metaletAccountsChangedHandler = () => {
+const metaletAccountsChangedHandler = async() => {
   try {
     if (useConnectionStore().last.wallet !== 'metalet') return
 
@@ -139,6 +139,28 @@ const metaletAccountsChangedHandler = () => {
         completeReload()
       },
     })
+
+     try {
+      
+      if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
+
+              
+              await connectMetalet()
+
+              if (!userStore.last.chatpubkey) {
+                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+                if (ecdhRes?.chatPublicKey) {
+                  userStore.updateUserInfo({
+                    chatpubkey: ecdhRes?.chatPublicKey
+                  })
+                }
+              }
+            }
+          } catch (error) {
+            ElMessage.error(error as any)
+            console.error('Error in LoginSuccess handler:', error)
+          }
+
   } catch (error) {
     console.error('Error in metaletAccountsChangedHandler:', error)
   }
