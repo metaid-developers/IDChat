@@ -401,7 +401,7 @@ const autoInitSimpleTalk = async () => {
       // 如果已初始化但没有频道，强制同步
       console.log('🔄 SimpleTalk已初始化但无频道，强制同步...')
       try {
-        await simpleTalk.syncFromServer()
+        // await simpleTalk.syncFromServer()
         console.log('✅ 强制同步完成，频道数量:', simpleTalk.channels.length)
       } catch (error) {
         console.error('❌ 强制同步失败:', error)
