@@ -115,7 +115,11 @@
         <div class="mt-3 mb-3 bg-white dark:bg-black px-4 py-5">
           <div class="flex items-center justify-between">
             <div>{{ $t('mute_notifiy') }}</div>
-            <ElSwitch v-model="triggleMuteNotify" @change="trggleMuteMode" :loading="muteNotifyLoading"></ElSwitch>
+            <ElSwitch
+              v-model="triggleMuteNotify"
+              @change="trggleMuteMode"
+              :loading="muteNotifyLoading"
+            ></ElSwitch>
           </div>
         </div>
       </div>
@@ -158,6 +162,7 @@
               @updated="handleDeleteSuccess"
               @updateUserAdmin="handleAdmin"
               @updateUserWhiteList="handleWhiteList"
+              @toPrivateChat="handlePrivateChat"
             />
           </li>
 
@@ -190,6 +195,7 @@
               @updated="handleDeleteSuccess"
               @updateUserAdmin="handleAdmin"
               @updateUserWhiteList="handleWhiteList"
+              @toPrivateChat="handlePrivateChat"
             />
           </li>
 
@@ -218,6 +224,7 @@
               @updated="handleDeleteSuccess"
               @updateUserAdmin="handleAdmin"
               @updateUserWhiteList="handleWhiteList"
+              @toPrivateChat="handlePrivateChat"
             />
           </li>
         </ul>
@@ -285,7 +292,7 @@ import EditAnnouncementDrawer from './EditAnnouncementDrawer.vue'
 import EditChannelInfoDrawer from './EditChannelInfoDrawer.vue'
 import CreateBroadcastChannelModal from './CreateBroadcastChannelModal.vue'
 import InfiniteScroll from '@/components/InfiniteScroll/InfiniteScroll.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getChannelMembers, searchChannelMembers,getUserGroupRole } from '@/api/talk'
 import { ElMessage } from 'element-plus'
 import copy from 'copy-to-clipboard'
@@ -328,6 +335,7 @@ const showCreateBroadcastModal = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
 const muteNotifyLoading=ref(false)
+const router = useRouter()
 
 const scrollContainer = ref<HTMLElement | null>(null)
 const infiniteScrollRef = ref<{ resetLoading: () => void } | null>(null)
@@ -445,7 +453,7 @@ const trggleMuteMode=async(e:boolean)=>{
     metaId:simpleTalkStore.selfMetaId
    }).then((res)=>{
     console.log("res",res)
-    
+
       simpleTalkStore.updateMuteNotify({
     groupId:currentChannelInfo.value.id,
     groupType:'group',
@@ -460,7 +468,7 @@ const trggleMuteMode=async(e:boolean)=>{
     metaId:simpleTalkStore.selfMetaId
    }).then((res)=>{
     console.log("res",res)
-    
+
       simpleTalkStore.updateMuteNotify({
     groupId:currentChannelInfo.value.id,
     groupType:'group',
@@ -470,7 +478,7 @@ const trggleMuteMode=async(e:boolean)=>{
     ElMessage.error(e)
    })
   }
- 
+
 
 
 
@@ -519,6 +527,20 @@ const handleChannelInfoUpdated = (updatedInfo: {
 }
 
 const handleDeleteSuccess = (metaid: string) => {
+
+}
+
+const handlePrivateChat=async(member:MemberItem)=>{
+
+  router.push({
+    name: 'talkAtMe',
+    params: {
+      channelId: member.userInfo!.metaid,
+      // metaid:message.userInfo.metaid
+    },
+  })
+  simpleTalkStore.setActiveChannel(member.userInfo!.metaid)
+  emit('update:modelValue', false)
 
 }
 

@@ -42,7 +42,7 @@
       </div>
     </template>
     <div>
-      <el-button :icon="Promotion" text type="info">
+      <el-button :icon="Promotion" text type="info" @click="toPrivateChat(member)">
         {{ $t('Talk.Channel.SendMessage') }}
       </el-button>
 
@@ -129,7 +129,7 @@ function onCancel() {
 
 const props = defineProps(['member', 'createUserMetaId', 'groupId', 'role'])
 const simpleTalk = useSimpleTalkStore()
-const emit = defineEmits(['updated', 'updateUserAdmin', 'updateUserWhiteList'])
+const emit = defineEmits(['updated', 'updateUserAdmin', 'updateUserWhiteList', 'toPrivateChat'])
 // const talk = useTalkStore()
 const router = useRouter()
 const route = useRoute()
@@ -210,6 +210,10 @@ const isCurrentUserCreator = computed(() => {
     props.member.userInfo.metaid !== userStore.last?.metaid
   )
 })
+
+function toPrivateChat(message: any) {
+  emit('toPrivateChat', props.member)
+}
 
 const manageAdmin = () => {
   //检查权限
