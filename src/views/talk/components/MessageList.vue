@@ -12,13 +12,7 @@
     <LoadingList />
   </div>
 
-  <div
-    class="h-full relative overflow-y-auto"
-    ref="messagesScroll"
-    id="messagesScroll"
-    v-else
-    :class="[layout.isShowLeftNav ? 'hidden lg:block' : '']"
-  >
+  <div class="h-full relative overflow-y-auto" ref="messagesScroll" id="messagesScroll" v-else>
     <el-alert
       :title="$t('user_private_chat_unsupport')"
       type="error"
@@ -285,6 +279,7 @@ const currentChannelType = computed(() => {
 
 const loadItems = async (isPrepending = false) => {
   // 防止重复加载
+  console.log('loadItems', { isPrepending }, isLoadingTop.value || isLoadingBottom.value)
   if (isLoadingTop.value || isLoadingBottom.value) return
 
   if (!isPrepending) {
@@ -659,8 +654,6 @@ defineExpose({
 //   transition: opacity 0.3s ease;
 // }
 
-
-
 .app-container {
   width: 100%;
   height: 100%;
@@ -677,7 +670,6 @@ defineExpose({
   display: flex;
   flex-direction: column-reverse;
 }
-
 
 .loader {
   display: flex;
