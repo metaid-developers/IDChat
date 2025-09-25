@@ -959,6 +959,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 初始化聊天系统
      */
     async init(): Promise<void> {
+      debugger
       const userStore = useUserStore()
       const currentUserMetaId = userStore.last?.metaid
       

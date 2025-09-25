@@ -56,7 +56,7 @@ export default ({ mode, command }) => {
   const isProduction = command === 'build'
  
   return defineConfig({
-    //base:isProduction ? '/chat/' : '/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
+    base:isProduction ? '/chat/' : '/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({
@@ -72,13 +72,13 @@ export default ({ mode, command }) => {
       },
 
     
-      //   createHtmlPlugin({
-      //   inject: {
-      //     data: {
-      //       basePath:isProduction ? '/chat/' : ''//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
-      //     }
-      //   }
-      // }),
+        createHtmlPlugin({
+        inject: {
+          data: {
+            basePath:isProduction ? '/chat/' : ''//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
+          }
+        }
+      }),
     //      createHtmlPlugin({
     //   inject: {
     //     data: {
@@ -313,6 +313,9 @@ export default ({ mode, command }) => {
         plugins: [nodePolyfills()],
         output: {
           sourcemap: isProduction ? false : 'inline',
+            entryFileNames: `[name].[hash].js`,
+            chunkFileNames: `[name].[hash].js`,
+            assetFileNames: `[name].[hash].[ext]`
           // chunkFileNames: 'assets/[name].[hash].js',
           // entryFileNames: 'assets/[name].[hash].js',
           

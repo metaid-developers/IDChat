@@ -53,6 +53,7 @@ import { useRootStore } from '@/stores/root'
 
 const router=useRouter()
 const rootStore=useRootStore()
+const layout=useLayoutStore()
 const connectionStore = useConnectionStore()
 const userStore=useUserStore()
 const credentialsStore = useCredentialsStore()
@@ -68,6 +69,7 @@ function toMetaIdGrop() {
         channelId: '396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
       },
     })
+    layout.$patch({isShowLeftNav:false})
     // setTimeout(() => {
     //   window.location.reload()
     // }, 2000);

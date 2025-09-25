@@ -1,7 +1,7 @@
 <template>
   <TransitionRoot :show="modelValue">
-    <Dialog @close="tryClose" class="relative  text-dark-800 dark:text-gray-100"
-    :class="[layout.isShowSubChannelDrawer ? 'z-[9999]' : 'z-50']"
+    <Dialog @close="tryClose" class="relative 'z-50'  text-dark-800 dark:text-gray-100"
+   
     >
       <TransitionChild
         as="template"

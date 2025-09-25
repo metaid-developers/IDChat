@@ -216,6 +216,7 @@ async function connectMetalet() {
 
 
 onMounted(async () => {
+  
   let retryCount = 0
   let timeoutId: NodeJS.Timeout | undefined
   //document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -264,11 +265,11 @@ onMounted(async () => {
          ;(window.metaidwallet as any)?.on('networkChanged', metaletNetworkChangedHandler)
 
         ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
-           ElMessage.success(`调用了LoginSuccess`)
+          
           try {
             if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
 
-               ElMessage.success('调用了loginsucess')
+              
               await connectMetalet()
 
               if (!userStore.last.chatpubkey) {
@@ -323,8 +324,37 @@ onMounted(async () => {
           }
         })
 
-        (window.metaidwallet as any)?.on('onRefresh',async()=>{
-            ElMessage.success('成功调用了app刷新功能')
+
+        // setInterval(async()=>{
+        //       ElMessage.success('成功调用了app刷新功能')
+        //   //监听APP数据刷新
+        //   if(userStore.isAuthorized){
+        //     debugger
+        //       const loading = openLoading({
+        //         text: i18n.t('reload'),
+        //       })
+        //     try{
+             
+          
+        //       if(!wsStore.isConnected){
+        //         ElMessage.success('重新连接socket')
+        //         wsStore.init()
+        //       }
+
+        //       simpleTalkStore.$patch({isInitialized:false})
+        //       await simpleTalkStore.init()
+        //       ElMessage.success('✅ Simple-talk store 初始化成功')
+        //       loading.close()
+        //     }catch{
+        //       loading.close()
+        //     }
+
+        //   }
+         
+        // },20 * 1000)
+
+        ;(window.metaidwallet as any)?.on('onRefresh',()=>{
+     
           //监听APP数据刷新
           if(userStore.isAuthorized){
           
@@ -338,10 +368,12 @@ onMounted(async () => {
                 ElMessage.success('重新连接socket')
                 wsStore.init()
               }
-
-              await simpleTalkStore.init()
-              ElMessage.success('✅ Simple-talk store 初始化成功')
+              simpleTalkStore.$patch({isInitialized:false})
+               simpleTalkStore.init().then(()=>{
+                  ElMessage.success('✅ Simple-talk store 初始化成功')
               loading.close()
+               }) 
+           
             }catch{
               loading.close()
             }
@@ -350,7 +382,7 @@ onMounted(async () => {
          
 
 
-          //window.location.reload()
+        
         })
         //监听页面可见性变化
        
