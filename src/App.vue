@@ -256,7 +256,7 @@ onMounted(async () => {
   }
 
 
-  const checkMetalet = async () => {
+  const checkMetalet =  () => {
     if (window.metaidwallet) {
 
       try {
@@ -264,8 +264,10 @@ onMounted(async () => {
          ;(window.metaidwallet as any)?.on('networkChanged', metaletNetworkChangedHandler)
 
         ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
+           ElMessage.success(`调用了LoginSuccess`)
           try {
             if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
+
                ElMessage.success('调用了loginsucess')
               await connectMetalet()
 
@@ -279,9 +281,35 @@ onMounted(async () => {
               }
             }
           } catch (error) {
+            ElMessage.error(error as any)
             console.error('Error in LoginSuccess handler:', error)
           }
         })
+
+  //         window.metaidwallet?.on('LoginSuccess',async()=>{
+    
+  //            ElMessage.success(`调用了LoginSuccess`)
+  // if(rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized ){
+  //    ElMessage.success(`调用了LoginSuccess internal`)
+  //      await connectMetalet()
+
+  //      if(!userStore.last.chatpubkey){
+  //          const ecdhRes= await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+  //       if(ecdhRes?.chatPublicKey ){
+  //         userStore.updateUserInfo({
+  //           chatpubkey:ecdhRes?.chatPublicKey
+  //         })
+
+
+
+  // }
+  //      }
+  //     }
+   
+  
+
+  // })
+
 
         ;(window.metaidwallet as any)?.on('Logout', async (data: any) => {
           try {
@@ -324,6 +352,8 @@ onMounted(async () => {
 
           //window.location.reload()
         })
+        //监听页面可见性变化
+       
 
 
       } catch (err) {
