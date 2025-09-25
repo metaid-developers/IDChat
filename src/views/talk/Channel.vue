@@ -169,23 +169,28 @@ watch(
 
 // 解析 communityId 为 metaName 的情况
 async function resolve(communityId: string, channelId: string) {
-  // init('c3085ccabe5f4320ccb638d40b16f11fea267fb051f360a994305108b16854cd')
-
-  console.log('🔍 resolve 函数被调用:', { communityId, channelId })
+  console.log('解析 communityId:', communityId, channelId)
 
   if (isPublicChannel(communityId)) {
     if (!simpleTalk.isInitialized) {
       await simpleTalk.init()
     }
     if (simpleTalk.channels.find(c => c.id === channelId)) {
-      console.log('频道已存在，直接激活:', channelId)
-      await simpleTalk.setActiveChannel(channelId)
-      return
+      if (simpleTalk.activeChannelId !== channelId) {
+        console.log('频道已存在，直接激活:', channelId)
+        await simpleTalk.setActiveChannel(channelId)
+      }
     } else {
       if (channelId !== 'welcome') {
         // layout.isShowChannelAcceptInviteModal = true
+        await simpleTalk.setActiveChannel(channelId)
       }
     }
+  } else {
+    if (!simpleTalk.isInitialized) {
+      await simpleTalk.init()
+    }
+    await simpleTalk.setActiveChannel(channelId)
   }
 }
 resolve(communityId, channelId)

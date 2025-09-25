@@ -1,7 +1,7 @@
 <template>
   <div
     class="h-full overflow-y-hidden"
-    v-show="
+    v-if="
       user.isAuthorized &&
         (layout.isShowMessagesLoading ||
           simpleTalk.isInitialized === false ||
@@ -16,7 +16,7 @@
     class="h-full relative overflow-y-auto"
     ref="messagesScroll"
     id="messagesScroll"
-    v-show="!layout.isShowMessagesLoading"
+    v-else
     :class="[layout.isShowLeftNav ? 'hidden lg:block' : '']"
   >
     <el-alert
@@ -173,6 +173,7 @@ import { storeToRefs } from 'pinia'
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
 const isLoadingBottom = ref(false) // 控制底部加载器
+const isNoMoreBottom = ref(false) // 控制底部没有更多数据
 const listContainer = ref<HTMLElement | null>(null)
 const bottomSpacer = ref<HTMLElement | null>(null)
 const listWrapper = ref<HTMLElement | null>(null)
@@ -202,11 +203,6 @@ const _welComePage = computed(() => {
   if (simpleTalk.isInitialized) {
     const hasMessages = simpleTalk.activeChannelMessages.length > 0
     const hasActiveChannel = !!simpleTalk.activeChannel
-    console.log('🏠 WelcomePage check (simple-talk):', {
-      hasActiveChannel,
-      hasMessages,
-      shouldShowWelcome: !hasActiveChannel || !hasMessages,
-    })
     return !hasActiveChannel || !hasMessages
   }
 
@@ -293,19 +289,26 @@ const loadItems = async (isPrepending = false) => {
     }
     isLoadingTop.value = true
   } else {
+    if (isNoMoreBottom.value) {
+      return
+    }
     isLoadingBottom.value = true
   }
 
   // ** 核心逻辑：保持下拉加载时的滚动位置 **
   let scrollHeightBefore = 0
-  if (!isPrepending && listWrapper.value) {
+  if (isPrepending && listWrapper.value) {
     // 在添加新内容前，记录当前列表的总高度
     scrollHeightBefore = listWrapper.value.scrollHeight
   }
   const beforeLength = simpleTalk.activeChannelMessages.length
 
   try {
-    await simpleTalk.loadMoreMessages(simpleTalk.activeChannelId)
+    if (!isPrepending) {
+      await simpleTalk.loadMoreMessages(simpleTalk.activeChannelId)
+    } else {
+      await simpleTalk.loadMoreNewestMessages(simpleTalk.activeChannelId)
+    }
   } catch (error) {
     console.error('加载消息失败:', error)
   }
@@ -316,14 +319,19 @@ const loadItems = async (isPrepending = false) => {
   const afterLength = simpleTalk.activeChannelMessages.length
 
   if (beforeLength === afterLength) {
-    isNoMoreTop.value = true
+    isPrepending ? (isNoMoreBottom.value = true) : (isNoMoreTop.value = true)
   }
 
   if (isPrepending && listWrapper.value && listContainer.value) {
     // 添加新内容后，列表总高度会增加
     const scrollHeightAfter = listWrapper.value.scrollHeight
     // 将滚动条位置设置为新内容的高度，这样旧内容就回到了原来的位置
-    listContainer.value.scrollTop = scrollHeightAfter - scrollHeightBefore
+    console.log('保持滚动位置:', {
+      scrollHeightBefore,
+      scrollHeightAfter,
+      addedHeight: scrollHeightAfter - scrollHeightBefore,
+    })
+    listContainer.value.scrollTop = scrollHeightBefore - scrollHeightAfter
   }
 
   // 更新加载状态
@@ -352,10 +360,11 @@ const handleScroll = (event: Event) => {
 
   try {
     // 检查是否滚动到顶部
-    if (container.scrollTop === 0) {
-      console.log('滚动到顶部，准备加载新数据...')
-      // loadItems(true) // true 表示下拉刷新
+    if (Math.abs(container.scrollTop) < 50 && !isNoMoreBottom.value && !isLoadingBottom.value) {
+      console.log('滚动到底部，准备加载新数据...')
+      loadItems(true) // true 表示上滑加载
     }
+    console.log('container.scrollTop', container.scrollTop)
 
     if (Math.abs(container.scrollTop) > 500) {
       showScrollToBottom.value = true
@@ -369,7 +378,7 @@ const handleScroll = (event: Event) => {
       container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
       threshold
     ) {
-      console.log('滚动到底部，准备加载更多数据...')
+      console.log('滚动到顶部，准备加载更多数据...')
       loadItems(false).catch(error => {
         console.error('加载更多数据失败:', error)
       })
@@ -392,7 +401,7 @@ const autoInitSimpleTalk = async () => {
       // 如果已初始化但没有频道，强制同步
       console.log('🔄 SimpleTalk已初始化但无频道，强制同步...')
       try {
-        await simpleTalk.syncFromServer()
+        // await simpleTalk.syncFromServer()
         console.log('✅ 强制同步完成，频道数量:', simpleTalk.channels.length)
       } catch (error) {
         console.error('❌ 强制同步失败:', error)
@@ -417,43 +426,13 @@ onMounted(async () => {
   // 初始化消息观察器
   initMessageObserver()
 
-  // 监听路由变化，激活对应频道
-  const { channelId } = route.params as { channelId: string }
-  if (channelId && simpleTalk.isInitialized) {
-    await simpleTalk.setActiveChannel(channelId)
-
-    // 添加详细的频道和消息调试信息
-  }
-  // await nextTick()
-  // scrollToMessagesBottom()
+  // 等待 DOM 更新后自动加载最新消息
+  await nextTick()
 
   if (isMobile) {
     document.addEventListener('click', handleGlobalClick)
   }
 })
-
-// 监听路由参数变化，处理频道切换
-watch(
-  () => route.params.channelId,
-  async (newChannelId, oldChannelId) => {
-    if (newChannelId && newChannelId !== oldChannelId) {
-      console.log('🔄 频道切换:', { from: oldChannelId, to: newChannelId })
-
-      // 确保 simple-talk 已初始化
-      if (!simpleTalk.isInitialized) {
-        console.log('📋 频道切换时初始化 simple-talk')
-        await simpleTalk.init()
-      }
-
-      // 激活新频道
-      await simpleTalk.setActiveChannel(newChannelId as string)
-      console.log('✅ 频道切换完成:', newChannelId)
-      await nextTick()
-      // scrollToMessagesBottom()
-    }
-  },
-  { immediate: false }
-)
 
 // 监听消息变化，确保在有消息时滚动到底部
 watch(
@@ -494,17 +473,17 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-const hasTooFewMessages = computed(() => {
-  // 检查 simple-talk 数据
-  if (simpleTalk.isInitialized && simpleTalk.activeChannelMessages.length > 0) {
-    return simpleTalk.activeChannelMessages.length < 10
+const notLoadAll = computed(() => {
+  const maxIndex =
+    simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1].index
+  if (maxIndex !== simpleTalk.activeChannel?.lastMessage?.index) {
+    return true
   }
-
   return false
 })
 
 const scrollToMessagesBottom = async () => {
-  if (unReadCount.value > 0) {
+  if (unReadCount.value > 0 || notLoadAll.value) {
     await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
     await nextTick()
     await sleep(100)
@@ -660,9 +639,6 @@ defineExpose({
 
 /* 改进滚动行为 */
 #messagesScroll {
-  /* 使用 auto 而不是 smooth，避免分页加载时的滚动干扰 */
-  // scroll-behavior: auto;
-  /* 确保在iOS上滚动流畅 */
   -webkit-overflow-scrolling: touch;
   overflow: hidden;
 }
@@ -680,7 +656,7 @@ defineExpose({
 // }
 .app-container {
   width: 100%;
-  height: calc(100vh - 128px);
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;

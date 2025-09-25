@@ -474,7 +474,6 @@ export const getChannelMessages = async ({
   size?: string
   timestamp?: string
 }): Promise<any> => {
-  const selfMetaId = metaId
   const query = new URLSearchParams({
     groupId,
     metaId,
@@ -482,15 +481,6 @@ export const getChannelMessages = async ({
     size,
     timestamp,
   }).toString()
-
-  // if (type === 'session') {
-  //   const {
-  //     data: { data: messages },
-  //   } = await TalkApi.get(`/chat/${selfMetaId}/${channelId}?${query}`)
-
-  //   return messages
-  // }
-
   const data: {
     data: {
       total: number
@@ -498,23 +488,54 @@ export const getChannelMessages = async ({
       list: ChatMessageItem[] | null
     }
   } = await TalkApi.get(`/group-chat-list-v2?${query}`)
+  return data.data
+}
 
-  // if (data.data.list?.length) {
-  //   for (let item of data.data.list) {
-  //     if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
-  //     getOneRedPacket({
-  //         groupId: item.groupId,
-  //         pinId: item.pinId,
-  //       }).then((redpackInfo)=>{
-  //           if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
-  //         item.claimOver = true
-  //       }
-  //       }).catch((e)=>console.log('e',e))
+export const getChannelNewestMessages = async ({
+  groupId,
+  size = String(ChannelMsg_Size),
+  startIndex = '0',
+}: {
+  groupId: string
+  size?: string
+  startIndex?: string
+}): Promise<any> => {
+  const query = new URLSearchParams({
+    groupId,
+    startIndex,
+    size,
+  }).toString()
+  const data: {
+    data: {
+      total: number
+      nextTimestamp: number
+      list: ChatMessageItem[] | null
+    }
+  } = await TalkApi.get(`/group-chat-list-by-index?${query}`)
+  return data.data
+}
 
-  //     }
-  //   }
-  // }
-
+export const getSubChannelNewestMessages = async ({
+  channelId,
+  size = String(ChannelMsg_Size),
+  startIndex = '0',
+}: {
+  channelId: string
+  size?: string
+  startIndex?: string
+}): Promise<any> => {
+  const query = new URLSearchParams({
+    channelId,
+    startIndex,
+    size,
+  }).toString()
+  const data: {
+    data: {
+      total: number
+      nextTimestamp: number
+      list: ChatMessageItem[] | null
+    }
+  } = await TalkApi.get(`/channel-chat-list-by-index?${query}`)
   return data.data
 }
 
@@ -540,13 +561,6 @@ export const getSubChannelMessages = async ({
     timestamp,
   }).toString()
 
-  // if (type === 'session') {
-  //   const {
-  //     data: { data: messages },
-  //   } = await TalkApi.get(`/chat/${selfMetaId}/${channelId}?${query}`)
-
-  //   return messages
-  // }
 
   const data: {
     data: {
@@ -555,23 +569,6 @@ export const getSubChannelMessages = async ({
       list: ChatMessageItem[] | null
     }
   } = await TalkApi.get(`/channel-chat-list-v3?${query}`)
-
-  // if (data.data.list?.length) {
-  //   for (let item of data.data.list) {
-  //     if (containsString(item.protocol, NodeName.SimpleGroupLuckyBag)) {
-  //     getOneRedPacket({
-  //         groupId: item.groupId,
-  //         pinId: item.pinId,
-  //       }).then((redpackInfo)=>{
-  //           if (Number(redpackInfo.count) == Number(redpackInfo.usedCount)) {
-  //         item.claimOver = true
-  //       }
-  //       }).catch((e)=>console.log('e',e))
-
-  //     }
-  //   }
-  // }
-
   return data.data
 }
 
@@ -599,13 +596,6 @@ export const getPrivateChatMessages = async (
   timestamp
   }).toString()
   
-  // if (type === 'session') {
-  //   const {
-  //     data: { data: messages },
-  //   } = await TalkApi.get(`/chat/${selfMetaId}/${channelId}?${query}`)
-
-  //   return messages
-  // }
 
 const data:{
   data:{
@@ -619,25 +609,41 @@ const data:{
     nextTimestamp:0,
     total:0
   }
-  // if(data.data.list?.length){
-  //   for(let item of data.data.list){
-  //     if(containsString(item.protocol,NodeName.SimpleGroupLuckyBag)){
-  //      const redpackInfo=await getOneRedPacket({
-  //          groupId: item.groupId,
-  //         pinId: item.pinId,
-  //       })
-        
-  //       if(Number(redpackInfo.count) == Number(redpackInfo.usedCount)){
-  //         item.claimOver=true
-  //       }
-        
-  //     } 
-     
-  // }
-  // }
+}
 
-
+export const getNewstPrivateChatMessages = async (
+ {
+  metaId='',
+  otherMetaId='',
+  startIndex='0',
+  size=String(ChannelMsg_Size),
+ }:{
+  metaId:string,
+  otherMetaId:string,
+  startIndex?:string,
+  size?:string
+ }
+): Promise<any> => {
+  const query = new URLSearchParams({
+  otherMetaId,
+  metaId,
+  startIndex,
+  size,
+  }).toString()
   
+
+const data:{
+  data:{
+    total:number
+    nextTimestamp:number,
+    list: PriviteChatMessageItem[] | null
+  }
+} = await TalkApi.get(`/private-chat-list-by-index?${query}`)
+  return data.data ?? {
+    list:[],
+    nextTimestamp:0,
+    total:0
+  }
 }
 
 export const getChannelMessagesForTask = async (
