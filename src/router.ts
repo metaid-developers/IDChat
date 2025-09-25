@@ -563,6 +563,23 @@ router.beforeEach(async (to, from, next) => {
 
       let channelId
       if (myChannelList.length) {
+        if(Number(myChannelList[0].type) == 2){
+          channelId=myChannelList[0].metaId
+             next({
+          name: 'talkAtMe',
+          params: { channelId },
+        })
+        }else{
+          channelId = myChannelList[0].groupId
+           next({
+          name: 'talkChannel',
+          params: { communityId: 'public', channelId },
+        })
+
+        
+        }
+
+
         channelId = myChannelList[0].groupId
         layout.$patch({ showJoinView: false })
         layout.$patch({ showWelcomeDescView: false })
@@ -571,12 +588,13 @@ router.beforeEach(async (to, from, next) => {
         layout.$patch({ isShowLeftNav: true })
         layout.$patch({ showJoinView: true })
         channelId = 'welcome'
-      }
-
-      next({
+           next({
         name: 'talkChannel',
         params: { communityId: 'public', channelId },
       })
+      }
+
+   
     } else {
       layout.$patch({ isShowLeftNav: true })
       layout.$patch({ showJoinView: false })
