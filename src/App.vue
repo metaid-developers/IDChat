@@ -123,7 +123,7 @@ function handleNetworkChanged(network: Network) {
   isNetworkChanging.value = false
 }
 
-const metaletAccountsChangedHandler = async() => {
+const metaletAccountsChangedHandler = () => {
   try {
     if (useConnectionStore().last.wallet !== 'metalet') return
 
@@ -137,10 +137,9 @@ const metaletAccountsChangedHandler = async() => {
       type: 'warning',
       onClose: () => {
         completeReload()
-      },
-    })
 
-     try {
+        setTimeout(async() => {
+             try {
       
       if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
 
@@ -160,6 +159,12 @@ const metaletAccountsChangedHandler = async() => {
             ElMessage.error(error as any)
             console.error('Error in LoginSuccess handler:', error)
           }
+        }, 1000);
+
+      },
+    })
+
+    
 
   } catch (error) {
     console.error('Error in metaletAccountsChangedHandler:', error)
