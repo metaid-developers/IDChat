@@ -611,6 +611,41 @@ const data:{
   }
 }
 
+export const getNewstPrivateChatMessages = async (
+ {
+  metaId='',
+  otherMetaId='',
+  startIndex='0',
+  size=String(ChannelMsg_Size),
+ }:{
+  metaId:string,
+  otherMetaId:string,
+  startIndex?:string,
+  size?:string
+ }
+): Promise<any> => {
+  const query = new URLSearchParams({
+  otherMetaId,
+  metaId,
+  startIndex,
+  size,
+  }).toString()
+  
+
+const data:{
+  data:{
+    total:number
+    nextTimestamp:number,
+    list: PriviteChatMessageItem[] | null
+  }
+} = await TalkApi.get(`/private-chat-list-by-index?${query}`)
+  return data.data ?? {
+    list:[],
+    nextTimestamp:0,
+    total:0
+  }
+}
+
 export const getChannelMessagesForTask = async (
  {
    groupId,

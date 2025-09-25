@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { SimpleChannel,MuteNotifyItem,BlockedChats, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
-import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers, getOneChannel } from '@/api/talk'
+import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers, getOneChannel, getNewstPrivateChatMessages } from '@/api/talk'
 
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
 import { useUserStore } from './user'
@@ -2316,13 +2316,20 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           const result: UnifiedChatResponseData = await getSubChannelNewestMessages({
             channelId: channelId, // 子群聊使用自己的channelId作为groupId
             startIndex: String(startIndex),
-            size: '5'
+            size: '20'
           })
           serverMessages = result.list || []
           console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'private') {
           //TODO  私聊消息 
-         
+          const result: UnifiedChatResponseData = await getNewstPrivateChatMessages({
+             metaId: this.selfMetaId,
+            otherMetaId: channelId,
+            startIndex: String(startIndex),
+            size: '20'
+          })
+          serverMessages = result.list || []
+          console.log(`📡 私聊API返回 ${serverMessages.length} 条消息`)
           
         }
       } catch (apiError) {
