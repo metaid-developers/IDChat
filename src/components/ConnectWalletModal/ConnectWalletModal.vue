@@ -1168,7 +1168,6 @@ async function connectMetalet() {
     if(myChannelList.length){
       if(Number(myChannelList[0]?.type) == 2){
         channleType=2
-        debugger
           newChannelId=myChannelList[0].metaId
       }else{
         

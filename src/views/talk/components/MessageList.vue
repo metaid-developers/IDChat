@@ -30,7 +30,9 @@
 
     <div v-if="_welComePage && layout.showWelcomeDescView">
       <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
-        <div class="text-3xl break-all font-black">MetaSo Chat</div>
+        <div class="">
+          <img :src="welcomeIcon" alt="">
+        </div>
         <div class="text-lg text-zinc-500 mt-3 break-all">
           A Messaging Service Built on Bitcoin and its Sidechains
         </div>
@@ -169,7 +171,7 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-
+import welcomeIcon from "@/assets/images/welcome.png";
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
 const isLoadingBottom = ref(false) // 控制底部加载器
