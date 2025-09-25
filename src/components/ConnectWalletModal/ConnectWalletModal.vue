@@ -1138,16 +1138,17 @@ async function connectMetalet() {
     
     
 
-
+    
     await sleep(300)
 
     closeConnectionModal()
-
+    
     const channelId=route.params.channelId
     const communityId=route.params.communityId
 
 
     if(channelId && channelId !== 'welcome'){
+      
          router.push({
         name: 'talkChannel',
         params:{

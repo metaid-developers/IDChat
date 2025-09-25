@@ -90,6 +90,7 @@ import { Camera } from '@element-plus/icons-vue'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
 import { useLayoutStore } from '@/stores/layout'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
 const props = defineProps<{
   modelValue: boolean
 }>()
@@ -107,6 +108,7 @@ const currentAvatar = ref<string>(DefaultAvatar)
 const imgRaw = ref<File | null>(null)
 const loading = ref(false)
 const layoutStore=useLayoutStore()
+const simpleTalk=useSimpleTalkStore()
 
 watch(
   () => userStore.last?.avatar,
@@ -245,23 +247,26 @@ const save = async () => {
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
     setTimeout(() => {
+      
+       simpleTalk.init()
       //layoutStore.$patch({showJoinView:true})
-    
-      if(route.name !== 'talkAtMe'){
-        const channelId=route.params?.channelId
-       if(channelId && channelId !=='welcome'){
-        window.location.reload()
-       }else{
-        router.push({
-        name: 'talkChannel',
-        params: {
-          communityId: 'public',
-          channelId:'welcome' //'396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
-        },
-      })
-       }
+      
+      // if(route.name !== 'talkAtMe'){
+      //   //const channelId=route.params?.channelId
+       
+      // //  if(channelId && channelId !=='welcome'){
+      // //   window.location.reload()
+      // //  }else{
+      // // //   router.push({
+      // // //   name: 'talkChannel',
+      // // //   params: {
+      // // //     communityId: 'public',
+      // // //     channelId:'welcome' //'396809572f936c66979755477b15ae9adfe9fae119bdabb8f3ffb9a362a176d0i0',
+      // // //   },
+      // // // })
+      // //  }
      
-      }
+      // }
 
      
     }, 1000)

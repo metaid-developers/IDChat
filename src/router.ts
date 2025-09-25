@@ -548,6 +548,7 @@ window._go = go
 //   else next()
 // })
 router.beforeEach(async (to, from, next) => {
+  
   const layout = useLayoutStore()
   const rootStore=useRootStore()
   rootStore.checkWebViewBridge()
@@ -614,6 +615,7 @@ router.beforeEach(async (to, from, next) => {
     // }
   } else if (to.path == '/talk/channels/public/welcome') {
      layout.$patch({ isShowLeftNav: true })
+     
         ///layout.$patch({ showJoinView: true })
         //layout.$patch({ showWelcomeDescView: true })
        
