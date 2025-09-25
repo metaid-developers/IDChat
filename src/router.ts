@@ -552,6 +552,7 @@ router.beforeEach(async (to, from, next) => {
   const rootStore=useRootStore()
   rootStore.checkWebViewBridge()
   if (to.path === '/') {
+    debugger
     
     const userStore = useUserStore()
     // const talk = useTalkStore()
@@ -606,7 +607,7 @@ router.beforeEach(async (to, from, next) => {
     }
   } else if (to.path == '/talk/channels/public/welcome') {
     const userStore = useUserStore()
-
+    debugger
     if (userStore.isAuthorized) {
       
       const myChannelList = await getChannels({
@@ -623,6 +624,7 @@ router.beforeEach(async (to, from, next) => {
           params: { channelId },
         })
         }else{
+          debugger
           channelId = myChannelList[0].groupId
            next({
           name: 'talkChannel',
@@ -639,6 +641,7 @@ router.beforeEach(async (to, from, next) => {
        
         //layout.$patch({ isShowLeftNav: true })
       } else {
+        debugger
         layout.$patch({ isShowLeftNav: true })
         layout.$patch({ showJoinView: true })
         layout.$patch({ showWelcomeDescView: true })

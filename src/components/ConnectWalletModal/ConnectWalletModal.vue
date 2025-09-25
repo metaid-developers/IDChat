@@ -1160,13 +1160,21 @@ async function connectMetalet() {
      }, 2000);
     }else{
         let newChannelId
+        let channleType=1
     const myChannelList= await getChannels({
       metaId:userStore.last.metaid
     })
 
     if(myChannelList.length){
-
-      newChannelId=myChannelList[0].groupId
+      if(Number(myChannelList[0]?.type) == 2){
+        channleType=2
+        debugger
+          newChannelId=myChannelList[0].metaId
+      }else{
+        
+          newChannelId=myChannelList[0].groupId
+      }
+    
 
     }else{
     //    const allChannelList= await getAllChannels({
@@ -1180,14 +1188,23 @@ async function connectMetalet() {
     
     })
 
-
-    router.push({
+    if(channleType == 1){
+        router.push({
         name: 'talkChannel',
         params:{
           communityId:'public',
           channelId:newChannelId
         }
       })
+    }else{
+        router.push({
+        name: 'talkAtMe',
+        params:{
+          channelId:newChannelId
+        }
+      })
+    }
+  
     }
 
 
