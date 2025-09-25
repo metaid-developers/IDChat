@@ -90,6 +90,10 @@ const accountInterval=ref()
 const layout=useLayoutStore()
 const wsStore=useWsStore()
 const routeKey = (route: any) => {
+  // 对于 talk 路由，统一使用 'talk' 作为 key，避免重新创建组件
+  if (route.path.startsWith('/talk')) {
+    return 'talk'
+  }
   if (route.params.communityId) return route.params.communityId
   return route.fullPath
 }
@@ -140,10 +144,10 @@ const metaletAccountsChangedHandler = () => {
 
         setTimeout(async() => {
              try {
-      
+
       if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
 
-              
+
               await connectMetalet()
 
               if (!userStore.last.chatpubkey) {
@@ -164,7 +168,7 @@ const metaletAccountsChangedHandler = () => {
       },
     })
 
-    
+
 
   } catch (error) {
     console.error('Error in metaletAccountsChangedHandler:', error)
@@ -243,7 +247,7 @@ async function connectMetalet() {
 
 
 onMounted(async () => {
-  
+
   let retryCount = 0
   let timeoutId: NodeJS.Timeout | undefined
   //document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -292,11 +296,11 @@ onMounted(async () => {
          ;(window.metaidwallet as any)?.on('networkChanged', metaletNetworkChangedHandler)
 
         ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
-          
+
           try {
             if (rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized) {
 
-              
+
               await connectMetalet()
 
               if (!userStore.last.chatpubkey) {
@@ -315,7 +319,7 @@ onMounted(async () => {
         })
 
   //         window.metaidwallet?.on('LoginSuccess',async()=>{
-    
+
   //            ElMessage.success(`调用了LoginSuccess`)
   // if(rootStore.isWebView && connectionStore.last.status !== 'connected' && !userStore.isAuthorized ){
   //    ElMessage.success(`调用了LoginSuccess internal`)
@@ -333,8 +337,8 @@ onMounted(async () => {
   // }
   //      }
   //     }
-   
-  
+
+
 
   // })
 
@@ -361,8 +365,8 @@ onMounted(async () => {
         //         text: i18n.t('reload'),
         //       })
         //     try{
-             
-          
+
+
         //       if(!wsStore.isConnected){
         //         ElMessage.success('重新连接socket')
         //         wsStore.init()
@@ -377,20 +381,20 @@ onMounted(async () => {
         //     }
 
         //   }
-         
+
         // },20 * 1000)
 
         ;(window.metaidwallet as any)?.on('onRefresh',()=>{
-     
+
           //监听APP数据刷新
           if(userStore.isAuthorized){
-          
+
               const loading = openLoading({
                 text: i18n.t('reload'),
               })
             try{
-             
-          
+
+
               if(!wsStore.isConnected){
                 ElMessage.success('重新连接socket')
                 wsStore.init()
@@ -399,20 +403,20 @@ onMounted(async () => {
                simpleTalkStore.init().then(()=>{
                   ElMessage.success('✅ Simple-talk store 初始化成功')
               loading.close()
-               }) 
-           
+               })
+
             }catch{
               loading.close()
             }
 
           }
-         
 
 
-        
+
+
         })
         //监听页面可见性变化
-       
+
 
 
       } catch (err) {
