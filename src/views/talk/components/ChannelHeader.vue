@@ -174,8 +174,7 @@ const shortenMetaId = (id: string) => {
 }
 
 const popInvite = () => {
-  layout.inviteLink = `${location.origin}/talk/channels/public/${activeChannel.value
-    ?.parentGroupId || activeChannel.value?.id}`
+  layout.inviteLink = window.location.href
   layout.isShowInviteModal = true
 }
 
