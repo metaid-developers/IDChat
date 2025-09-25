@@ -1852,60 +1852,26 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
       }
 
-      // 如果没有找到精确匹配的已读消息，找到最接近的消息
-      if (!readMessage && sortedMessages.length > 0) {
-        // 找到index小于等于lastReadIndex的最大消息
-        for (let i = sortedMessages.length - 1; i >= 0; i--) {
-          if (sortedMessages[i].index <= lastReadIndex) {
-            readMessage = sortedMessages[i]
-            readMessageArrayIndex = i
-            console.log(`📖 找到最接近的已读消息 (msg.index: ${sortedMessages[i].index}, 期望: ${lastReadIndex}, 数组位置: ${i})`)
-            break
-          }
-        }
+      
+      if (!readMessage) {
+        return { messages: [], readMessage: null }
       }
 
-      // 如果还是没有找到，使用第一条消息
-      if (!readMessage && sortedMessages.length > 0) {
-        readMessage = sortedMessages[0]
-        readMessageArrayIndex = 0
-        console.log(`📖 使用第一条消息作为参考 (msg.index: ${sortedMessages[0].index})`)
-      }
 
       // 计算要显示的消息范围：以已读消息为中心，向上取更多历史消息
       let startIndex: number
       let endIndex: number
       
       if (readMessage && readMessageArrayIndex >= 0) {
-        // 从已读消息位置向上取15条，向下取5条，总共20条左右
-        startIndex = Math.max(0, readMessageArrayIndex - 15)
-        endIndex = Math.min(sortedMessages.length - 1, readMessageArrayIndex + 5)
-        
-        // 如果向下不足5条，向上补充
-        const downCount = endIndex - readMessageArrayIndex
-        if (downCount < 5) {
-          startIndex = Math.max(0, readMessageArrayIndex - (20 - downCount - 1))
-        }
-        
-        // 如果向上不足15条，向下补充
-        const upCount = readMessageArrayIndex - startIndex
-        if (upCount < 15) {
-          endIndex = Math.min(sortedMessages.length - 1, readMessageArrayIndex + (20 - upCount - 1))
-        }
+        // 从已读消息位置向上取20条消息（包含已读消息本身）
+        startIndex = Math.max(0, readMessageArrayIndex - 19) // 向上19条 + 已读消息 = 20条
+        endIndex = readMessageArrayIndex
       } else {
-        // 没有已读消息，取最新的20条
-        startIndex = Math.max(0, sortedMessages.length - 20)
-        endIndex = sortedMessages.length - 1
+         return { messages: [], readMessage: null }
       }
 
       // 提取目标范围的消息
       const messages = sortedMessages.slice(startIndex, endIndex + 1)
-      
-      console.log(`📋 基于已读索引 ${lastReadIndex} 加载消息:`)
-      console.log(`   - 已读消息: ${readMessage ? `index=${readMessage.index}, 数组位置=${readMessageArrayIndex}` : '未找到'}`)
-      console.log(`   - 消息范围: 数组[${startIndex}-${endIndex}]，共 ${messages.length} 条`)
-      console.log(`   - index范围: [${messages[0]?.index || 'N/A'}-${messages[messages.length-1]?.index || 'N/A'}]`)
-      
       return { messages, readMessage }
     },
 
