@@ -2391,11 +2391,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           return false
         }
 
-        // 私聊暂时不支持
-        if (channel.type === 'private') {
-          console.log(`⚠️ 私聊暂时不支持向前获取历史记录`)
-          return false
-        }
+       
 
         // 获取当前消息
         const currentMessages = this.messageCache.get(channelId) || []
