@@ -9,6 +9,7 @@
     "build:gray": "node --max_old_space_size=10336 ./node_modules/vite/bin/vite.js build --mode gray",
     "build:mainnetgray": "node --max_old_space_size=10336 ./node_modules/vite/bin/vite.js build --mode mainnetgray",
     "build:chat": "node --max_old_space_size=10336 ./node_modules/vite/bin/vite.js build --mode mainnet",
+    "build:metaso": "node --max_old_space_size=10336 ./node_modules/vite/bin/vite.js build --mode metaso",
     "build:mainnet": "node ./build/createCommitId.js && node --max_old_space_size=14336 ./node_modules/vite/bin/vite.js build --mode mainnet"
   },
   "dependencies": {
