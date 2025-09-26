@@ -4,9 +4,10 @@
      <div v-if="isWelcomePage">
       <div v-if="showWelcomeDesc" class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
         <div class="">
-          <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon>
+          <!-- <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon> -->
+           <img :src="welcome" class="w-[140px] h-[38px]" alt="">
         </div>
-        <div class="text-2xl welcome-desc text-zinc-800 mt-3 break-all flex items-center justify-center max-w-[326px]">
+        <div class="text-2xl welcome-desc text-[#AAAAAA]  mt-3 break-all flex items-center justify-center max-w-[326px]">
          <span>
           A Decentralized Messaging App Built on Bitcoin
          </span>
@@ -35,6 +36,7 @@ import ChannelWelcome from './ChannelWelcome.vue'
 import ChannelContent from './ChannelContent.vue'
 import { GetOwnerStakeInfo } from '@/api/dao'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import welcome from '@/assets/images/welcome.png'
 // const talk = useTalkStore()
 const layout = useLayoutStore()
 const user = useUserStore()

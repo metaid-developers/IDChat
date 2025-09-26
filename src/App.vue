@@ -188,9 +188,9 @@ async function connectMetalet() {
           channelId:channelId
         }
       })
-     setTimeout(() => {
-       window.location.reload()
-     }, 2000);
+    //  setTimeout(() => {
+    //    window.location.reload()
+    //  }, 2000);
     }else{
     let newChannelId
     const myChannelList= await getChannels({
