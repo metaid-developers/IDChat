@@ -1161,9 +1161,12 @@ export const tryCreateNode = async (
 
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
-
+    const txId = nodeRes?.txids ? nodeRes.txids[0] : nodeRes?.revealTxIds[0]
     if (nodeRes === null) {
       simpleTalk.removeMessage(mockId)
+    }
+    if (txId) {
+      simpleTalk.updateMessageMockId(mockId, txId)
     }
   } catch (error) {
     const timestamp = timeStamp

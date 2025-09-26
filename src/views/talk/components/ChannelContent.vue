@@ -4,7 +4,12 @@
   </div>
 
   <div class="fixed bottom-0 left-0 right-0 px-4 lg:absolute">
-    <TheInput v-if="type === 'allowed'" v-model:quote="quote.val" @to-quote="toQuote" />
+    <TheInput
+      v-if="type === 'allowed'"
+      v-model:quote="quote.val"
+      @to-quote="toQuote"
+      @scroll-to-bottom="scrollToBottom"
+    />
     <TheErrorBox />
   </div>
 
@@ -33,6 +38,10 @@ const MessageListRef = ref()
 const simpleTalk = useSimpleTalkStore()
 function toQuote() {
   MessageListRef.value.scrollToTimeStamp(quote.val!.timestamp)
+}
+
+function scrollToBottom() {
+  MessageListRef.value?.scrollToMessagesBottom()
 }
 
 type InputType = 'allowed' | 'join' | 'forbidden'
