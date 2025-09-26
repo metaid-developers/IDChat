@@ -33,6 +33,8 @@ export default ({ mode, command }) => {
   // 加载环境配置文件
   const env = loadEnv(mode, process.cwd())
 
+  
+
 
   // const sentryConfig: ViteSentryPluginOptions = {
   //   url: env.VITE_SENTRY_URL,
@@ -301,7 +303,7 @@ export default ({ mode, command }) => {
 
     },
     build: {
-      // outDir:'../shownow/shownow-backend/chat',
+      outDir: mode === 'metaso' ? '../shownow/shownow-backend/chat' : 'dist',
       // outDir: 'dist',
       // assetsDir: 'assets',
       //  manifest: true,

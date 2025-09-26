@@ -474,7 +474,7 @@
             "
           ></div>
           <div
-            class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
+            class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
               isMyMessage
@@ -766,9 +766,9 @@ const parseTextMessage = (text: string) => {
   }
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
-      return `<a href=${url} target="_blank" style="text-decoration: underline;cursor: pointer;" class="url"> ${url} </a>`
+      return `<a href=${url} target="_blank" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
     }
-    return `<a onClick="window.open('http://${text}','_blank')" style="text-decoration: underline;cursor: pointer;" target="_blank">${text}</a>`
+    return `<a onClick="window.open('http://${text}','_blank')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="_blank">${text}</a>`
   })
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')
