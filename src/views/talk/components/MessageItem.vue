@@ -609,9 +609,9 @@ const parseTextMessage = (text: string) => {
   }
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
-      return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;" class="url"> ${url} </a>`
+      return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
     }
-    return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;" target="_blank">${text}</a>`
+    return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="_blank">${text}</a>`
   })
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')
