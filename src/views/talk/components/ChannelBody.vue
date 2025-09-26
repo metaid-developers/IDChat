@@ -1,27 +1,30 @@
 <template>
   <!-- <ChannelWelcome v-if="talk.isActiveChannelTheVoid" />
   <ChannelSettings v-else-if="talk.isActiveChannelTheVoid" /> -->
-     <div v-if="isWelcomePage">
-      <div v-if="showWelcomeDesc" class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
-        <div class="">
-          <!-- <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon> -->
-           <img :src="welcome" class="w-[140px] h-[38px]" alt="">
-        </div>
-        <div class="text-2xl welcome-desc text-[#AAAAAA]  mt-3 break-all flex items-center justify-center max-w-[326px]">
-         <span>
-          A Decentralized Messaging App Built on Bitcoin
-         </span>
-        </div>
-     
+  <div v-if="isWelcomePage">
+    <div
+      v-if="showWelcomeDesc"
+      class="mt-20 px-1 flex text-center  items-center justify-center flex-col"
+    >
+      <div class="">
+        <!-- <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon> -->
+        <img :src="welcome" class="w-[140px] h-[38px]" alt="" />
       </div>
-      
+      <div
+        class="text-2xl welcome-desc text-[#AAAAAA]  mt-3  flex items-center justify-center max-w-[326px]"
+      >
+        <span>
+          A Decentralized Messaging App Built on Bitcoin
+        </span>
+      </div>
     </div>
+  </div>
   <ChannelContent v-else />
 </template>
 
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
-import { nextTick, onBeforeUnmount, onMounted, onUnmounted, watch,computed } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, onUnmounted, watch, computed } from 'vue'
 
 import { useTalkStore } from '@/stores/talk'
 import { GroupChannelType } from '@/enum'
@@ -41,23 +44,22 @@ import welcome from '@/assets/images/welcome.png'
 const layout = useLayoutStore()
 const user = useUserStore()
 const route = useRoute()
-const simpleTalk=useSimpleTalkStore()
+const simpleTalk = useSimpleTalkStore()
 const { communityId, channelId } = route.params
 
-const isWelcomePage=computed(()=>{
-  if(channelId == 'welcome'){
+const isWelcomePage = computed(() => {
+  if (channelId == 'welcome') {
     return true
-  }else return false
+  } else return false
 })
 
 const showWelcomeDesc = computed(() => {
-  if(!user.isAuthorized) return true
+  if (!user.isAuthorized) return true
   // 检查 simple-talk 的状态
   if (simpleTalk.isInitialized) {
-    
     const hasMessages = simpleTalk.activeChannelMessages.length > 0
     const hasActiveChannel = !!simpleTalk.activeChannel
-    return !hasActiveChannel || !hasMessages 
+    return !hasActiveChannel || !hasMessages
   }
 
   return false
@@ -454,13 +456,13 @@ const showWelcomeDesc = computed(() => {
 //     talk.resetCurrentChannel()
 // })
 // onBeforeUnmount(() => {
-//   
+//
 //   talk.resetCurrentChannel()
 // })
 </script>
 
 <style lang="scss" scoped>
-.welcome-desc{
+.welcome-desc {
   font-family: 'J20' !important;
 }
 </style>

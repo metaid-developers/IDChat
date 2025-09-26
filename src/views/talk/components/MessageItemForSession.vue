@@ -434,7 +434,7 @@
 
         <div class="my-1.5 max-w-full flex" :class="[isMyMessage ? 'flex-row-reverse' : '']" v-else>
           <div
-            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
+            class="text-sm text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
               isMyMessage
@@ -451,7 +451,7 @@
           </div>
 
           <div
-            class="text-sm text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl transition-all duration-200"
+            class="text-sm text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
               isMyMessage

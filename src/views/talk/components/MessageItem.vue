@@ -312,7 +312,7 @@
             v-else
           >
             <div
-              class="text-sm  text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
+              class="text-sm  text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
               :class="[
                 msgChain == ChatChain.btc && 'btc-item',
                 isMyMessage
@@ -329,7 +329,7 @@
             </div>
 
             <div
-              class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal break-all p-3 rounded-xl  transition-all duration-200"
+              class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
               :class="[
                 msgChain == ChatChain.btc && 'btc-item',
                 isMyMessage
