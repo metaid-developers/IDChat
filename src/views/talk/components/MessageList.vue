@@ -50,7 +50,14 @@
     <div class="app-container">
       <BroadcastChatHeader />
       <BroadcastChatHeaderBack />
-      <div class="list-container" ref="listContainer" @scroll.passive="handleScroll">
+      <div
+        class="list-container"
+        ref="listContainer"
+        @scroll.passive="handleScroll"
+        @wheel.passive="handleWheel"
+        @touchstart.passive="handleTouchStart"
+        @touchmove.passive="handleTouchMove"
+      >
         <!-- 顶部加载指示器 -->
         <div class="loader" v-show="isLoadingTop">
           <div class="spinner"></div>
@@ -176,6 +183,8 @@ const isNoMoreBottom = ref(false) // 控制底部没有更多数据
 const listContainer = ref<HTMLElement | null>(null)
 const bottomSpacer = ref<HTMLElement | null>(null)
 const listWrapper = ref<HTMLElement | null>(null)
+const lastScrollTop = ref(0) // 记录上一次滚动位置
+const touchStartY = ref(0) // 记录触摸开始位置
 const user = useUserStore()
 const simpleTalk = useSimpleTalkStore()
 const layout = useLayoutStore()
@@ -395,6 +404,50 @@ const handleScroll = (event: Event) => {
     }
   } catch (error) {
     console.error('滚动事件处理失败:', error)
+  }
+}
+
+/**
+ * 鼠标滚轮事件处理
+ */
+const handleWheel = (event: WheelEvent) => {
+  const container = listContainer.value
+  if (!container) return
+
+  // deltaY > 0 表示向下滚动（显示更旧消息），deltaY < 0 表示向上滚动（显示更新消息）
+  if (event.deltaY > 0 && Math.abs(container.scrollTop) < 10) {
+    console.log('检测到向下滚动（鼠标滚轮），准备加载最新消息...')
+    if (!isNoMoreBottom.value && !isLoadingBottom.value) {
+      loadItems(true) // 加载最新消息
+    }
+  }
+}
+
+/**
+ * 触摸开始事件处理
+ */
+const handleTouchStart = (event: TouchEvent) => {
+  if (event.touches.length > 0) {
+    touchStartY.value = event.touches[0].clientY
+  }
+}
+
+/**
+ * 触摸移动事件处理
+ */
+const handleTouchMove = (event: TouchEvent) => {
+  const container = listContainer.value
+  if (!container || event.touches.length === 0) return
+
+  const currentY = event.touches[0].clientY
+  const deltaY = currentY - touchStartY.value
+
+  // deltaY > 0 表示向下滑动（下拉），在顶部附近时触发加载最新消息
+  if (deltaY < 0 && Math.abs(container.scrollTop) < 10) {
+    console.log('检测到向下滑动（触摸），准备加载最新消息...')
+    if (!isNoMoreBottom.value && !isLoadingBottom.value) {
+      loadItems(true) // 加载最新消息
+    }
   }
 }
 
