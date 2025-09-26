@@ -56,7 +56,7 @@ export default ({ mode, command }) => {
   const isProduction = command === 'build'
  
   return defineConfig({
-    //base:isProduction ? '/chat/' : '/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
+    base:isProduction ? '/chat/' : '/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({
@@ -72,13 +72,13 @@ export default ({ mode, command }) => {
       },
 
     
-      //   createHtmlPlugin({
-      //   inject: {
-      //     data: {
-      //       basePath:isProduction ? '/chat/' : ''//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
-      //     }
-      //   }
-      // }),
+        createHtmlPlugin({
+        inject: {
+          data: {
+            basePath:isProduction ? '/chat/' : ''//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
+          }
+        }
+      }),
     //      createHtmlPlugin({
     //   inject: {
     //     data: {
@@ -301,6 +301,7 @@ export default ({ mode, command }) => {
 
     },
     build: {
+      // outDir:'../shownow/shownow-backend/chat',
       // outDir: 'dist',
       // assetsDir: 'assets',
       //  manifest: true,

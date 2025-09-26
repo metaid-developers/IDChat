@@ -12,10 +12,8 @@ import { KeepAlive } from 'vue'
 
 //import.meta.env.VITE_BASE_URL
 //export const routerHistory = createWebHistory()
-//import.meta.env.MODE == 'development' ? '/' : '/chat/'
-export const routerHistory = createWebHistory(
-  //import.meta.env.MODE == 'development' ? '/' : '/chat/'
-) //'/chat/'//createWebHistory(import.meta.env.MODE == 'mainnet' ? '/chat/' : '/')
+// import.meta.env.MODE == 'development' ? '/' : '/chat/'
+export const routerHistory = createWebHistory(import.meta.env.MODE == 'mainnet' ? '/chat/' : '/')
 export const router = createRouter({
   history: routerHistory,
   strict: true,
@@ -171,7 +169,7 @@ export const router = createRouter({
     {
       path: '/talk/@me',
       component: () => import('@/views/talk/Channel.vue'),
-      meta: { isAuth: true,KeepAlive: true  },
+      meta: { isAuth: true, KeepAlive: true },
       children: [
         {
           path: ':channelId',
@@ -548,24 +546,22 @@ window._go = go
 //   else next()
 // })
 router.beforeEach(async (to, from, next) => {
-  
   const layout = useLayoutStore()
-  const rootStore=useRootStore()
+  const rootStore = useRootStore()
   rootStore.checkWebViewBridge()
   if (to.path === '/') {
-    
     layout.$patch({ isShowLeftNav: true })
-      // layout.$patch({ showJoinView: false })
-      //layout.$patch({ showWelcomeDescView: true })
-      next({
-        name: 'talkChannel',
-        params: { communityId: 'public', channelId: 'welcome' },
-      })
+    // layout.$patch({ showJoinView: false })
+    //layout.$patch({ showWelcomeDescView: true })
+    next({
+      name: 'talkChannel',
+      params: { communityId: 'public', channelId: 'welcome' },
+    })
     // const userStore = useUserStore()
     // const talk = useTalkStore()
 
     // if (userStore.isAuthorized) {
-    
+
     //   // const myChannelList = await getChannels({
     //   //   metaId: userStore.last.metaid,
     //   // })
@@ -585,9 +581,7 @@ router.beforeEach(async (to, from, next) => {
     //   //     params: { communityId: 'public', channelId },
     //   //   })
 
-        
     //   //   }
-
 
     //   //   channelId = myChannelList[0].groupId
     //   //   layout.$patch({ showJoinView: false })
@@ -603,7 +597,6 @@ router.beforeEach(async (to, from, next) => {
     //   // })
     //   // }
 
-   
     // } else {
     //   layout.$patch({ isShowLeftNav: true })
     //   layout.$patch({ showJoinView: false })
@@ -614,23 +607,23 @@ router.beforeEach(async (to, from, next) => {
     //   })
     // }
   } else if (to.path == '/talk/channels/public/welcome') {
-     layout.$patch({ isShowLeftNav: true })
-     
-        ///layout.$patch({ showJoinView: true })
-        //layout.$patch({ showWelcomeDescView: true })
-       
-        next()
+    layout.$patch({ isShowLeftNav: true })
+
+    ///layout.$patch({ showJoinView: true })
+    //layout.$patch({ showWelcomeDescView: true })
+
+    next()
     //const userStore = useUserStore()
-    // 
+    //
     // if (userStore.isAuthorized) {
-      
+
     //   const myChannelList = await getChannels({
     //     metaId: userStore.last.metaid,
     //   })
 
     //   let channelId
     //   if (myChannelList.length) {
-        
+
     //     if(Number(myChannelList[0].type) == 2){
     //       channelId=myChannelList[0].metaId
     //          next({
@@ -638,7 +631,7 @@ router.beforeEach(async (to, from, next) => {
     //       params: { channelId },
     //     })
     //     }else{
-    //       
+    //
     //       channelId = myChannelList[0].groupId
     //        next({
     //       name: 'talkChannel',
@@ -646,16 +639,12 @@ router.beforeEach(async (to, from, next) => {
     //     })
     //     }
 
-        
-        
     //     layout.$patch({ showWelcomeDescView: false })
     //     layout.$patch({ showJoinView: false })
 
-
-       
     //     //layout.$patch({ isShowLeftNav: true })
     //   } else {
-    //     
+    //
     //     layout.$patch({ isShowLeftNav: true })
     //     layout.$patch({ showJoinView: true })
     //     layout.$patch({ showWelcomeDescView: true })
@@ -670,13 +659,11 @@ router.beforeEach(async (to, from, next) => {
 
     // layout.$patch({ isShowLeftNav: true })
   } else {
-    if(from.name !== to.name && !from.name){
-      layout.$patch({isShowLeftNav:true})
+    if (from.name !== to.name && !from.name) {
+      layout.$patch({ isShowLeftNav: true })
     }
-    
+
     next()
-    
-   
   }
 })
 
