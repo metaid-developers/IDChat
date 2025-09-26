@@ -278,9 +278,10 @@ onMounted(async () => {
 
 
            (window.metaidwallet as any)?.on('onAccountSwitch', ()=>{
-          
+            ElMessage.success('调用切换账号成功')
           try {
             if(rootStore.isWebView){
+               ElMessage.success('调用切换账号进来了')
             connectionStore.disconnect(router)
             setTimeout(async() => {
                await connectMetalet()
@@ -308,11 +309,11 @@ onMounted(async () => {
          } )
 
         ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
-
+            ElMessage.success('调用登录成功')
           try {
             if (!userStore.isAuthorized) {
 
-
+                  ElMessage.success('调用登录成功进来了')
               await connectMetalet()
 
               if (!userStore.last.chatpubkey) {
