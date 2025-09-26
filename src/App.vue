@@ -308,7 +308,7 @@ onMounted(async () => {
               }
               setTimeout(() => {
                 window.location.reload()
-              }, 1000);
+              }, 5000);
 
             }
              
@@ -321,7 +321,7 @@ onMounted(async () => {
       
 
     
-           (window.metaidwallet as any)?.on('onAccountSwitch', async()=>{
+           (window.metaidwallet as any)?.on('onAccountSwitch', async(data:any)=>{
             ElMessage.success('调用onAccountSwitch')
           try {
             if(rootStore.isWebView){
@@ -341,7 +341,7 @@ onMounted(async () => {
   
             setTimeout(() => {
                 window.location.reload()
-            }, 1000);
+            }, 5000);
             
           }
           } catch (error) {
