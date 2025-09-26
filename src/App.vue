@@ -76,7 +76,7 @@ import { useSimpleTalkStore } from './stores/simple-talk'
 import { useWsStore } from './stores/ws_new'
 const { closeConnectionModal } =
   useConnectionModal()
-const MAX_RETRY_TIME = 5000 // 最大等待时间（毫秒）
+const MAX_RETRY_TIME = 10000 // 最大等待时间（毫秒）
 const RETRY_INTERVAL = 100  // 重试间隔（毫秒）
 const rootStore = useRootStore()
 const userStore = useUserStore()
@@ -130,7 +130,7 @@ function handleNetworkChanged(network: Network) {
 const metaletAccountsChangedHandler = () => {
   try {
     if (useConnectionStore().last.wallet !== 'metalet') return
-
+    if(rootStore.isWebView) return
     // sync here to prevent chronological error
     //connectionStore.sync()
 
@@ -152,14 +152,14 @@ const metaletAccountsChangedHandler = () => {
 }
 const metaletNetworkChangedHandler = (network: Network) => {
   if (useConnectionStore().last.wallet !== 'metalet') return
+   if(rootStore.isWebView) return
   handleNetworkChanged(network)
 }
 
 
 async function connectMetalet() {
 
-
-
+  try {
     const connection = await connectionStore.connect('metalet').catch((err) => {
     ElMessage.warning({
       message: err.message,
@@ -169,16 +169,13 @@ async function connectMetalet() {
     if (connection?.status === 'connected') {
     await credentialsStore.login()
 
-
-
-
     await sleep(300)
 
 
 
     const channelId=route.params.channelId
     const communityId=route.params.communityId
-
+      
 
     if(channelId && channelId !== 'welcome'){
       router.push({
@@ -192,43 +189,55 @@ async function connectMetalet() {
     //    window.location.reload()
     //  }, 2000);
     }else{
-    let newChannelId
-    const myChannelList= await getChannels({
-      metaId:userStore.last.metaid
-    })
+        await simpleTalkStore.init()
+        simpleTalkStore.initMuteNotify().then().catch((e)=>{
 
-    if(myChannelList.length){
+                })
+    // let newChannelId
+    // const myChannelList= await getChannels({
+    //   metaId:userStore.last.metaid
+    // })
 
-      newChannelId=myChannelList[0].groupId
+    // if(myChannelList.length){
 
-    }else{
+    //   newChannelId=myChannelList[0].groupId
 
-      newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
-      //layout.$patch({showJoinView:true})
-    }
-    router.push({
-        name: 'talkChannel',
-        params:{
-          communityId:'public',
-          channelId:newChannelId
-        }
-      })
+    // }else{
+
+    //   newChannelId='welcome' //import.meta.env.VITE_CHAT_DEFAULT_CHANNEL//allChannelList[1].groupId
+    //   //layout.$patch({showJoinView:true})
+    // }
+    // router.push({
+    //     name: 'talkChannel',
+    //     params:{
+    //       communityId:'public',
+    //       channelId:newChannelId
+    //     }
+    //   })
     }
 
 
   }
+  } catch (error) {
+    ElMessage.error(error)
+  }
+
+    
 
 }
 
 
 
 onMounted(async () => {
-
+   
   let retryCount = 0
   let timeoutId: NodeJS.Timeout | undefined
   //document.addEventListener('visibilitychange', handleVisibilityChange);
-  accountInterval.value = setInterval(async () => {
+ 
+      accountInterval.value = setInterval(async () => {
     try {
+       rootStore.checkWebViewBridge()
+       if(rootStore.isWebView) return
       if (window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized) {
         const res = await window.metaidwallet.getAddress()
 
@@ -244,77 +253,49 @@ onMounted(async () => {
       console.error('Error checking account status:', error)
     }
   }, 5 * 1000)
-
-
-  if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
-      rootStore.checkBtcAddressSameAsMvc().then().catch((err)=>{
-
-            ElMessage.warning({
-              message:i18n.t('btcSameAsMvcError'),
-              type: 'warning',
-              })
-              setTimeout(() => {
-                 connectionStore.disconnect(router)
-              }, 3000);
-
-        })
+  
 
 
 
-  }
+
+
 
 
   const checkMetalet =  () => {
+    rootStore.checkWebViewBridge()
     if (window.metaidwallet) {
-
+      
       try {
-         (window.metaidwallet as any)?.on('accountsChanged', ()=>{
-          
-          if(!rootStore.isWebView){
-            
-            metaletAccountsChangedHandler
-          }
-         })
+        
+           ;(window.metaidwallet as any)?.on('accountsChanged',metaletAccountsChangedHandler)
+              ;(window.metaidwallet as any)?.on('networkChanged',metaletNetworkChangedHandler)
 
-
-           (window.metaidwallet as any)?.on('onAccountSwitch', ()=>{
-            ElMessage.success('调用切换账号成功')
+          ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
+           
           try {
-            if(rootStore.isWebView){
-               ElMessage.success('调用切换账号进来了')
-            connectionStore.disconnect(router)
-            setTimeout(async() => {
-               await connectMetalet()
+            //  if(userStore.isAuthorized && rootStore.isWebView && data !== userStore.last.address){
+            //       connectionStore.disconnect(router)
+            //   simpleTalkStore.$patch({isInitialized:false})
+            //   await connectMetalet()
 
-              if (!userStore.last.chatpubkey) {
-                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
-                if (ecdhRes?.chatPublicKey) {
-                  userStore.updateUserInfo({
-                    chatpubkey: ecdhRes?.chatPublicKey
-                  })
-                }
-              }
-               simpleTalkStore.init()
-            }, 500);
-            
-          }
-          } catch (error) {
-            
-          }
-         })
+            //   if (!userStore.last.chatpubkey) {
+            //     const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+            //     if (ecdhRes?.chatPublicKey) {
+            //       userStore.updateUserInfo({
+            //         chatpubkey: ecdhRes?.chatPublicKey
+            //       })
+            //     }
+            //   }
+  
+            // setTimeout(() => {
+            //    return window.location.reload()
+            // }, 1000);
+            // }
 
-         ;(window.metaidwallet as any)?.on('networkChanged',()=>{
-          if(!rootStore.isWebView){
-            metaletNetworkChangedHandler
-          }
-         } )
 
-        ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
-            ElMessage.success('调用登录成功')
-          try {
             if (!userStore.isAuthorized) {
 
-                  ElMessage.success('调用登录成功进来了')
+                 
               await connectMetalet()
 
               if (!userStore.last.chatpubkey) {
@@ -325,16 +306,52 @@ onMounted(async () => {
                   })
                 }
               }
-
-              simpleTalkStore.init()
-
+              setTimeout(() => {
+                window.location.reload()
+              }, 1000);
 
             }
+             
           } catch (error) {
             ElMessage.error(error as any)
             console.error('Error in LoginSuccess handler:', error)
           }
         })
+        // debugger
+      
+
+    
+           (window.metaidwallet as any)?.on('onAccountSwitch', async()=>{
+           
+          try {
+            if(rootStore.isWebView){
+              
+              await connectionStore.disconnect(router)
+              simpleTalkStore.$patch({isInitialized:false})
+              await connectMetalet()
+
+              if (!userStore.last.chatpubkey) {
+                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+                if (ecdhRes?.chatPublicKey) {
+                  userStore.updateUserInfo({
+                    chatpubkey: ecdhRes?.chatPublicKey
+                  })
+                }
+              }
+  
+            setTimeout(() => {
+                window.location.reload()
+            }, 1000);
+            
+          }
+          } catch (error) {
+            throw new Error(error)
+          }
+         })
+
+      
+
+      
 
   //         window.metaidwallet?.on('LoginSuccess',async()=>{
 
@@ -407,26 +424,19 @@ onMounted(async () => {
           //监听APP数据刷新
           if(userStore.isAuthorized){
             try{
-
-
               if(!wsStore.isConnected){
-                ElMessage.success('重新连接socket')
                 wsStore.init()
               }
               simpleTalkStore.$patch({isInitialized:false})
                simpleTalkStore.init().then(()=>{
-                  ElMessage.success('✅ Simple-talk store 初始化成功')
-              
+                
                })
 
             }catch{
-             
+            
             }
 
           }
-
-
-
 
         })
         //监听页面可见性变化
@@ -434,13 +444,15 @@ onMounted(async () => {
 
 
       } catch (err) {
+        
         console.error('Failed to setup Metalet listeners:', err)
       }
     } else if (retryCount * RETRY_INTERVAL < MAX_RETRY_TIME) {
-
+      
       retryCount++
       timeoutId = setTimeout(checkMetalet, RETRY_INTERVAL)
     } else {
+      
       console.warn('Metalet wallet not detected after timeout')
     }
   }
@@ -448,6 +460,23 @@ onMounted(async () => {
   // 初始检查
   checkMetalet()
 
+
+  if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
+      rootStore.checkBtcAddressSameAsMvc().then().catch((err)=>{
+
+            ElMessage.warning({
+              message:i18n.t('btcSameAsMvcError'),
+              type: 'warning',
+              })
+              setTimeout(() => {
+                 connectionStore.disconnect(router)
+              }, 3000);
+
+        })
+
+
+
+  }
 
 
   onUnmounted(() => {
@@ -473,6 +502,13 @@ onBeforeUnmount(async () => {
 
     ;(window.metaidwallet as any)?.removeListener('LoginSuccess')
     ;(window.metaidwallet as any)?.removeListener('Logout')
+     ;(window.metaidwallet as any)?.removeListener(
+      'onRefresh'
+    )
+    ;(window.metaidwallet as any)?.removeListener(
+    'onAccountSwitch'
+
+    )
 
     clearInterval(accountInterval.value)
   } catch (error) {

@@ -64,10 +64,12 @@ export const useUserStore = defineStore('user', {
       // },
 
       async updateUserInfo(userInfo:Partial<UserInfo>){
+        
         this.last={...this.last,...userInfo}
       },
 
       async setUserInfo(address: string) {
+        
       const user: UserInfo = this.last
         ? (JSON.parse(JSON.stringify(this.last)) as UserInfo)
         : {

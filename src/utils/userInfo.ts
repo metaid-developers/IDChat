@@ -16,6 +16,7 @@ declare global {
   interface Window {
     WebViewBridge:any
     metaidwallet: {
+      on:()=>any
       getAddress: () => Promise<string>
       getUtxos: () => Promise<any[]>
       unlockP2PKHInput: (params: any) => Promise<any>
