@@ -3492,7 +3492,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       // 如果有当前用户，清理其本地数据
       if (this.currentUserMetaId) {
         try {
-          await this.db.clearUserData()
+          // await this.db.clearUserData()
           console.log(`✅ 用户 ${this.currentUserMetaId} 的本地数据已清理`)
         } catch (error) {
           console.error('清理用户数据失败:', error)
