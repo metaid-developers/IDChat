@@ -772,9 +772,9 @@ defineExpose({
 }
 .scroll-to-bottom-button {
   position: absolute;
-  right: 50px;
-  bottom: 100px;
-  z-index: 100000;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
 }
 
 /* 滚动到底部按钮的渐隐渐显动画 */
