@@ -382,7 +382,7 @@ interface Props {
   quote?: any
 }
 const props = withDefaults(defineProps<Props>(), {})
-const emit = defineEmits(['update:quote', 'toQuote'])
+const emit = defineEmits(['update:quote', 'toQuote', 'scrollToBottom'])
 
 const doNothing = () => {}
 const i18n = useI18n()
@@ -397,8 +397,6 @@ const ecdhsStore = useEcdhsStore()
 const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const hasInput = computed(() => chatInput.value.length > 0)
-
-
 
 /** 输入框样式 */
 const isShowingButtonGroup = computed(() => {
@@ -527,6 +525,8 @@ const imagePreviewUrl = computed(() => {
 })
 
 const trySendImage = async () => {
+  // 发送图片成功后滚动到底部
+  emit('scrollToBottom')
   let image = imageFile.value as NonNullable<typeof imageFile.value>
   // 压缩图片
   if (useCompression.value) {
@@ -668,7 +668,8 @@ const trySendText = async (e: any) => {
     return
   }
   console.log('activeChannel type:', simpleTalk.activeChannel?.type)
-
+  // 发送成功后滚动到底部
+  emit('scrollToBottom')
   // 私聊会话和頻道群聊的加密方式不同
   let content = ''
 
@@ -681,6 +682,7 @@ const trySendText = async (e: any) => {
   } else {
     // 私聊加密
     if (!simpleTalk.activeChannel?.publicKeyStr) {
+      isSending.value = false
       return ElMessage.error(`${i18n.t('get_ecdh_pubey_error')}`)
     }
     let ecdh = ecdhsStore.getEcdh(simpleTalk.activeChannel?.publicKeyStr)
@@ -694,16 +696,15 @@ const trySendText = async (e: any) => {
 
     const sharedSecret = ecdh?.sharedSecret
     if (!sharedSecret) {
+      isSending.value = false
       return ElMessage.error('Failed to generate shared secret')
     }
 
     console.log(chatInput.value, sharedSecret)
-    
+
     content = ecdhEncrypt(chatInput.value, sharedSecret)
-    
+
     console.log('ecdhDecrypt', ecdhDecrypt(content, sharedSecret))
-      
-    
   }
 
   chatInput.value = ''
@@ -712,13 +713,14 @@ const trySendText = async (e: any) => {
   // 使用 simple-talk store 发送消息
   if (!simpleTalk.activeChannel) {
     console.error('No active channel')
+    isSending.value = false
     return
   }
 
   try {
     // 使用 simple-talk 的 sendMessage 方法
     await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content, 0, props.quote)
-    if(props.quote){
+    if (props.quote) {
       emit('update:quote', undefined)
     }
     console.log('Message sent successfully via simpleTalk')

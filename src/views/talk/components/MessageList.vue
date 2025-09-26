@@ -67,6 +67,7 @@
               :message="message"
               :id="message.timestamp"
               :data-message-index="message.index"
+              :data-message-mockId="message.mockId || ''"
               :ref="el => setMessageRef(el, message)"
               @quote="message => emit('quote', message)"
               @toBuzz="onToBuzz"
@@ -78,6 +79,7 @@
               v-for="message in simpleTalk.activeChannelMessages"
               :key="message.txId || message.timestamp"
               :message="message"
+              :data-message-mockId="message.mockId || ''"
               :data-message-index="message.index"
               :ref="el => setMessageRef(el, message)"
               @quote="message => emit('quote', message)"
@@ -138,7 +140,6 @@ const emit = defineEmits<{
 import { getChannelMessages, getPrivateChatMessages } from '@/api/talk'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
-import VirtualList from 'vue3-virtual-scroll-list'
 import {
   computed,
   nextTick,
@@ -228,7 +229,6 @@ const initMessageObserver = () => {
         if (entry.isIntersecting) {
           const messageElement = entry.target as HTMLElement
           const messageIndex = parseInt(messageElement.getAttribute('data-message-index') || '0')
-
           // 更新最后已读索引
           if (simpleTalk.activeChannelId && messageIndex >= 0) {
             console.log(`📖 消息 ${messageIndex} 进入视图，更新已读索引`)
@@ -336,6 +336,10 @@ const loadItems = async (isPrepending = false) => {
   // 更新加载状态
   isLoadingTop.value = false
   isLoadingBottom.value = false
+
+  setTimeout(() => {
+    isNoMoreBottom.value = false
+  }, 1000)
 }
 
 const unReadCount = computed(() => {
@@ -359,9 +363,16 @@ const handleScroll = (event: Event) => {
 
   try {
     // 检查是否滚动到顶部
-    if (Math.abs(container.scrollTop) < 50 && !isNoMoreBottom.value && !isLoadingBottom.value) {
-      console.log('滚动到底部，准备加载新数据...')
-      loadItems(true) // true 表示上滑加载
+    if (Math.abs(container.scrollTop) < 50) {
+      console.log(
+        '滚动到底部，准备加载新数据...',
+        Math.abs(container.scrollTop) < 50,
+        isNoMoreBottom.value,
+        isLoadingBottom.value
+      )
+      if (!isNoMoreBottom.value && !isLoadingBottom.value) {
+        loadItems(true) // true 表示上滑加载
+      }
     }
     console.log('container.scrollTop', container.scrollTop)
 
@@ -475,6 +486,7 @@ const popInvite = () => {
 const notLoadAll = computed(() => {
   const maxIndex =
     simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1].index
+  console.log('maxIndex', maxIndex, simpleTalk.activeChannel?.lastMessage?.index)
   if (maxIndex !== simpleTalk.activeChannel?.lastMessage?.index) {
     return true
   }
@@ -482,7 +494,8 @@ const notLoadAll = computed(() => {
 })
 
 const scrollToMessagesBottom = async () => {
-  if (unReadCount.value > 0 || notLoadAll.value) {
+  if (unReadCount.value > 0) {
+    console.log('滚动到底部并加载最新消息', unReadCount.value > 0, notLoadAll.value)
     await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
     await nextTick()
     await sleep(100)
@@ -490,6 +503,7 @@ const scrollToMessagesBottom = async () => {
       listContainer.value.scrollTop = 0
     }
   } else {
+    console.log('滚动到底部')
     if (listContainer.value) {
       listContainer.value.scrollTop = 0
     }
@@ -600,6 +614,7 @@ async function onToBuzz(data: ShareChatMessageData) {
 defineExpose({
   scrollToIndex,
   scrollToTimeStamp,
+  scrollToMessagesBottom,
 })
 
 // onUnmounted(() => {

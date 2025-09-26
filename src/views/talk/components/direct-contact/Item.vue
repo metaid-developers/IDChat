@@ -104,7 +104,6 @@ const unReadCount = (session: SimpleChannel) => {
 }
 const computeDecryptedMsg = (session: SimpleChannel) => {
   try {
-    console.log(props.session, 'props.sessionprops.sessionprops.session')
     if (!session.lastMessage || !session.lastMessage.content) {
       return ''
     }
