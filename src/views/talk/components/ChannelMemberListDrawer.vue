@@ -97,13 +97,13 @@
 
         <div class="mt-3  bg-white dark:bg-black px-4 py-5" @click="copyLink">
           <div class="flex items-center justify-between text-md font-medium">
-            {{ $t('Talk.Channel.ShareLink') }}
+            {{$t('Talk.Channel.ShareLink')  }}
           </div>
           <div
-            class="mt-2  text-dark-700 dark:text-gray-800 px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-200  flex items-center justify-between"
+            class="mt-2 cursor-pointer text-dark-700 dark:text-gray-800 px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-200  flex items-center justify-between"
           >
             <div class="word-break break-all">
-              {{ currentLink }}
+              {{$filters.ellipsisMiddle(currentLink) }}
             </div>
             <el-icon
               class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-gray-400"

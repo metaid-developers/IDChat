@@ -2,6 +2,8 @@ import { ComponentCustomProperties } from 'vue'
 declare module '@vue/runtime-core' {
   export interface ComponentCustomProperties {
     $filters: {
+      ellipsisMiddle(currentLink: string): unknown
+      
       dateTimeFormat: (timestamp: Date | string | number, type?: string, format?: string) => string
       metafile: (metafile: string, width = 235) => string
       bsv: (stas: string | number) => number

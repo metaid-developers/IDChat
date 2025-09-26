@@ -7,6 +7,11 @@ import utc from 'dayjs/plugin/utc'
 import { Chains } from '@/enum'
 dayjs.extend(utc)
 
+export const ellipsisMiddle = (str:string, frontKeep = 20, backKeep = 5) => {
+  if (str.length <= frontKeep + backKeep) return str;
+  return str.substring(0, frontKeep) + '...' + str.substring(str.length - backKeep);
+};
+
 export function truncateText(text:string, maxChars = 32) {
     if (typeof text !== 'string') return '';
     

@@ -49,13 +49,13 @@ const isWelcomePage=computed(()=>{
 })
 
 const showWelcomeDesc = computed(() => {
-
+  if(!user.isAuthorized) return true
   // 检查 simple-talk 的状态
   if (simpleTalk.isInitialized) {
     
     const hasMessages = simpleTalk.activeChannelMessages.length > 0
     const hasActiveChannel = !!simpleTalk.activeChannel
-    return !hasActiveChannel || !hasMessages
+    return !hasActiveChannel || !hasMessages 
   }
 
   return false

@@ -78,8 +78,8 @@
           :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']"
         >
           <div
-            class="flex space-x-2"
-            :class="[isMyMessage ? 'flex-row-reverse itmes-center' : 'items-baseline ']"
+            class="flex space-x-2 "
+            :class="[isMyMessage ? 'flex-row-reverse  items-center' : 'items-baseline ']"
           >
             <!--message?.userInfo?.metaName-->
             <UserName
@@ -90,12 +90,12 @@
               "
               :meta-name="''"
               :text-class="'text-sm font-medium dark:text-gray-100 max-w-[120PX]'"
-              :class="[isMyMessage ? 'ml-2' : '']"
+              :class="[isMyMessage ? 'ml-2 flex items-center' : '']"
             />
             <div
               class="text-xs shrink-0 whitespace-nowrap flex   "
               :class="[
-                isMyMessage ? 'flex-row-reverse justify-center items-center' : 'gap-1 ',
+                isMyMessage ? 'flex-row-reverse' : 'gap-1 ',
                 msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
               ]"
             >
