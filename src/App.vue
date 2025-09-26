@@ -271,7 +271,7 @@ onMounted(async () => {
               ;(window.metaidwallet as any)?.on('networkChanged',metaletNetworkChangedHandler)
 
           ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
-           
+           ElMessage.success('调用LoginSuccess')
           try {
             //  if(userStore.isAuthorized && rootStore.isWebView && data !== userStore.last.address){
             //       connectionStore.disconnect(router)
@@ -297,7 +297,7 @@ onMounted(async () => {
 
                  
               await connectMetalet()
-
+               ElMessage.success('调用LoginSuccess成功')
               if (!userStore.last.chatpubkey) {
                 const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
                 if (ecdhRes?.chatPublicKey) {
@@ -322,14 +322,14 @@ onMounted(async () => {
 
     
            (window.metaidwallet as any)?.on('onAccountSwitch', async()=>{
-           
+            ElMessage.success('调用onAccountSwitch')
           try {
             if(rootStore.isWebView){
               
               await connectionStore.disconnect(router)
               simpleTalkStore.$patch({isInitialized:false})
               await connectMetalet()
-
+               ElMessage.success('调用onAccountSwitch成功')
               if (!userStore.last.chatpubkey) {
                 const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
                 if (ecdhRes?.chatPublicKey) {
@@ -420,7 +420,7 @@ onMounted(async () => {
         // },20 * 1000)
 
         ;(window.metaidwallet as any)?.on('onRefresh',()=>{
-
+           ElMessage.success('调用onRefresh')
           //监听APP数据刷新
           if(userStore.isAuthorized){
             try{
@@ -429,7 +429,7 @@ onMounted(async () => {
               }
               simpleTalkStore.$patch({isInitialized:false})
                simpleTalkStore.init().then(()=>{
-                
+                 ElMessage.success('调用onRefresh成功')
                })
 
             }catch{
