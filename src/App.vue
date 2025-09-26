@@ -294,6 +294,7 @@ onMounted(async () => {
                   })
                 }
               }
+               simpleTalkStore.init()
             }, 500);
             
           }
@@ -324,6 +325,10 @@ onMounted(async () => {
                   })
                 }
               }
+
+              simpleTalkStore.init()
+
+
             }
           } catch (error) {
             ElMessage.error(error as any)
