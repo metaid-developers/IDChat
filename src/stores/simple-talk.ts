@@ -35,6 +35,7 @@ class SimpleChatDB {
   }
 
   async init(userMetaId?: string): Promise<void> {
+    ElMessage.success('进来拉数据了')
     if (userMetaId) {
       this.userPrefix = `user_${userMetaId}_`
     }
