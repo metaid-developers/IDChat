@@ -1559,6 +1559,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           console.log(`📂 保留本地子群聊频道: ${localChannel.name} (${localChannel.id})`)
           mergedChannels.push(localChannel)
         }
+        if (localChannel.isTemporary && !serverChannels.find(c => c.id === localChannel.id)) {
+          console.log(`📂 保留本地临时频道: ${localChannel.name} (${localChannel.id})`)
+          mergedChannels.push(localChannel)
+        }
       })
 
       this.channels = mergedChannels
