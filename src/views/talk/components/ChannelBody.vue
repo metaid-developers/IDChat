@@ -11,7 +11,7 @@
         <img :src="welcome" class="w-[140px] h-[38px]" alt="" />
       </div>
       <div
-        class="text-2xl welcome-desc text-[#AAAAAA]  mt-3  flex items-center justify-center max-w-[326px]"
+        class="text-2xl welcome-desc text-[#AAAAAA]  mt-3  flex items-center justify-center"
       >
         <span>
           A Decentralized Messaging App Built on Bitcoin

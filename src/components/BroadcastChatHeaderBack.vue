@@ -10,8 +10,9 @@
       </div>
 
       <div class="broadcast-content ">
-        <div class="broadcast-title text-base">
-          Back to Main Channel
+        <div class="broadcast-title text-base flex items-start flex-col ">
+         <span>{{ $t('sub_channel_back_main') }}</span>
+         <span v-if="unReadCountFromMainChannel" class="text-xs text-dark-300 drak:text-dark-400">{{ unReadCountFromMainChannel }} {{ $t('sub_channel_header_message') }}</span>
         </div>
       </div>
     </div>
@@ -23,9 +24,10 @@ import { computed } from 'vue'
 import subChannel from '@/assets/images/sub-channel.svg?url'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { Back } from '@element-plus/icons-vue'
-
+import type { SimpleChannel } from '@/@types/simple-chat.d'
+import { storeToRefs } from 'pinia'
 const simpleTalkStore = useSimpleTalkStore()
-
+const { activeChannel } = storeToRefs(useSimpleTalkStore())
 // 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
 const subchannels = computed(() => {
   console.log('simpleTalkStore.currSubChannels', simpleTalkStore.currSubChannels)
@@ -35,6 +37,24 @@ const goChannel = () => {
   // 这里可以使用路由跳转或其他方式实现导航
   simpleTalkStore.setActiveChannel(simpleTalkStore.activeChannel!.parentGroupId!)
 }
+
+const parentGroupInfo=computed(()=>{
+  return simpleTalkStore.getParentGroupChannel(activeChannel.value!.id)
+})
+
+const unReadCountFromMainChannel = computed(() => {
+  
+  if (
+    parentGroupInfo.value &&
+    parentGroupInfo.value.lastMessage &&
+    typeof parentGroupInfo.value.lastMessage.index === 'number' &&
+    typeof parentGroupInfo.value.lastReadIndex === 'number'
+  ) {
+    return parentGroupInfo.value.lastMessage.index - parentGroupInfo.value.lastReadIndex
+  }
+  return 0
+})
+
 </script>
 
 <style scoped>
@@ -69,7 +89,7 @@ const goChannel = () => {
 
   border-radius: 12px;
 
-  margin-right: 12px;
+  
 }
 
 .broadcast-content {
@@ -82,7 +102,7 @@ const goChannel = () => {
 
   margin-bottom: 4px;
   display: flex;
-  align-items: center;
+
   gap: 6px;
 }
 

@@ -157,7 +157,7 @@ const metaletNetworkChangedHandler = (network: Network) => {
 }
 
 const appLoginSuccessHandler= async (data: any) => {
-      ElMessage.success('调用LoginSuccess')
+      // ElMessage.success('调用LoginSuccess')
           try {
             //  if(userStore.isAuthorized && rootStore.isWebView && data !== userStore.last.address){
             //       connectionStore.disconnect(router)
@@ -183,7 +183,7 @@ const appLoginSuccessHandler= async (data: any) => {
 
                  
               await connectMetalet()
-               ElMessage.success('调用LoginSuccess成功')
+              //  ElMessage.success('调用LoginSuccess成功')
               if (!userStore.last.chatpubkey) {
                 const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
                 if (ecdhRes?.chatPublicKey) {
@@ -192,9 +192,9 @@ const appLoginSuccessHandler= async (data: any) => {
                   })
                 }
               }
-              setTimeout(() => {
-                window.location.reload()
-              }, 5000);
+              // setTimeout(() => {
+              //   window.location.reload()
+              // }, 5000);
 
             }
              
@@ -205,14 +205,14 @@ const appLoginSuccessHandler= async (data: any) => {
         }
 
 const appAccountSwitchHandler= async(data:any)=>{
-            ElMessage.success('调用onAccountSwitch')
+            //ElMessage.success('调用onAccountSwitch')
           try {
             if(rootStore.isWebView){
               
               await connectionStore.disconnect(router)
               simpleTalkStore.$patch({isInitialized:false})
               await connectMetalet()
-               ElMessage.success('调用onAccountSwitch成功')
+               //ElMessage.success('调用onAccountSwitch成功')
               if (!userStore.last.chatpubkey) {
                 const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
                 if (ecdhRes?.chatPublicKey) {
@@ -222,9 +222,9 @@ const appAccountSwitchHandler= async(data:any)=>{
                 }
               }
   
-            setTimeout(() => {
-                window.location.reload()
-            }, 5000);
+            // setTimeout(() => {
+            //     window.location.reload()
+            // }, 5000);
             
           }
           } catch (error) {
@@ -245,7 +245,7 @@ try {
 }
 
 const appRreshHandler=()=>{
-           ElMessage.success('调用onRefresh')
+          // ElMessage.success('调用onRefresh')
           //监听APP数据刷新
           if(userStore.isAuthorized){
             try{
@@ -254,7 +254,7 @@ const appRreshHandler=()=>{
               }
               simpleTalkStore.$patch({isInitialized:false})
                simpleTalkStore.init().then(()=>{
-                 ElMessage.success('调用onRefresh成功')
+                 //ElMessage.success('调用onRefresh成功')
                })
 
             }catch{
@@ -375,7 +375,7 @@ onMounted(async () => {
     if (window.metaidwallet) {
       
       try {
-          debugger
+          
            ;(window.metaidwallet as any)?.on('accountsChanged',metaletAccountsChangedHandler)
               ;(window.metaidwallet as any)?.on('networkChanged',metaletNetworkChangedHandler)
 

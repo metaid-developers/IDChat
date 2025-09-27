@@ -1448,5 +1448,7 @@
   "sub_channel_created": "Do not create duplicate broadcast channels",
   "broadcast_channel_create": "Broadcast",
   "mute_notifiy": "Mute Notifications",
-  "reload": "Loading"
+  "reload": "Loading",
+  "sub_channel_header_message": "messages",
+  "sub_channel_back_main": "Back to Main Channel"
 }

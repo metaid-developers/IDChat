@@ -1446,5 +1446,7 @@
   "sub_channel_created": "请勿重复创建发布频道",
   "broadcast_channel_create": "发布频道",
   "mute_notifiy": "免打扰模式切换",
-  "reload": "加载中"
+  "reload": "加载中",
+  "sub_channel_header_message": "消息",
+  "sub_channel_back_main": "返回主频道"
 }
