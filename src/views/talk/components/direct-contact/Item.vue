@@ -108,28 +108,6 @@ const computeDecryptedMsg = (session: SimpleChannel) => {
       return ''
     }
     let content
-
-    // let publicKeyStr = session?.userInfo?.chatPublicKey
-
-    // if (session?.newMessages?.length) {
-    //   content = session.newMessages[session.newMessages.length - 1].content
-    // } else {
-    //   content = session.content
-    // }
-    // const isSession = Number(session.type) === 2 ? true : false
-
-    // const key = session?.newMessages?.length
-    //   ? session?.newMessages[session?.newMessages?.length - 1]?.chatType
-    //   : session?.chatType
-    // const isImg = session?.newMessages?.length
-    //   ? imageType.includes(session?.newMessages[session?.newMessages?.length - 1]?.contentType)
-    //   : session?.chatType == ChatType.img
-    //   ? true
-    //   : false
-
-    // if (isImg) {
-    //   return `[${i18n.t('new_msg_img')}]`
-    // }
     if (session.type === 'group') {
       let secretKeyStr = session.id?.substring(0, 16) || ''
       switch (session.lastMessage.type) {

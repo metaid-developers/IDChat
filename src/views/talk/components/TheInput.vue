@@ -9,7 +9,7 @@
   >
     <!-- 回复/引用 -->
     <div class="quote flex flex-align-center rounded-lg" v-if="quote">
-      <div class="flex1 flex flex-align-center">
+      <div class="flex1 flex flex-align-center whitespace-nowrap">
         {{ $t('Talk.Quote.tips') }}
         <a @click="emit('toQuote')" class="user"
           ><UserName
@@ -17,6 +17,7 @@
             :meta-name="''"
             :no-tag="true"
         /></a>
+        <span class="grow truncate">:{{ computeDecryptedMsg(quote) }}</span>
       </div>
       <Icon name="x_circle" class="close" @click="emit('update:quote', undefined)" />
     </div>
@@ -364,12 +365,18 @@ import { useUserStore } from '@/stores/user'
 import { useConnectionStore } from '@/stores/connection'
 import { FileToAttachmentItem, compressImage, atobToHex } from '@/utils/util'
 import { useCredentialsStore } from '@/stores/credentials'
-import { encrypt, ecdhEncrypt, ecdhDecrypt, ecdhEncryptForPrivateImg } from '@/utils/crypto'
+import {
+  encrypt,
+  ecdhEncrypt,
+  ecdhDecrypt,
+  ecdhEncryptForPrivateImg,
+  decrypt,
+} from '@/utils/crypto'
 import { useTalkStore } from '@/stores/talk'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { ChannelType, MessageType, ChatChain } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
-
+import { MessageType as SimpleMessageType, SimpleChannel } from '@/@types/simple-chat.d'
 import TalkImagePreview from './ImagePreview.vue'
 import StickerVue from '@/components/Sticker/Sticker.vue'
 import Decimal from 'decimal.js-light'
@@ -398,6 +405,49 @@ const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const hasInput = computed(() => chatInput.value.length > 0)
 
+const computeDecryptedMsg = (session: any) => {
+  console.log('props.session', session)
+
+  try {
+    if (session.encryption == 'aes') {
+      let secretKeyStr = (session.channelId || session.groupId)?.substring(0, 16) || ''
+      switch (session.chatType) {
+        case 1:
+        case SimpleMessageType.msg:
+          return decrypt(session.content, secretKeyStr)
+        case SimpleMessageType.red:
+          return session.content
+        case SimpleMessageType.img:
+          return `[${i18n.t('new_msg_img')}]`
+        default:
+          return ''
+      }
+    } else {
+      const ecdhsStore = useEcdhsStore()
+      const ecdhPubkey =
+        session.metaId !== simpleTalk.selfMetaId
+          ? session?.fromUserInfo?.chatPublicKey
+          : session?.toUserInfo?.chatPublicKey
+      if (!ecdhPubkey) {
+        return ''
+      }
+      let ecdh = ecdhsStore.getEcdh(ecdhPubkey)
+
+      try {
+        const sharedSecret = ecdh?.sharedSecret
+        if (!sharedSecret) {
+          return ''
+        }
+
+        return ecdhDecrypt(session.content, sharedSecret)
+      } catch (error) {
+        return ''
+      }
+    }
+  } catch (error) {
+    return ''
+  }
+}
 /** 输入框样式 */
 const isShowingButtonGroup = computed(() => {
   const isMobile = window.innerWidth <= 1024
