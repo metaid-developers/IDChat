@@ -156,6 +156,115 @@ const metaletNetworkChangedHandler = (network: Network) => {
   handleNetworkChanged(network)
 }
 
+const appLoginSuccessHandler= async (data: any) => {
+      ElMessage.success('调用LoginSuccess')
+          try {
+            //  if(userStore.isAuthorized && rootStore.isWebView && data !== userStore.last.address){
+            //       connectionStore.disconnect(router)
+            //   simpleTalkStore.$patch({isInitialized:false})
+            //   await connectMetalet()
+
+            //   if (!userStore.last.chatpubkey) {
+            //     const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+            //     if (ecdhRes?.chatPublicKey) {
+            //       userStore.updateUserInfo({
+            //         chatpubkey: ecdhRes?.chatPublicKey
+            //       })
+            //     }
+            //   }
+  
+            // setTimeout(() => {
+            //    return window.location.reload()
+            // }, 1000);
+            // }
+
+
+            if (!userStore.isAuthorized) {
+
+                 
+              await connectMetalet()
+               ElMessage.success('调用LoginSuccess成功')
+              if (!userStore.last.chatpubkey) {
+                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+                if (ecdhRes?.chatPublicKey) {
+                  userStore.updateUserInfo({
+                    chatpubkey: ecdhRes?.chatPublicKey
+                  })
+                }
+              }
+              setTimeout(() => {
+                window.location.reload()
+              }, 5000);
+
+            }
+             
+          } catch (error) {
+            ElMessage.error(error as any)
+            console.error('Error in LoginSuccess handler:', error)
+          }
+        }
+
+const appAccountSwitchHandler= async(data:any)=>{
+            ElMessage.success('调用onAccountSwitch')
+          try {
+            if(rootStore.isWebView){
+              
+              await connectionStore.disconnect(router)
+              simpleTalkStore.$patch({isInitialized:false})
+              await connectMetalet()
+               ElMessage.success('调用onAccountSwitch成功')
+              if (!userStore.last.chatpubkey) {
+                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+                if (ecdhRes?.chatPublicKey) {
+                  userStore.updateUserInfo({
+                    chatpubkey: ecdhRes?.chatPublicKey
+                  })
+                }
+              }
+  
+            setTimeout(() => {
+                window.location.reload()
+            }, 5000);
+            
+          }
+          } catch (error) {
+            throw new Error(error)
+          }
+         }
+
+const appLogoutHandler= async (data: any) => {
+try {
+  console.log("退出登录成功", data)
+  if (userStore.isAuthorized) {
+    await connectionStore.disconnect(router)
+    closeConnectionModal()
+  }
+} catch (error) {
+  console.error('Error in Logout handler:', error)
+}
+}
+
+const appRreshHandler=()=>{
+           ElMessage.success('调用onRefresh')
+          //监听APP数据刷新
+          if(userStore.isAuthorized){
+            try{
+              if(!wsStore.isConnected){
+                wsStore.init()
+              }
+              simpleTalkStore.$patch({isInitialized:false})
+               simpleTalkStore.init().then(()=>{
+                 ElMessage.success('调用onRefresh成功')
+               })
+
+            }catch{
+            
+            }
+
+          }
+
+        }
+
 
 async function connectMetalet() {
 
@@ -266,88 +375,16 @@ onMounted(async () => {
     if (window.metaidwallet) {
       
       try {
-        
+          debugger
            ;(window.metaidwallet as any)?.on('accountsChanged',metaletAccountsChangedHandler)
               ;(window.metaidwallet as any)?.on('networkChanged',metaletNetworkChangedHandler)
 
-          ;(window.metaidwallet as any)?.on('LoginSuccess', async (data: any) => {
-           ElMessage.success('调用LoginSuccess')
-          try {
-            //  if(userStore.isAuthorized && rootStore.isWebView && data !== userStore.last.address){
-            //       connectionStore.disconnect(router)
-            //   simpleTalkStore.$patch({isInitialized:false})
-            //   await connectMetalet()
-
-            //   if (!userStore.last.chatpubkey) {
-            //     const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
-            //     if (ecdhRes?.chatPublicKey) {
-            //       userStore.updateUserInfo({
-            //         chatpubkey: ecdhRes?.chatPublicKey
-            //       })
-            //     }
-            //   }
-  
-            // setTimeout(() => {
-            //    return window.location.reload()
-            // }, 1000);
-            // }
-
-
-            if (!userStore.isAuthorized) {
-
-                 
-              await connectMetalet()
-               ElMessage.success('调用LoginSuccess成功')
-              if (!userStore.last.chatpubkey) {
-                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
-                if (ecdhRes?.chatPublicKey) {
-                  userStore.updateUserInfo({
-                    chatpubkey: ecdhRes?.chatPublicKey
-                  })
-                }
-              }
-              setTimeout(() => {
-                window.location.reload()
-              }, 5000);
-
-            }
-             
-          } catch (error) {
-            ElMessage.error(error as any)
-            console.error('Error in LoginSuccess handler:', error)
-          }
-        })
+          ;(window.metaidwallet as any)?.on('LoginSuccess',appLoginSuccessHandler)
         // debugger
       
 
     
-           (window.metaidwallet as any)?.on('onAccountSwitch', async(data:any)=>{
-            ElMessage.success('调用onAccountSwitch')
-          try {
-            if(rootStore.isWebView){
-              
-              await connectionStore.disconnect(router)
-              simpleTalkStore.$patch({isInitialized:false})
-              await connectMetalet()
-               ElMessage.success('调用onAccountSwitch成功')
-              if (!userStore.last.chatpubkey) {
-                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
-                if (ecdhRes?.chatPublicKey) {
-                  userStore.updateUserInfo({
-                    chatpubkey: ecdhRes?.chatPublicKey
-                  })
-                }
-              }
-  
-            setTimeout(() => {
-                window.location.reload()
-            }, 5000);
-            
-          }
-          } catch (error) {
-            throw new Error(error)
-          }
-         })
+           ;(window.metaidwallet as any)?.on('onAccountSwitch',appAccountSwitchHandler)
 
       
 
@@ -378,17 +415,7 @@ onMounted(async () => {
   // })
 
 
-        ;(window.metaidwallet as any)?.on('Logout', async (data: any) => {
-          try {
-            console.log("退出登录成功", data)
-            if (userStore.isAuthorized) {
-              await connectionStore.disconnect(router)
-              closeConnectionModal()
-            }
-          } catch (error) {
-            console.error('Error in Logout handler:', error)
-          }
-        })
+  ;(window.metaidwallet as any)?.on('Logout',appLogoutHandler)
 
 
         // setInterval(async()=>{
@@ -419,26 +446,7 @@ onMounted(async () => {
 
         // },20 * 1000)
 
-        ;(window.metaidwallet as any)?.on('onRefresh',()=>{
-           ElMessage.success('调用onRefresh')
-          //监听APP数据刷新
-          if(userStore.isAuthorized){
-            try{
-              if(!wsStore.isConnected){
-                wsStore.init()
-              }
-              simpleTalkStore.$patch({isInitialized:false})
-               simpleTalkStore.init().then(()=>{
-                 ElMessage.success('调用onRefresh成功')
-               })
-
-            }catch{
-            
-            }
-
-          }
-
-        })
+        ;(window.metaidwallet as any)?.on('onRefresh',appRreshHandler)
         //监听页面可见性变化
 
 
@@ -500,13 +508,15 @@ onBeforeUnmount(async () => {
       metaletNetworkChangedHandler,
     )
 
-    ;(window.metaidwallet as any)?.removeListener('LoginSuccess')
-    ;(window.metaidwallet as any)?.removeListener('Logout')
+    ;(window.metaidwallet as any)?.removeListener('LoginSuccess',appLoginSuccessHandler)
+    ;(window.metaidwallet as any)?.removeListener('Logout',appLogoutHandler)
      ;(window.metaidwallet as any)?.removeListener(
-      'onRefresh'
+      'onRefresh',
+      appRreshHandler
     )
     ;(window.metaidwallet as any)?.removeListener(
-    'onAccountSwitch'
+    'onAccountSwitch',
+    appAccountSwitchHandler
 
     )
 
