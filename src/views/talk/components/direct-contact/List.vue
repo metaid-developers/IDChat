@@ -20,7 +20,7 @@
             v-model:needModifyPubkey="needModifyPubkey"
             v-if="userStore.isAuthorized && !userStore.last?.chatpubkey && !needModifyPubkey"
           />
-          <Welcome v-show="!_allChannels?.length && layout.isShowLeftNav"></Welcome>
+          <Welcome v-show="!_allChannels?.length && layout.isShowLeftNav "></Welcome>
 
           <!-- 联系人列表 -->
           <div class="overflow-y-auto" v-show="userStore.isAuthorized">
