@@ -804,6 +804,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     
     // 全局消息菜单状态管理
     activeMessageMenuId: '', // 当前显示菜单的消息ID
+
+    isSendRedPacketinProgress: false, // 是否正在发送红包
   }),
 
   getters: {

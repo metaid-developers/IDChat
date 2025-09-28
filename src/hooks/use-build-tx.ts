@@ -312,23 +312,30 @@ export const useBulidTx = createGlobalState(() => {
 
        let payedTransactions
        if(needSmallpay){
-          const {payedTransactions:payTx}= await connectionStore.adapter.smallPay({
+
+          const ret= await connectionStore.adapter.smallPay({
           transactions:transactions,
           hasMetaid:true,
           feeb:1
           
         })
-        payedTransactions=payTx
+        if(ret.status === 'error'){
+          throw new Error(ret.message || i18n.global.t('unknown_error'))
+        }
+        payedTransactions=ret.payedTransactions
 
        }else{
-          const {payedTransactions:payTx}= await connectionStore.adapter.pay({
+          const ret= await connectionStore.adapter.pay({
           transactions:transactions,
           hasMetaid:true,
           feeb:1
           
         })
+        if(ret.status === 'error'){
+          throw new Error(ret.message || i18n.global.t('unknown_error'))
+        }
 
-         payedTransactions=payTx
+         payedTransactions=ret.payedTransactions
        }
         
       
@@ -664,7 +671,7 @@ export const useBulidTx = createGlobalState(() => {
       return pinRes
 
     } catch (error) {
-      // console.log("error",error)
+      console.log("error",error)
 
       throw new Error(typeof error === "string" ? error : (error as any).message)
     }
