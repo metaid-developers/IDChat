@@ -18,7 +18,7 @@ function checkMetalet() {
   const connectionStore=useConnectionStore()
   if (!window.metaidwallet && !connectionStore.connected) {
     
-    ElMessage.warning('Please install the Metalet wallet extension first.')
+    // ElMessage.warning('Please install the Metalet wallet extension first.')
     throw new Error('Please install the Metalet wallet extension first.')
   }
 }

@@ -840,6 +840,52 @@ export const setChannelWhiteList = async (groupId: string, users: string[]) => {
   }
 }
 
+export const setChannelBlockList = async (groupId: string, users: string[]) => {
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
+
+  const dataCarrier = {
+    groupId,
+    users,
+  }
+
+  console.log({ dataCarrier })
+
+  // 2. 构建节点参数
+  const node = {
+    protocol: NodeName.SimpleGroupBlock,
+    body: dataCarrier,
+  }
+
+  // 3. 发送节点
+  try {
+    const { protocol, body } = node
+    // const res = await sdk.createBrfcChildNode(node, { useQueue: true, subscribeId })
+    const res = await buildTx.setChannelBlockList({
+      protocol,
+      body,
+      isBroadcast: true,
+    })
+    console.log('res', res)
+
+    console.log({ res })
+
+    if (res === null) {
+      return { status: 'canceled' }
+    }
+
+    if (chainStore.state.currentChain == ChatChain.btc) {
+      return { status: 'success', txid: res?.revealTxIds[0] }
+    } else {
+      return { status: 'success', txid: res?.txids[0] }
+    }
+  } catch (err) {
+    console.log(err)
+    ElMessage.error(`${i18n.global.t('set_blacklist_fail')}`)
+    return { status: 'failed' }
+  }
+}
+
 export type SimpleGroup = {
   communityId: string
   groupId: string

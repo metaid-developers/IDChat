@@ -1001,6 +1001,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async init(): Promise<void> {
       if (this.isInitializing) {
+        
         console.log('⏳ 聊天系统正在初始化中...')
         return
       }
@@ -1243,6 +1244,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 获取并存储群聊成员权限信息
      */
     async fetchGroupMemberPermissions(groupId: string): Promise<MemberListRes | null> {
+      
       try {
         console.log(`🔄 获取群聊 ${groupId} 成员权限信息...`)
         

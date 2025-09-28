@@ -246,9 +246,12 @@ const save = async () => {
     console.log('Saving profile changes:', values)
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
-    setTimeout(() => {
-      
-       simpleTalk.init()
+    setTimeout(async() => {
+        await simpleTalk.init()
+       if(route.params.channelId && route.params.channelId !=='welcome'){
+       
+         window.location.reload()
+       }
       //layoutStore.$patch({showJoinView:true})
       
       // if(route.name !== 'talkAtMe'){

@@ -61,7 +61,7 @@ const tryJoinChannel = async () => {
     await simpleTalk.syncFromServer()
   } catch (error) {
     layout.isShowLoading = false
-    ElMessage.error(`${(error as any).toString()}! ${i18n.global.t('retry_join')}`)
+    ElMessage.error(`${(error as any).toString()}! ${i18n.t('retry_join')}`)
   }
 }
 </script>

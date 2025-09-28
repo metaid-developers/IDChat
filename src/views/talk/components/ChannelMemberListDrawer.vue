@@ -59,7 +59,7 @@
           </div>
           <div class="mt-4">
             <el-button
-              v-if="isCurrentUserCreator"
+              v-if="isCurrentUserCreator && isWhiteListCreatBroadcast"
               color="#fff"
               size="default"
               :icon="CirclePlus"
@@ -162,6 +162,7 @@
               @updated="handleDeleteSuccess"
               @updateUserAdmin="handleAdmin"
               @updateUserWhiteList="handleWhiteList"
+              @updateUserBlockList="handleBlockList"
               @toPrivateChat="handlePrivateChat"
             />
           </li>
@@ -315,7 +316,7 @@ import { createSinglePin } from '@/utils/pin'
 
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
-import { setChannelAdmins,setChannelWhiteList } from '@/utils/talk'
+import { setChannelAdmins,setChannelWhiteList,setChannelBlockList } from '@/utils/talk'
 import type {MemberListRes,MemberItem } from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
 import { signMvcMessage,getMvcPublickey } from "@/wallet-adapters/metalet";
@@ -392,6 +393,10 @@ const triggleMuteNotify=computed(()=>{
 // 判断当前用户是否是频道创建者
 const isCurrentUserCreator = computed(() => {
   return currentChannelInfo.value?.createdBy === userStore.last?.metaid
+})
+
+const isWhiteListCreatBroadcast=computed(()=>{
+  return ['12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ'].includes(userStore.last?.address)
 })
 
 const currentLink = computed(() => {
@@ -590,7 +595,7 @@ const loadMemberPermissions = async () => {
       currentChannelInfo.value.id,
       false // 不强制刷新，使用缓存
     )
-
+    
     if (permissions) {
       memberPermissions.value = permissions
     } else {
@@ -634,7 +639,7 @@ const loadMemberList = async (reset: boolean = false) => {
     if (response && response.list) {
       // 获取需要过滤的用户ID列表
       const excludeIds = new Set<string>()
-
+      
       // 添加创建者ID
       if (memberPermissions.value?.creator?.metaId) {
         excludeIds.add(memberPermissions.value.creator.metaId)
@@ -648,6 +653,10 @@ const loadMemberList = async (reset: boolean = false) => {
       // 添加白名单用户ID
       memberPermissions.value?.whiteList?.forEach(member => {
         if (member.metaId) excludeIds.add(member.metaId)
+      })
+
+       memberPermissions.value?.blockList?.forEach(block => {
+        if (block.metaId) excludeIds.add(block.metaId)
       })
 
       // 过滤掉管理员、群主和白名单用户
@@ -861,6 +870,55 @@ const handleWhiteList = async (member: MemberItem) => {
     }
   } catch (error) {
     ElMessage.error((error as any).message || 'Failed to update whitelist')
+  }
+}
+
+
+// 处理黑名单权限变更
+const handleBlockList = async (member: MemberItem) => {
+  if (!member.metaId || !currentChannelInfo.value) return
+  
+  try {
+    let blockList: string[] = []
+    console.log("",memberPermissions)
+    // 获取当前白名单列表
+    if (memberPermissions.value?.blockList) {
+      memberPermissions.value.blockList.forEach((item: MemberItem) => {
+        if (item.metaId) {
+          blockList.push(item.metaId)
+        }
+      })
+    }
+
+    // 已经在黑名单中，要移除
+    if (blockList.includes(member.metaId)) {
+      blockList = blockList.filter((id) => id !== member.metaId)
+      ElMessage.success('Removed from Blocklist')
+    } else {
+      // 添加到黑名单
+      blockList.push(member.metaId)
+      ElMessage.success('Added to Blocklist')
+    }
+    
+    const groupId = currentChannelInfo.value.id
+    const updateRes = await setChannelBlockList(groupId, blockList)
+
+    if (updateRes.status === 'success' && updateRes.txid) {
+      
+      await simpleTalkStore.getGroupMemberPermissions(groupId, true)
+      // 重新加载权限信息
+      await loadMemberPermissions()
+
+      if (searchKey.value.trim()) {
+        // 如果正在搜索，重新搜索
+        await searchMembers()
+      } else {
+        // 重新加载成员列表
+        await loadMemberList(true)
+      }
+    }
+  } catch (error) {
+    ElMessage.error((error as any).message || 'Failed to update blocklist')
   }
 }
 </script>
