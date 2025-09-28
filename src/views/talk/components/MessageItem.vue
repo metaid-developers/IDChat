@@ -641,8 +641,10 @@ const redPacketMessage = computed(() => {
 })
 
 const isMyMessage = computed(() => {
-  return userStore.last?.metaid && userStore.last.metaid === props.message.metaId
+  
+  return userStore.last?.metaid === props.message.metaId
 })
+
 
 const handleOpenRedPacket = async() => {
   if(simpleTalk.activeChannel?.isTemporary){
