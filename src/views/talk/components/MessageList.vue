@@ -550,6 +550,16 @@ const notLoadAll = computed(() => {
   return false
 })
 
+watch(
+  () => simpleTalk.isSendRedPacketinProgress,
+  async () => {
+    if (!simpleTalk.isSendRedPacketinProgress) {
+      scrollToMessagesBottom()
+    }
+  },
+  { immediate: true }
+)
+
 const scrollToMessagesBottom = async () => {
   if (unReadCount.value > 0) {
     console.log('滚动到底部并加载最新消息', unReadCount.value > 0, notLoadAll.value)

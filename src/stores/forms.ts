@@ -1,4 +1,10 @@
-import { Chains, ChannelPublicityType, GroupChannelType, RedPacketDistributeType,CreateGroupType } from '@/enum'
+import {
+  Chains,
+  ChannelPublicityType,
+  GroupChannelType,
+  RedPacketDistributeType,
+  CreateGroupType,
+} from '@/enum'
 import {
   createAnnouncement,
   deleteAnnouncement,
@@ -39,7 +45,7 @@ export const useCommunityFormStore = defineStore('communityForm', {
       description: '',
       cover: null as File | null,
       name: '',
-     
+
       // metaName: null as MetaNameItem | null,
     }
   },
@@ -80,7 +86,7 @@ export const useCommunityFormStore = defineStore('communityForm', {
       this.description = ''
       this.cover = null
       this.name = ''
-      
+
       // this.metaName = null
     },
   },
@@ -95,7 +101,6 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       original: null as any,
       // metaName: null as MetaNameItem | null,
       name: '',
-     
     }
   },
 
@@ -126,7 +131,6 @@ export const useCommunityUpdateFormStore = defineStore('communityUpdateForm', {
       this.cover = null
       // this.metaName = null
       this.name = ''
-     
     },
 
     resetInForm() {
@@ -185,7 +189,6 @@ export interface ChannelFormState {
   groupId?: string
   txId?: string
   nativeAmount?: number
-  
 }
 export const useChannelFormStore = defineStore('channelForm', {
   state: () => {
@@ -203,7 +206,6 @@ export const useChannelFormStore = defineStore('channelForm', {
       uuid: undefined, // 用于 订阅和 key， 不可修改
       txId: undefined,
       chainInfo: null as any,
-      
     }
   },
 
@@ -238,7 +240,7 @@ export const useChannelFormStore = defineStore('channelForm', {
         this.type = GroupChannelType.PublicText
       }
 
-       if (channel.roomType === ChannelPublicityType.Broadcast) {
+      if (channel.roomType === ChannelPublicityType.Broadcast) {
         this.type = GroupChannelType.Broadcast
       }
 
@@ -667,6 +669,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       this.saveSettings()
 
       layout.isShowLoading = true
+      simpleTalk.isSendRedPacketinProgress = true
       const ret = await giveRedPacket(
         {
           amount: this.amount,
@@ -679,9 +682,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           unit: this.unit,
         },
         simpleTalk.activeChannel,
-        simpleTalk.selfMetaId,
+        simpleTalk.selfMetaId
         //simpleTalk.activeSubChannelId
       )
+      simpleTalk.isSendRedPacketinProgress = false
       console.log('giveRedPacket ret', ret)
       return ret
     },
