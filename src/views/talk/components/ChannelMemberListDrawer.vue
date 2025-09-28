@@ -80,7 +80,7 @@
             >
           </div>
         </div>
-        <div class="mt-5 bg-white dark:bg-black px-4 py-5">
+        <div class="mt-5 bg-white dark:bg-gray-800 px-4 py-5">
           <div class="flex items-center justify-between text-md font-medium">
             {{ $t('Talk.Channel.announcement') }}
             <el-icon
@@ -95,12 +95,12 @@
           </div>
         </div>
 
-        <div class="mt-3  bg-white dark:bg-black px-4 py-5" @click="copyLink">
+        <div class="mt-3  bg-white dark:bg-gray-800 px-4 py-5" @click="copyLink">
           <div class="flex items-center justify-between text-md font-medium">
             {{$t('Talk.Channel.ShareLink')  }}
           </div>
           <div
-            class="mt-2 cursor-pointer text-dark-700 dark:text-gray-800 px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-200  flex items-center justify-between"
+            class="mt-2 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between"
           >
             <div class="word-break break-all">
               {{$filters.ellipsisMiddle(currentLink) }}
@@ -112,7 +112,7 @@
           </div>
         </div>
 
-        <div class="mt-3 mb-3 bg-white dark:bg-black px-4 py-5">
+        <div class="mt-3 mb-3 bg-white dark:bg-gray-800 px-4 py-5">
           <div class="flex items-center justify-between">
             <div>{{ $t('mute_notifiy') }}</div>
             <ElSwitch

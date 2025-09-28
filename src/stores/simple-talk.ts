@@ -365,7 +365,10 @@ class SimpleChatDB {
       const request = index.getAll(this.userPrefix)
       
       request.onsuccess = () => {
+        
         const channels = (request.result || []).map(({ userPrefix, ...channel }) => channel)
+
+        
         resolve(channels)
       }
       
@@ -1540,6 +1543,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
 
           mergedChannels.push(merged)
+      
           existingMap.delete(serverChannel.id)
           // 安全保存，移除可能有问题的字段
           const mergedToSave = { ...merged }

@@ -247,10 +247,11 @@ const save = async () => {
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
     setTimeout(async() => {
-        await simpleTalk.init()
+      
+      await simpleTalk.init()
        if(route.params.channelId && route.params.channelId !=='welcome'){
-       
-         window.location.reload()
+        window.location.reload()
+      
        }
       //layoutStore.$patch({showJoinView:true})
       
