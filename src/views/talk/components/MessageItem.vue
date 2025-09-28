@@ -645,6 +645,10 @@ const isMyMessage = computed(() => {
 })
 
 const handleOpenRedPacket = async() => {
+  if(simpleTalk.activeChannel?.isTemporary){
+     ElMessage.error('Please join the channel to claim the red packet')
+     return
+  }
   // 如果用户已经领取过红包，则显示红包领取信息
   const params: any = {
     groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannel?.id,

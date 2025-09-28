@@ -287,6 +287,10 @@ const currentChannelType = computed(() => {
 })
 
 const loadItems = async (isPrepending = false) => {
+  if (activeChannel.value?.isTemporary) {
+    console.log('临时频道不加载消息')
+    return
+  }
   // 防止重复加载
   console.log('loadItems', { isPrepending }, isLoadingTop.value || isLoadingBottom.value)
   if (isLoadingTop.value || isLoadingBottom.value) return
