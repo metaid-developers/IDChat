@@ -3,6 +3,7 @@ import { reportTask } from '@/api/metaid-base'
 import { JobStatus, JobStepStatus } from '@/enum'
 import { sleep } from '@/utils/util'
 import NoticeAudio from '@/assets/audio/noctice.mp3'
+import { useSimpleTalkStore } from './simple-talk'
 
 export const useJobsStore = defineStore('jobs', {
   state: () => {
@@ -133,6 +134,12 @@ export const useJobsStore = defineStore('jobs', {
     playNotice() {
       
       if (this.isPlayingNotice) return
+      // const simpleTalkStore=useSimpleTalkStore()
+      // const muteStatus= simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.parentGroupId) :
+      // simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.id)
+
+      // if(muteStatus) return
+
       this.isPlayingNotice = true
       const audio = new Audio()
       audio.volume = 0.7

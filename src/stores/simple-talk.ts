@@ -809,6 +809,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return state.muteNotifyList || JSON.parse(localStorage.getItem('muteNotifyList') || JSON.stringify([]))
     },
 
+ 
     getOneChannelMuteStatus():(channelId: string) => boolean {
       return (channelId: string) => {
         if(this.muteNotifyList.length){
