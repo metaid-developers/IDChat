@@ -374,6 +374,7 @@ export enum NodeName {
   FtMerge = 'merge',
   SimpleGroupChannel='simplegroupchannel',
   SimpleGroupAdmin='simplegroupadmin',
+  SimpleGroupBlock='simplegroupblock',
   SimpleGroupWhitelist='simplegroupwhitelist',
   SimpleRedEnvelope = 'Simpleredenvelope',
   SimpleGroupLuckyBag = 'simplegroupluckybag',

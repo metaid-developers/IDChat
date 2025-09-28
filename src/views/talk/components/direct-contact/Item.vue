@@ -21,12 +21,12 @@
             class="w-[20PX] h-[15PX] mr-1 shrink-0 text-gray-500 dark:text-white"
           />
           <div class=" font-medium dark:text-gray-100 max-w-[150px] truncate">
-            {{ session.name }}
+            {{ session?.name }}
           </div>
         </div>
 
         <div class="shrink-0  text-dark-250 dark:text-gray-400 text-xs">
-          {{ formatTimestamp(session.lastMessage.timestamp, i18n, false) }}
+          {{ formatTimestamp(session?.lastMessage?.timestamp, i18n, false) }}
         </div>
       </div>
       <!-- <div class="text-xs truncate font-medium max-w-[50PX]">{{session?.newMessages ? session?.newMessages[session?.newMessages?.length -1]?.userInfo?.name : '' }}</div> -->
@@ -34,10 +34,10 @@
       <div class="flex items-center justify-between gap-2">
         <div class="text-xs flex items-center truncate max-w-fit ">
           <div
-            v-if="session.type === 'group' && session.lastMessage"
+            v-if="session?.type === 'group' && session?.lastMessage"
             class="text-dark-800  dark:text-gray-500 font-medium"
           >
-            <UserName :name="session.lastMessage.senderName" :meta-name="''" />&nbsp;:&nbsp;
+            <UserName :name="session?.lastMessage?.senderName" :meta-name="''" />&nbsp;:&nbsp;
           </div>
 
           <span class="text-dark-300 dark:text-gray-400 truncate">

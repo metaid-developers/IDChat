@@ -1148,7 +1148,7 @@ async function connectMetalet() {
 
 
     if(channelId && channelId !== 'welcome'){
-      
+        
          router.push({
         name: 'talkChannel',
         params:{

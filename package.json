@@ -1,5 +1,5 @@
 {
-  "name": "shownow",
+  "name": "idchat",
   "version": "0.0.1",
   "scripts": {
     "gray": "yarn vite --mode gray",

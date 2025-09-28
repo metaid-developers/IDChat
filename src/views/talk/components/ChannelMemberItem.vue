@@ -71,6 +71,7 @@
         </div>
       </div>
 
+
       <div
         class="my-2"
         v-if="
@@ -100,6 +101,38 @@
           </template>
         </el-popconfirm>
       </div>
+      <!--黑名单功能-->
+      <!-- <div
+        class="my-2 "
+        v-if="
+          (!isYou && selfPermission.isCreator) ||
+            (!isYou && !isOwner && !isAdmin && (selfPermission.isCreator || selfPermission.isAdmin))
+        "
+      >
+        <el-popconfirm
+          width="220"
+          :icon="InfoFilled"
+          icon-color="red"
+          :title="`Confirm adding this user to the blocklist ${member.userInfo.name}?`"
+          @cancel="onCancel"
+          @confirm="onSetBlockListConfirm"
+          v-if="!isYou"
+        >
+          <template #reference>
+            <div class="flex items-center el-button el-button--info is-text">
+              <Icon name="block_list" class="w-[15px] h-[15px]"></Icon>
+              <span class="ml-[5.4px] text-[#f56c6c]">{{ $t('Talk.Channel.Add.BlackList') }}</span>
+            </div>
+         
+          </template>
+          <template #actions="{ confirm, cancel }">
+            <el-button size="small" @click="cancel">No!</el-button>
+            <el-button type="danger" size="small" :disabled="!clicked" @click="confirm">
+              Yes?
+            </el-button>
+          </template>
+        </el-popconfirm>
+      </div> -->
     </div>
   </el-popover>
 </template>
@@ -129,7 +162,7 @@ function onCancel() {
 
 const props = defineProps(['member', 'createUserMetaId', 'groupId', 'role'])
 const simpleTalk = useSimpleTalkStore()
-const emit = defineEmits(['updated', 'updateUserAdmin', 'updateUserWhiteList', 'toPrivateChat'])
+const emit = defineEmits(['updated', 'updateUserAdmin', 'updateUserWhiteList','updateUserBlockList','toPrivateChat'])
 // const talk = useTalkStore()
 const router = useRouter()
 const route = useRoute()
@@ -229,6 +262,16 @@ const manageWhitelist = () => {
     return ElMessage.error(`${i18n.t('Non_permission_set_whitelist')}`)
   }
   emit('updateUserWhiteList', props.member)
+}
+
+const onSetBlockListConfirm = () => {
+  clicked.value = false
+  
+  const hasPermission = selfPermission.value.isCreator || selfPermission.value.isAdmin
+  if (!hasPermission) {
+    return ElMessage.error(`${i18n.t('Non_permission_set Blocklist')}`)
+  }
+  emit('updateUserBlockList', props.member)
 }
 
 const onConfirm = async () => {

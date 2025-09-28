@@ -190,15 +190,15 @@ function SetMeta(to: RouteLocationNormalized) {
     })
   } else {
     useHead({
-      title: `ShowNow`,
+      title: `IDChat | Decentralized Messenger Built on Bitcoin`,
       meta: [
         {
           name: 'description',
-          content: `ShowNow`,
+          content: `IDChat | Decentralized Messenger Built on Bitcoin`,
         },
         {
           name: 'keywords',
-          content: 'ShowNow',
+          content: 'IDChat | Decentralized Messenger Built on Bitcoin',
         },
       ],
       link: [

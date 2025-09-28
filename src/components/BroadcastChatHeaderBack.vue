@@ -50,7 +50,7 @@ const unReadCountFromMainChannel = computed(() => {
     typeof parentGroupInfo.value.lastMessage.index === 'number' &&
     typeof parentGroupInfo.value.lastReadIndex === 'number'
   ) {
-    return parentGroupInfo.value.lastMessage.index - parentGroupInfo.value.lastReadIndex
+    return parentGroupInfo.value.lastMessage.index - parentGroupInfo.value.lastReadIndex > 0 ? parentGroupInfo.value.lastMessage.index - parentGroupInfo.value.lastReadIndex : 0
   }
   return 0
 })

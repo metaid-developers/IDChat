@@ -244,7 +244,10 @@
       "WhiteList": "Add to Whitelist",
       "removeAdmin": "Remove From Admin",
       "remove_WhiteList": "Remove From Whitelist",
-      "getRoleError": "Failed to retrieve user permission information. Please refresh and try again"
+      "getRoleError": "Failed to retrieve user permission information. Please refresh and try again",
+      "Add": {
+        "BlackList": "Move to blocklist"
+      }
     },
     "Community": {
       "optional": "",
@@ -1450,5 +1453,12 @@
   "mute_notifiy": "Mute Notifications",
   "reload": "Loading",
   "sub_channel_header_message": "messages",
-  "sub_channel_back_main": "Back to Main Channel"
+  "sub_channel_back_main": "Back to Main Channel",
+  "set_blacklist_fail": "Failed to set blocklist",
+  "Non_permission_set Blocklist": "Insufficient permissions, only the group owner or administrator has the authority to blocklist users",
+  "simpleTalk": {
+    "init": {
+      "error": "Synchronize data failed"
+    }
+  }
 }

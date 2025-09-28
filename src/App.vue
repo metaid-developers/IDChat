@@ -252,10 +252,19 @@ const appRreshHandler=()=>{
               if(!wsStore.isConnected){
                 wsStore.init()
               }
-              simpleTalkStore.$patch({isInitialized:false})
-               simpleTalkStore.init().then(()=>{
-                 //ElMessage.success('调用onRefresh成功')
-               })
+
+                if (!simpleTalkStore.isInitialized) {
+                simpleTalkStore.init().then().catch((e)=>{
+                  ElMessage.error(`${i18n.t('simpleTalk.init.error')}`)
+                })
+                }
+                simpleTalkStore.syncFromServer().then().catch((e)=>{
+                  ElMessage.error(`${i18n.t('simpleTalk.init.error')}`)
+                })
+              // simpleTalkStore.$patch({isInitialized:false})
+              //  simpleTalkStore.init().then(()=>{
+              //    //ElMessage.success('调用onRefresh成功')
+              //  })
 
             }catch{
             
