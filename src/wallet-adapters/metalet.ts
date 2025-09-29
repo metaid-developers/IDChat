@@ -110,6 +110,7 @@ export const getMvcPublickey = async () => {
 }
 
 
+
 export const getEcdhPublickey = async (pubkey?:string):Promise<{
   externalPubKey: string;
     sharedSecret: string;
@@ -347,4 +348,15 @@ export const autoPayment=async()=>{
   checkMetalet()
   
    return await window.metaidwallet.autoPayment()
+}
+
+
+export const needWebRefresh=async(params:{isNeed:boolean})=>{
+
+  try {
+  checkMetalet()
+  return await window.metaidwallet.needWebRefresh(params)
+  } catch (error) {
+      console.log('执行needWebRefresh出错了')
+  }
 }

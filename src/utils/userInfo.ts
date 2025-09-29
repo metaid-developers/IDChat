@@ -17,6 +17,7 @@ declare global {
     WebViewBridge:any
     metaidwallet: {
       on:()=>any
+      needWebRefresh:(params:{isNeed:boolean})=> Promise<any>
       getAddress: () => Promise<string>
       getUtxos: () => Promise<any[]>
       unlockP2PKHInput: (params: any) => Promise<any>

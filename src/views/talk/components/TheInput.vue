@@ -385,6 +385,10 @@ import { useChainStore } from '@/stores/chain'
 import { useI18n } from 'vue-i18n'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
+import {needWebRefresh} from '@/wallet-adapters/metalet'
+import { useRootStore } from '@/stores/root'
+
+
 interface Props {
   quote?: any
 }
@@ -404,7 +408,7 @@ const ecdhsStore = useEcdhsStore()
 const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const hasInput = computed(() => chatInput.value.length > 0)
-
+const rootStore=useRootStore()
 const computeDecryptedMsg = (session: any) => {
   console.log('props.session', session)
 
@@ -511,7 +515,13 @@ const activeChannel = computed(() => {
 })
 
 const openImageUploader = (close: Function) => {
+  rootStore.checkWebViewBridge()
+  if(rootStore.isWebView){
+      needWebRefresh({isNeed:false})
+  }
+
   imageUploader.value?.click()
+  
   close()
 }
 
@@ -531,6 +541,10 @@ const closeActionSheet = () => {
 }
 
 const handleImageChange = (e: Event) => {
+  rootStore.checkWebViewBridge()
+  if(rootStore.isWebView){
+      needWebRefresh({isNeed:true})
+  }
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
 
