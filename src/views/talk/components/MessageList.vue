@@ -225,7 +225,7 @@ const messageObserver = ref<IntersectionObserver | null>(null)
 
 const notLoadAll = computed(() => {
   const maxIndex =
-    simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1].index
+    simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1]?.index
   console.log('maxIndex', maxIndex, simpleTalk.activeChannel?.lastMessage?.index)
   if (maxIndex !== simpleTalk.activeChannel?.lastMessage?.index) {
     return true

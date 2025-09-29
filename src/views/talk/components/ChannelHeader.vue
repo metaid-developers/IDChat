@@ -5,7 +5,7 @@
     <div class="max-w-[50%] flex items-center justify-center " v-if="!isWelcomePage">
       <a
         class="mt-1 text-center  lg:hidden"
-        @click="layout.$patch({ isShowLeftNav: true, isShowContactList: true })"
+        @click="backWelcome"
       >
         <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
       </a>
@@ -190,6 +190,17 @@ const goCheckTxId = (txId: string, chain: ChatChain) => {
   } else {
     window.open(`https://mvcscan.com/tx/${txId}`, '_blank')
   }
+}
+
+const backWelcome=()=>{
+  layout.$patch({ isShowLeftNav: true, isShowContactList: true })
+  router.push(({
+       name: 'talkChannel',
+        params:{
+          communityId:'public',
+          channelId:'welcome'
+        }
+  }))
 }
 
 const doNothing = () => {}

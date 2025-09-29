@@ -288,6 +288,7 @@ import {
 import { ElSwitch } from 'element-plus'
 import { useTalkStore } from '@/stores/talk'
 import { useUserStore } from '@/stores/user'
+import {whiteListCreateBroadcast} from '@/config'
 import ChannelMemberItem from './ChannelMemberItem.vue'
 import EditAnnouncementDrawer from './EditAnnouncementDrawer.vue'
 import EditChannelInfoDrawer from './EditChannelInfoDrawer.vue'
@@ -396,7 +397,7 @@ const isCurrentUserCreator = computed(() => {
 })
 
 const isWhiteListCreatBroadcast=computed(()=>{
-  return ['12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ'].includes(userStore.last?.address)
+  return whiteListCreateBroadcast.includes(userStore.last?.address)
 })
 
 const currentLink = computed(() => {

@@ -18,7 +18,7 @@
           <DirectContactSearch @open-search="handleOpenSearchModal" />
           <CreatePubkey
             v-model:needModifyPubkey="needModifyPubkey"
-            v-if="userStore.isAuthorized && !userStore.last?.chatpubkey && !needModifyPubkey"
+            v-if="userStore.isAuthorized && rootStore.showCreatePubkey && !needModifyPubkey"
           />
           <Welcome v-show="!_allChannels?.length && layout.isShowLeftNav "></Welcome>
 
@@ -54,9 +54,11 @@ import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 
 import Welcome from '@/components/Welcome/welcome.vue'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { useRootStore } from '@/stores/root'
 const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
+const rootStore=useRootStore()
 const needModifyPubkey = ref(false)
 const { channels } = storeToRefs(useSimpleTalkStore())
 

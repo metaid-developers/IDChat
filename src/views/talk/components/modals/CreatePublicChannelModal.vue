@@ -109,8 +109,9 @@ const tryCreateChannel = async () => {
 
   // 添加占位頻道
   if (res.status === 'success') {
-    await simpleTalk.syncFromServer()
-
+    
+    
+    
     // const newChannel = {
     //   id: 'placeholder_' + realRandomString(8),
     //   name: form.name,
@@ -137,10 +138,11 @@ const tryCreateChannel = async () => {
 
   layout.isShowLoading = false
 
-  sleep(2000).then(() => {
+  sleep(1000).then(async() => {
+    await simpleTalk.syncFromServer()
     // 跳转刷新
     //
-
+    
     router.push(`/talk/channels/public/${res.channelId}i0`)
     //  talk.refetchChannels()
     //window.location.reload()

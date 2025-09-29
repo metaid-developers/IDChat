@@ -190,6 +190,9 @@ const appLoginSuccessHandler= async (data: any) => {
                   userStore.updateUserInfo({
                     chatpubkey: ecdhRes?.chatPublicKey
                   })
+                  rootStore.updateShowCreatePubkey(false)
+                }else{
+                  rootStore.updateShowCreatePubkey(true)
                 }
               }
               // setTimeout(() => {
@@ -219,6 +222,9 @@ const appAccountSwitchHandler= async(data:any)=>{
                   userStore.updateUserInfo({
                     chatpubkey: ecdhRes?.chatPublicKey
                   })
+                  rootStore.updateShowCreatePubkey(false)
+                }else{
+                  rootStore.updateShowCreatePubkey(true)
                 }
               }
   

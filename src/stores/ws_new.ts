@@ -4,7 +4,8 @@ import { useUserStore } from './user'
 import { SocketIOClient } from '@/lib/socket'
 import { disconnect } from 'process'
 import { useSimpleTalkStore } from './simple-talk'
-import { useRootStore } from './root'
+import { useRootStore,isIOS,isAndroid } from './root'
+
 interface MessageData {
   message: string
   timestamp: number
@@ -52,7 +53,7 @@ export const useWsStore = defineStore('ws', {
         url: `${import.meta.env.VITE_SHOW_NOW_WS}`,
         path: '/socket-test/socket.io',
         metaid: selfMetaId,
-        type:!rootStore.isWebView ? 'pc' : 'app'
+        type:rootStore.isWebView || isIOS || isAndroid ?  'app' : 'pc'
       }
       
       this.ws = new SocketIOClient(config)

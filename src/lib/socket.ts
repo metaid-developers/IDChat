@@ -193,6 +193,7 @@ interface SocketConfig {
   url: string
   path: string
   metaid: string
+  type:'app' | 'pc'
   heartbeatInterval?: number // 心跳间隔（毫秒）
   heartbeatTimeout?: number // 心跳超时时间（毫秒）
 }
@@ -234,6 +235,7 @@ class SocketIOClient {
         path: this.config.path,
         query: {
           metaid: this.config.metaid,
+          type:this.config.type
         },
       })
 

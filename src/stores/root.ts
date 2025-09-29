@@ -15,6 +15,7 @@ export interface SignBaseInfo {
 interface RootState {
   signBaseInfo: SignBaseInfo
   sendCodeTimer: number
+  showCreatePubkey:boolean
   redirectUri: string
   exchangeRate: ExchangeRate[]
   isGetedExchangeRate: boolean
@@ -81,6 +82,7 @@ export const useRootStore = defineStore('root', {
   state: () =>
     <RootState>{
       isCertedMetaIds: [],
+      showCreatePubkey:false,
       signBaseInfo: emptySignBaseInfo,
       sendCodeTimer: 60,
       redirectUri: '/',
@@ -154,6 +156,9 @@ export const useRootStore = defineStore('root', {
     //   this.showDiffLang = payload
     //   localStorage.setItem('showDiffLang', String(payload))
     // },
+    async updateShowCreatePubkey(playload:boolean){
+      this.showCreatePubkey=playload
+    },
 
     async checkBtcAddressSameAsMvc(){
       const connectionStore=useConnectionStore()
