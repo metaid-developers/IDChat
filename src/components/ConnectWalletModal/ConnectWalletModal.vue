@@ -1161,7 +1161,9 @@ async function connectMetalet() {
      }, 2000);
     }else{
       
-      simpleChatStore.init()
+      setTimeout(async() => {
+       await simpleChatStore.init()
+      }, 1000);
       // router.push({
       //   name: 'talkChannel',
       //   params:{

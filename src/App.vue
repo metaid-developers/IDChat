@@ -313,8 +313,12 @@ async function connectMetalet() {
     //    window.location.reload()
     //  }, 2000);
     }else{
-        await simpleTalkStore.init()
-        simpleTalkStore.initMuteNotify().then().catch((e)=>{
+     setTimeout(async() => {
+         await simpleTalkStore.init()
+       
+     }, 1000);
+
+      simpleTalkStore.initMuteNotify().then().catch((e)=>{
 
                 })
     // let newChannelId
