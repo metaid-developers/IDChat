@@ -141,7 +141,8 @@
 <script setup lang="ts">
 // 定义组件的自定义事件
 const emit = defineEmits<{
-  (e: 'quote', message: any): void
+  (e: 'quote', message: any): void,
+  
 }>()
 
 import { getChannelMessages, getPrivateChatMessages } from '@/api/talk'
@@ -156,6 +157,7 @@ import {
   inject,
   onMounted,
   onUnmounted,
+  watchEffect
 } from 'vue'
 import { useRoute } from 'vue-router'
 import LoadingList from './LoadingList.vue'
@@ -199,6 +201,10 @@ const route = useRoute()
 const showScrollToBottom = ref(false)
 
 const { activeChannel } = storeToRefs(useSimpleTalkStore())
+const props = defineProps({
+  isSendRedPacketinProgress: Boolean
+})
+
 
 // 消息元素引用和观察器
 const messageRefs = ref<Map<number, HTMLElement>>(new Map())
@@ -216,6 +222,36 @@ const messageObserver = ref<IntersectionObserver | null>(null)
 
 //   return false
 // })
+
+const notLoadAll = computed(() => {
+  const maxIndex =
+    simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1].index
+  console.log('maxIndex', maxIndex, simpleTalk.activeChannel?.lastMessage?.index)
+  if (maxIndex !== simpleTalk.activeChannel?.lastMessage?.index) {
+    return true
+  }
+  return false
+})
+
+
+const scrollToMessagesBottom = async () => {
+  
+  if (unReadCount.value > 0) {
+    console.log('滚动到底部并加载最新消息', unReadCount.value > 0, notLoadAll.value)
+    await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
+    await nextTick()
+    await sleep(100)
+    if (listContainer.value) {
+      listContainer.value.scrollTop = 0
+    }
+  } else {
+    console.log('滚动到底部',12313212)
+    
+    if (listContainer.value) {
+      listContainer.value.scrollTop = 0
+    }
+  }
+}
 
 // 设置消息元素引用
 const setMessageRef = (el: any, message: any) => {
@@ -401,6 +437,7 @@ const handleScroll = (event: Event) => {
       container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
       threshold
     ) {
+      
       console.log('滚动到顶部，准备加载更多数据...')
       loadItems(false).catch(error => {
         console.error('加载更多数据失败:', error)
@@ -492,14 +529,32 @@ onMounted(async () => {
 
   // 初始化消息观察器
   initMessageObserver()
-
+  
   // 等待 DOM 更新后自动加载最新消息
   await nextTick()
-
   if (isMobile) {
     document.addEventListener('click', handleGlobalClick)
   }
+
+  
 })
+
+watch(
+  () => simpleTalk.isSendRedPacketinProgress,
+  async (newVal, oldVal) => {
+    if (!newVal) {
+   
+      try {
+        scrollToMessagesBottom()
+      } catch (error) {
+       
+        console.log(error)
+      }
+    }
+  },
+  { immediate: true,flush: 'post' }
+)
+
 
 // 监听消息变化，确保在有消息时滚动到底部
 watch(
@@ -540,47 +595,21 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-const notLoadAll = computed(() => {
-  const maxIndex =
-    simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1].index
-  console.log('maxIndex', maxIndex, simpleTalk.activeChannel?.lastMessage?.index)
-  if (maxIndex !== simpleTalk.activeChannel?.lastMessage?.index) {
-    return true
-  }
-  return false
-})
 
-watch(
-  () => simpleTalk.isSendRedPacketinProgress,
-  async () => {
-    if (!simpleTalk.isSendRedPacketinProgress) {
-      try {
-          scrollToMessagesBottom()
-      } catch (error) {
-        console.log(error)
-      }
-    }
-  },
-  { immediate: true }
-)
 
-const scrollToMessagesBottom = async () => {
-  debugger
-  if (unReadCount.value > 0) {
-    console.log('滚动到底部并加载最新消息', unReadCount.value > 0, notLoadAll.value)
-    await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
-    await nextTick()
-    await sleep(100)
-    if (listContainer.value) {
-      listContainer.value.scrollTop = 0
-    }
-  } else {
-    console.log('滚动到底部')
-    if (listContainer.value) {
-      listContainer.value.scrollTop = 0
-    }
-  }
-}
+
+
+
+// watchEffect(async () => {
+//   if (!simpleTalk.isSendRedPacketinProgress) {
+//     try {
+//       scrollToMessagesBottom()
+//     } catch (error) {
+//       console.log(error)
+//     }
+//   }
+// })
+
 
 // 监听消息变化，确保在有消息时滚动到底部
 

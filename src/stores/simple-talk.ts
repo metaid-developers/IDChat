@@ -3239,6 +3239,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     async receiveMessage(message: UnifiedChatMessage): Promise<void> {
       try {
+        
         console.log('📩 接收到新消息:', message)
         // 确定频道ID - 支持子群聊
         let channelId: string | undefined;

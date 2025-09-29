@@ -46,6 +46,7 @@ export const useWsStore = defineStore('ws', {
     async init() {
       const selfMetaId = this.selfMetaId
       const rootStore=useRootStore()
+      rootStore.checkWebViewBridge()
       if (!selfMetaId) return
       const config: SocketConfig = {
         url: `${import.meta.env.VITE_SHOW_NOW_WS}`,

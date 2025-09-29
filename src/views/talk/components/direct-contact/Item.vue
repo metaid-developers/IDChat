@@ -90,6 +90,10 @@ const route = useRoute()
 
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
+
+
+
+
 const simpleTalkStore = useSimpleTalkStore()
 const unReadCount = (session: SimpleChannel) => {
   if (
@@ -103,6 +107,7 @@ const unReadCount = (session: SimpleChannel) => {
   return 0
 }
 const computeDecryptedMsg = (session: SimpleChannel) => {
+  
   try {
     if (!session.lastMessage || !session.lastMessage.content) {
       return ''
