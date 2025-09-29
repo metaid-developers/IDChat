@@ -528,12 +528,7 @@ const openImageUploader = (close:any) => {
 
   imageUploader.value?.click()
   close()
-  // close((e)=>{
-  //   console.log("xzxczxczxczx111111c",e)
-  // })
-  // if(rootStore.isWebView){
-  //     needWebRefresh({isNeed:true})
-  // }
+
 }
 
 
