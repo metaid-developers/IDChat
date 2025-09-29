@@ -133,7 +133,8 @@ export const useJobsStore = defineStore('jobs', {
 
     playNotice() {
       
-      if (this.isPlayingNotice) return
+     try {
+       if (this.isPlayingNotice) return
       // const simpleTalkStore=useSimpleTalkStore()
       // const muteStatus= simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.parentGroupId) :
       // simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.id)
@@ -149,7 +150,10 @@ export const useJobsStore = defineStore('jobs', {
         }, 5000)
       }
       audio.src = NoticeAudio
-      audio.play()
+      audio?.play()
+     } catch (error) {
+      console.log(error)
+     }
     },
   },
 })

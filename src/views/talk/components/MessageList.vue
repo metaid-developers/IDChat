@@ -554,13 +554,18 @@ watch(
   () => simpleTalk.isSendRedPacketinProgress,
   async () => {
     if (!simpleTalk.isSendRedPacketinProgress) {
-      scrollToMessagesBottom()
+      try {
+          scrollToMessagesBottom()
+      } catch (error) {
+        console.log(error)
+      }
     }
   },
   { immediate: true }
 )
 
 const scrollToMessagesBottom = async () => {
+  debugger
   if (unReadCount.value > 0) {
     console.log('滚动到底部并加载最新消息', unReadCount.value > 0, notLoadAll.value)
     await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
