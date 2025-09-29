@@ -194,7 +194,7 @@
             <Icon name="red_envelope" class="w-full h-full text-dark-800 dark:text-gray-100" />
           </div>
 
-          <Popover class="relative flex items-center">
+          <Popover  class="relative flex items-center">
             <PopoverButton as="div">
               <div class="p-2 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer">
                 <Icon name="photo_3" class="w-full h-full text-dark-800 dark:text-gray-100" />
@@ -211,7 +211,8 @@
             >
               <PopoverPanel
                 class="absolute z-10 transform top-[-16PX] right-0 -translate-y-full"
-                v-slot="{ close }"
+                v-slot="{close}" 
+              
               >
                 <div
                   class="bg-white dark:bg-gray-700 p-2 rounded-xl shadow-lg w-60 divide-y divide-dark-200 dark:divide-gray-600"
@@ -356,7 +357,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRaw, Ref } from 'vue'
+import { computed, ref, toRaw, Ref, onMounted } from 'vue'
 import { Popover, PopoverButton, PopoverPanel, TransitionRoot } from '@headlessui/vue'
 import { ElMessage, ElPopover, ElMessageBox } from 'element-plus'
 
@@ -387,6 +388,7 @@ import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
 import {needWebRefresh} from '@/wallet-adapters/metalet'
 import { useRootStore } from '@/stores/root'
+
 
 
 interface Props {
@@ -452,6 +454,10 @@ const computeDecryptedMsg = (session: any) => {
     return ''
   }
 }
+
+
+
+
 /** 输入框样式 */
 const isShowingButtonGroup = computed(() => {
   const isMobile = window.innerWidth <= 1024
@@ -514,16 +520,23 @@ const activeChannel = computed(() => {
   return simpleTalk.activeChannel
 })
 
-const openImageUploader = (close: Function) => {
+const openImageUploader = (close:any) => {
   rootStore.checkWebViewBridge()
   if(rootStore.isWebView){
       needWebRefresh({isNeed:false})
   }
 
   imageUploader.value?.click()
-  
   close()
+  // close((e)=>{
+  //   console.log("xzxczxczxczx111111c",e)
+  // })
+  // if(rootStore.isWebView){
+  //     needWebRefresh({isNeed:true})
+  // }
 }
+
+
 
 const openRedPackDialog = () => {
   showRedPacketActionSheet.value = true
