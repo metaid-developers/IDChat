@@ -614,6 +614,7 @@ const popInvite = () => {
 // 监听消息变化，确保在有消息时滚动到底部
 
 function scrollToIndex(index: number) {
+  console.log("9999999",index)
   // 根据消息索引滚动到对应位置
   const targetElement = messageRefs.value.get(index)
   if (targetElement && listContainer.value) {

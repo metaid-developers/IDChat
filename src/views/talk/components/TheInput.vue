@@ -520,7 +520,7 @@ const activeChannel = computed(() => {
   return simpleTalk.activeChannel
 })
 
-const openImageUploader = (close:any) => {
+const openImageUploader = (close:Function) => {
   rootStore.checkWebViewBridge()
   if(rootStore.isWebView){
       needWebRefresh({isNeed:false})
@@ -549,7 +549,7 @@ const closeActionSheet = () => {
 }
 
 const handleImageChange = (e: Event) => {
-  rootStore.checkWebViewBridge()
+   rootStore.checkWebViewBridge()
   if(rootStore.isWebView){
       needWebRefresh({isNeed:true})
   }
