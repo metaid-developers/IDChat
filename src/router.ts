@@ -325,7 +325,7 @@ export const router = createRouter({
         //   ],
         // },
         {
-          path: ':channelId',
+          path: ':channelId/:subId([a-fA-F0-9]{64}i0)?',
           name: 'talkChannel',
           component: () => import('@/views/talk/components/ChannelBody.vue'),
           meta: { KeepAlive: true },
