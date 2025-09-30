@@ -51,7 +51,7 @@ export const useWsStore = defineStore('ws', {
       if (!selfMetaId) return
       const config: SocketConfig = {
         url: `${import.meta.env.VITE_SHOW_NOW_WS}`,
-        path: '/socket-test/socket.io',
+        path:`${import.meta.env.VITE_IDCHAT_PATH_WS}/socket.io`,
         metaid: selfMetaId,
         type:rootStore.isWebView || isIOS || isAndroid ?  'app' : 'pc'
       }

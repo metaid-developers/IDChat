@@ -37,6 +37,7 @@ const MessageList = defineAsyncComponent({
 const MessageListRef = ref()
 const simpleTalk = useSimpleTalkStore()
 function toQuote() {
+  
   MessageListRef.value.scrollToTimeStamp(quote.val!.timestamp)
 }
 

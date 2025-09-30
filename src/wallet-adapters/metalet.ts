@@ -122,7 +122,7 @@ export const getEcdhPublickey = async (pubkey?:string):Promise<{
   try {
     
     const ecdh = await window.metaidwallet.common.ecdh({
-    externalPubKey:pubkey ?? MAN_PUB_KEY //'048add0a6298f10a97785f7dd069eedb83d279a6f03e73deec0549e7d6fcaac4eef2c279cf7608be907a73c89eb44c28db084c27b588f1bd869321a6f104ec642d'//pubkey
+    externalPubKey:pubkey ? pubkey : MAN_PUB_KEY //'048add0a6298f10a97785f7dd069eedb83d279a6f03e73deec0549e7d6fcaac4eef2c279cf7608be907a73c89eb44c28db084c27b588f1bd869321a6f104ec642d'//pubkey
   })
   
   return ecdh

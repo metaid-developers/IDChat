@@ -167,7 +167,9 @@ import { reactive, Ref, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { BindStatus, NodeName, WalletOrigin } from '@/enum'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-
+import {
+  GetUserEcdhPubkeyForPrivateChat
+} from '@/api/talk'
 import { router } from '@/router'
 import { useRoute } from 'vue-router'
 import { GetUserAllInfo, GetUserFollow } from '@/api/aggregation'
@@ -1133,6 +1135,10 @@ async function connectMetalet() {
        closeConnectionModal()
       return
     }
+
+
+   
+
 
     
     

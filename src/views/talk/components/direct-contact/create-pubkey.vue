@@ -25,6 +25,7 @@ import { useEcdhsStore } from '@/stores/ecdh'
 import {
   GetUserEcdhPubkeyForPrivateChat,
 } from '@/api/talk'
+import { useRootStore } from '@/stores/root'
 // const credentialsStore=useCredentialsStore()
 interface Props {
   needModifyPubkey: boolean
@@ -36,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits(['update:needModifyPubkey'])
 const userStore=useUserStore()
+const rootStore=useRootStore()
 const i18n=useI18n()
 const ecdhsStore=useEcdhsStore()
 async function createPubkeyNode() {
@@ -65,6 +67,7 @@ async function createPubkeyNode() {
        userStore.updateUserInfo({
         chatpubkey:ecdh?.ecdhPubKey//credential.publicKey
     })
+     rootStore.updateShowCreatePubkey(false)
     if(props.needModifyPubkey){
       emit('update:needModifyPubkey',false)
     }

@@ -14,6 +14,7 @@ import { getTimestampInSeconds, sleep, tx } from '@/utils/util'
 import { NodeName } from '@/enum'
 import { getMyBlockChatList} from "@/api/chat-notify";
 import { SubChannel } from '@/@types/talk'
+import { useRootStore } from './root'
 
 
 
@@ -1013,6 +1014,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
       this.isInitializing = true
       const userStore = useUserStore()
+      const rootStore=useRootStore()
       const currentUserMetaId = userStore.last?.metaid
       
       // 确保 Map 对象正确初始化（处理持久化恢复问题）
@@ -1070,6 +1072,21 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         this.isInitialized = true
         console.log(`✅ 用户 ${currentUserMetaId} 的聊天系统初始化成功`)
+
+        
+         if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
+          
+          const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last?.metaid)
+          if (ecdhRes?.chatPublicKey) {
+          userStore.updateUserInfo({
+          chatpubkey: ecdhRes?.chatPublicKey
+          })
+          rootStore.updateShowCreatePubkey(false)
+          }else{
+          rootStore.updateShowCreatePubkey(true)
+          }
+      }
+
       } catch (error) {
         console.error('❌ 聊天系统初始化失败:', error)
         throw error

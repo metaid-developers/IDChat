@@ -341,7 +341,9 @@ export const getChannels = async ({
         if(Number(channel.type) == 2){
           if(channel?.userInfo){
                if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
+                
                 const ecdh=await getEcdhPublickey(channel.userInfo.chatPublicKey)
+                
                 if(ecdh){
                   
                       ecdhsStore.insert(ecdh,ecdh?.externalPubKey)

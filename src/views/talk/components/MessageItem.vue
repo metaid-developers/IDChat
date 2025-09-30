@@ -56,6 +56,7 @@
     encryption: message.replyInfo?.encryption,
     timestamp: message.replyInfo!.timestamp}"
         v-bind="$attrs"
+        @toTimeStamp="handlerScrollIndex"
         :isMyMessage="(isMyMessage as boolean)"
       />
 
@@ -396,6 +397,7 @@ import {
   defineProps,
   withDefaults,
   defineEmits,
+  useAttrs,
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatTimestamp, decryptedMessage, sendMessage } from '@/utils/talk'
@@ -515,6 +517,11 @@ const translateStatus: Ref<TranslateStatus> = ref('hidden')
 const translatedContent = ref('')
 /** 翻译 end */
 
+
+function handlerScrollIndex(index:number){
+  
+  emit("to-time-stamp",index)
+}
 
 
 function toPrivateChat(message:ChatMessageItem){

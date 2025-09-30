@@ -32,7 +32,7 @@
         </template>
         <div
           class="whitespace-nowrap cursor-pointer select-none"
-          @click="toIndex(quote?.index)"
+          @click="emit('toTimeStamp',quote?.index)"
         >
           {{ $t('Talk.Go to the original position') }}
         </div>
@@ -85,10 +85,7 @@ const previewImage = (image: string) => {
   imagePreview.visibale = true
 }
 
-const toIndex=(index:any)=>{
-  
-  emit('toTimeStamp', index)
-}
+
 </script>
 
 <style lang="scss" scoped src="./MessageItemQuote.scss"></style>
