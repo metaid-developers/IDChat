@@ -281,6 +281,9 @@
       "getRoleError": "获取用户权限信息错误,请刷新重试",
       "Add": {
         "BlackList": "移入黑名单"
+      },
+      "Join": {
+        "Main_Neeed": "访客身份用户必须先登录后加入主频道才可以访问发布频道内容"
       }
     },
     "Community": {

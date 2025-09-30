@@ -26,8 +26,10 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { Back } from '@element-plus/icons-vue'
 import type { SimpleChannel } from '@/@types/simple-chat.d'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 const simpleTalkStore = useSimpleTalkStore()
 const { activeChannel } = storeToRefs(useSimpleTalkStore())
+const router=useRouter()
 // 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
 const subchannels = computed(() => {
   console.log('simpleTalkStore.currSubChannels', simpleTalkStore.currSubChannels)
@@ -35,7 +37,14 @@ const subchannels = computed(() => {
 })
 const goChannel = () => {
   // 这里可以使用路由跳转或其他方式实现导航
-  simpleTalkStore.setActiveChannel(simpleTalkStore.activeChannel!.parentGroupId!)
+  router.push({
+     name: 'talkChannel',
+    params:{
+      communityId:'public',
+      channelId:simpleTalkStore.activeChannel!.parentGroupId!
+    }
+  })
+  //simpleTalkStore.setActiveChannel(simpleTalkStore.activeChannel!.parentGroupId!)
 }
 
 const parentGroupInfo=computed(()=>{

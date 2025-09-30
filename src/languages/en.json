@@ -247,6 +247,9 @@
       "getRoleError": "Failed to retrieve user permission information. Please refresh and try again",
       "Add": {
         "BlackList": "Move to blocklist"
+      },
+      "Join": {
+        "Main_Neeed": "Visitor users must log in and join the main channel before they can access the content of the publication channel"
       }
     },
     "Community": {

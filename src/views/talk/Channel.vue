@@ -82,19 +82,22 @@ import CreateBroadcastChannelModal from './components/modals/CreateBroadcastChan
 //import CreateGroupTypeModal from './components/modals/CreateGroupTypeModal.vue'
 import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
+import { useI18n } from 'vue-i18n'
+
 
 // const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const user = useUserStore()
 const route = useRoute()
 const layout = useLayoutStore()
+const i18n=useI18n()
 console.log('route', route)
 // onMounted(()=>{
   
 //   // if(route.path.indexOf('@me') < 0){
 //   //   layout.$patch({isShowLeftNav:true})
 //   // }
-//   debugger
+//   
 // })
 
 
@@ -164,34 +167,77 @@ async function initChannelGuestMode(channelId: string) {
   // 4. 接受邀请逻辑
 }
 
-const { communityId, channelId } = route.params as { communityId: string; channelId: string }
+const { communityId, channelId,subId } = route.params as { communityId: string; channelId: string,subId?:string }
 
 watch(
   () => route.params,
   (newVal, oldVal) => {
+    
     if (newVal.channelId != oldVal.channelId) {
-      resolve(newVal.communityId as string, newVal.channelId as string)
+      
+      if(newVal?.subId && newVal?.subId !== oldVal?.subId){
+        
+        resolve(newVal.communityId as string, newVal.channelId as string,newVal.subId as string)
+      }else{
+        resolve(newVal.communityId as string, newVal.channelId as string)
+      }
+
+      
+    }else{
+      
+      if(oldVal.subId){
+        
+         resolve(newVal.communityId as string, newVal.channelId as string)
+      }else if(newVal.subId){
+        
+         resolve(newVal.communityId as string, newVal.channelId as string,newVal.subId as string)
+      }
     }
   }
 )
 
+
+
+
 // 解析 communityId 为 metaName 的情况
-async function resolve(communityId: string, channelId: string) {
-  console.log('解析 communityId:', communityId, channelId)
+async function resolve(communityId: string, channelId: string,subId?:string) {
+  console.log('解析 communityId:', communityId, channelId,subId)
 
   if (isPublicChannel(communityId)) {
     if (!simpleTalk.isInitialized) {
       await simpleTalk.init()
     }
     if (simpleTalk.channels.find(c => c.id === channelId)) {
+       
+
       if (simpleTalk.activeChannelId !== channelId) {
-        console.log('频道已存在，直接激活:', channelId)
+        if(channelId && subId){
+        
+        await simpleTalk.enterSubGroupChat(subId)
+       }else{
+        
+           console.log('频道已存在，直接激活:', channelId)
         await simpleTalk.setActiveChannel(channelId)
+       }
+
+     
+      }else{
+         if(channelId && subId){
+        
+        await simpleTalk.enterSubGroupChat(subId)
+       }
+
       }
     } else {
       if (channelId !== 'welcome') {
         // layout.isShowChannelAcceptInviteModal = true
-        await simpleTalk.setActiveChannel(channelId)
+        if(subId){
+          ElMessage.warning(`${i18n.t('Talk.Channel.Join.Main_Neeed')}`)
+          await simpleTalk.setActiveChannel(channelId)
+        }else{
+           await simpleTalk.setActiveChannel(channelId)
+        }
+       
       }
     }
   } else {
@@ -201,7 +247,7 @@ async function resolve(communityId: string, channelId: string) {
     await simpleTalk.setActiveChannel(channelId)
   }
 }
-resolve(communityId, channelId)
+resolve(communityId, channelId,subId)
 
 // watch(
 //   () => talk.communityStatus,

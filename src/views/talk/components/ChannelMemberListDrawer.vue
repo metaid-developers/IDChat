@@ -401,6 +401,8 @@ const isWhiteListCreatBroadcast=computed(()=>{
 })
 
 const currentLink = computed(() => {
+  console.log("route",route.fullPath)
+  
   return window.location.href
 })
 

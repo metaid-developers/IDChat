@@ -59,7 +59,9 @@ import type { SimpleChannel } from '@/@types/simple-chat.d'
 import {MessageType} from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
 import { decrypt, ecdhDecrypt } from '@/utils/crypto'
+import { useRouter } from 'vue-router'
 const simpleTalkStore = useSimpleTalkStore()
+const router=useRouter()
 const i18n=useI18n()
 // 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
 const subchannels = computed(() => {
@@ -84,7 +86,16 @@ const lastMsgContentType = (type: MessageType, content: string, channelId: strin
 
 const goToSubChannel = (channelId: string) => {
   // 跳转到子频道的逻辑
-  simpleTalkStore.enterSubGroupChat(channelId)
+  
+  router.push({
+     name: 'talkChannel',
+    params:{
+      communityId:'public',
+      channelId:simpleTalkStore.activeChannel!.id!,
+      subId:channelId
+    }
+  })
+  //simpleTalkStore.enterSubGroupChat(channelId)
 }
 
 // 获取子频道的未读消息数
