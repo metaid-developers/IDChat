@@ -1643,15 +1643,20 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       if (!channel) {
         console.log(`🔍 频道 ${channelId} 不在当前列表中，尝试创建临时频道...`)
         const temporaryChannel = await this.createTemporaryChannel(channelId)
+       
         
         if (!temporaryChannel) {
           console.error(`❌ 无法创建临时频道: ${channelId}`)
           return
         }
         
+        
         channel = temporaryChannel
         // 将临时频道添加到频道列表中
         this.channels.unshift(channel)
+        if(temporaryChannel.type==='group'){
+          await this.loadGroupChannels(temporaryChannel.id)
+        }
         console.log(`✅ 临时频道已创建并添加到列表: ${channel.name} (${channel.type})`)
       }
 

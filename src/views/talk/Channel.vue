@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onUnmounted, watch,onMounted,onActivated } from 'vue'
+import { onBeforeUnmount, onUnmounted, watch, onMounted, onActivated } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useTalkStore } from '@/stores/talk'
@@ -83,23 +83,22 @@ import CreateBroadcastChannelModal from './components/modals/CreateBroadcastChan
 import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
-
+import { fa } from 'element-plus/es/locale'
 
 // const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const user = useUserStore()
 const route = useRoute()
 const layout = useLayoutStore()
-const i18n=useI18n()
+const i18n = useI18n()
 console.log('route', route)
 // onMounted(()=>{
-  
+
 //   // if(route.path.indexOf('@me') < 0){
 //   //   layout.$patch({isShowLeftNav:true})
 //   // }
-//   
+//
 // })
-
 
 // 初始化 simple-talk store
 const initSimpleTalk = async () => {
@@ -167,77 +166,65 @@ async function initChannelGuestMode(channelId: string) {
   // 4. 接受邀请逻辑
 }
 
-const { communityId, channelId,subId } = route.params as { communityId: string; channelId: string,subId?:string }
+const { communityId, channelId, subId } = route.params as {
+  communityId: string
+  channelId: string
+  subId?: string
+}
 
 watch(
   () => route.params,
   (newVal, oldVal) => {
-    
     if (newVal.channelId != oldVal.channelId) {
-      
-      if(newVal?.subId && newVal?.subId !== oldVal?.subId){
-        
-        resolve(newVal.communityId as string, newVal.channelId as string,newVal.subId as string)
-      }else{
+      if (newVal?.subId && newVal?.subId !== oldVal?.subId) {
+        resolve(newVal.communityId as string, newVal.channelId as string, newVal.subId as string)
+      } else {
         resolve(newVal.communityId as string, newVal.channelId as string)
       }
-
-      
-    }else{
-      
-      if(oldVal.subId){
-        
-         resolve(newVal.communityId as string, newVal.channelId as string)
-      }else if(newVal.subId){
-        
-         resolve(newVal.communityId as string, newVal.channelId as string,newVal.subId as string)
+    } else {
+      if (oldVal.subId) {
+        resolve(newVal.communityId as string, newVal.channelId as string)
+      } else if (newVal.subId) {
+        resolve(newVal.communityId as string, newVal.channelId as string, newVal.subId as string)
       }
     }
   }
 )
 
-
-
-
 // 解析 communityId 为 metaName 的情况
-async function resolve(communityId: string, channelId: string,subId?:string) {
-  console.log('解析 communityId:', communityId, channelId,subId)
+async function resolve(communityId: string, channelId: string, subId?: string) {
+  console.log('解析 communityId:', communityId, channelId, subId)
 
   if (isPublicChannel(communityId)) {
     if (!simpleTalk.isInitialized) {
       await simpleTalk.init()
     }
     if (simpleTalk.channels.find(c => c.id === channelId)) {
-       
-
       if (simpleTalk.activeChannelId !== channelId) {
-        if(channelId && subId){
-        
-        await simpleTalk.enterSubGroupChat(subId)
-       }else{
-        
-           console.log('频道已存在，直接激活:', channelId)
-        await simpleTalk.setActiveChannel(channelId)
-       }
-
-     
-      }else{
-         if(channelId && subId){
-        
-        await simpleTalk.enterSubGroupChat(subId)
-       }
-
+        console.log('切换频道:subId', subId)
+        if (channelId && subId) {
+          await simpleTalk.enterSubGroupChat(subId)
+        } else {
+          console.log('频道已存在，直接激活:', channelId)
+          await simpleTalk.setActiveChannel(channelId)
+        }
+      } else {
+        if (channelId && subId) {
+          await simpleTalk.enterSubGroupChat(subId)
+        }
       }
     } else {
       if (channelId !== 'welcome') {
-        // layout.isShowChannelAcceptInviteModal = true
-        if(subId){
-          ElMessage.warning(`${i18n.t('Talk.Channel.Join.Main_Neeed')}`)
+        console.log('频道不存在，尝试创建或获取:', channelId)
+        if (subId) {
+          // ElMessage.warning(`${i18n.t('Talk.Channel.Join.Main_Neeed')}`)
+          layout.isShowLoading = true
           await simpleTalk.setActiveChannel(channelId)
-        }else{
-           await simpleTalk.setActiveChannel(channelId)
+          await simpleTalk.enterSubGroupChat(subId)
+          layout.isShowLoading = false
+        } else {
+          await simpleTalk.setActiveChannel(channelId)
         }
-       
       }
     }
   } else {
@@ -247,7 +234,7 @@ async function resolve(communityId: string, channelId: string,subId?:string) {
     await simpleTalk.setActiveChannel(channelId)
   }
 }
-resolve(communityId, channelId,subId)
+resolve(communityId, channelId, subId)
 
 // watch(
 //   () => talk.communityStatus,
