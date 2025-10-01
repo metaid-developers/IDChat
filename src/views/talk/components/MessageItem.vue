@@ -788,7 +788,7 @@ const isChatGroupLink = computed(() => {
 
   // 检测群聊链接的正则表达式
   const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
-  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+i0))?/i
+  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
   const isGroupLink = groupLinkPattern.test(messageContent)
   const isSubChannelLink = subChannelLinkPattern.test(messageContent)
 
@@ -796,6 +796,7 @@ const isChatGroupLink = computed(() => {
   if (isGroupLink  && !channelInfo.value) {
         const match = messageContent.match(groupLinkPattern)
         if (match) {
+          
         const pinId = match[1]
         fetchChannelInfo(pinId+'i0')
         }
@@ -829,14 +830,15 @@ const groupLinkInfo = computed(() => {
   )
 
   const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
-  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+i0))?/i
+  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
 
   const match = messageContent.match(groupLinkPattern)
   const subChannleMatch= messageContent.match(subChannelLinkPattern)
 
-  if (match && !subChannleMatch) {
+  if (match && !subChannleMatch[2]) {
     
-    const pinId = match[1]
+    const pinId = match[1] + 'i0'
+    
     return {
       pinId,
       groupName: channelInfo.value?.roomName ,
@@ -845,10 +847,10 @@ const groupLinkInfo = computed(() => {
       fullUrl: messageContent,
       creator:channelInfo.value?.createUserInfo?.name || '',
     }
-  }else if(subChannleMatch){
+  }else if(subChannleMatch[2]){
     console.log("subChannleMatch",messageContent)
     
-    const pinId =subChannleMatch[2]
+    const pinId =subChannleMatch[2] + 'i0'
       return {
       pinId,
       groupName: subChannelInfo.value?.channelName ,

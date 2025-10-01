@@ -544,13 +544,14 @@ import btcIcon from '@/assets/images/btc.png'
 import { DB } from '@/utils/db'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
-import { getOneChannel } from '@/api/talk'
+import { getOneChannel,getGroupChannelList } from '@/api/talk'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 
 const showImagePreview = ref(false)
 // 群信息缓存
 const channelInfo = ref<any>(null)
+const subChannelInfo=ref<any>(null)
 interface Props {
   message:UnifiedChatMessage //ChatSessionMessageItem
 }
@@ -614,15 +615,33 @@ const isChatGroupLink = computed(() => {
 
   // 检测群聊链接的正则表达式
   const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
+  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
   const isGroupLink = groupLinkPattern.test(messageContent)
+  const isSubChannelLink = subChannelLinkPattern.test(messageContent)
 
   // 如果是群链接且还没有获取过群信息，则获取群信息
-  if (isGroupLink && !channelInfo.value) {
-    const match = messageContent?.match(groupLinkPattern)
-    if (match) {
-      const pinId = match[1]
-      fetchChannelInfo(pinId+'i0')
+  if (isGroupLink  && !channelInfo.value) {
+        const match = messageContent.match(groupLinkPattern)
+        if (match) {
+          
+        const pinId = match[1]
+        fetchChannelInfo(pinId+'i0')
+        }
+
+      if(isSubChannelLink && !subChannelInfo.value){
+      
+         const subMatch = messageContent.match(subChannelLinkPattern)
+     if (subMatch) {
+      
+      const pinId = subMatch[1]
+      fetchSubChannelInfo(pinId)
     }
+    }
+
+
+   
+
+  
   }
 
   return isGroupLink
@@ -636,6 +655,21 @@ const fetchChannelInfo = async (pinId: string) => {
     console.log('Fetched channel info:', channel)
   } catch (error) {
     console.error('Failed to fetch channel info:', error)
+  }
+}
+
+const fetchSubChannelInfo=async(pinId:string)=>{
+  try {
+    
+    const subChannel = await getGroupChannelList({groupId:pinId})
+   
+    if(subChannel.data.list.length){
+      
+      subChannelInfo.value = subChannel.data.list[0]
+    }
+    
+  } catch (error) {
+    
   }
 }
 
@@ -660,10 +694,15 @@ const groupLinkInfo = computed(() => {
   )
 
   const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
-  const match = messageContent?.match(groupLinkPattern)
+  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
 
-  if (match) {
-    const pinId = match[1]
+  const match = messageContent.match(groupLinkPattern)
+  const subChannleMatch= messageContent.match(subChannelLinkPattern)
+
+  if (match && !subChannleMatch[2]) {
+    
+    const pinId = match[1] + 'i0'
+    
     return {
       pinId,
       groupName: channelInfo.value?.roomName ,
@@ -672,8 +711,20 @@ const groupLinkInfo = computed(() => {
       fullUrl: messageContent,
       creator:channelInfo.value?.createUserInfo?.name || '',
     }
+  }else if(subChannleMatch[2]){
+    console.log("subChannleMatch",messageContent)
+    
+    const pinId =subChannleMatch[2] + 'i0'
+      return {
+      pinId,
+      groupName: subChannelInfo.value?.channelName ,
+      groupAvatar: subChannelInfo.value?.channelIcon || '',
+      memberCount: channelInfo.value?.userCount || 0,
+      fullUrl: messageContent,
+      creator:channelInfo.value?.createUserInfo?.name || '',
+    }
   }
-
+  
   return {
     pinId: '',
     groupName: 'Group Chat',

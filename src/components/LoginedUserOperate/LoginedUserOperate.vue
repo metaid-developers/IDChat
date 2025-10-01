@@ -10,20 +10,20 @@
     <img class="metanameLogo" :src="MetaNameLogo" alt="" />
   </a> -->
 
-  <template v-if="!connectionStore.connected && !rootStore.isWebView">
+  <template v-if="!connectionStore.connected && !isAndroid && !isIOS && !rootStore.isWebView">
     <a class="main-border primary connect-wallet" @click="openConnectionModal">{{
       $t('Login.connectWallet')
     }}</a>
   </template>
 
-  <template v-else-if="!credentialsStore.get && !rootStore.isWebView">
+  <template v-else-if="!credentialsStore.get && !isAndroid && !isIOS && !rootStore.isWebView">
     <a class="main-border primary connect-wallet" @click="credentialsStore.login()">{{
       $t('Login.authorize')
     }}</a>
   </template>
 
   <template v-else>
-    <div class="user-warp flex flex-align-center">
+    <div class="user-warp flex flex-align-center" v-if="userStore.isAuthorized">
       <template v-if="!isMobile">
         <!-- MetaName -->
         <!-- <a
@@ -186,6 +186,9 @@ import { useCredentialsStore } from '@/stores/credentials'
 import btcIcon from '@/assets/images/btc.png'
 import mvcIcon from '@/assets/images/mvc.png'
 import { CaretRight } from '@element-plus/icons-vue'
+import { isAndroid, isIOS } from '@/stores/root'
+
+
 const { openConnectionModal } = useConnectionModal()
 
 const connectionStore = useConnectionStore()

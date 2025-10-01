@@ -168,11 +168,13 @@ const actions = computed(() => {
           message?.protocol
         )
         console.log("decryptedMessageContent",decryptedMessageContent)
-        
+     
+        const fromSubChannel=simpleTalk.activeChannel?.type == 'sub-group'
         if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
           data = {
             communityId: '', // simpleTalk.activeCommunityId,
-            groupId: simpleTalk.activeChannelId,
+            groupId:fromSubChannel ? simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
+            channelId:fromSubChannel ? simpleTalk.activeChannelId : '',
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -189,7 +191,9 @@ const actions = computed(() => {
         } else if (containsString(props.message.protocol, NodeName.SimpleFileGroupChat)) {
           data = {
             communityId: '', // talk.activeCommunityId,
-            groupId: simpleTalk.activeChannelId,
+            // groupId: simpleTalk.activeChannelId,
+            groupId:fromSubChannel ? simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
+            channelId:fromSubChannel ? simpleTalk.activeChannelId : '',
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -206,7 +210,9 @@ const actions = computed(() => {
         } else {
           data = {
             communityId: '', // talk.activeCommunityId,
-            groupId: simpleTalk.activeChannelId,
+            // groupId: simpleTalk.activeChannelId,
+            groupId:fromSubChannel ? simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
+            channelId:fromSubChannel ? simpleTalk.activeChannelId : '',
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -222,6 +228,7 @@ const actions = computed(() => {
           }
         }
         // 复制该消息内容到剪贴板
+        
         emit('toBuzz', data)
       },
     })
