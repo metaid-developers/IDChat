@@ -15,7 +15,7 @@ import { KeepAlive } from 'vue'
 //export const routerHistory = createWebHistory()
 // import.meta.env.MODE == 'development' ? '/' : '/chat/'
 export const routerHistory = createWebHistory(
-  //import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso' ? '/chat/' : '/'
+  import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso' ? '/chat/' : '/'
 )
 export const router = createRouter({
   history: routerHistory,
