@@ -10,13 +10,11 @@ import { GetBandProposalList } from '@/api/strapi'
 import { useLayoutStore } from './stores/layout'
 import { KeepAlive } from 'vue'
 
-
 //import.meta.env.VITE_BASE_URL
 //export const routerHistory = createWebHistory()
 // import.meta.env.MODE == 'development' ? '/' : '/chat/'
-export const routerHistory = createWebHistory(
-  import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso' ? '/chat/' : '/'
-)
+export const routerHistory = createWebHistory()
+//import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso' ? '/chat/' : '/'
 export const router = createRouter({
   history: routerHistory,
   strict: true,
@@ -551,7 +549,7 @@ window._go = go
 router.beforeEach(async (to, from, next) => {
   const layout = useLayoutStore()
   const rootStore = useRootStore()
-  const userStore=useUserStore()
+  const userStore = useUserStore()
   rootStore.checkWebViewBridge()
   if (to.path === '/') {
     layout.$patch({ isShowLeftNav: true })
@@ -663,22 +661,16 @@ router.beforeEach(async (to, from, next) => {
 
     // layout.$patch({ isShowLeftNav: true })
   } else {
-    
     if (from.name !== to.name && !from.name) {
-      if(!userStore.isAuthorized){
-            layout.$patch({ isShowLeftNav: false })
-      }else{
-        if(to.params.channelId && to.params.channelId !== 'welcome'){
-          
+      if (!userStore.isAuthorized) {
+        layout.$patch({ isShowLeftNav: false })
+      } else {
+        if (to.params.channelId && to.params.channelId !== 'welcome') {
           layout.$patch({ isShowLeftNav: false })
-        }else{
-          
+        } else {
           layout.$patch({ isShowLeftNav: true })
         }
-
-            
       }
-  
     }
 
     next()
