@@ -20,7 +20,7 @@
             v-model:needModifyPubkey="needModifyPubkey"
             v-if="userStore.isAuthorized && rootStore.showCreatePubkey && !needModifyPubkey"
           />
-          <Welcome v-show="!_allChannels?.length && layout.isShowLeftNav "></Welcome>
+          <Welcome v-show="!_allChannels?.length && layout.isShowLeftNav"></Welcome>
 
           <!-- 联系人列表 -->
           <div class="overflow-y-auto" v-show="userStore.isAuthorized">
@@ -58,9 +58,9 @@ import { useRootStore } from '@/stores/root'
 const layout = useLayoutStore()
 const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
-const rootStore=useRootStore()
+const rootStore = useRootStore()
 const needModifyPubkey = ref(false)
-const { channels } = storeToRefs(useSimpleTalkStore())
+const { allChannels } = storeToRefs(useSimpleTalkStore())
 
 // console.log('talkStore', simpleTalkStore.allChannels)
 
@@ -71,7 +71,7 @@ const getSessionKey = (session: any) => {
 }
 
 const _allChannels = computed(() => {
-  return channels.value.filter(
+  return allChannels.value.filter(
     channel => (channel.type === 'private' || channel.type === 'group') && !channel.isTemporary
   )
 })

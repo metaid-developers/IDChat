@@ -97,7 +97,7 @@
           </template>
           <Transition name="fade-scroll-button" mode="out-in">
             <div
-              v-show="showScrollToBottom || unReadCount > 0"
+              v-show="showScrollToBottom || unReadCount > 0 || notLoadAll"
               class="scroll-to-bottom-button cursor-pointer"
               @click="scrollToMessagesBottom()"
             >
@@ -141,8 +141,7 @@
 <script setup lang="ts">
 // 定义组件的自定义事件
 const emit = defineEmits<{
-  (e: 'quote', message: any): void,
-  
+  (e: 'quote', message: any): void
 }>()
 
 import { getChannelMessages, getPrivateChatMessages } from '@/api/talk'
@@ -157,7 +156,7 @@ import {
   inject,
   onMounted,
   onUnmounted,
-  watchEffect
+  watchEffect,
 } from 'vue'
 import { useRoute } from 'vue-router'
 import LoadingList from './LoadingList.vue'
@@ -202,9 +201,8 @@ const showScrollToBottom = ref(false)
 
 const { activeChannel } = storeToRefs(useSimpleTalkStore())
 const props = defineProps({
-  isSendRedPacketinProgress: Boolean
+  isSendRedPacketinProgress: Boolean,
 })
-
 
 // 消息元素引用和观察器
 const messageRefs = ref<Map<number, HTMLElement>>(new Map())
@@ -233,10 +231,8 @@ const notLoadAll = computed(() => {
   return false
 })
 
-
 const scrollToMessagesBottom = async () => {
-  
-  if (unReadCount.value > 0) {
+  if (unReadCount.value > 0 || notLoadAll.value) {
     console.log('滚动到底部并加载最新消息', unReadCount.value > 0, notLoadAll.value)
     await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
     await nextTick()
@@ -245,8 +241,6 @@ const scrollToMessagesBottom = async () => {
       listContainer.value.scrollTop = 0
     }
   } else {
-    console.log('滚动到底部',12313212)
-    
     if (listContainer.value) {
       listContainer.value.scrollTop = 0
     }
@@ -368,18 +362,18 @@ const loadItems = async (isPrepending = false) => {
 
   if (beforeLength === afterLength) {
     isPrepending ? (isNoMoreBottom.value = true) : (isNoMoreTop.value = true)
-  }
-
-  if (isPrepending && listWrapper.value && listContainer.value) {
-    // 添加新内容后，列表总高度会增加
-    const scrollHeightAfter = listWrapper.value.scrollHeight
-    // 将滚动条位置设置为新内容的高度，这样旧内容就回到了原来的位置
-    console.log('保持滚动位置:', {
-      scrollHeightBefore,
-      scrollHeightAfter,
-      addedHeight: scrollHeightAfter - scrollHeightBefore,
-    })
-    listContainer.value.scrollTop = scrollHeightBefore - scrollHeightAfter
+  } else {
+    if (isPrepending && listWrapper.value && listContainer.value) {
+      // 添加新内容后，列表总高度会增加
+      const scrollHeightAfter = listWrapper.value.scrollHeight
+      // 将滚动条位置设置为新内容的高度，这样旧内容就回到了原来的位置
+      console.log('保持滚动位置:', {
+        scrollHeightBefore,
+        scrollHeightAfter,
+        addedHeight: scrollHeightAfter - scrollHeightBefore,
+      })
+      listContainer.value.scrollTop = scrollHeightBefore - scrollHeightAfter
+    }
   }
 
   // 更新加载状态
@@ -421,6 +415,7 @@ const handleScroll = (event: Event) => {
       )
       if (!isNoMoreBottom.value && !isLoadingBottom.value) {
         loadItems(true) // true 表示上滑加载
+        return
       }
     }
     console.log('container.scrollTop', container.scrollTop)
@@ -432,12 +427,11 @@ const handleScroll = (event: Event) => {
     }
 
     // 检查是否滚动到底部
-    const threshold = 100 // 预加载阈值
+    const threshold = 200 // 预加载阈值
     if (
       container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
       threshold
     ) {
-      
       console.log('滚动到顶部，准备加载更多数据...')
       loadItems(false).catch(error => {
         console.error('加载更多数据失败:', error)
@@ -529,32 +523,27 @@ onMounted(async () => {
 
   // 初始化消息观察器
   initMessageObserver()
-  
+
   // 等待 DOM 更新后自动加载最新消息
   await nextTick()
   if (isMobile) {
     document.addEventListener('click', handleGlobalClick)
   }
-
-  
 })
 
 watch(
   () => simpleTalk.isSendRedPacketinProgress,
   async (newVal, oldVal) => {
     if (!newVal) {
-   
       try {
         scrollToMessagesBottom()
       } catch (error) {
-       
         console.log(error)
       }
     }
   },
-  { immediate: true,flush: 'post' }
+  { immediate: true, flush: 'post' }
 )
-
 
 // 监听消息变化，确保在有消息时滚动到底部
 watch(
@@ -595,11 +584,6 @@ const popInvite = () => {
   layout.isShowInviteModal = true
 }
 
-
-
-
-
-
 // watchEffect(async () => {
 //   if (!simpleTalk.isSendRedPacketinProgress) {
 //     try {
@@ -610,15 +594,13 @@ const popInvite = () => {
 //   }
 // })
 
-
 // 监听消息变化，确保在有消息时滚动到底部
 
 function scrollToIndex(index: number) {
- 
-  
   // 根据消息索引滚动到对应位置
   const targetElement = messageRefs.value.get(index)
   if (targetElement && listContainer.value) {
+    console.log('targetElement', targetElement, index)
     // 计算目标元素相对于容器的位置
     const containerRect = listContainer.value.getBoundingClientRect()
     const targetRect = targetElement.getBoundingClientRect()
@@ -648,11 +630,19 @@ function scrollToIndex(index: number) {
     console.log(`📍 滚动到消息索引: ${index}`)
   } else {
     console.warn(`⚠️ 无法找到索引为 ${index} 的消息元素`)
+
+    simpleTalk
+      .loadMessageByIndex(index)
+      .then(() => {
+        loadItems(true)
+      })
+      .catch(error => {
+        console.error('加载指定索引消息失败:', error)
+      })
   }
 }
 
 function scrollToTimeStamp(timestamp: number) {
-  
   // 根据时间戳滚动到对应消息
   const target = document.getElementById(timestamp.toString())
   if (target && messagesScroll.value) {

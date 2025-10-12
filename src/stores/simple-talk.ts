@@ -1820,6 +1820,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
     },
 
+    async loadMessageByIndex(index:number){
+      const channelId=this.activeChannelId;
+      if(!channelId)return;
+      const serverMessages = await this.fetchServerNewsterMessages(channelId, this.activeChannel!, Math.max(0,index-19));
+      this.mergeAndSaveMessages(channelId,[],serverMessages);
+      this.messageCache.set(channelId, serverMessages);
+    },
+
     /**
      * 检查消息是否连续
      * 基于消息的 index 字段判断是否存在缺失的消息
