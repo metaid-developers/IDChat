@@ -225,7 +225,12 @@ const notLoadAll = computed(() => {
   const maxIndex =
     simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1]?.index
   console.log('maxIndex', maxIndex, simpleTalk.activeChannel?.lastMessage?.index)
-  if (maxIndex !== simpleTalk.activeChannel?.lastMessage?.index) {
+  if (
+    simpleTalk.activeChannel &&
+    simpleTalk.activeChannel.lastMessage &&
+    simpleTalk.activeChannel.lastMessage.index &&
+    simpleTalk.activeChannel.lastMessage.index - maxIndex > 2
+  ) {
     return true
   }
   return false
@@ -534,7 +539,7 @@ onMounted(async () => {
 watch(
   () => simpleTalk.isSendRedPacketinProgress,
   async (newVal, oldVal) => {
-    if (!newVal) {
+    if (!newVal && oldVal !== undefined) {
       try {
         scrollToMessagesBottom()
       } catch (error) {

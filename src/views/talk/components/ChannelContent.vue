@@ -1,6 +1,6 @@
 <template>
   <div class="h-full  pb-17.5 lg:pb-20">
-    <MessageList @quote="val => (quote.val = val)" ref="MessageListRef"  />
+    <MessageList @quote="val => (quote.val = val)" ref="MessageListRef" />
   </div>
 
   <div class="fixed bottom-0 left-0 right-0 px-4 lg:absolute">
@@ -37,11 +37,11 @@ const MessageList = defineAsyncComponent({
 const MessageListRef = ref()
 const simpleTalk = useSimpleTalkStore()
 function toQuote() {
-  
   MessageListRef.value.scrollToTimeStamp(quote.val!.timestamp)
 }
 
 function scrollToBottom() {
+  console.log('scrollToBottom')
   MessageListRef.value?.scrollToMessagesBottom()
 }
 

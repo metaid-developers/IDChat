@@ -52,6 +52,7 @@
       :isSession="true"
       v-bind="$attrs"
       :isMyMessage="(isMyMessage as boolean)"
+      @toTimeStamp="handlerScrollIndex"
     />
 
     <div class="flex" :class="[isMyMessage ? 'flex-row-reverse' : '']">
@@ -564,6 +565,11 @@ const emit = defineEmits<{
   (e: 'to-time-stamp', timestamp: number): void
 }>()
 
+function handlerScrollIndex(index:number){
+
+  emit("to-time-stamp",index)
+}
+
 const userStore = useUserStore()
 const simpleTalkStore = useSimpleTalkStore()
 const activeChannel = computed(() => simpleTalkStore.activeChannel)
@@ -623,25 +629,25 @@ const isChatGroupLink = computed(() => {
   if (isGroupLink  && !channelInfo.value) {
         const match = messageContent.match(groupLinkPattern)
         if (match) {
-          
+
         const pinId = match[1]
         fetchChannelInfo(pinId+'i0')
         }
 
       if(isSubChannelLink && !subChannelInfo.value){
-      
+
          const subMatch = messageContent.match(subChannelLinkPattern)
      if (subMatch) {
-      
+
       const pinId = subMatch[1]
       fetchSubChannelInfo(pinId)
     }
     }
 
 
-   
 
-  
+
+
   }
 
   return isGroupLink
@@ -660,16 +666,16 @@ const fetchChannelInfo = async (pinId: string) => {
 
 const fetchSubChannelInfo=async(pinId:string)=>{
   try {
-    
+
     const subChannel = await getGroupChannelList({groupId:pinId})
-   
+
     if(subChannel.data.list.length){
-      
+
       subChannelInfo.value = subChannel.data.list[0]
     }
-    
+
   } catch (error) {
-    
+
   }
 }
 
@@ -700,9 +706,9 @@ const groupLinkInfo = computed(() => {
   const subChannleMatch= messageContent.match(subChannelLinkPattern)
 
   if (match && !subChannleMatch[2]) {
-    
+
     const pinId = match[1] + 'i0'
-    
+
     return {
       pinId,
       groupName: channelInfo.value?.roomName ,
@@ -713,7 +719,7 @@ const groupLinkInfo = computed(() => {
     }
   }else if(subChannleMatch[2]){
     console.log("subChannleMatch",messageContent)
-    
+
     const pinId =subChannleMatch[2] + 'i0'
       return {
       pinId,
@@ -724,7 +730,7 @@ const groupLinkInfo = computed(() => {
       creator:channelInfo.value?.createUserInfo?.name || '',
     }
   }
-  
+
   return {
     pinId: '',
     groupName: 'Group Chat',
