@@ -13,8 +13,8 @@ import { KeepAlive } from 'vue'
 //import.meta.env.VITE_BASE_URL
 //export const routerHistory = createWebHistory()
 // import.meta.env.MODE == 'development' ? '/' : '/chat/'
-export const routerHistory = createWebHistory()
-//import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso' ? '/chat/' : '/'
+export const routerHistory = createWebHistory(import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso' ? '/chat/' : '/')
+
 export const router = createRouter({
   history: routerHistory,
   strict: true,
