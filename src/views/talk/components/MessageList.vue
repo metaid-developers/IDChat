@@ -275,10 +275,20 @@ const initMessageObserver = () => {
           const messageIndex = parseInt(messageElement.getAttribute('data-message-index') || '0')
           // 更新最后已读索引
           if (simpleTalk.activeChannelId && messageIndex >= 0) {
-            console.log(`📖 消息 ${messageIndex} 进入视图，更新已读索引`)
-            simpleTalk.setLastReadIndex(simpleTalk.activeChannelId, messageIndex).catch(error => {
-              console.warn('❌ 更新已读索引失败:', error)
-            })
+            // 查找对应的消息对象来获取时间戳
+            const message = simpleTalk.activeChannelMessages.find(msg => msg.index === messageIndex)
+            const messageTimestamp = message?.timestamp
+
+            console.log(
+              `📖 消息 ${messageIndex} 进入视图，更新已读索引${
+                messageTimestamp ? ` (时间戳: ${new Date(messageTimestamp).toLocaleString()})` : ''
+              }`
+            )
+            simpleTalk
+              .setLastReadIndex(simpleTalk.activeChannelId, messageIndex, messageTimestamp)
+              .catch(error => {
+                console.warn('❌ 更新已读索引失败:', error)
+              })
           }
         }
       })

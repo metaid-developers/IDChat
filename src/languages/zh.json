@@ -1432,7 +1432,9 @@
     "downloading": "正在下载图片...",
     "success": "图片下载成功",
     "failed": "图片下载失败",
-    "error": "下载过程中发生错误"
+    "error": "下载过程中发生错误",
+    "share_image": "分享图片",
+    "mobile_save_tip": "请长按图片选择\"保存到相册\""
   },
   "btcSameAsMvcError": "Metalet BTC当前地址与MVC地址不一致，请切换BTC地址与MVC地址一致后再进行使用",
   "redpack_claim_over": "红包已抢完！",

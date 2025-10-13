@@ -28,7 +28,7 @@ import { useRootStore } from './root'
 class SimpleChatDB {
   private db: IDBDatabase | null = null
   private readonly DB_NAME = 'SimpleChatDB'
-  private readonly DB_VERSION = 3 // 增加版本号以确保索引更新
+  private readonly DB_VERSION = 4 // 增加版本号以添加 lastReadIndex 表
   private userPrefix = 'default_' // 用户数据前缀
 
   constructor(userMetaId?: string) {
@@ -148,6 +148,33 @@ class SimpleChatDB {
             }
           }
         }
+
+        // 创建 lastReadIndex 表（版本4新增）
+        if (!this.db.objectStoreNames.contains('lastReadIndexes')) {
+          const lastReadIndexStore = this.db.createObjectStore('lastReadIndexes', { keyPath: 'id' })
+          lastReadIndexStore.createIndex('userMetaId', 'userMetaId')
+          lastReadIndexStore.createIndex('channelId', 'channelId')
+          lastReadIndexStore.createIndex('userChannel', ['userMetaId', 'channelId'], { unique: true })
+          console.log('✅ 创建 lastReadIndex 表')
+        } else {
+          // 表已存在，检查并添加缺失的索引
+          const transaction = (event.target as IDBOpenDBRequest).transaction
+          if (transaction) {
+            const lastReadIndexStore = transaction.objectStore('lastReadIndexes')
+            if (!lastReadIndexStore.indexNames.contains('userMetaId')) {
+              lastReadIndexStore.createIndex('userMetaId', 'userMetaId')
+              console.log('✅ 添加 lastReadIndex 表 userMetaId 索引')
+            }
+            if (!lastReadIndexStore.indexNames.contains('channelId')) {
+              lastReadIndexStore.createIndex('channelId', 'channelId')
+              console.log('✅ 添加 lastReadIndex 表 channelId 索引')
+            }
+            if (!lastReadIndexStore.indexNames.contains('userChannel')) {
+              lastReadIndexStore.createIndex('userChannel', ['userMetaId', 'channelId'], { unique: true })
+              console.log('✅ 添加 lastReadIndex 表 userChannel 联合索引')
+            }
+          }
+        }
       }
 
       request.onsuccess = () => {
@@ -178,7 +205,7 @@ class SimpleChatDB {
   async clearUserData(): Promise<void> {
     if (!this.db) return
     
-    const transaction = this.db.transaction(['channels', 'messages', 'users', 'redPacketIds'], 'readwrite')
+    const transaction = this.db.transaction(['channels', 'messages', 'users', 'redPacketIds', 'lastReadIndexes'], 'readwrite')
     
     // 清除频道
     const channelStore = transaction.objectStore('channels')
@@ -218,6 +245,19 @@ class SimpleChatDB {
     redPacketRequest.onsuccess = () => {
       const keys = redPacketRequest.result
       keys.forEach(key => redPacketStore.delete(key))
+    }
+
+    // 清除已读索引（基于当前用户的 metaId）
+    const currentUserMetaId = this.userPrefix.replace('user_', '').replace('_', '')
+    if (currentUserMetaId && currentUserMetaId !== 'default') {
+      const lastReadIndexStore = transaction.objectStore('lastReadIndexes')
+      const lastReadIndexIndex = lastReadIndexStore.index('userMetaId')
+      const lastReadIndexRequest = lastReadIndexIndex.getAllKeys(currentUserMetaId)
+      
+      lastReadIndexRequest.onsuccess = () => {
+        const keys = lastReadIndexRequest.result
+        keys.forEach(key => lastReadIndexStore.delete(key))
+      }
     }
   }
 
@@ -770,6 +810,150 @@ class SimpleChatDB {
       request.onerror = () => resolve(false)
     })
   }
+
+  // =================== LastReadIndex 相关方法 ===================
+  
+  /**
+   * 保存用户在某个频道的最后已读索引
+   * @param userMetaId 用户的 MetaId
+   * @param channelId 频道ID
+   * @param messageIndex 消息索引
+   * @param messageTimestamp 可选的消息时间戳，来自UnifiedChatMessage.timestamp
+   */
+  async saveLastReadIndex(userMetaId: string, channelId: string, messageIndex: number, messageTimestamp?: number): Promise<void> {
+    if (!this.db || !userMetaId || !channelId) return
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['lastReadIndexes'], 'readwrite')
+      const store = transaction.objectStore('lastReadIndexes')
+      
+      const record = {
+        id: `${userMetaId}_${channelId}`, // 联合主键
+        userMetaId,
+        channelId,
+        messageIndex,
+        messageTimestamp: messageTimestamp || null, // 最后阅读的消息时间戳
+        updatedAt: Date.now() // 记录更新时间戳
+      }
+      
+      const request = store.put(record)
+      
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  async getLastReadIndexRecord(userMetaId: string, channelId: string): Promise<{channelId: string, messageIndex: number, messageTimestamp: number} | null> {
+    if (!this.db || !userMetaId || !channelId) return null
+
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['lastReadIndexes'], 'readonly')
+      const store = transaction.objectStore('lastReadIndexes')
+      const request = store.get(`${userMetaId}_${channelId}`)
+
+      request.onsuccess = () => {
+        const record = request.result
+        if (record) {
+          resolve({
+            channelId: record.channelId,
+            messageIndex: record.messageIndex,
+            messageTimestamp: record.messageTimestamp || 0
+          })
+        } else {
+          resolve(null)
+        }
+      }
+      request.onerror = () => resolve(null)
+    })
+  }
+
+  /**
+   * 获取用户在某个频道的最后已读索引
+   * @param userMetaId 用户的 MetaId
+   * @param channelId 频道ID
+   * @returns 最后已读的消息索引，未找到则返回 0
+   */
+  async getLastReadIndex(userMetaId: string, channelId: string): Promise<number> {
+    if (!this.db || !userMetaId || !channelId) return 0
+    
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['lastReadIndexes'], 'readonly')
+      const store = transaction.objectStore('lastReadIndexes')
+      const request = store.get(`${userMetaId}_${channelId}`)
+      
+      request.onsuccess = () => {
+        const record = request.result
+        resolve(record ? record.messageIndex : 0)
+      }
+      request.onerror = () => resolve(0)
+    })
+  }
+
+  /**
+   * 获取用户在某个频道的最后已读消息时间戳
+   * @param userMetaId 用户的 MetaId
+   * @param channelId 频道ID
+   * @returns 最后已读的消息时间戳，未找到则返回 0
+   */
+  async getLastReadTimestamp(userMetaId: string, channelId: string): Promise<number> {
+    if (!this.db || !userMetaId || !channelId) return 0
+
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['lastReadIndexes'], 'readonly')
+      const store = transaction.objectStore('lastReadIndexes')
+      const request = store.get(`${userMetaId}_${channelId}`)
+
+      request.onsuccess = () => {
+        const record = request.result
+        resolve(record ? record.messageTimestamp : 0)
+      }
+      request.onerror = () => resolve(0)
+    })
+  }
+
+  /**
+   * 获取用户的所有已读索引记录
+   * @param userMetaId 用户的 MetaId
+   * @returns 该用户的所有已读索引记录
+   */
+  async getAllLastReadIndexes(userMetaId: string): Promise<Array<{channelId: string, messageIndex: number}>> {
+    if (!this.db || !userMetaId) return []
+    
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['lastReadIndexes'], 'readonly')
+      const store = transaction.objectStore('lastReadIndexes')
+      const index = store.index('userMetaId')
+      const request = index.getAll(userMetaId)
+      
+      request.onsuccess = () => {
+        const records = request.result || []
+        const results = records.map(record => ({
+          channelId: record.channelId,
+          messageIndex: record.messageIndex
+        }))
+        resolve(results)
+      }
+      request.onerror = () => resolve([])
+    })
+  }
+
+  /**
+   * 删除用户在某个频道的已读索引记录
+   * @param userMetaId 用户的 MetaId
+   * @param channelId 频道ID
+   */
+  async deleteLastReadIndex(userMetaId: string, channelId: string): Promise<void> {
+    if (!this.db || !userMetaId || !channelId) return
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['lastReadIndexes'], 'readwrite')
+      const store = transaction.objectStore('lastReadIndexes')
+      const request = store.delete(`${userMetaId}_${channelId}`)
+      
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  }
 }
 
 export const useSimpleTalkStore = defineStore('simple-talk', {
@@ -1065,6 +1249,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         await this.syncFromServer().catch(error => {
           console.warn('⚠️ 后台同步失败:', error)
         })
+
+        // 加载已读索引到内存（向后兼容）
+        await this.loadLastReadIndexes()
         console.log('✅ 服务端数据同步完成')
 
         // 4. 恢复上次的激活频道（异步）
@@ -1133,6 +1320,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
        
         // 加载已领取的红包ID
         await this.initReceivedRedPacketIds()
+
+        
       } catch (error) {
         console.error('从本地加载数据失败:', error)
       }
@@ -1151,6 +1340,63 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       } catch (error) {
         console.error('初始化红包ID列表失败:', error)
         this.receivedRedPacketIds = []
+      }
+    },
+
+    /**
+     * 加载已读索引到内存（向后兼容）
+     */
+    async loadLastReadIndexes(): Promise<void> {
+      if (!this.selfMetaId) return
+      
+      try {
+        const lastReadIndexes = await this.db.getAllLastReadIndexes(this.selfMetaId)
+        
+        // 将已读索引更新到对应的频道内存中
+        for (const { channelId, messageIndex } of lastReadIndexes) {
+          const channel = this.channels.find(c => c.id === channelId)
+          if (channel) {
+            channel.lastReadIndex = Math.max(channel.lastReadIndex || 0, messageIndex)
+            console.log(`🔖 频道 ${channelId} 的已读索引更新为 ${channel.lastReadIndex}`)
+          }
+        }
+        
+        console.log(`📂 从本地加载了 ${lastReadIndexes.length} 个已读索引`)
+
+        // 迁移旧数据：将 channel 中的 lastReadIndex 迁移到独立表
+        await this.migrateLastReadIndexes()
+      } catch (error) {
+        console.error('初始化已读索引失败:', error)
+      }
+    },
+
+    /**
+     * 迁移已读索引数据：将 channel 中的 lastReadIndex 迁移到独立表
+     */
+    async migrateLastReadIndexes(): Promise<void> {
+      if (!this.selfMetaId) return
+      
+      try {
+        let migratedCount = 0
+        
+        for (const channel of this.channels) {
+          if (channel.lastReadIndex && channel.lastReadIndex > 0) {
+            // 检查独立表中是否已经存在该记录
+            const existingIndex = await this.db.getLastReadIndex(this.selfMetaId, channel.id)
+            
+            if (existingIndex === 0) {
+              // 独立表中不存在，进行迁移
+              await this.db.saveLastReadIndex(this.selfMetaId, channel.id, channel.lastReadIndex)
+              migratedCount++
+            }
+          }
+        }
+        
+        if (migratedCount > 0) {
+          console.log(`📦 迁移了 ${migratedCount} 个已读索引到独立表`)
+        }
+      } catch (error) {
+        console.error('迁移已读索引失败:', error)
       }
     },
 
@@ -1789,7 +2035,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           return
         }
 
-        const lastReadIndex = channel.lastReadIndex || 0
+        const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
         console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
 
         // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
@@ -1808,9 +2054,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         } else {
           console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
         }
-
+       
         // 4. 本地消息不足或不连续，需要从服务器获取
-        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages)
+        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages,lastReadTimestamp)
         
       } catch (error) {
         console.error('❌ 加载消息失败:', error)
@@ -1928,15 +2174,16 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       channel: SimpleChannel, 
       lastReadIndex: number,
       readMessage: UnifiedChatMessage | null,
-      localMessages: UnifiedChatMessage[]
+      localMessages: UnifiedChatMessage[],
+      lastReadTimestamp: number | null
     ): Promise<void> {
       try {
         let serverMessages: UnifiedChatMessage[] = []
-        
-        if (readMessage&&lastReadIndex>20) {
+
+        if (lastReadTimestamp && lastReadIndex > 20) {
           // 如果有已读消息，以其时间戳为基准获取服务器消息
-          console.log(` 基于已读消息时间戳 ${readMessage.timestamp} 获取服务器消息`)
-          serverMessages = await this.fetchServerMessagesFromTimestamp(channelId, channel, readMessage.timestamp)
+          console.log(` 基于已读消息时间戳 ${lastReadTimestamp} 获取服务器消息`)
+          serverMessages = await this.fetchServerMessagesFromTimestamp(channelId, channel, lastReadTimestamp)
         } else {
           // 没有已读消息，获取最新消息
           console.log(`📡 获取最新服务器消息`)
@@ -2682,16 +2929,26 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     /**
      * 设置频道的最后已读消息索引
      * 只能设置比当前值更大的索引，不能设置更小的值，防止已读状态倒退
+     * 使用用户metaId和channelId作为联合唯一索引，独立存储
+     * @param channelId 频道ID
+     * @param messageIndex 消息索引
+     * @param timestamp 可选的消息时间戳，来自UnifiedChatMessage.timestamp
      */
-    async setLastReadIndex(channelId: string, messageIndex: number): Promise<void> {
+    async setLastReadIndex(channelId: string, messageIndex: number, timestamp?: number): Promise<void> {
       try {
+        if (!this.selfMetaId) {
+          console.warn(`⚠️ 未获取到用户MetaId，无法设置已读索引`)
+          return
+        }
+
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
           console.warn(`⚠️ 未找到频道 ${channelId}，无法设置已读索引`)
           return
         }
 
-        const currentIndex = channel.lastReadIndex || 0
+        // 从独立存储获取当前已读索引
+        const currentIndex = await this.db.getLastReadIndex(this.selfMetaId, channelId)
         
         // 只允许设置比当前值更大的索引
         if (messageIndex <= currentIndex) {
@@ -2699,13 +2956,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           return
         }
 
-        // 更新内存中的 lastReadIndex
+        // 保存到独立的 lastReadIndex 表，使用消息的时间戳
+        await this.db.saveLastReadIndex(this.selfMetaId, channelId, messageIndex, timestamp)
+
+        // 更新内存中的 lastReadIndex（保持向后兼容）
         channel.lastReadIndex = messageIndex
 
-        // 使用安全的序列化方法保存到数据库
-        await this.db.saveChannel(channel)  // saveChannel 方法内部会调用 createCloneableChannel
-
-        console.log(`✅ 频道 ${channelId} 已读索引已从 ${currentIndex} 更新为: ${messageIndex}`)
+        const timestampInfo = timestamp ? ` (消息时间: ${new Date(timestamp).toLocaleString()})` : ''
+        console.log(`✅ 频道 ${channelId} 已读索引已从 ${currentIndex} 更新为: ${messageIndex} (用户: ${this.selfMetaId})${timestampInfo}`)
       } catch (error) {
         console.error('❌ 设置已读索引失败:', error)
         throw error
@@ -2714,10 +2972,81 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
     /**
      * 获取频道的最后已读消息索引
+     * 从独立存储中获取，基于用户metaId和channelId联合索引
      */
-    getLastReadIndex(channelId: string): number {
+    async getLastReadIndex(channelId: string): Promise<number> {
+      try {
+        if (!this.selfMetaId) {
+          console.warn(`⚠️ 未获取到用户MetaId，无法获取已读索引`)
+          return 0
+        }
+
+        // 从独立存储获取已读索引
+        const lastReadIndex = await this.db.getLastReadIndex(this.selfMetaId, channelId)
+        
+        // 同时更新内存中的值（保持向后兼容）
+        const channel = this.channels.find(c => c.id === channelId)
+        if (channel && channel.lastReadIndex !== lastReadIndex) {
+          channel.lastReadIndex = lastReadIndex
+        }
+
+        return lastReadIndex
+      } catch (error) {
+        console.error('❌ 获取已读索引失败:', error)
+        // 降级到从内存中获取
+        const channel = this.channels.find(c => c.id === channelId)
+        return channel?.lastReadIndex || 0
+      }
+    },
+
+    async getLastReadIndexWithTimestamp(channelId: string): Promise<{ index: number, timestamp: number | null }> {
+      try {
+        if (!this.selfMetaId) {
+          console.warn(`⚠️ 未获取到用户MetaId，无法获取已读索引`)
+          return { index: 0, timestamp: null }
+        }
+
+        // 从独立存储获取已读索引和时间戳
+        const record = await this.db.getLastReadIndexRecord(this.selfMetaId, channelId)
+        const lastReadIndex = record ? record.messageIndex : 0
+        const timestamp = record ? record.messageTimestamp : null
+
+        // 同时更新内存中的值（保持向后兼容）
+        const channel = this.channels.find(c => c.id === channelId)
+        if (channel && channel.lastReadIndex !== lastReadIndex) {
+          channel.lastReadIndex = lastReadIndex
+        }
+
+        return { index: lastReadIndex, timestamp }
+      } catch (error) {
+        console.error('❌ 获取已读索引失败:', error)
+        // 降级到从内存中获取
+        const channel = this.channels.find(c => c.id === channelId)
+        return { index: channel?.lastReadIndex || 0, timestamp: null }
+      }
+    },
+
+    /**
+     * 同步获取频道的最后已读消息索引（向后兼容方法）
+     * 从内存中获取，可能不是最新值
+     */
+    getLastReadIndexSync(channelId: string): number {
       const channel = this.channels.find(c => c.id === channelId)
       return channel?.lastReadIndex || 0
+    },
+
+    /**
+     * 清理频道的已读索引（当删除或离开频道时调用）
+     */
+    async cleanupChannelLastReadIndex(channelId: string): Promise<void> {
+      try {
+        if (!this.selfMetaId) return
+
+        await this.db.deleteLastReadIndex(this.selfMetaId, channelId)
+        console.log(`🗑️ 已清理频道 ${channelId} 的已读索引`)
+      } catch (error) {
+        console.error(`❌ 清理频道 ${channelId} 已读索引失败:`, error)
+      }
     },
 
     /**
