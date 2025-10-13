@@ -6,10 +6,28 @@ import SandPayIcon from '@/assets/images/sandPay_title.svg?url'
 import ETHIcon from '@/assets/svg/eth.svg?url'
 import MVC from '@/assets/svg/mvc.svg?url'
 import POLYGON from '@/assets/svg/polygon.svg?url'
-import BSV from '@/assets/images/bsv.png'
 
 import { useUserStore } from './stores/user'
 import { useRootStore } from './stores/root'
+import { getRuntimeConfig } from './config/runtime-config'
+
+// 使用函数而不是常量，这样可以获取最新的配置
+export function getWhiteListCreateBroadcast(): string[] {
+  try {
+    const config = getRuntimeConfig()
+    return config.whiteListCreateBroadcast
+  } catch {
+    // 如果配置未加载，返回默认值
+    return [
+      '16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo',
+      '1APkQsxmFLtVKT9Fng7Z6t7pSJ3q17km1F',
+      '12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ',
+      '18fhajgmPcR6DVn5vQU2AqmkSzoGJBy9oV',
+      '16cuqxU9RBJeTRvh7Ya6Bdk77acTNeeT7v',
+    ]
+  }
+}
+
 export interface Unit {
   unit: string
   sats: number
@@ -44,7 +62,8 @@ export const units: Unit[] = [
   },
 ]
 
-export const whiteListCreateBroadcast=['16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo','1APkQsxmFLtVKT9Fng7Z6t7pSJ3q17km1F','12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ','18fhajgmPcR6DVn5vQU2AqmkSzoGJBy9oV','16cuqxU9RBJeTRvh7Ya6Bdk77acTNeeT7v']
+//export const whiteListCreateBroadcast=['16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo','1APkQsxmFLtVKT9Fng7Z6t7pSJ3q17km1F','12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ','18fhajgmPcR6DVn5vQU2AqmkSzoGJBy9oV','16cuqxU9RBJeTRvh7Ya6Bdk77acTNeeT7v']
+export const whiteListCreateBroadcast = getWhiteListCreateBroadcast()
 
 export const classifyList = [
   // @ts-ignore

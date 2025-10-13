@@ -92,6 +92,7 @@ import LanguageVue from './Language.vue'
 import ThemeVue from './Theme.vue'
 import LinkAccount from './LinkAccount.vue'
 import { EnvMode } from '@/enum'
+import { useRootStore } from '@/stores/root'
 
 interface Props {
   modelValue: boolean
@@ -104,6 +105,7 @@ const userStore = useUserStore()
 const isShowEditProfile = ref(false)
 const isShowLangSet = ref(false)
 const isShowThemeSet = ref(false)
+const rootStore=useRootStore()
 const isShowUploadLinkSet = ref(false)
 const isShowLinkAccount = ref(false)
 const isMainnet = import.meta.env.MODE === EnvMode.Mainnet
@@ -123,6 +125,9 @@ const list = computed(() => {
         return i18n.locale.value.toUpperCase()
       },
       fun: function() {
+        if(rootStore.isWebView){
+          return ElMessage.warning(`${i18n.t('Setting.WebViewLangTip')}`)
+        }
         isShowLangSet.value = true
       },
     },
@@ -137,6 +142,8 @@ const list = computed(() => {
       },
     },
   ]
+
+
   // if (userStore.isAuthorized) {
   //   result.unshift({
   //     name: i18n.t('Setting.Uplink settings'),

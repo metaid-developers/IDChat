@@ -97,13 +97,13 @@
 
         <div class="mt-3  bg-white dark:bg-gray-800 px-4 py-5" @click="copyLink">
           <div class="flex items-center justify-between text-md font-medium">
-            {{$t('Talk.Channel.ShareLink')  }}
+            {{ $t('Talk.Channel.ShareLink') }}
           </div>
           <div
             class="mt-2 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between"
           >
             <div class="word-break break-all">
-              {{$filters.ellipsisMiddle(currentLink) }}
+              {{ $filters.ellipsisMiddle(currentLink) }}
             </div>
             <el-icon
               class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-gray-400"
@@ -321,7 +321,7 @@ import { setChannelAdmins,setChannelWhiteList,setChannelBlockList } from '@/util
 import type {MemberListRes,MemberItem } from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
 import { signMvcMessage,getMvcPublickey } from "@/wallet-adapters/metalet";
-
+import { getRuntimeConfig } from '@/config/runtime-config'
 
 
 
@@ -397,12 +397,14 @@ const isCurrentUserCreator = computed(() => {
 })
 
 const isWhiteListCreatBroadcast=computed(()=>{
-  return whiteListCreateBroadcast.includes(userStore.last?.address)
+  const config = getRuntimeConfig()
+  return config.whiteListCreateBroadcast.includes(userStore.last?.address)
+  //return whiteListCreateBroadcast.includes(userStore.last?.address)
 })
 
 const currentLink = computed(() => {
   console.log("route",route.fullPath)
-  
+
   return window.location.href
 })
 
@@ -598,7 +600,7 @@ const loadMemberPermissions = async () => {
       currentChannelInfo.value.id,
       false // 不强制刷新，使用缓存
     )
-    
+
     if (permissions) {
       memberPermissions.value = permissions
     } else {
@@ -642,7 +644,7 @@ const loadMemberList = async (reset: boolean = false) => {
     if (response && response.list) {
       // 获取需要过滤的用户ID列表
       const excludeIds = new Set<string>()
-      
+
       // 添加创建者ID
       if (memberPermissions.value?.creator?.metaId) {
         excludeIds.add(memberPermissions.value.creator.metaId)
@@ -880,7 +882,7 @@ const handleWhiteList = async (member: MemberItem) => {
 // 处理黑名单权限变更
 const handleBlockList = async (member: MemberItem) => {
   if (!member.metaId || !currentChannelInfo.value) return
-  
+
   try {
     let blockList: string[] = []
     console.log("",memberPermissions)
@@ -902,12 +904,12 @@ const handleBlockList = async (member: MemberItem) => {
       blockList.push(member.metaId)
       ElMessage.success('Added to Blocklist')
     }
-    
+
     const groupId = currentChannelInfo.value.id
     const updateRes = await setChannelBlockList(groupId, blockList)
 
     if (updateRes.status === 'success' && updateRes.txid) {
-      
+
       await simpleTalkStore.getGroupMemberPermissions(groupId, true)
       // 重新加载权限信息
       await loadMemberPermissions()

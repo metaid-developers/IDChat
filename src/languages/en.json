@@ -578,7 +578,8 @@
     "Language": "Language",
     "Theme": "Theme",
     "Edit Profile": "Edit Profile",
-    "Link Account": "Link Account"
+    "Link Account": "Link Account",
+    "WebViewLangTip": "Please go to the App settings interface to switch the language"
   },
   "EditProfile": {
     "intro": "Image can become your profile picture or user name!",

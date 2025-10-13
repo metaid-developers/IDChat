@@ -644,7 +644,8 @@
     "Language": "語言",
     "Theme": "主題",
     "Edit Profile": "編輯個人信息",
-    "Link Account": "賬號綁定"
+    "Link Account": "賬號綁定",
+    "WebViewLangTip": "请前往App设置界面进行语言切换"
   },
   "EditProfile": {
     "intro": "選擇 一张图片 作為您的頭像或用戶名，展現您的個性",
