@@ -545,9 +545,10 @@ import { DB } from '@/utils/db'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
+import { useRootStore } from '@/stores/root'
 const reply: any = inject('Reply')
 const i18n = useI18n()
-
+const rootStore=useRootStore()
 const showImagePreview = ref(false)
 // 群信息缓存
 const channelInfo = ref<any>(null)
@@ -565,6 +566,7 @@ const emit = defineEmits<{
 }>()
 
 const userStore = useUserStore()
+const rootstore=useRootStore()
 const simpleTalkStore = useSimpleTalkStore()
 const activeChannel = computed(() => simpleTalkStore.activeChannel)
 const jobs = useJobsStore()
@@ -799,8 +801,44 @@ const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string)=>{
 //   return ecdhDecrypt(props.message.data.content, privateKeyStr, otherPublicKeyStr)
 // })
 
+// const parseTextMessage = (text: string) => {
+//   if (typeof text == 'undefined') {
+//     return ''
+//   }
+
+//   const HTML = /<\/?.+?>/gi
+//   const COOKIE = /document\.cookie/gi
+//   const HTTP = /(http|https):\/\//gi
+//   const re = /(f|ht){1}(tp|tps):\/\/([\w-]+\S)+[\w-]+([\w-?%#&=]*)?(\/[\w- ./?%#&=]*)?/g
+  
+//   if (HTML.test(text)) {
+//     return '无效输入,别耍花样!'
+//   }
+//   if (COOKIE.test(text)) {
+//     return '无效输入,你想干嘛!'
+//   }
+//   text = text.replace(re, function(url) {
+//     if (HTTP.test(text)) {
+//       if(rootStore.isWebView){
+//         return `<a href=${url} style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
+//       }
+
+//       return `<a href=${url} target="_blank" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
+//     }
+
+//     if(rootStore.isWebView){
+//       return `<a onClick="window.open('http://${text}','_self')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" >${text}</a>`
+//     }
+
+//     return `<a onClick="window.open('http://${text}','_blank')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="_blank">${text}</a>`
+//   })
+//   text = text.replace(/\\n/g, '\n')
+//   return text.replace(/\n/g, '<br />')
+// }
+
+
 const parseTextMessage = (text: string) => {
-  if (typeof text == 'undefined') {
+  if (typeof text === 'undefined') {
     return ''
   }
 
@@ -817,13 +855,22 @@ const parseTextMessage = (text: string) => {
   }
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
-      return `<a href=${url} target="_blank" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
+      return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
     }
-    return `<a onClick="window.open('http://${text}','_blank')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="_blank">${text}</a>`
+    return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
   })
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')
 }
+
+const openWindowTarget = () => {
+  if(rootstore.isWebView){
+    return "_self";
+  }else if (window.innerWidth > 768) {
+    return "_blank";
+  }
+  return "_self";
+};
 
 const redEnvelopeReceiveInfo = computed(() => {
   const content: string = props.message.content

@@ -416,7 +416,7 @@ import { NodeName ,ChatChain} from '@/enum'
 import { containsString } from '@/utils/util'
 import { ElMessage } from 'element-plus'
 import type { ChatMessageItem } from '@/@types/common'
-import { isMobile } from '@/stores/root'
+import { isMobile, useRootStore } from '@/stores/root'
 import { useRouter } from 'vue-router'
 import {getUserInfoByAddress} from '@/api/man'
 import ChatImage from '@/components/ChatImage/ChatImage.vue'
@@ -428,6 +428,7 @@ const i18n = useI18n()
 
 const modals = useModalsStore()
 const userStore = useUserStore()
+const rootstore=useRootStore()
 const simpleTalk= useSimpleTalkStore()
 const layout = useLayoutStore()
 const jobs = useJobsStore()
@@ -593,7 +594,9 @@ const redPackClaimOver = computed(() => {
 })
 
 const openWindowTarget = () => {
-  if (window.innerWidth > 768) {
+  if(rootstore.isWebView){
+    return "_self";
+  }else if (window.innerWidth > 768) {
     return "_blank";
   }
   return "_self";
@@ -619,7 +622,7 @@ const parseTextMessage = (text: string) => {
     if (HTTP.test(text)) {
       return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
     }
-    return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="_blank">${text}</a>`
+    return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
   })
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')

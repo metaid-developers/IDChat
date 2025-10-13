@@ -18,7 +18,7 @@
       </div>
 
       <div class="flex flex-col space-y-4 px-2">
-        <div class="py-1.5">
+        <div class="py-1.5" v-if="rootstore.isWebView">
           <div class="text-dark-800 text-base font-medium mb-3 capitalize">
             {{ $t('Talk.Settings.language') }}
           </div>
@@ -87,7 +87,9 @@ import FlagEn from '@/assets/images/flag_en.png?url'
 import FlagCn from '@/assets/images/flag_cn.png?url'
 import { useI18n } from 'vue-i18n'
 import { ref } from 'vue'
+import { useRootStore } from '@/stores/root'
 const i18n = useI18n()
+const rootstore=useRootStore()
 
 const switchLanguage = (lang: string) => {
   i18n.locale.value = lang

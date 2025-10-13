@@ -150,6 +150,10 @@ const metaletAccountsChangedHandler = () => {
     console.error('Error in metaletAccountsChangedHandler:', error)
   }
 }
+
+
+
+
 const metaletNetworkChangedHandler = (network: Network) => {
   if (useConnectionStore().last.wallet !== 'metalet') return
    if(rootStore.isWebView) return
@@ -204,6 +208,19 @@ const appLoginSuccessHandler= async (data: any) => {
           } catch (error) {
             ElMessage.error(error as any)
             console.error('Error in LoginSuccess handler:', error)
+          }
+        }
+
+
+const appLangChangeHandler= async (lang: string) => {
+    
+          try {
+          if (i18n.locale.value === lang) return
+              i18n.locale.value = lang
+              window.localStorage.setItem('lang', lang)
+          } catch (error) {
+            ElMessage.error(error as any)
+            console.error('Error in SwitchLang handler:', error)
           }
         }
 
@@ -404,6 +421,8 @@ onMounted(async () => {
 
     
            ;(window.metaidwallet as any)?.on('onAccountSwitch',appAccountSwitchHandler)
+         ;(window.metaidwallet as any)?.on('onLanguageChange',appLangChangeHandler)
+           
 
       
 
@@ -538,6 +557,7 @@ onBeforeUnmount(async () => {
     appAccountSwitchHandler
 
     )
+    ;(window.metaidwallet as any)?.removeListener('onLanguageChange',appLangChangeHandler)
 
     clearInterval(accountInterval.value)
   } catch (error) {
