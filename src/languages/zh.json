@@ -1464,5 +1464,6 @@
     "init": {
       "error": "同步数据失败"
     }
-  }
+  },
+  "unread_messages": "未读消息"
 }

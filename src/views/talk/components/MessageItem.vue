@@ -1,5 +1,9 @@
 <template>
   <div>
+    <UnreadMessagesDivider
+      v-if="props.lastReadIndex !== undefined && message.index === props.lastReadIndex + 1"
+      id="unread-divider"
+    />
     <div
       class="w-full relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150   group message-item"
       :class="[{ replying: reply.val?.timestamp === message.timestamp }]"
@@ -423,6 +427,7 @@ import ChatImage from '@/components/ChatImage/ChatImage.vue'
 import btcIcon from '@/assets/images/btc.png'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
+import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 
 const i18n = useI18n()
 
@@ -496,6 +501,7 @@ interface Props {
   message: UnifiedChatMessage
   isSubChannelMsg?:boolean
   isShare?: boolean
+  lastReadIndex?:number
 }
 const props = withDefaults(defineProps<Props>(), {
     isSubChannelMsg:false
@@ -521,7 +527,7 @@ const translatedContent = ref('')
 
 
 function handlerScrollIndex(index:number){
-  
+
   emit("to-time-stamp",index)
 }
 
@@ -652,7 +658,7 @@ const redPacketMessage = computed(() => {
 })
 
 const isMyMessage = computed(() => {
-  
+
   return userStore.last?.metaid === props.message.metaId
 })
 
@@ -799,25 +805,25 @@ const isChatGroupLink = computed(() => {
   if (isGroupLink  && !channelInfo.value) {
         const match = messageContent.match(groupLinkPattern)
         if (match) {
-          
+
         const pinId = match[1]
         fetchChannelInfo(pinId+'i0')
         }
 
       if(isSubChannelLink && !subChannelInfo.value){
-      
+
          const subMatch = messageContent.match(subChannelLinkPattern)
      if (subMatch) {
-      
+
       const pinId = subMatch[1]
       fetchSubChannelInfo(pinId)
     }
     }
 
 
-   
 
-  
+
+
   }
 
   return isGroupLink
@@ -839,9 +845,9 @@ const groupLinkInfo = computed(() => {
   const subChannleMatch= messageContent.match(subChannelLinkPattern)
 
   if (match && !subChannleMatch[2]) {
-    
+
     const pinId = match[1] + 'i0'
-    
+
     return {
       pinId,
       groupName: channelInfo.value?.roomName ,
@@ -852,7 +858,7 @@ const groupLinkInfo = computed(() => {
     }
   }else if(subChannleMatch[2]){
     console.log("subChannleMatch",messageContent)
-    
+
     const pinId =subChannleMatch[2] + 'i0'
       return {
       pinId,
@@ -863,7 +869,7 @@ const groupLinkInfo = computed(() => {
       creator:channelInfo.value?.createUserInfo?.name || '',
     }
   }
-  
+
   return {
     pinId: '',
     groupName: 'Group Chat',
@@ -877,11 +883,11 @@ const groupLinkInfo = computed(() => {
 // 获取群信息
 const fetchChannelInfo = async (pinId: string) => {
   try {
-    
+
     const channel = await getOneChannel(pinId)
-    
+
     channelInfo.value = channel
-    
+
     console.log('Fetched channel info:', channel)
   } catch (error) {
     console.error('Failed to fetch channel info:', error)
@@ -890,16 +896,16 @@ const fetchChannelInfo = async (pinId: string) => {
 
 const fetchSubChannelInfo=async(pinId:string)=>{
   try {
-    
+
     const subChannel = await getGroupChannelList({groupId:pinId})
-   
+
     if(subChannel.data.list.length){
-      
+
       subChannelInfo.value = subChannel.data.list[0]
     }
-    
+
   } catch (error) {
-    
+
   }
 }
 

@@ -3,6 +3,10 @@
     class=" lg:hover:bg-gray-200 lg:dark:hover:bg-gray-950 px-4 py-1.5 relative group transition-all duration-150"
     :class="{ replying: reply.val?.timestamp === message.timestamp }"
   >
+    <UnreadMessagesDivider
+      v-if="props.lastReadIndex !== undefined && message.index === props.lastReadIndex + 1"
+      id="unread-divider"
+    />
     <!-- 消息菜单 -->
     <MessageMenu
       :message="props.message"
@@ -547,6 +551,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
 import { useRootStore } from '@/stores/root'
+import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 const rootStore=useRootStore()
@@ -556,6 +561,7 @@ const channelInfo = ref<any>(null)
 const subChannelInfo=ref<any>(null)
 interface Props {
   message:UnifiedChatMessage //ChatSessionMessageItem
+  lastReadIndex?: number
 }
 const props = withDefaults(defineProps<Props>(), {})
 
@@ -816,7 +822,7 @@ const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string)=>{
 //   const COOKIE = /document\.cookie/gi
 //   const HTTP = /(http|https):\/\//gi
 //   const re = /(f|ht){1}(tp|tps):\/\/([\w-]+\S)+[\w-]+([\w-?%#&=]*)?(\/[\w- ./?%#&=]*)?/g
-  
+
 //   if (HTML.test(text)) {
 //     return '无效输入,别耍花样!'
 //   }

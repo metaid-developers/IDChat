@@ -991,6 +991,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     activeMessageMenuId: '', // 当前显示菜单的消息ID
 
     isSendRedPacketinProgress: false, // 是否正在发送红包
+
+    isSetActiveChannelIdInProgress: false, // 是否正在设置当前激活频道
   }),
 
   getters: {
@@ -1035,6 +1037,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     activeChannelMessages(): UnifiedChatMessage[] {
       return (this.messageCache.get(this.activeChannelId) || []) as UnifiedChatMessage[];
     },
+
+
 
     // 获取所有频道（按最后活跃时间排序）
     allChannels(): SimpleChannel[] {
@@ -1884,7 +1888,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
       // 检查频道是否存在于当前channels列表中
       let channel = this.channels.find(c => c.id === channelId)
-      
+      this.isSetActiveChannelIdInProgress = true
       // 如果频道不存在，尝试创建临时频道
       if (!channel) {
         console.log(`🔍 频道 ${channelId} 不在当前列表中，尝试创建临时频道...`)
@@ -1893,6 +1897,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         if (!temporaryChannel) {
           console.error(`❌ 无法创建临时频道: ${channelId}`)
+          this.isSetActiveChannelIdInProgress = false
           return
         }
         
@@ -1909,7 +1914,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       this.activeChannelId = channelId
 
       // 总是重新加载消息以确保数据最新
-      console.log(`🔄 设置激活频道并加载消息: ${channelId}`)
       await this.loadMessages(channelId)
       console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
 
@@ -1926,6 +1930,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
       // 保存到本地存储
       localStorage.setItem(`lastActiveChannel-${this.selfMetaId}`, channelId)
+      // this.isSetActiveChannelIdInProgress = false
+    },
+
+    setActiveChannelIdInProgress(value: boolean) {
+      this.isSetActiveChannelIdInProgress = value
     },
 
     /**
@@ -2038,25 +2047,25 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
         console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
 
-        // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
-        const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
-        console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
+        // // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
+        // const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
+        // console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
         
-        // 3. 检查本地消息是否充足且连续
-        console.log(`🔍 检查本地消息连续性...`)
-        const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
-        if (localMessages.length >= 20 && messagesAreContinuous) {
-          console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
-          this.messageCache.set(channelId, localMessages)
-          return
-        } else if (localMessages.length >= 20) {
-          console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
-        } else {
-          console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
-        }
+        // // 3. 检查本地消息是否充足且连续
+        // console.log(`🔍 检查本地消息连续性...`)
+        // const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
+        // if (localMessages.length >= 20 && messagesAreContinuous) {
+        //   console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
+        //   this.messageCache.set(channelId, localMessages)
+        //   return
+        // } else if (localMessages.length >= 20) {
+        //   console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
+        // } else {
+        //   console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
+        // }
        
         // 4. 本地消息不足或不连续，需要从服务器获取
-        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages,lastReadTimestamp)
+        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, null, [],lastReadTimestamp)
         
       } catch (error) {
         console.error('❌ 加载消息失败:', error)
@@ -2180,10 +2189,12 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         let serverMessages: UnifiedChatMessage[] = []
 
-        if (lastReadTimestamp && lastReadIndex > 20) {
+        if (lastReadIndex!==0 && channel.lastMessage && channel.lastMessage.index && lastReadIndex < channel.lastMessage.index) {
           // 如果有已读消息，以其时间戳为基准获取服务器消息
           console.log(` 基于已读消息时间戳 ${lastReadTimestamp} 获取服务器消息`)
-          serverMessages = await this.fetchServerMessagesFromTimestamp(channelId, channel, lastReadTimestamp)
+          const startIndex = channel.lastMessage.index-lastReadIndex>20?Math.max(0,lastReadIndex-1):channel.lastMessage.index-22;
+          console.log(` 基于已读消息索引 ${lastReadIndex} 获取服务器消息，从 ${startIndex} 开始`,channel.lastMessage.index,lastReadIndex,startIndex)
+          serverMessages = await this.fetchServerNewsterMessages(channelId, channel,startIndex )
         } else {
           // 没有已读消息，获取最新消息
           console.log(`📡 获取最新服务器消息`)
@@ -2839,7 +2850,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           const result: UnifiedChatResponseData = await getChannelNewestMessages({
             groupId: channelId,
             startIndex: String(startIndex),
-            size: '20' 
+            size: '30' 
           })
           serverMessages = result.list || []
           console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
@@ -2850,7 +2861,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           const result: UnifiedChatResponseData = await getSubChannelNewestMessages({
             channelId: channelId, // 子群聊使用自己的channelId作为groupId
             startIndex: String(startIndex),
-            size: '20'
+            size: '30'
           })
           serverMessages = result.list || []
           console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
@@ -2860,7 +2871,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
              metaId: this.selfMetaId,
             otherMetaId: channelId,
             startIndex: String(startIndex),
-            size: '20'
+            size: '30'
           })
           serverMessages = result.list || []
           console.log(`📡 私聊API返回 ${serverMessages.length} 条消息`)

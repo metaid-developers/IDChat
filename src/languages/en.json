@@ -1466,5 +1466,6 @@
     "init": {
       "error": "Synchronize data failed"
     }
-  }
+  },
+  "unread_messages": "Unread messages"
 }

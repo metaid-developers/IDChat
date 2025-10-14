@@ -1,10 +1,11 @@
 <template>
   <div
-    class="h-full overflow-y-hidden"
-    v-if="
+    class="mask bg-gray-200 dark:bg-gray-900"
+    v-show="
       user.isAuthorized &&
         (layout.isShowMessagesLoading ||
           simpleTalk.isInitialized === false ||
+          simpleTalk.isSetActiveChannelIdInProgress ||
           (simpleTalk.activeChannelMessages.length === 0 &&
             simpleTalk.activeChannel?.lastMessage?.index > 0))
     "
@@ -12,7 +13,7 @@
     <LoadingList />
   </div>
 
-  <div class="h-full relative overflow-y-auto" ref="messagesScroll" id="messagesScroll" v-else>
+  <div class="h-full  relative overflow-y-auto" ref="messagesScroll" id="messagesScroll">
     <el-alert
       :title="$t('user_private_chat_unsupport')"
       type="error"
@@ -20,32 +21,6 @@
       :closable="false"
       v-if="activeChannel?.type === 'private' && !activeChannel.publicKeyStr"
     />
-    <!-- 广播聊天头部 - 在消息列表最上方（简化版提示） -->
-
-    <!-- <div v-if="_welComePage && layout.showWelcomeDescView">
-      <div class="mt-20 px-1 flex text-center  items-center justify-center flex-col">
-        <div class="">
-          <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon>
-        </div>
-        <div class="text-2xl welcome-desc text-zinc-800 mt-3 break-all flex items-center justify-center max-w-[326px]">
-         <span>
-          A Decentralized Messaging App Built on Bitcoin
-         </span>
-        </div>
-        <div class="text-xl mt-5 text-zinc-600 break-all ">
-          Fully Decentralized,Immutable,Uncensorable,and Unhackable
-        </div>
-        <div class="flex flex-col mt-5">
-          <div class="font-medium flex flex-row items-center text-lg">
-            <span>{{ $t('link.metaid.group') }}</span
-            ><el-icon><CaretBottom /></el-icon>
-          </div>
-          <a class="main-border mt-5 text-lg primary p-3" @click="toMetaIdGrop">{{
-            $t('MetaID.official_group')
-          }}</a>
-        </div>
-      </div>
-    </div> -->
 
     <div class="app-container">
       <BroadcastChatHeader />
@@ -69,30 +44,32 @@
           <!-- 使用 v-for 循环渲染列表项 -->
           <template v-if="currentChannelType === 'group' || currentChannelType === 'sub-group'">
             <MessageItem
-              v-for="message in simpleTalk.activeChannelMessages"
-              :key="message.txId || message.timestamp"
-              :message="message"
-              :id="message.timestamp"
-              :data-message-index="message.index"
-              :data-message-mockId="message.mockId || ''"
-              :ref="el => setMessageRef(el, message)"
+              v-for="item in simpleTalk.activeChannelMessages"
+              :key="item.timestamp"
+              :message="item"
+              :id="item.timestamp"
+              :data-message-index="item.index"
+              :data-message-mockId="item.mockId || ''"
+              :ref="el => setMessageRef(el, item)"
               @quote="message => emit('quote', message)"
               @toBuzz="onToBuzz"
               @to-time-stamp="scrollToIndex"
+              :lastReadIndex="lastReadIndex"
             />
           </template>
           <template v-else>
             <MessageItemForSession
-              v-for="message in simpleTalk.activeChannelMessages"
-              :key="message.txId || message.timestamp"
-              :message="message"
-              :data-message-mockId="message.mockId || ''"
-              :data-message-index="message.index"
-              :ref="el => setMessageRef(el, message)"
+              v-for="item in simpleTalk.activeChannelMessages"
+              :key="item.timestamp"
+              :message="item"
+              :data-message-mockId="item.mockId || ''"
+              :data-message-index="item.index"
+              :ref="el => setMessageRef(el, item)"
               @quote="message => emit('quote', message)"
-              :id="message.timestamp"
+              :id="item.timestamp"
               @toBuzz="onToBuzz"
               @to-time-stamp="scrollToIndex"
+              :lastReadIndex="lastReadIndex"
             />
           </template>
           <Transition name="fade-scroll-button" mode="out-in">
@@ -162,6 +139,7 @@ import { useRoute } from 'vue-router'
 import LoadingList from './LoadingList.vue'
 import MessageItem from './MessageItem.vue'
 import MessageItemForSession from './MessageItemForSession.vue'
+import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 import BroadcastChatHeader from '@/components/BroadcastChatHeader.vue'
 import BroadcastChatHeaderBack from '@/components/BroadcastChatHeaderBack.vue'
 import { openLoading, sleep, debounce } from '@/utils/util'
@@ -198,6 +176,8 @@ const buildTx = useBulidTx()
 const messagesScroll = ref<HTMLElement>()
 const route = useRoute()
 const showScrollToBottom = ref(false)
+
+const lastReadIndex = ref(0)
 
 const { activeChannel } = storeToRefs(useSimpleTalkStore())
 const props = defineProps({
@@ -560,6 +540,54 @@ watch(
   { immediate: true, flush: 'post' }
 )
 
+// 监听 isSetActiveChannelIdInProgress 状态变化，当有消息时滚动到最后已读位置
+watch(
+  [() => simpleTalk.isSetActiveChannelIdInProgress, () => simpleTalk.activeChannelMessages.length],
+  async ([isInProgress, messagesLength]) => {
+    if (
+      isInProgress &&
+      messagesLength > 0 &&
+      simpleTalk.activeChannel?.lastReadIndex !== undefined
+    ) {
+      console.log(
+        '🎯 频道切换中且有消息，准备滚动到最后已读位置:',
+        simpleTalk.activeChannel.lastReadIndex
+      )
+
+      lastReadIndex.value = simpleTalk.activeChannel.lastReadIndex
+      // 检查是否有未读消息
+      observeMessages()
+
+      await nextTick()
+
+      // 等待一小段时间确保DOM完全渲染
+      setTimeout(() => {
+        // 查找最后已读消息对应的元素
+        const targetElement = messageRefs.value.get(lastReadIndex.value + 1)
+        if (targetElement && listContainer.value) {
+          console.log('📍 找到最后已读消息元素，滚动到位置:', lastReadIndex)
+
+          // 计算目标元素相对于容器的位置
+          const containerRect = listContainer.value.getBoundingClientRect()
+          const targetRect = targetElement.getBoundingClientRect()
+
+          // 计算需要滚动的距离
+          const scrollOffset = targetRect.top - containerRect.top + listContainer.value.scrollTop
+
+          listContainer.value.scrollTop = scrollOffset - 100 // 预留100px的偏移量，确保消息可见
+        } else {
+          if (listContainer.value) {
+            listContainer.value.scrollTop = 0
+          }
+        }
+        // 设置切换完成状态
+        simpleTalk.setActiveChannelIdInProgress(false)
+      }, 200) // 等待200ms确保DOM渲染完成
+    }
+  },
+  { immediate: true }
+)
+
 // 监听消息变化，确保在有消息时滚动到底部
 watch(
   [() => simpleTalk.activeChannelMessages],
@@ -579,6 +607,8 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+// 监听 lastReadIndex 变化，用户阅读消息后隐藏未读分
 
 onUnmounted(() => {
   if (isMobile) {
@@ -777,6 +807,14 @@ defineExpose({
 // .loading-indicator {
 //   transition: opacity 0.3s ease;
 // }
+.mask {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 29;
+}
 
 .app-container {
   width: 100%;
