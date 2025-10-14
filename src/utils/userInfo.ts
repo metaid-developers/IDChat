@@ -17,6 +17,7 @@ declare global {
     WebViewBridge:any
     metaidwallet: {
       on:()=>any
+      openAppBrowser:(params:{url:string})=>void
       needWebRefresh:(params:{isNeed:boolean})=> Promise<any>
       getAddress: () => Promise<string>
       getUtxos: () => Promise<any[]>

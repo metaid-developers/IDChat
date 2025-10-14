@@ -444,6 +444,7 @@
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-if="translateStatus === 'showing'"
+            @click="handleMessageClick"
           >
             <div class="" v-html="translatedContent"></div>
             <div class="text-xxs text-dark-300 dark:text-gray-400 mt-1 underline">
@@ -462,18 +463,25 @@
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else
-            v-html="
-              parseTextMessage(
-                decryptedMessage(
-                  message?.content,
-                  message?.encryption,
-                  message?.protocol,
-                  message?.isMock,
-                  true
-                )
-              )
-            "
-          ></div>
+            @click="handleMessageClick"
+          
+          >
+            <div
+                class="whitespace-pre-wrap"
+                v-html="
+                  parseTextMessage(
+                    decryptedMessage(
+                      message?.content,
+                      message?.encryption,
+                      message?.protocol,
+                      message?.isMock,
+                      true
+                    )
+                  )
+                "
+              ></div>
+        
+        </div>
           <div
             class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
             :class="[
@@ -484,6 +492,7 @@
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
             v-else
+            @click="handleMessageClick"
           >
             <div
               class="whitespace-pre-wrap"
@@ -547,6 +556,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
 import { useRootStore } from '@/stores/root'
+import {openAppBrowser} from '@/wallet-adapters/metalet'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 const rootStore=useRootStore()
@@ -654,6 +664,18 @@ const isChatGroupLink = computed(() => {
 
   return isGroupLink
 })
+
+const handleMessageClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'A' && target.classList.contains('webview-link')) {
+    event.preventDefault()
+    const url = target.getAttribute('data-webview-url')
+    if (url) {
+      
+      openAppBrowser({ url })
+    }
+  }
+}
 
 // 获取群信息
 const fetchChannelInfo = async (pinId: string) => {
@@ -816,7 +838,7 @@ const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string)=>{
 //   const COOKIE = /document\.cookie/gi
 //   const HTTP = /(http|https):\/\//gi
 //   const re = /(f|ht){1}(tp|tps):\/\/([\w-]+\S)+[\w-]+([\w-?%#&=]*)?(\/[\w- ./?%#&=]*)?/g
-  
+
 //   if (HTML.test(text)) {
 //     return '无效输入,别耍花样!'
 //   }
@@ -861,8 +883,18 @@ const parseTextMessage = (text: string) => {
   }
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
+      if(rootstore.isWebView){
+        return `<a href="javascript:void(0);" data-webview-url="${url}" class="url webview-link" style="text-decoration: underline;cursor: pointer;word-break: break-all;"> ${url} </a>`
+      }
+
       return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
     }
+
+    if(rootstore.isWebView){
+        return `<a href="javascript:void(0);" data-webview-url="http://${text}" class="webview-link" style="text-decoration: underline;cursor: pointer;word-break: break-all;">${text}</a>`
+    }
+
+
     return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
   })
   text = text.replace(/\\n/g, '\n')

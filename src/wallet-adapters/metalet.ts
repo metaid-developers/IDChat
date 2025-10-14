@@ -360,3 +360,14 @@ export const needWebRefresh=async(params:{isNeed:boolean})=>{
       console.log('执行needWebRefresh出错了')
   }
 }
+
+
+export const openAppBrowser=async(params:{url:string})=>{
+  
+  try {
+  checkMetalet()
+  return await window.metaidwallet.openAppBrowser(params)
+  } catch (error) {
+      console.log('执行openAppBrowser出错了')
+  }
+}

@@ -322,6 +322,7 @@
                 message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
               ]"
               v-if="translateStatus === 'showing'"
+              @click="handleMessageClick"
             >
               <div class="" v-html="translatedContent"></div>
               <div class="text-xxs text-dark-300 dark:text-gray-400 mt-1 underline">
@@ -339,6 +340,7 @@
                 message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
               ]"
               v-else
+              @click="handleMessageClick"
             >
               <div
                 class="whitespace-pre-wrap"
@@ -423,7 +425,7 @@ import ChatImage from '@/components/ChatImage/ChatImage.vue'
 import btcIcon from '@/assets/images/btc.png'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
-
+import {openAppBrowser} from '@/wallet-adapters/metalet'
 const i18n = useI18n()
 
 const modals = useModalsStore()
@@ -521,7 +523,7 @@ const translatedContent = ref('')
 
 
 function handlerScrollIndex(index:number){
-  
+
   emit("to-time-stamp",index)
 }
 
@@ -602,6 +604,44 @@ const openWindowTarget = () => {
   return "_self";
 };
 
+// const parseTextMessage = (text: string) => {
+//   if (typeof text === 'undefined') {
+//     return ''
+//   }
+
+//   const HTML = /<\/?.+?>/gi
+//   const COOKIE = /document\.cookie/gi
+//   const HTTP = /(http|https):\/\//gi
+//   const re = /(f|ht){1}(tp|tps):\/\/([\w-]+\S)+[\w-]+([\w-?%#&=]*)?(\/[\w- ./?%#&=]*)?/g
+
+//   if (HTML.test(text)) {
+//     return '无效输入,别耍花样!'
+//   }
+//   if (COOKIE.test(text)) {
+//     return '无效输入,你想干嘛!'
+//   }
+//   // text = text.replace(re, function(url) {
+//   //   if (HTTP.test(text)) {
+//   //     return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
+//   //   }
+//   //   return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
+//   // })
+//     text = text.replace(re, function(url) {
+//     if (HTTP.test(text)) {
+//       if(rootstore.isWebView){
+//         openAppBrowser({url})
+//         return
+//       }
+
+//       return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
+//     }
+
+
+//     return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
+//   })
+//   text = text.replace(/\\n/g, '\n')
+//   return text.replace(/\n/g, '<br />')
+// }
 const parseTextMessage = (text: string) => {
   if (typeof text === 'undefined') {
     return ''
@@ -620,13 +660,37 @@ const parseTextMessage = (text: string) => {
   }
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
+      if(rootstore.isWebView){
+        return `<a href="javascript:void(0);" data-webview-url="${url}" class="url webview-link" style="text-decoration: underline;cursor: pointer;word-break: break-all;"> ${url} </a>`
+      }
+
       return `<a href=${url} target="${openWindowTarget()}" style="text-decoration: underline;cursor: pointer;word-break: break-all;" class="url"> ${url} </a>`
     }
+
+    if(rootstore.isWebView){
+        return `<a href="javascript:void(0);" data-webview-url="http://${text}" class="webview-link" style="text-decoration: underline;cursor: pointer;word-break: break-all;">${text}</a>`
+    }
+
+
     return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
   })
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')
 }
+
+// 处理 webview 链接点击的事件委托
+const handleMessageClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'A' && target.classList.contains('webview-link')) {
+    event.preventDefault()
+    const url = target.getAttribute('data-webview-url')
+    if (url) {
+      
+      openAppBrowser({ url })
+    }
+  }
+}
+
 
 const redPacketReceiveInfo = computed(() => {
   const content: string = props.message.content
@@ -652,7 +716,7 @@ const redPacketMessage = computed(() => {
 })
 
 const isMyMessage = computed(() => {
-  
+
   return userStore.last?.metaid === props.message.metaId
 })
 
@@ -799,25 +863,25 @@ const isChatGroupLink = computed(() => {
   if (isGroupLink  && !channelInfo.value) {
         const match = messageContent.match(groupLinkPattern)
         if (match) {
-          
+
         const pinId = match[1]
         fetchChannelInfo(pinId+'i0')
         }
 
       if(isSubChannelLink && !subChannelInfo.value){
-      
+
          const subMatch = messageContent.match(subChannelLinkPattern)
      if (subMatch) {
-      
+
       const pinId = subMatch[1]
       fetchSubChannelInfo(pinId)
     }
     }
 
 
-   
 
-  
+
+
   }
 
   return isGroupLink
@@ -839,9 +903,9 @@ const groupLinkInfo = computed(() => {
   const subChannleMatch= messageContent.match(subChannelLinkPattern)
 
   if (match && !subChannleMatch[2]) {
-    
+
     const pinId = match[1] + 'i0'
-    
+
     return {
       pinId,
       groupName: channelInfo.value?.roomName ,
@@ -852,7 +916,7 @@ const groupLinkInfo = computed(() => {
     }
   }else if(subChannleMatch[2]){
     console.log("subChannleMatch",messageContent)
-    
+
     const pinId =subChannleMatch[2] + 'i0'
       return {
       pinId,
@@ -863,7 +927,7 @@ const groupLinkInfo = computed(() => {
       creator:channelInfo.value?.createUserInfo?.name || '',
     }
   }
-  
+
   return {
     pinId: '',
     groupName: 'Group Chat',
@@ -877,11 +941,11 @@ const groupLinkInfo = computed(() => {
 // 获取群信息
 const fetchChannelInfo = async (pinId: string) => {
   try {
-    
+
     const channel = await getOneChannel(pinId)
-    
+
     channelInfo.value = channel
-    
+
     console.log('Fetched channel info:', channel)
   } catch (error) {
     console.error('Failed to fetch channel info:', error)
@@ -890,16 +954,16 @@ const fetchChannelInfo = async (pinId: string) => {
 
 const fetchSubChannelInfo=async(pinId:string)=>{
   try {
-    
+
     const subChannel = await getGroupChannelList({groupId:pinId})
-   
+
     if(subChannel.data.list.length){
-      
+
       subChannelInfo.value = subChannel.data.list[0]
     }
-    
+
   } catch (error) {
-    
+
   }
 }
 
