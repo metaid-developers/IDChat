@@ -1432,7 +1432,9 @@
     "downloading": "Downloading image...",
     "success": "Image downloaded successfully",
     "failed": "Image download failed",
-    "error": "An error occurred during download"
+    "error": "An error occurred during download",
+    "share_image": "Share Image",
+    "mobile_save_tip": "Please long press the image and select 'Save to Photos'"
   },
   "btcSameAsMvcError": "The current Metalet BTC address does not match the MVC address. Please switch to a BTC address that matches the MVC address before proceeding",
   "redpack_claim_over": "The redpacket has been claimed over",
@@ -1464,5 +1466,6 @@
     "init": {
       "error": "Synchronize data failed"
     }
-  }
+  },
+  "unread_messages": "Unread messages"
 }

@@ -2216,7 +2216,7 @@ export function changeSymbol(symbol: string) {
 }
 
 /**
- * 下载图片函数
+ * 下载图片函数（支持移动端，解决CORS问题）
  * @param imageUrl 图片URL
  * @param filename 文件名（可选，默认为时间戳）
  * @returns Promise<void>
@@ -2233,33 +2233,143 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
         background: 'rgba(0,0,0,0.3)',
       })
 
-      // 获取图片数据
-      const response = await fetch(imageUrl)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      // 检测是否为移动端
+      const isMobile =
+        isIOS ||
+        isAndroid ||
+        /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+      if (isMobile) {
+        // 移动端优先使用 Image 对象加载，避免 CORS 问题
+        try {
+          // 方法1：尝试使用 Image 对象（不会有 CORS 问题）
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+
+          await new Promise((imgResolve, imgReject) => {
+            img.onload = () => {
+              try {
+                // 创建 Canvas 来转换图片
+                const canvas = document.createElement('canvas')
+                const ctx = canvas.getContext('2d')
+
+                canvas.width = img.width
+                canvas.height = img.height
+
+                ctx?.drawImage(img, 0, 0)
+
+                // 转换为 blob
+                canvas.toBlob(
+                  blob => {
+                    if (blob) {
+                      // 生成文件名
+                      const timestamp = new Date().getTime()
+                      const finalFilename = filename || `image_${timestamp}.jpg`
+
+                      // 尝试使用 Web Share API
+                      if (navigator.share && typeof navigator.canShare === 'function') {
+                        const file = new File([blob], finalFilename, { type: blob.type })
+
+                        if (navigator.canShare({ files: [file] })) {
+                          navigator
+                            .share({
+                              files: [file],
+                              title: '保存图片',
+                            })
+                            .then(() => {
+                              imgResolve(void 0)
+                            })
+                            .catch(() => {
+                              // Share API 失败，使用传统下载
+                              downloadWithBlob(blob, finalFilename)
+                              imgResolve(void 0)
+                            })
+                          return
+                        }
+                      }
+
+                      // 使用传统下载方法
+                      downloadWithBlob(blob, finalFilename)
+                      imgResolve(void 0)
+                    } else {
+                      imgReject(new Error('Canvas to blob failed'))
+                    }
+                  },
+                  'image/jpeg',
+                  0.9
+                )
+              } catch (canvasError) {
+                imgReject(canvasError)
+              }
+            }
+
+            img.onerror = () => {
+              imgReject(new Error('Image load failed'))
+            }
+
+            // 开始加载图片
+            img.src = imageUrl
+          })
+        } catch (mobileError) {
+          console.warn('Mobile canvas method failed:', mobileError)
+
+          // 备用方案：直接在新窗口打开图片
+          const newWindow = window.open(imageUrl, '_blank', 'noopener,noreferrer')
+          if (!newWindow) {
+            throw new Error('无法打开图片')
+          }
+
+          // 移动端提示用户手动保存
+          ElMessage.success('请长按图片选择"保存到相册"')
+        }
+      } else {
+        // 桌面端使用 fetch 方法
+        try {
+          const response = await fetch(imageUrl, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'same-origin',
+            headers: {
+              Accept: 'image/*',
+            },
+          })
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+
+          const blob = await response.blob()
+          const timestamp = new Date().getTime()
+          const fileExtension = blob.type.split('/')[1] || 'jpg'
+          const finalFilename = filename || `image_${timestamp}.${fileExtension}`
+
+          downloadWithBlob(blob, finalFilename)
+        } catch (fetchError) {
+          console.warn('Fetch method failed, trying fallback:', fetchError)
+
+          // 桌面端备用方案：直接使用 URL
+          const timestamp = new Date().getTime()
+          const finalFilename = filename || `image_${timestamp}.jpg`
+
+          const link = document.createElement('a')
+          link.href = imageUrl
+          link.download = finalFilename
+          link.target = '_blank'
+          link.rel = 'noopener noreferrer'
+          link.style.display = 'none'
+
+          document.body.appendChild(link)
+          link.click()
+
+          setTimeout(() => {
+            try {
+              document.body.removeChild(link)
+            } catch (cleanupError) {
+              console.warn('Link cleanup error:', cleanupError)
+            }
+          }, 100)
+        }
       }
-
-      const blob = await response.blob()
-
-      // 生成文件名
-      const timestamp = new Date().getTime()
-      const fileExtension = blob.type.split('/')[1] || 'jpg'
-      const finalFilename = filename || `image_${timestamp}.${fileExtension}`
-
-      // 创建下载链接
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = finalFilename
-      link.style.display = 'none'
-
-      // 添加到DOM并触发下载
-      document.body.appendChild(link)
-      link.click()
-
-      // 清理
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
 
       // 关闭loading
       if (loadingInstance) {
@@ -2268,7 +2378,6 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
 
       // 显示成功提示
       ElMessage.success(i18n.global.t('download.success'))
-
       resolve()
     } catch (error) {
       // 关闭loading
@@ -2277,10 +2386,31 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
       }
 
       // 显示错误提示
-      ElMessage.error(i18n.global.t('download.failed'))
       console.error('Download image error:', error)
-
+      ElMessage.error((error as Error)?.message || i18n.global.t('download.failed'))
       reject(error)
     }
   })
+}
+
+// 辅助函数：使用 blob 下载文件
+function downloadWithBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.style.display = 'none'
+
+  document.body.appendChild(link)
+  link.click()
+
+  // 清理
+  setTimeout(() => {
+    try {
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (cleanupError) {
+      console.warn('Cleanup error:', cleanupError)
+    }
+  }, 100)
 }

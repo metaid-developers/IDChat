@@ -3,6 +3,10 @@
     class=" lg:hover:bg-gray-200 lg:dark:hover:bg-gray-950 px-4 py-1.5 relative group transition-all duration-150"
     :class="{ replying: reply.val?.timestamp === message.timestamp }"
   >
+    <UnreadMessagesDivider
+      v-if="props.lastReadIndex !== undefined && message.index === props.lastReadIndex + 1"
+      id="unread-divider"
+    />
     <!-- 消息菜单 -->
     <MessageMenu
       :message="props.message"
@@ -491,7 +495,7 @@
                 : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
-            v-else
+            
             @click="handleMessageClick"
           >
             <div
@@ -557,6 +561,7 @@ import { UnifiedChatMessage } from '@/@types/simple-chat'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
 import { useRootStore } from '@/stores/root'
 import {openAppBrowser} from '@/wallet-adapters/metalet'
+import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 const rootStore=useRootStore()
@@ -566,6 +571,7 @@ const channelInfo = ref<any>(null)
 const subChannelInfo=ref<any>(null)
 interface Props {
   message:UnifiedChatMessage //ChatSessionMessageItem
+  lastReadIndex?: number
 }
 const props = withDefaults(defineProps<Props>(), {})
 

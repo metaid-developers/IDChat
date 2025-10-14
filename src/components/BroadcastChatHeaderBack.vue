@@ -11,8 +11,10 @@
 
       <div class="broadcast-content ">
         <div class="broadcast-title text-base flex items-start flex-col ">
-         <span>{{ $t('sub_channel_back_main') }}</span>
-         <span v-if="unReadCountFromMainChannel" class="text-xs text-dark-300 drak:text-dark-400">{{ unReadCountFromMainChannel }} {{ $t('sub_channel_header_message') }}</span>
+          <span>{{ $t('sub_channel_back_main') }}</span>
+          <span v-if="unReadCountFromMainChannel" class="text-xs text-dark-300 drak:text-dark-400"
+            >{{ unReadCountFromMainChannel }} {{ $t('sub_channel_header_message') }}</span
+          >
         </div>
       </div>
     </div>
@@ -52,7 +54,7 @@ const parentGroupInfo=computed(()=>{
 })
 
 const unReadCountFromMainChannel = computed(() => {
-  
+
   if (
     parentGroupInfo.value &&
     parentGroupInfo.value.lastMessage &&
@@ -63,14 +65,13 @@ const unReadCountFromMainChannel = computed(() => {
   }
   return 0
 })
-
 </script>
 
 <style scoped>
 .broadcast-chat-header {
   position: sticky;
   top: 0px;
-  z-index: 40;
+  z-index: 28;
   /* background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px); */
@@ -97,8 +98,6 @@ const unReadCountFromMainChannel = computed(() => {
   justify-content: center;
 
   border-radius: 12px;
-
-  
 }
 
 .broadcast-content {

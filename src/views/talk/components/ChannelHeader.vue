@@ -3,10 +3,7 @@
     class="fixed left-0 right-0 top-0 flex items-center px-4 h-12 border-b-2 border-solid border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-700 z-30 lg:h-15 lg:absolute"
   >
     <div class="max-w-[50%] flex items-center justify-center " v-if="!isWelcomePage">
-      <a
-        class="mt-1 text-center  lg:hidden"
-        @click="backWelcome"
-      >
+      <a class="mt-1 text-center  lg:hidden" @click="backWelcome">
         <el-icon class="w-3 h-3 cursor-pointer  mx-2 shrink-0"><Back /></el-icon>
       </a>
 
@@ -75,7 +72,10 @@
         </div>
       </div>
 
-      <div class="ml-1 hidden lg:flex lg:items-center group" v-if="activeChannel?.type === 'group' && !isWelcomePage">
+      <div
+        class="ml-1 hidden lg:flex lg:items-center group"
+        v-if="activeChannel?.type === 'group' && !isWelcomePage"
+      >
         <div
           class="text-xs text-dark-300 dark:text-gray-400 bg-dark-100 dark:bg-gray-800 px-3 py-1 rounded"
         >
@@ -131,10 +131,10 @@ const activeChannel = computed(() => {
     : simpleTalkActiveChannel.value
 })
 
-const isWelcomePage=computed(()=>{
-  if(route.params?.channelId == 'welcome'){
+const isWelcomePage = computed(() => {
+  if (route.params?.channelId == 'welcome') {
     return true
-  }else return false
+  } else return false
 })
 
 const currentChannel: { val: Channel | Object } = reactive({
@@ -192,15 +192,15 @@ const goCheckTxId = (txId: string, chain: ChatChain) => {
   }
 }
 
-const backWelcome=()=>{
+const backWelcome = () => {
   layout.$patch({ isShowLeftNav: true, isShowContactList: true })
-  router.push(({
-       name: 'talkChannel',
-        params:{
-          communityId:'public',
-          channelId:'welcome'
-        }
-  }))
+  router.push({
+    name: 'talkChannel',
+    params: {
+      communityId: 'public',
+      channelId: 'welcome',
+    },
+  })
 }
 
 const doNothing = () => {}

@@ -1,5 +1,9 @@
 <template>
   <div>
+    <UnreadMessagesDivider
+      v-if="props.lastReadIndex !== undefined && message.index === props.lastReadIndex + 1"
+      id="unread-divider"
+    />
     <div
       class="w-full relative py-1 px-4 lg:hover:bg-gray-200 dark:lg:hover:bg-gray-950 transition-all duration-150   group message-item"
       :class="[{ replying: reply.val?.timestamp === message.timestamp }]"
@@ -426,6 +430,8 @@ import btcIcon from '@/assets/images/btc.png'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
 import {openAppBrowser} from '@/wallet-adapters/metalet'
+import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
+
 const i18n = useI18n()
 
 const modals = useModalsStore()
@@ -498,6 +504,7 @@ interface Props {
   message: UnifiedChatMessage
   isSubChannelMsg?:boolean
   isShare?: boolean
+  lastReadIndex?:number
 }
 const props = withDefaults(defineProps<Props>(), {
     isSubChannelMsg:false

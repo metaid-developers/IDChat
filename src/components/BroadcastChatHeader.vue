@@ -86,7 +86,7 @@ const lastMsgContentType = (type: MessageType, content: string, channelId: strin
 
 const goToSubChannel = (channelId: string) => {
   // 跳转到子频道的逻辑
-  
+
   router.push({
      name: 'talkChannel',
     params:{
@@ -114,7 +114,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
 .broadcast-chat-header {
   position: sticky;
   top: 0px;
-  z-index: 40;
+  z-index: 28;
   /* background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px); */
