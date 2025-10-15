@@ -453,9 +453,9 @@ const isCurrentUserCreator = computed(() => {
 })
 
 const isWhiteListCreatBroadcast=computed(()=>{
-  const config = getRuntimeConfig()
-  return config.whiteListCreateBroadcast.includes(userStore.last?.address)
-  //return whiteListCreateBroadcast.includes(userStore.last?.address)
+  // const config = getRuntimeConfig()
+  // return config.whiteListCreateBroadcast.includes(userStore.last?.address)
+  return true
 })
 
 const currentLink = computed(() => {
