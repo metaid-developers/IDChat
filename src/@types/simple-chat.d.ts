@@ -11,6 +11,11 @@ export interface MuteNotifyItem {
   status: boolean
 }
 
+export interface ShowSubChannleHeaderItem {
+  groupId: string
+  status: boolean
+}
+
 export interface BlockedChats {
   userId: string
   chatId: string

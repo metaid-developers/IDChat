@@ -1,7 +1,7 @@
 <template>
   <div
     class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white"
-    v-if="subchannels.length > 0"
+    v-if="subchannels.length > 0 && showChannelHeader"
   >
     <div
       class="broadcast-chat-container"
@@ -31,6 +31,7 @@
           }}</span>
         </div>
       </div>
+      <div class="flex flex-row items-center gap-7">
 
       <el-badge
         :value="getUnreadCount(channel)"
@@ -40,19 +41,24 @@
         v-if="getUnreadCount(channel) > 0"
       >
         <div :class="['main-border', 'primary']">
-          <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
+          <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700  w-8 h-8" />
         </div>
       </el-badge>
 
       <div v-else :class="['main-border', 'primary']">
         <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
       </div>
+
+      <div @click="closeSubChannelHeader" class="flex z-[999] w-7 h-7 cursor-pointer hover:scale-105 items-center justify-center">
+       <el-icon :size="28"><CircleClose /></el-icon>
+      </div>
+</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed,ref } from 'vue'
 import subChannel from '@/assets/images/sub-channel.svg?url'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import type { SimpleChannel } from '@/@types/simple-chat.d'
@@ -60,13 +66,29 @@ import {MessageType} from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
 import { decrypt, ecdhDecrypt } from '@/utils/crypto'
 import { useRouter } from 'vue-router'
+import { CircleClose } from '@element-plus/icons-vue'
 const simpleTalkStore = useSimpleTalkStore()
 const router=useRouter()
 const i18n=useI18n()
+
 // 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
 const subchannels = computed(() => {
   return simpleTalkStore.currSubChannels
 })
+
+const showChannelHeader=computed(()=>{
+  return simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.parentGroupId) :
+  simpleTalkStore.getOneChannelSubHeaderShowStatus(simpleTalkStore.activeChannel?.id)
+
+})
+
+function closeSubChannelHeader(e:Event){
+  e.stopPropagation()
+  simpleTalkStore.updateShowSubChannelHeader({
+    groupId:simpleTalkStore.activeChannel!.id,
+    status:false
+  })
+}
 
 const lastMsgContentType = (type: MessageType, content: string, channelId: string) => {
   let secretKeyStr = channelId?.substring(0, 16) || ''

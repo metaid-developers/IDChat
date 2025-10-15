@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { SimpleChannel,MuteNotifyItem,BlockedChats, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
+import type { SimpleChannel,ShowSubChannleHeaderItem,MuteNotifyItem,BlockedChats, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
 import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers, getOneChannel, getNewstPrivateChatMessages } from '@/api/talk'
 
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
@@ -958,7 +958,7 @@ class SimpleChatDB {
 
 export const useSimpleTalkStore = defineStore('simple-talk', {
   state: () => ({
-
+    showSubChannelHeader:JSON.parse(localStorage.getItem('showSubChannelHeaderList') || JSON.stringify([])) || [] as ShowSubChannleHeaderItem[],
     muteNotifyList: JSON.parse(localStorage.getItem('muteNotifyList') || JSON.stringify([])) || [] as MuteNotifyItem[],  //localStorage.getItem('isMuteNotify') || false,
     // 所有聊天频道（群聊+私聊）
     channels: [] as SimpleChannel[],
@@ -1001,6 +1001,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return state.muteNotifyList || JSON.parse(localStorage.getItem('muteNotifyList') || JSON.stringify([]))
     },
 
+    getShowSubChannleHeaderList(state){
+      return state.showSubChannelHeader || JSON.parse(localStorage.getItem('showSubChannelHeaderList') || JSON.stringify([]))
+    },
+
  
     getOneChannelMuteStatus():(channelId: string) => boolean {
       return (channelId: string) => {
@@ -1013,6 +1017,21 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
         }else{  
           return false
+        }
+      }
+    },
+
+     getOneChannelSubHeaderShowStatus():(channelId: string) => boolean {
+      return (channelId: string) => {
+        if(this.showSubChannelHeader.length){
+            const show:ShowSubChannleHeaderItem= this.showSubChannelHeader.find((c:ShowSubChannleHeaderItem) => c.groupId === channelId)
+        if(show){
+          return show.status
+        }else{
+          return true
+        }
+        }else{  
+          return true
         }
       }
     },
@@ -3993,9 +4012,32 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       localStorage.setItem('muteNotifyList',JSON.stringify(this.muteNotifyList))
     },
 
+      updateShowSubChannelHeader(payload:ShowSubChannleHeaderItem){
+       
+      const hasRecord=this.showSubChannelHeader.length && this.showSubChannelHeader.find((item:ShowSubChannleHeaderItem)=>item.groupId == payload.groupId)
+
+      if(hasRecord){
+          this.showSubChannelHeader=this.showSubChannelHeader.map((c:ShowSubChannleHeaderItem) => {
+        if(c.groupId === payload.groupId){
+          c.status=payload.status
+        }
+        return c
+      })
+      }else{
+        this.showSubChannelHeader.push(payload)
+      }
+  
+      localStorage.setItem('showSubChannelHeaderList',JSON.stringify(this.showSubChannelHeader))
+    },
+
     clearMuteNotifyList(){
       this.muteNotifyList=[]
        localStorage.removeItem('muteNotifyList')
+    },
+
+      clearShowSubChannelHeader(){
+      this.showSubChannelHeader=[]
+       localStorage.removeItem('showSubChannelHeaderList')
     },
 
     /**

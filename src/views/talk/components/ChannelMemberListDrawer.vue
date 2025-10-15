@@ -80,7 +80,60 @@
             >
           </div>
         </div>
-        <div class="mt-5 bg-white dark:bg-gray-800 px-4 py-5">
+        <!--SubChannelEnter-->
+        <div class="mt-5  bg-white dark:bg-gray-800 px-4 py-7" @click="copyLink">
+          <div class="flex items-center text-md font-medium">
+            <span class="mr-2">#</span>
+            <span>
+              {{ $t('Talk.Channel.SubChannel') }}
+            </span>
+          </div>
+          <div
+            class="mt-4 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between"
+          >
+            <div class="word-break break-all flex items-center justify-between">
+<div
+      class="broadcast-chat-container"
+      v-for="channel in subchannels"
+      :key="channel.id"
+      @click="goToSubChannel(channel.id)"
+    >
+      <div class="broadcast-icon">
+        <img :src="subChannel" alt="" />
+      </div>
+
+      <div class="broadcast-content">
+        <div class="broadcast-title text-base">
+          {{ channel.name || '# Broadcast Chat' }}
+        </div>
+        <div
+          class="broadcast-description text-xs flex items-center "
+          v-if="channel.lastMessage?.sender"
+        >
+          <span class="text-dark-300 dark:text-gray-400"
+            >{{
+              channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0, 6) || ''
+            }}:</span
+          >
+          <span class="text-dark-300 dark:text-gray-400 ">{{
+            lastMsgContentType(channel.lastMessage?.type, channel.lastMessage?.content, channel.id)
+          }}</span>
+        </div>
+      </div>
+
+    </div>
+              <div>
+
+              </div>
+            </div>
+            <el-icon
+              class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-gray-400"
+              ><Link
+            /></el-icon>
+          </div>
+        </div>
+
+        <div class="mt-3 bg-white dark:bg-gray-800 px-4 py-5">
           <div class="flex items-center justify-between text-md font-medium">
             {{ $t('Talk.Channel.announcement') }}
             <el-icon
@@ -1093,5 +1146,52 @@ header {
 .search-slide-leave-from {
   transform: translateY(0);
   opacity: 1;
+}
+
+.broadcast-chat-container {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+
+.broadcast-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  margin-right: 12px;
+}
+
+.broadcast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.broadcast-title {
+  /* font-size: 16px; */
+  font-weight: 500;
+
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.broadcast-description {
+  font-size: 13px;
+
+  line-height: 1.4;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

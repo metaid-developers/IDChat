@@ -284,7 +284,8 @@
       },
       "Join": {
         "Main_Neeed": "访客身份用户必须先登录后加入主频道才可以访问发布频道内容"
-      }
+      },
+      "SubChannel": "发布频道"
     },
     "Community": {
       "optional": "（可選）",
