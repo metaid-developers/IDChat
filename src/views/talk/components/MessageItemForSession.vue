@@ -456,37 +456,9 @@
             </div>
           </div>
 
+     
           <div
-            class="text-sm text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl transition-all duration-200"
-            :class="[
-              msgChain == ChatChain.btc && 'btc-item',
-              isMyMessage
-                ? 'bg-primary dark:text-gray-800 rounded-tr'
-                : 'not-mine bg-white dark:bg-gray-700 rounded-tl ',
-
-              message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
-            ]"
-            v-else
-            @click="handleMessageClick"
-          
-          >
-            <div
-                class="whitespace-pre-wrap"
-                v-html="
-                  parseTextMessage(
-                    decryptedMessage(
-                      message?.content,
-                      message?.encryption,
-                      message?.protocol,
-                      message?.isMock,
-                      true
-                    )
-                  )
-                "
-              ></div>
-        
-        </div>
-          <div
+          v-else
             class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
@@ -678,7 +650,7 @@ const handleMessageClick = (event: MouseEvent) => {
     const url = target.getAttribute('data-webview-url')
     if (url) {
       
-      openAppBrowser({ url })
+     openAppBrowser({ url })
     }
   }
 }
@@ -890,6 +862,7 @@ const parseTextMessage = (text: string) => {
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
       if(rootstore.isWebView){
+        
         return `<a href="javascript:void(0);" data-webview-url="${url}" class="url webview-link" style="text-decoration: underline;cursor: pointer;word-break: break-all;"> ${url} </a>`
       }
 
