@@ -256,7 +256,7 @@ export const useConnectionStore = defineStore('connection', {
      const credentialsStore=useCredentialsStore()
      
       simpleTalkStore.clearMuteNotifyList()
-      simpleTalkStore.clearShowSubChannelHeader()
+      //simpleTalkStore.clearShowSubChannelHeader()
        console.log('router', router)
       await userStore.clearUserInfo()
       ecdhsStore.clear()

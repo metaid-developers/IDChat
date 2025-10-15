@@ -1,7 +1,7 @@
 <template>
   <div
     class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white"
-    v-if="subchannels.length > 0 && showChannelHeader"
+    v-show="subchannels.length > 0 && showChannelHeader"
   >
     <div
       class="broadcast-chat-container"
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed,ref } from 'vue'
+import { computed,ref,watch } from 'vue'
 import subChannel from '@/assets/images/sub-channel.svg?url'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import type { SimpleChannel } from '@/@types/simple-chat.d'
@@ -67,10 +67,11 @@ import { useI18n } from 'vue-i18n'
 import { decrypt, ecdhDecrypt } from '@/utils/crypto'
 import { useRouter } from 'vue-router'
 import { CircleClose } from '@element-plus/icons-vue'
+
 const simpleTalkStore = useSimpleTalkStore()
 const router=useRouter()
 const i18n=useI18n()
-
+const hasUnreadAmount=ref(false)
 // 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
 const subchannels = computed(() => {
   return simpleTalkStore.currSubChannels
@@ -126,10 +127,34 @@ const getUnreadCount = (channel: SimpleChannel) => {
     console.log('No lastMessage or invalid index for channel:', channel.id)
     return 0
   }
-  const lastReadIndex = simpleTalkStore.getLastReadIndex(channel.id)
-  const unreadCount = channel.lastMessage.index - lastReadIndex
+simpleTalkStore.getLastReadIndex(channel.id).then((lastReadIndex)=>{
+ 
+    const unreadCount = +channel.lastMessage.index - (+lastReadIndex)
+    if(unreadCount > 0 && channel.lastMessage?.sender == channel.createdBy){
+      hasUnreadAmount.value=true
+    }else{
+      hasUnreadAmount.value=false
+    }
   return Math.max(0, unreadCount)
+  }).catch(()=>{
+    return 0
+  })
+  
 }
+
+
+watch(()=>hasUnreadAmount.value,(newVal:boolean)=>{
+if(newVal){
+  if(simpleTalkStore.activeChannel?.type !== 'sub-group'){
+    
+    simpleTalkStore.updateShowSubChannelHeader({
+    groupId:simpleTalkStore.activeChannel?.id!,
+    status:true
+  })
+  }
+
+}
+})
 </script>
 
 <style scoped>

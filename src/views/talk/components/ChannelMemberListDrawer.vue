@@ -81,7 +81,7 @@
           </div>
         </div>
         <!--SubChannelEnter-->
-        <div class="mt-5  bg-white dark:bg-gray-800 px-4 py-7" @click="copyLink">
+        <div class="mt-5  bg-white dark:bg-gray-800 px-4 py-7" v-if="subchannels.length > 0"  @click="goToSubChannel(subchannels[0]?.id)">
           <div class="flex items-center text-md font-medium">
             <span class="mr-2">#</span>
             <span>
@@ -91,23 +91,23 @@
           <div
             class="mt-4 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between"
           >
-            <div class="word-break break-all flex items-center justify-between">
+            <div class="w-full word-break break-all flex items-center justify-between">
 <div
       class="broadcast-chat-container"
       v-for="channel in subchannels"
       :key="channel.id"
-      @click="goToSubChannel(channel.id)"
+     
     >
       <div class="broadcast-icon">
         <img :src="subChannel" alt="" />
       </div>
 
       <div class="broadcast-content">
-        <div class="broadcast-title text-base">
+        <div class="broadcast-title text-xs">
           {{ channel.name || '# Broadcast Chat' }}
         </div>
         <div
-          class="broadcast-description text-xs flex items-center "
+          class="broadcast-description flex items-center "
           v-if="channel.lastMessage?.sender"
         >
           <span class="text-dark-300 dark:text-gray-400"
@@ -122,18 +122,20 @@
       </div>
 
     </div>
-              <div>
-
+              <div class="flex items-center justify-between">
+                     <el-icon
+              class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-white"
+              ><ArrowRight
+            /></el-icon>
               </div>
             </div>
-            <el-icon
-              class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-gray-400"
-              ><Link
-            /></el-icon>
+
+           
+          
           </div>
         </div>
 
-        <div class="mt-3 bg-white dark:bg-gray-800 px-4 py-5">
+        <div class=" bg-white dark:bg-gray-800 px-4 py-5" :class="[simpleTalkStore.activeChannel?.type === 'sub-group' ? 'mt-5' : 'mt-3']">
           <div class="flex items-center justify-between text-md font-medium">
             {{ $t('Talk.Channel.announcement') }}
             <el-icon
@@ -372,11 +374,12 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import { setChannelAdmins,setChannelWhiteList,setChannelBlockList } from '@/utils/talk'
 import type {MemberListRes,MemberItem } from '@/@types/simple-chat.d'
+import {MessageType} from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
 import { signMvcMessage,getMvcPublickey } from "@/wallet-adapters/metalet";
 import { getRuntimeConfig } from '@/config/runtime-config'
-
-
+import subChannel from '@/assets/images/sub-channel.svg?url'
+import { decrypt } from '@/utils/crypto'
 
 
 interface Props {
@@ -497,6 +500,15 @@ const currentDisplayList = computed(() => {
   return memberList.value || []
 })
 
+
+// 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
+const subchannels = computed(() => {
+  return simpleTalkStore.currSubChannels
+})
+
+
+
+
 const openBroadcastDialog=()=>{
   if(hasSubChannelList.value.length){
      ElMessage.warning(`${i18n.t('sub_channel_created')}`)
@@ -506,6 +518,39 @@ const openBroadcastDialog=()=>{
 
 
 }
+
+const lastMsgContentType = (type: MessageType, content: string, channelId: string) => {
+  let secretKeyStr = channelId?.substring(0, 16) || ''
+      switch (type) {
+        case MessageType.msg:
+          return decrypt(content, secretKeyStr)
+        case MessageType.red:
+          return content
+        case MessageType.img:
+          return `[${i18n.t('new_msg_img')}]`
+        default:
+          return ''
+      }
+}
+
+
+
+const goToSubChannel = (channelId: string) => {
+  // 跳转到子频道的逻辑
+
+  router.push({
+     name: 'talkChannel',
+    params:{
+      communityId:'public',
+      channelId:simpleTalkStore.activeChannel!.id!,
+      subId:channelId
+    }
+  })
+
+  emit('update:modelValue', false)
+  //simpleTalkStore.enterSubGroupChat(channelId)
+}
+
 
 const trggleMuteMode=async(e:boolean)=>{
 
@@ -1151,7 +1196,7 @@ header {
 .broadcast-chat-container {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  //padding: 12px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1159,8 +1204,8 @@ header {
 
 .broadcast-icon {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1186,7 +1231,7 @@ header {
 }
 
 .broadcast-description {
-  font-size: 13px;
+  font-size: 10px;
 
   line-height: 1.4;
   margin-bottom: 4px;
