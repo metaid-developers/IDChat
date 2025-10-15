@@ -2958,23 +2958,24 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           return
         }
 
-        // 从独立存储获取当前已读索引
-        const currentIndex = await this.db.getLastReadIndex(this.selfMetaId, channelId)
+        
         
         // 只允许设置比当前值更大的索引
-        if (messageIndex <= currentIndex) {
+        if (messageIndex <= (channel.lastReadIndex ?? 0)) {
           // console.warn(`⚠️ 已读索引 ${messageIndex} 不能小于或等于当前值 ${currentIndex}，跳过设置`)
           return
         }
-
+         channel.lastReadIndex = messageIndex
+        
+        
         // 保存到独立的 lastReadIndex 表，使用消息的时间戳
         await this.db.saveLastReadIndex(this.selfMetaId, channelId, messageIndex, timestamp)
 
         // 更新内存中的 lastReadIndex（保持向后兼容）
-        channel.lastReadIndex = messageIndex
+       
 
         const timestampInfo = timestamp ? ` (消息时间: ${new Date(timestamp).toLocaleString()})` : ''
-        console.log(`✅ 频道 ${channelId} 已读索引已从 ${currentIndex} 更新为: ${messageIndex} (用户: ${this.selfMetaId})${timestampInfo}`)
+        console.log(`✅ 频道 ${channelId} 已读索引已从 ${channel.lastReadIndex} 更新为: ${messageIndex} (用户: ${this.selfMetaId})${timestampInfo}`)
       } catch (error) {
         console.error('❌ 设置已读索引失败:', error)
         throw error

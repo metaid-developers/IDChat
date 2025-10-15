@@ -255,7 +255,11 @@ const initMessageObserver = () => {
           const messageElement = entry.target as HTMLElement
           const messageIndex = parseInt(messageElement.getAttribute('data-message-index') || '0')
           // 更新最后已读索引
-          if (simpleTalk.activeChannelId && messageIndex >= 0) {
+          if (
+            simpleTalk.activeChannelId &&
+            messageIndex >= 0 &&
+            !simpleTalk.isSetActiveChannelIdInProgress
+          ) {
             // 查找对应的消息对象来获取时间戳
             const message = simpleTalk.activeChannelMessages.find(msg => msg.index === messageIndex)
             const messageTimestamp = message?.timestamp
@@ -295,8 +299,13 @@ const observeMessages = () => {
   // 观察所有消息元素
   messageRefs.value.forEach((element, messageIndex) => {
     if (element && messageObserver.value) {
-      element.setAttribute('data-message-index', messageIndex.toString())
-      messageObserver.value.observe(element)
+      console.log('观察消息元素', element, messageIndex)
+      if (element.setAttribute) {
+        element.setAttribute('data-message-index', messageIndex.toString())
+        messageObserver.value.observe(element)
+      } else {
+        console.warn('元素不支持 setAttribute 方法:', element, messageIndex)
+      }
     }
   })
 }

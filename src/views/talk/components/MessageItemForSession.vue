@@ -43,7 +43,7 @@
         avatarImage: message.replyInfo?.userInfo?.avatarImage,
         metaName: '',
         metaId: message.replyInfo?.userInfo?.metaid,
-        nickName: message.replyInfo.userInfo.name,
+        nickName: message.replyInfo.userInfo?.name,
         protocol: message.replyInfo.protocol,
         content: containsString(message.replyInfo.protocol, NodeName.SimpleFileMsg)
           ? message.replyInfo.content
@@ -456,9 +456,8 @@
             </div>
           </div>
 
-     
           <div
-          v-else
+            v-else
             class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
@@ -467,7 +466,6 @@
                 : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
               message.error && 'bg-red-200 dark:bg-red-700 opacity-50',
             ]"
-            
             @click="handleMessageClick"
           >
             <div
@@ -649,7 +647,7 @@ const handleMessageClick = (event: MouseEvent) => {
     event.preventDefault()
     const url = target.getAttribute('data-webview-url')
     if (url) {
-      
+
      openAppBrowser({ url })
     }
   }
@@ -862,7 +860,7 @@ const parseTextMessage = (text: string) => {
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
       if(rootstore.isWebView){
-        
+
         return `<a href="javascript:void(0);" data-webview-url="${url}" class="url webview-link" style="text-decoration: underline;cursor: pointer;word-break: break-all;"> ${url} </a>`
       }
 
