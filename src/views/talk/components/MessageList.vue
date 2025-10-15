@@ -154,6 +154,7 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
+import { ca } from 'element-plus/es/locale'
 
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
@@ -553,10 +554,18 @@ watch(
         '🎯 频道切换中且有消息，准备滚动到最后已读位置:',
         simpleTalk.activeChannel.lastReadIndex
       )
+      try {
+        lastReadIndex.value =
+          simpleTalk.activeChannel.lastMessage?.index === simpleTalk.activeChannel.lastReadIndex
+            ? 0
+            : simpleTalk.activeChannel.lastReadIndex
+      } catch (e) {
+        console.error('设置 lastReadIndex 失败:', e)
+        lastReadIndex.value = 0
+      }
 
-      lastReadIndex.value = simpleTalk.activeChannel.lastReadIndex
       // 检查是否有未读消息
-      observeMessages()
+      // observeMessages()
 
       await nextTick()
 
@@ -564,7 +573,7 @@ watch(
       setTimeout(() => {
         // 查找最后已读消息对应的元素
         const targetElement = messageRefs.value.get(lastReadIndex.value + 1)
-        if (targetElement && listContainer.value) {
+        if (lastReadIndex.value !== 0 && targetElement && listContainer.value) {
           console.log('📍 找到最后已读消息元素，滚动到位置:', lastReadIndex)
 
           // 计算目标元素相对于容器的位置
