@@ -2976,6 +2976,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           console.warn(`⚠️ 未找到频道 ${channelId}，无法设置已读索引`)
           return
         }
+        console.log(`🔖 设置频道 ${channelId} 的已读索引为 ${messageIndex} (当前值: ${channel.lastReadIndex})`)
 
         
         

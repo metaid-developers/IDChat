@@ -154,7 +154,7 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-import { ca } from 'element-plus/es/locale'
+import { ca, el } from 'element-plus/es/locale'
 
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
@@ -274,6 +274,8 @@ const initMessageObserver = () => {
               .catch(error => {
                 console.warn('❌ 更新已读索引失败:', error)
               })
+          } else {
+            console.log('🎯 频道切换中但无消息，或 lastReadIndex 未定义，跳过更新已读索引')
           }
         }
       })
@@ -600,7 +602,10 @@ watch(
         }
         // 设置切换完成状态
         simpleTalk.setActiveChannelIdInProgress(false)
+        observeMessages()
       }, 200) // 等待200ms确保DOM渲染完成
+    } else {
+      console.log('🎯 频道切换中但无消息，或 lastReadIndex 未定义，跳过滚动')
     }
   },
   { immediate: true }

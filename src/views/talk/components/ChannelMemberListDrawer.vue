@@ -59,7 +59,7 @@
           </div>
           <div class="mt-4">
             <el-button
-              v-if="isCurrentUserCreator && isWhiteListCreatBroadcast"
+              v-if="isCurrentUserCreator"
               color="#fff"
               size="default"
               :icon="CirclePlus"
@@ -81,7 +81,11 @@
           </div>
         </div>
         <!--SubChannelEnter-->
-        <div class="mt-5  bg-white dark:bg-gray-800 px-4 py-7" v-if="subchannels.length > 0"  @click="goToSubChannel(subchannels[0]?.id)">
+        <div
+          class="mt-5  bg-white dark:bg-gray-800 px-4 py-7"
+          v-if="subchannels.length > 0"
+          @click="goToSubChannel(subchannels[0]?.id)"
+        >
           <div class="flex items-center text-md font-medium">
             <span class="mr-2">#</span>
             <span>
@@ -92,50 +96,54 @@
             class="mt-4 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between"
           >
             <div class="w-full word-break break-all flex items-center justify-between">
-<div
-      class="broadcast-chat-container"
-      v-for="channel in subchannels"
-      :key="channel.id"
-     
-    >
-      <div class="broadcast-icon">
-        <img :src="subChannel" alt="" />
-      </div>
+              <div
+                class="broadcast-chat-container"
+                v-for="channel in subchannels"
+                :key="channel.id"
+              >
+                <div class="broadcast-icon">
+                  <img :src="subChannel" alt="" />
+                </div>
 
-      <div class="broadcast-content">
-        <div class="broadcast-title text-xs">
-          {{ channel.name || '# Broadcast Chat' }}
-        </div>
-        <div
-          class="broadcast-description flex items-center "
-          v-if="channel.lastMessage?.sender"
-        >
-          <span class="text-dark-300 dark:text-gray-400"
-            >{{
-              channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0, 6) || ''
-            }}:</span
-          >
-          <span class="text-dark-300 dark:text-gray-400 ">{{
-            lastMsgContentType(channel.lastMessage?.type, channel.lastMessage?.content, channel.id)
-          }}</span>
-        </div>
-      </div>
-
-    </div>
+                <div class="broadcast-content">
+                  <div class="broadcast-title text-xs">
+                    {{ channel.name || '# Broadcast Chat' }}
+                  </div>
+                  <div
+                    class="broadcast-description flex items-center "
+                    v-if="channel.lastMessage?.sender"
+                  >
+                    <span class="text-dark-300 dark:text-gray-400"
+                      >{{
+                        channel.lastMessage?.senderName ||
+                          channel.lastMessage?.sender?.slice(0, 6) ||
+                          ''
+                      }}:</span
+                    >
+                    <span class="text-dark-300 dark:text-gray-400 ">{{
+                      lastMsgContentType(
+                        channel.lastMessage?.type,
+                        channel.lastMessage?.content,
+                        channel.id
+                      )
+                    }}</span>
+                  </div>
+                </div>
+              </div>
               <div class="flex items-center justify-between">
-                     <el-icon
-              class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-white"
-              ><ArrowRight
-            /></el-icon>
+                <el-icon
+                  class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-white"
+                  ><ArrowRight
+                /></el-icon>
               </div>
             </div>
-
-           
-          
           </div>
         </div>
 
-        <div class=" bg-white dark:bg-gray-800 px-4 py-5" :class="[simpleTalkStore.activeChannel?.type === 'sub-group' ? 'mt-5' : 'mt-3']">
+        <div
+          class=" bg-white dark:bg-gray-800 px-4 py-5"
+          :class="[simpleTalkStore.activeChannel?.type === 'sub-group' ? 'mt-5' : 'mt-3']"
+        >
           <div class="flex items-center justify-between text-md font-medium">
             {{ $t('Talk.Channel.announcement') }}
             <el-icon
@@ -1200,7 +1208,6 @@ header {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 
 .broadcast-icon {
   flex-shrink: 0;
