@@ -1096,7 +1096,26 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
     // 获取未读消息总数
     totalUnreadCount(): number {
-      return this.channels.reduce((sum, channel) => sum + channel.unreadCount, 0)
+      return this.channels.reduce((sum, channel) => {
+        // 基于 lastReadIndex 和 lastMessage.index 的差值计算未读数
+        const lastMessageIndex = channel.lastMessage?.index || 0
+        const lastReadIndex = channel.lastReadIndex || 0
+        const unreadCount = Math.max(0, lastMessageIndex - lastReadIndex)
+        return sum + unreadCount
+      }, 0)
+    },
+
+    // 获取指定频道的未读消息数量
+    getChannelUnreadCount(): (channelId: string) => number {
+      return (channelId: string) => {
+        const channel = this.channels.find(c => c.id === channelId)
+        if (!channel) return 0
+        
+        // 基于 lastReadIndex 和 lastMessage.index 的差值计算未读数
+        const lastMessageIndex = channel.lastMessage?.index || 0
+        const lastReadIndex = channel.lastReadIndex || 0
+        return Math.max(0, lastMessageIndex - lastReadIndex)
+      }
     },
 
     // 检查是否有本地数据
@@ -1211,6 +1230,29 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
   actions: {
     /**
+     * 通知 IDChat app 未读消息数量
+     */
+    notifyIDChatAppBadge() {
+      try {
+       
+        // 检查是否在 IDChat 环境下
+        if (navigator.userAgent.includes('IDChat')) {
+           const totalCount = this.totalUnreadCount
+          console.log(`📱 通知 IDChat app 未读消息数: ${totalCount}`)
+          
+          // 调用 app 注入的方法设置 badge
+          if (window.metaidwallet && typeof (window.metaidwallet as any).setAppBadge === 'function') {
+            ;(window.metaidwallet as any).setAppBadge(totalCount)
+          } else {
+            console.warn('⚠️ window.metaidwallet.setAppBadge 方法不可用')
+          }
+        }
+      } catch (error) {
+        console.error('❌ 通知 IDChat app badge 失败:', error)
+      }
+    },
+
+    /**
      * 初始化聊天系统
      */
     async init(): Promise<void> {
@@ -1282,6 +1324,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         this.isInitialized = true
         console.log(`✅ 用户 ${currentUserMetaId} 的聊天系统初始化成功`)
+
+        // 通知 IDChat app 未读消息数量
+        this.notifyIDChatAppBadge()
 
         
          if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
@@ -2949,10 +2994,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      */
     markAsRead(channelId: string): void {
       const channel = this.channels.find(c => c.id === channelId)
-      if (channel && channel.unreadCount > 0) {
-        channel.unreadCount = 0
-        // saveChannel 方法内部会调用 createCloneableChannel 来安全序列化
-        this.db.saveChannel(channel)
+      if (channel && channel.lastMessage?.index) {
+        // 现在通过设置 lastReadIndex 来标记已读，而不是直接设置 unreadCount
+        // 未读数会通过 lastMessage.index - lastReadIndex 自动计算
+        this.setLastReadIndex(channelId, channel.lastMessage.index, channel.lastMessage.timestamp)
       }
     },
 
@@ -2996,6 +3041,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         const timestampInfo = timestamp ? ` (消息时间: ${new Date(timestamp).toLocaleString()})` : ''
         console.log(`✅ 频道 ${channelId} 已读索引已从 ${channel.lastReadIndex} 更新为: ${messageIndex} (用户: ${this.selfMetaId})${timestampInfo}`)
+        
+        // 通知 IDChat app 未读消息数量
+        this.notifyIDChatAppBadge()
       } catch (error) {
         console.error('❌ 设置已读索引失败:', error)
         throw error
@@ -3607,10 +3655,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         index: message.index < 1 ? (channel.lastMessage?.index ?? 0) + 1 : message.index
       }
 
-      // 如果不是当前激活频道，增加未读数
-      if (this.activeChannelId !== channelId) {
-        channel.unreadCount = (channel.unreadCount || 0) + 1
-      }
+      // 未读数现在通过 lastMessage.index - lastReadIndex 自动计算
+      // 不需要手动增加 unreadCount，只要有新消息且没有更新 lastReadIndex 就会显示为未读
 
       // saveChannel 方法内部会调用 createCloneableChannel 来安全序列化
       await this.db.saveChannel(channel)

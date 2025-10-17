@@ -173,7 +173,7 @@ export interface SimpleChannel {
     chatPublicKey?: string // 私聊加密公钥
     index?: number
   }
-  unreadCount: number
+  unreadCount: number // 注意: 这个字段现在通过 lastMessage.index - lastReadIndex 动态计算，而不是存储值
   lastReadIndex?: number
   // 私聊特有字段
   targetMetaId?: string // 私聊对象的metaId
