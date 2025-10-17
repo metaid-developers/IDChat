@@ -1,4 +1,4 @@
-import { TxComposer } from "meta-contract"
+import { TxComposer } from 'meta-contract'
 
 declare interface IDialog {
   outsideName: string
@@ -24,7 +24,7 @@ interface UTXO {
 interface Window {
   bitcoinjs: BitcoinJs
   ecpair: ECPairFactory
-  WebViewBridge:any
+  WebViewBridge: any
   unisat: any
   unisat: {
     requestAccounts: () => Promise<string[]>
@@ -32,9 +32,7 @@ interface Window {
     signPsbt: (psbt: string) => Promise<string>
     pushPsbt: (psbt: string) => Promise<string>
     signPsbts: (psbts: string[], options: any[]) => Promise<string[]>
-    switchNetwork: (
-      network: 'livenet' | 'testnet',
-    ) => Promise<'livenet' | 'testnet'>
+    switchNetwork: (network: 'livenet' | 'testnet') => Promise<'livenet' | 'testnet'>
   }
   okxwallet: {
     on: (event: string, callback: (data: any) => void) => void
@@ -49,10 +47,7 @@ interface Window {
       removeListener: (event: string, callback: (data: any) => void) => void
       disconnect: () => Promise<void>
       getPublicKey: () => Promise<string>
-      signMessage: (
-        message: string,
-        { from }: { from: string },
-      ) => Promise<string>
+      signMessage: (message: string, { from }: { from: string }) => Promise<string>
       send: ({
         from,
         to,
@@ -75,24 +70,16 @@ interface Window {
           type?: any
           autoFinalized?: boolean
           toSignInputs?: any[]
-        },
+        }
       ) => Promise<string>
-      inscribe: ({
-        type,
-        from,
-        tick,
-      }: {
-        type: 51
-        from: string
-        tick: string
-      }) => Promise<string>
+      inscribe: ({ type, from, tick }: { type: 51; from: string; tick: string }) => Promise<string>
       sendPsbt: (
         txs: {
           itemId: string
           signedTx: string
           type: 52 | 22 | 59 // 22: NFT, 52: BRC20, 59: BRC20-s
         }[],
-        from: string,
+        from: string
       ) => Promise<
         Record<
           string, // unique id
@@ -102,11 +89,7 @@ interface Window {
     }
   }
   metaidwallet: {
-    verifySignature(verifyObj: {
-      message: unknown
-      signature: any
-      encoding: string
-    }): any
+    verifySignature(verifyObj: { message: unknown; signature: any; encoding: string }): any
     getPublicKey(): any
     signMessage(arg0: {
       message: string
@@ -119,48 +102,45 @@ interface Window {
       total: number
       unconfirmed: number
     }>
-     smallPay:(toPayTransactions:{
-        transations:Array<{
+    smallPay: (toPayTransactions: {
+      transations: Array<{
         txComposer: string
         message?: string
-        }>,
-        
-        hasMetaid: boolean,
-        feeb?: number
-        }
-     
-      )=>{
-        payedTransactions:string[]
-      }
-      autoPaymentStatus:()=>{
-        isEnabled:boolean,
-         isApproved:boolean,
-         autoPaymentAmount:number
-      }
-      autoPayment:()=>{
-        message:string
-      }
+      }>
 
-    switchNetwork: (network: 'livenet' | 'testnet') => Promise<{
+      hasMetaid: boolean
+      feeb?: number
+    }) => {
+      payedTransactions: string[]
+    }
+    autoPaymentStatus: () => {
+      isEnabled: boolean
+      isApproved: boolean
+      autoPaymentAmount: number
+    }
+    autoPayment: () => {
+      message: string
+    }
+
+    switchNetwork: (
+      network: 'livenet' | 'testnet'
+    ) => Promise<{
       address: string
       network: 'mainnet' | 'testnet'
       status: string
     }>
-    on: (
-      eventName: string,
-      handler: { mvcAddress: string; btcAddress: string } | any,
-    ) => void
-    pay:(
-      transations:{
-          txComposer: TxComposer
-          message?: string
+    on: (eventName: string, handler: { mvcAddress: string; btcAddress: string } | any) => void
+    pay: (
+      transations: {
+        txComposer: TxComposer
+        message?: string
       },
       hasMetaid: boolean,
       feeb?: number
-    )=>string[]
+    ) => string[]
     removeListener: (
       eventName: string,
-      handler: { mvcAddress: string; btcAddress: string } | any,
+      handler: { mvcAddress: string; btcAddress: string } | any
     ) => void
     getNetwork: () => Promise<{ network: 'mainnet' | 'testnet' }>
     connect: () => Promise<{
@@ -179,16 +159,12 @@ interface Window {
       getBalance: (chain: string) => Promise<{ total: number }>
       inscribeTransfer: (tick: string) => Promise<string>
       signMessage: (message: string) => Promise<string>
-      signPsbt: ({
-        psbtHex,
-        options,
-      }: {
-        psbtHex: string
-        options?: any
-      }) => Promise<string>
+      signPsbt: ({ psbtHex, options }: { psbtHex: string; options?: any }) => Promise<string>
       pushPsbt: (psbt: string) => Promise<string>
       signPsbts: (psbtHexs: string[], options?: any[]) => Promise<string[]>
-      transferMRC20: (params: MRC20TransferParams) => Promise<{
+      transferMRC20: (
+        params: MRC20TransferParams
+      ) => Promise<{
         commitTx: {
           fee: string
           psbtHex: string
@@ -206,10 +182,7 @@ interface Window {
     token: {
       getBalance: () => Promise<any>
     }
-    transfer: (params: {
-      tasks: TransferOutput[]
-      broadcast: boolean
-    }) => Promise<TransferResponse>
+    transfer: (params: { tasks: TransferOutput[]; broadcast: boolean }) => Promise<TransferResponse>
     merge: () => Promise<{
       broadcasted: boolean
       res: Array<{
@@ -218,14 +191,19 @@ interface Window {
         txid: string
       }>
       txids: string[]
-    }>,
-    common:{
-      ecdh:({externalPubKey:string})=> Promise<{
-      externalPubKey: string
-      sharedSecret:string
-      ecdhPubKey:string
-      creatorPubkey: string
-    }>,
+    }>
+    common: {
+      ecdh: ({
+        externalPubKey: string,
+      }) => Promise<{
+        externalPubKey: string
+        sharedSecret: string
+        ecdhPubKey: string
+        creatorPubkey: string
+      }>
     }
+    openAppBrowser: (params: { url: string }) => void
+    needWebRefresh: (params: { isNeed: boolean }) => Promise<any>
+    saveBase64Image: (base64string: string) => Promise<any>
   }
 }

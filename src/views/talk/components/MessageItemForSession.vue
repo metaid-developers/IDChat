@@ -326,7 +326,7 @@
           <div
             class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200"
             :class="[message.error && 'opacity-50']"
-            @click="previewImage"
+            @click="previewImage(decryptedImageMessage)"
           >
             <Image
               :src="decryptedImageMessage"
@@ -525,6 +525,7 @@ import MessageItemQuote from './MessageItemQuote.vue'
 import { containsString } from '@/utils/util'
 import type { PriviteChatMessageItem } from '@/@types/common'
 import btcIcon from '@/assets/images/btc.png'
+import { useImagePreview } from '@/stores/imagePreview'
 import { DB } from '@/utils/db'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
@@ -562,6 +563,7 @@ const rootstore=useRootStore()
 const simpleTalkStore = useSimpleTalkStore()
 const activeChannel = computed(() => simpleTalkStore.activeChannel)
 const jobs = useJobsStore()
+const imagePreview = useImagePreview()
 
 
 /** 翻译 */
@@ -590,9 +592,9 @@ const senderMetaName = computed(() => {
   return activeChannel.value?.metaName
 })
 
-const previewImage = () => {
-  showImagePreview.value = true
-}
+// const previewImage = () => {
+//   showImagePreview.value = true
+// }
 
 const resendTitle = computed(() => {
   return i18n.t('Talk.Messages.resend')
@@ -773,6 +775,13 @@ const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string)=>{
   } catch (error) {
 
   }
+}
+
+const previewImage =async (image: string) => {
+  const _image =await decryptedImgMessage(image, chatPubkeyForDecrypt.value!)
+  imagePreview.images = [_image]
+  imagePreview.index = 0
+  imagePreview.visibale = true
 }
 
 // const decryptedMessage = computed(() => {

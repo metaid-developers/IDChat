@@ -2,11 +2,11 @@ import { ElMessage } from 'element-plus'
 // import { useBtcJsStore } from '@/stores/btcjs'
 import { Buffer } from 'buffer'
 
-import { useConnectionStore } from "@/stores/connection";
-import { TxComposer } from 'meta-contract';
-import { useApprovedStore } from '@/stores/approved';
-import { useChainStore } from '@/stores/chain';
-import {MAN_PUB_KEY} from '@/data/constants'
+import { useConnectionStore } from '@/stores/connection'
+import { TxComposer } from 'meta-contract'
+import { useApprovedStore } from '@/stores/approved'
+import { useChainStore } from '@/stores/chain'
+import { MAN_PUB_KEY } from '@/data/constants'
 // import { useNetworkStore } from '@/stores/network'
 
 // Add into life circle
@@ -15,9 +15,8 @@ import {MAN_PUB_KEY} from '@/data/constants'
 // }
 
 function checkMetalet() {
-  const connectionStore=useConnectionStore()
+  const connectionStore = useConnectionStore()
   if (!window.metaidwallet && !connectionStore.connected) {
-    
     // ElMessage.warning('Please install the Metalet wallet extension first.')
     throw new Error('Please install the Metalet wallet extension first.')
   }
@@ -31,34 +30,32 @@ function checkMetaletStatus(res: any, actionName: string) {
 }
 
 export const connect: () => Promise<connectRes> = async () => {
-  
   checkMetalet()
 
   const connectRes = await window.metaidwallet.connect()
-  
+
   return checkMetaletStatus(connectRes, 'connect')
 }
 
 export const metaletConnect: () => Promise<connectRes> = async () => {
   checkMetalet()
-   
+
   const connectRes = await window.metaidwallet.connect()
-  
+
   return checkMetaletStatus(connectRes, 'connect')
 }
 
 export const getMvcAddress = async () => {
   checkMetalet()
-  
+
   const addressRes = await window.metaidwallet.getAddress()
   const address = checkMetaletStatus(addressRes, 'get address')
   return address
 }
 
-
 export const getBtcAddress = async () => {
   checkMetalet()
-  
+
   const addressRes = await window.metaidwallet.btc.getAddress()
   const address = checkMetaletStatus(addressRes, 'get btc address')
   return address
@@ -66,32 +63,31 @@ export const getBtcAddress = async () => {
 
 export const getMvcBalance = async () => {
   checkMetalet()
-  
+
   const balance = await window.metaidwallet.getMvcBalance()
   return balance
 }
 
 export const getUseableUtxo = async () => {
   checkMetalet()
-  
-  const utxos = await window.metaidwallet.getUtxos().catch(()=>{
+
+  const utxos = await window.metaidwallet.getUtxos().catch(() => {
     return []
   })
 
-  if(utxos.length){
-   return utxos.filter((utxo)=>{
+  if (utxos.length) {
+    return utxos.filter(utxo => {
       return utxo.value !== 600 && utxo.value !== 1 && utxo.value > 1000
     })
-  }else{
+  } else {
     return []
   }
-  
 }
 
 export const signMvcMessage = async (Message: { message: string }) => {
   checkMetalet()
   const { message } = Message
- 
+
   const { signature } = await window.metaidwallet.signMessage({
     message: message,
   })
@@ -109,32 +105,31 @@ export const getMvcPublickey = async () => {
   return publickey
 }
 
-
-
-export const getEcdhPublickey = async (pubkey?:string):Promise<{
-  externalPubKey: string;
-    sharedSecret: string;
-    ecdhPubKey: string;
-    creatorPubkey: string;
-} | any> => {
+export const getEcdhPublickey = async (
+  pubkey?: string
+): Promise<
+  | {
+      externalPubKey: string
+      sharedSecret: string
+      ecdhPubKey: string
+      creatorPubkey: string
+    }
+  | any
+> => {
   checkMetalet()
-  
+
   try {
-    
     const ecdh = await window.metaidwallet.common.ecdh({
-    externalPubKey:pubkey ? pubkey : MAN_PUB_KEY //'048add0a6298f10a97785f7dd069eedb83d279a6f03e73deec0549e7d6fcaac4eef2c279cf7608be907a73c89eb44c28db084c27b588f1bd869321a6f104ec642d'//pubkey
-  })
-  
-  return ecdh
-  } catch (error) {
-    
-  }
-  
+      externalPubKey: pubkey ? pubkey : MAN_PUB_KEY, //'048add0a6298f10a97785f7dd069eedb83d279a6f03e73deec0549e7d6fcaac4eef2c279cf7608be907a73c89eb44c28db084c27b588f1bd869321a6f104ec642d'//pubkey
+    })
+
+    return ecdh
+  } catch (error) {}
 }
 
 export const getAddress = async () => {
   checkMetalet()
-  
+
   const addressRes = await window.metaidwallet.getAddress()
   const address = checkMetaletStatus(addressRes, 'get address')
 
@@ -167,7 +162,7 @@ interface connectRes {
 
 export const getNetwork = async () => {
   checkMetalet()
-  
+
   return await window.metaidwallet.getNetwork().then(({ network }) => {
     if (network === 'mainnet') {
       return 'livenet'
@@ -179,8 +174,8 @@ export const getNetwork = async () => {
 
 export const switchNetwork = async (network: 'livenet' | 'testnet') => {
   checkMetalet()
-  
-  return await window.metaidwallet.switchNetwork(network).then((res) => {
+
+  return await window.metaidwallet.switchNetwork(network).then(res => {
     if (res.status === 'canceled') {
       throw new Error('Switch network canceled')
     }
@@ -250,124 +245,119 @@ export const signMessage = async (message: string): Promise<string> => {
   return checkMetaletStatus(messageBase64, 'get signature')
 }
 
-export const pay=async (toPayTransactions:{
-  transactions:Array<{
-  txComposer: string,
-  message: string,
-}>,
-hasMetaid:boolean,
-feeb?:number
-})=>{
-   checkMetalet()
-   const chainStore=useChainStore()
-  if(!toPayTransactions.feeb){
-    
-    toPayTransactions.feeb=chainStore.mvcFeeRate()
+export const pay = async (toPayTransactions: {
+  transactions: Array<{
+    txComposer: string
+    message: string
+  }>
+  hasMetaid: boolean
+  feeb?: number
+}) => {
+  checkMetalet()
+  const chainStore = useChainStore()
+  if (!toPayTransactions.feeb) {
+    toPayTransactions.feeb = chainStore.mvcFeeRate()
   }
   return await window.metaidwallet.pay(toPayTransactions)
 }
 
+export const smallPay = async (toPayTransactions: {
+  transactions: Array<{
+    txComposer: string
+    message: string
+  }>
+  hasMetaid: boolean
+  feeb?: number
+}) => {
+  const chainStore = useChainStore()
+  checkMetalet()
 
-export const smallPay=async (toPayTransactions:{
-  transactions:Array<{
-  txComposer: string,
-  message: string,
-}>,
-hasMetaid:boolean,
-feeb?:number
-})=>{
-  const chainStore=useChainStore()
-   checkMetalet()
-   
-  if(!toPayTransactions.feeb){
-    toPayTransactions.feeb=chainStore.mvcFeeRate()
+  if (!toPayTransactions.feeb) {
+    toPayTransactions.feeb = chainStore.mvcFeeRate()
   }
-  if(window.metaidwallet?.smallPay){
-    
-      const approvedStore=useApprovedStore()
-       await approvedStore.getPaymentStatus()
-      await approvedStore.getAutoPayment()
-      
-    if(approvedStore.canUse){
-     
+  if (window.metaidwallet?.smallPay) {
+    const approvedStore = useApprovedStore()
+    await approvedStore.getPaymentStatus()
+    await approvedStore.getAutoPayment()
+
+    if (approvedStore.canUse) {
       try {
+        console.log('toPayTransactions', toPayTransactions, JSON.stringify(toPayTransactions))
+        const res = await window.metaidwallet.smallPay(toPayTransactions)
 
-        console.log('toPayTransactions',toPayTransactions,JSON.stringify(toPayTransactions))
-         const res= await window.metaidwallet.smallPay(toPayTransactions)
-         
-         
-          if(res.status === 'error' && res.message.includes('The fee is too high')){
-             return await window.metaidwallet.pay(toPayTransactions)
-          }else if(res.status === 'error' && res.message == "Not enough balance"){
-            throw new Error(res.message.toString())
-
-          }else if(res.status === 'error' && res.message.includes('Auto payment limit reached for the last 24 hours')){
-            
-             throw new Error(res.message.toString())
-
-          }else if(res.status === 'error' && !res.message.includes('The fee is too high')){
-             throw new Error(res.message.toString())
-               
-          }
-          
-         return res
-
-      
-       
-      } catch (error) {
-          
-        if(error.message == 'Not enough balance'){
-          
-         return ElMessage.error(error.message)
-          
-        }else if(error.message.includes('Auto payment limit reached for the last 24 hours')){
-          
-           return ElMessage.error(error.message)
-        } else {
-           ElMessage.error(error.message)
-           return await window.metaidwallet.pay(toPayTransactions)
+        if (res.status === 'error' && res.message.includes('The fee is too high')) {
+          return await window.metaidwallet.pay(toPayTransactions)
+        } else if (res.status === 'error' && res.message == 'Not enough balance') {
+          throw new Error(res.message.toString())
+        } else if (
+          res.status === 'error' &&
+          res.message.includes('Auto payment limit reached for the last 24 hours')
+        ) {
+          throw new Error(res.message.toString())
+        } else if (res.status === 'error' && !res.message.includes('The fee is too high')) {
+          throw new Error(res.message.toString())
         }
-      
+
+        return res
+      } catch (error) {
+        if (error.message == 'Not enough balance') {
+          return ElMessage.error(error.message)
+        } else if (error.message.includes('Auto payment limit reached for the last 24 hours')) {
+          return ElMessage.error(error.message)
+        } else {
+          ElMessage.error(error.message)
+          return await window.metaidwallet.pay(toPayTransactions)
+        }
       }
-    }else{
+    } else {
       return await window.metaidwallet.pay(toPayTransactions)
     }
-  }else{
+  } else {
     return await window.metaidwallet.pay(toPayTransactions)
   }
-
 }
 
-
-export const autoPaymentStatus=async()=>{
+export const autoPaymentStatus = async () => {
   checkMetalet()
-   return await window.metaidwallet.autoPaymentStatus()
+  return await window.metaidwallet.autoPaymentStatus()
 }
 
-export const autoPayment=async()=>{
+export const autoPayment = async () => {
   checkMetalet()
-  
-   return await window.metaidwallet.autoPayment()
+
+  return await window.metaidwallet.autoPayment()
 }
 
-
-export const needWebRefresh=async(params:{isNeed:boolean})=>{
-
+export const needWebRefresh = async (params: { isNeed: boolean }) => {
   try {
-  checkMetalet()
-  return await window.metaidwallet.needWebRefresh(params)
+    checkMetalet()
+    return await window.metaidwallet.needWebRefresh(params)
   } catch (error) {
-      console.log('执行needWebRefresh出错了')
+    console.log('执行needWebRefresh出错了')
   }
 }
 
-
-export const openAppBrowser=async(params:{url:string})=>{
-  
+export const openAppBrowser = async (params: { url: string }) => {
   try {
-  checkMetalet()
-  return await window.metaidwallet.openAppBrowser(params)
+    checkMetalet()
+    return await window.metaidwallet.openAppBrowser(params)
   } catch (error) {
-      console.log('执行openAppBrowser出错了')
+    console.log('执行openAppBrowser出错了')
+  }
+}
+
+export const saveBase64Image = async (base64string: string) => {
+  try {
+    // 检查用户代理是否包含 IDChat
+    if (navigator.userAgent.includes('IDChat')) {
+      checkMetalet()
+      // 调用app注入的方法来下载图片
+      return await (window.metaidwallet as any).saveBase64Image(base64string)
+    } else {
+      console.log('当前环境不是 IDChat，无法使用图片下载功能')
+      return null
+    }
+  } catch (error) {
+    console.log('执行saveBase64Image出错了', error)
   }
 }

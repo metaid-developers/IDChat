@@ -2216,6 +2216,47 @@ export function changeSymbol(symbol: string) {
 }
 
 /**
+ * 将图片URL转换为base64字符串
+ * @param imageUrl 图片URL
+ * @returns Promise<string> base64字符串
+ */
+async function convertImageToBase64(imageUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+
+        if (!ctx) {
+          reject(new Error('Cannot get canvas context'))
+          return
+        }
+
+        canvas.width = img.width
+        canvas.height = img.height
+
+        ctx.drawImage(img, 0, 0)
+
+        // 转换为base64，包含data:image前缀
+        const base64 = canvas.toDataURL('image/jpeg', 0.9)
+        resolve(base64)
+      } catch (error) {
+        reject(error)
+      }
+    }
+
+    img.onerror = () => {
+      reject(new Error('Failed to load image for base64 conversion'))
+    }
+
+    img.src = imageUrl
+  })
+}
+
+/**
  * 下载图片函数（支持移动端，解决CORS问题）
  * @param imageUrl 图片URL
  * @param filename 文件名（可选，默认为时间戳）
@@ -2232,6 +2273,37 @@ export async function downloadImage(imageUrl: string, filename?: string): Promis
         lock: true,
         background: 'rgba(0,0,0,0.3)',
       })
+
+      // 检查是否在 IDChat 环境下
+      const isIDChatEnvironment = navigator.userAgent.includes('IDChat')
+
+      if (isIDChatEnvironment) {
+        try {
+          // 在 IDChat 环境下，先将图片转换为 base64，然后使用 app 注入的方法下载
+          const base64String = await convertImageToBase64(imageUrl)
+
+          // 动态导入 metalet 模块中的 saveBase64Image 方法
+          const { saveBase64Image } = await import('@/wallet-adapters/metalet')
+          const result = await saveBase64Image(base64String)
+
+          if (result) {
+            // 关闭loading
+            if (loadingInstance) {
+              loadingInstance.close()
+            }
+
+            ElMessage.success(i18n.global.t('download.success'))
+            resolve()
+            return
+          }
+        } catch (idchatError) {
+          console.warn(
+            'IDChat download method failed, falling back to standard method:',
+            idchatError
+          )
+          // 如果 IDChat 方法失败，继续使用标准方法
+        }
+      }
 
       // 检测是否为移动端
       const isMobile =

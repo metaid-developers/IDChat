@@ -154,7 +154,6 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
-import { ca, el } from 'element-plus/es/locale'
 
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
@@ -178,7 +177,7 @@ const messagesScroll = ref<HTMLElement>()
 const route = useRoute()
 const showScrollToBottom = ref(false)
 
-const lastReadIndex = ref(0)
+const lastReadIndex = ref(-1)
 
 const { activeChannel } = storeToRefs(useSimpleTalkStore())
 const props = defineProps({
@@ -567,8 +566,8 @@ watch(
       )
       try {
         lastReadIndex.value =
-          simpleTalk.activeChannel.lastMessage?.index === simpleTalk.activeChannel.lastReadIndex
-            ? 0
+          simpleTalk.activeChannel.lastMessage?.index - simpleTalk.activeChannel.lastReadIndex <= 5
+            ? -1
             : simpleTalk.activeChannel.lastReadIndex
       } catch (e) {
         console.error('设置 lastReadIndex 失败:', e)
