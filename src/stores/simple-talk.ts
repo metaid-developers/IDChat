@@ -1980,7 +1980,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       // 总是重新加载消息以确保数据最新
       await this.loadMessages(channelId)
       console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
-
+      if(this.activeChannelMessages.length===0){
+        this.isSetActiveChannelIdInProgress = false
+      }
       // 如果是群聊，获取权限信息
       if (channel && channel.type === 'group') {
         // 在后台获取权限信息，不阻塞界面
