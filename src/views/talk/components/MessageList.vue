@@ -7,7 +7,9 @@
           simpleTalk.isInitialized === false ||
           simpleTalk.isSetActiveChannelIdInProgress ||
           (simpleTalk.activeChannelMessages.length === 0 &&
-            simpleTalk.activeChannel?.lastMessage?.index > 0))
+            simpleTalk.activeChannel &&
+            simpleTalk.activeChannel.lastMessage &&
+            simpleTalk.activeChannel.lastMessage.index > 0))
     "
   >
     <LoadingList />
@@ -600,11 +602,13 @@ watch(
           }
         }
         // 设置切换完成状态
+        console.log('✅ 频道切换完成，设置 isSetActiveChannelIdInProgress 为 false')
         simpleTalk.setActiveChannelIdInProgress(false)
         observeMessages()
       }, 200) // 等待200ms确保DOM渲染完成
     } else {
       console.log('🎯 频道切换中但无消息，或 lastReadIndex 未定义，跳过滚动')
+      simpleTalk.setActiveChannelIdInProgress(false)
     }
   },
   { immediate: true }
