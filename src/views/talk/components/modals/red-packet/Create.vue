@@ -159,7 +159,7 @@
 
               <div class="my-7.5 flex justify-center items-baseline space-x-1">
                 <div class="text-4xl font-bold">{{ form.nicerAmount }}</div>
-                <div class="text-base">{{ form.amountUnit }}</div>
+                <div class="text-base">{{ form.selectedToken?.symbol || form.amountUnit }}</div>
               </div>
 
               <div class="w-full">
@@ -437,14 +437,25 @@
         <!-- Token余额提示 -->
         <div v-if="form.selectedToken" class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <div class="flex items-center space-x-2">
-            <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-              :style="{ backgroundColor: form.tokenIconBgColor }"
-            >
-              {{ form.tokenIconText }}
+            <!-- Token图标 -->
+            <div class="relative w-8 h-8">
+              <img
+                v-if="form.selectedTokenIcon"
+                :src="form.selectedTokenIcon"
+                :alt="form.selectedToken.symbol"
+                class="w-8 h-8 rounded-full object-cover"
+                @error="form.selectedTokenIcon = null"
+              />
+              <div
+                v-else
+                class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                :style="{ backgroundColor: form.tokenIconBgColor }"
+              >
+                {{ form.tokenIconText }}
+              </div>
             </div>
             <div>
-              <div class="font-medium">{{ form.selectedToken.name }}</div>
+              <div class="font-medium">{{ form.selectedToken.symbol }}</div>
               <div class="text-sm text-gray-500 dark:text-gray-400">
                 Balance: {{ form.tokenBalance }} {{ form.selectedToken.symbol }}
               </div>
@@ -469,19 +480,32 @@
               @click="selectToken(token)"
             >
               <div class="flex items-center space-x-3">
-                <div
-                  class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                  :style="{ backgroundColor: generateTokenColor(token.genesis) }"
-                >
-                  {{ token.symbol.slice(0, 2).toUpperCase() }}
+                <!-- Token图标 -->
+                <div class="relative w-10 h-10">
+                  <img
+                    v-if="tokenIcons[token.genesis]"
+                    :src="tokenIcons[token.genesis]"
+                    :alt="token.symbol"
+                    class="w-10 h-10 rounded-full object-cover"
+                    @error="handleTokenIconError(token.genesis)"
+                  />
+                  <div
+                    v-else
+                    class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                    :style="{ backgroundColor: generateTokenColor(token.genesis) }"
+                  >
+                    {{ token.symbol.slice(0, 2).toUpperCase() }}
+                  </div>
                 </div>
                 <div class="flex-1">
                   <div class="font-medium">{{ token.symbol }}</div>
-                  <!-- <div class="text-sm text-gray-500 dark:text-gray-400">{{ token.symbol }}</div> -->
+                  <div class="text-sm text-gray-500 dark:text-gray-400">
+                    TokenID:{{ token.genesis.replace(/(\w{4})\w+(\w{5})/, '$1...$2') }}
+                  </div>
                   <div class="text-sm text-gray-600 dark:text-gray-300">
                     Balance:
                     {{
-                      (token.confirmed / Math.pow(10, token.decimal)).toFixed(
+                      ((token.confirmed + token.unconfirmed) / Math.pow(10, token.decimal)).toFixed(
                         Math.min(token.decimal, 8)
                       )
                     }}
@@ -595,6 +619,7 @@ import { useChainStore } from '@/stores/chain'
 import { broadcastToApi } from '@/utils/userInfo'
 // @ts-ignore
 import { SHA256 } from 'crypto-es/lib/sha256.js'
+import { getTokenIconWithFallback } from '@/utils/token-icons'
 
 const layout = useLayoutStore()
 const userStore = useUserStore()
@@ -743,6 +768,29 @@ const selectNft = (nft: any) => {
 }
 
 // Token选择相关函数
+// Token图标缓存
+const tokenIcons = ref<Record<string, string>>({})
+
+// 处理图标加载错误
+const handleTokenIconError = (genesis: string) => {
+  delete tokenIcons.value[genesis]
+}
+
+// 加载Token图标
+const loadTokenIcon = async (token: any) => {
+  if (!token.genesis || tokenIcons.value[token.genesis]) return
+
+  try {
+    const iconUrl = await getTokenIconWithFallback(token.genesis, token.codeHash, token.symbol)
+
+    if (iconUrl) {
+      tokenIcons.value[token.genesis] = iconUrl
+    }
+  } catch (error) {
+    console.warn('Failed to load token icon:', error)
+  }
+}
+
 const selectToken = (token: any) => {
   form.selectToken(token)
   layout.isShowChooseTokenModal = false
@@ -765,6 +813,17 @@ watch(
       form.amount = 0
     }
   }
+)
+
+// 监听可用代币列表变化，预加载图标
+watch(
+  () => form.availableTokens,
+  tokens => {
+    tokens.forEach(token => {
+      loadTokenIcon(token)
+    })
+  },
+  { immediate: true }
 )
 
 const submit = async () => {
@@ -796,7 +855,7 @@ const submit = async () => {
     }
   } catch (error) {
     console.error('Error during submission:', error)
-    ElMessage.error(error.message || 'Submission failed')
+    ElMessage.error((error as Error).message || 'Submission failed')
     layout.isShowLoading = false
   }
 }

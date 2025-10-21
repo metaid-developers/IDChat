@@ -21,6 +21,7 @@ import { Channel } from '@/@types/talk'
 import { GetFT, GetGenesis } from '@/api/aggregation'
 // @ts-ignore
 import { SHA256 } from 'crypto-es/lib/sha256.js'
+import { getTokenIconWithFallback } from '@/utils/token-icons'
 import Decimal from 'decimal.js-light'
 import { useChainStore } from './chain'
 import i18n from '@/utils/i18n'
@@ -399,6 +400,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       currentRedPacketType: 'mvc' as 'btc' | 'mvc' | 'token', // 当前红包类型，独立于gas链
       // 新增 MetaContract Token 相关字段
       selectedToken: null as MetaContractToken | null,
+      selectedTokenIcon: null as string | null,
       availableTokens: [] as MetaContractToken[],
     }
   },
@@ -429,7 +431,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     // 获取Token余额
     tokenBalance(state): string {
       if (!state.selectedToken) return '0'
-      return new Decimal(state.selectedToken.confirmed)
+      return new Decimal(state.selectedToken.confirmed + state.selectedToken.unconfirmed)
         .div(new Decimal(10).pow(state.selectedToken.decimal))
         .toString()
     },
@@ -489,11 +491,30 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       this.amount = 0.1
       this.each = 0.05
 
+      // 加载Token图标
+      this.loadTokenIcon(token)
+
       // 保存选择的Token到localStorage
       try {
         localStorage.setItem('selectedRedPacketToken', JSON.stringify(token))
       } catch (e) {
         console.warn('Failed to save selected token:', e)
+      }
+    },
+
+    // 加载Token图标
+    async loadTokenIcon(token: MetaContractToken) {
+      try {
+        const iconUrl = await getTokenIconWithFallback(token.genesis, token.codeHash, token.symbol)
+
+        if (iconUrl) {
+          this.selectedTokenIcon = iconUrl
+        } else {
+          this.selectedTokenIcon = null
+        }
+      } catch (error) {
+        console.warn('Failed to load token icon:', error)
+        this.selectedTokenIcon = null
       }
     },
 
@@ -503,6 +524,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
         const saved = localStorage.getItem('selectedRedPacketToken')
         if (saved) {
           this.selectedToken = JSON.parse(saved)
+          // 加载Token图标
+          if (this.selectedToken) {
+            this.loadTokenIcon(this.selectedToken)
+          }
         }
       } catch (e) {
         console.warn('Failed to load selected token:', e)
