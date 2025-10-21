@@ -1,10 +1,6 @@
 <template>
   <TransitionRoot :show="layout.isShowRedPacketResultModal" :unmount="true">
-    <Dialog
-      @close="closeModal"
-      class="relative z-50"
- 
-    >
+    <Dialog @close="closeModal" class="relative z-50">
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -281,7 +277,9 @@ const draws = computed(() => {
 })
 
 const unit = computed(() => {
-  return redPacketResult?.type?.toUpperCase() || 'SPACE'
+  return redPacketResult?.type?.toUpperCase() === 'METACONTRACT-FT'
+    ? redPacketResult.tickInfo?.symbol
+    : redPacketResult?.type?.toUpperCase() || 'SPACE'
 })
 const sortedDraws = computed(() => {
   return draws.value.sort((a: any, b: any) => b.timestamp - a.timestamp)
@@ -327,7 +325,9 @@ const nicerAmountWithUnit = (amount: string) => {
     }
   }
 
-  const amountNumber = new Decimal(amount).div(10 ** 8).toNumber()
+  const amountNumber = new Decimal(amount)
+    .div(10 ** redPacketResult.tickInfo?.decimal || 8)
+    .toNumber()
   // if (amountNumber >= 100_000_000) {
   //   return {
   //     amount: `${(amountNumber / 100_000_000).toFixed(2)}`,

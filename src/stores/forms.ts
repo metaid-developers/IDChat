@@ -333,6 +333,22 @@ export const usePasswordFormStore = defineStore('passwordForm', {
   },
 })
 
+// MetaContract FT Token 接口类型
+export interface MetaContractToken {
+  codeHash: string
+  genesis: string
+  name: string
+  symbol: string
+  icon: string
+  decimal: number
+  sensibleId: string
+  utxoCount: string
+  confirmed: number
+  confirmedString: string
+  unconfirmed: number
+  unconfirmedString: string
+}
+
 export const useRedPacketFormStore = defineStore('redPacketForm', {
   state: () => {
     const chainStore = useChainStore()
@@ -347,7 +363,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       ? {
           amount: 0.00003, // 0.00003 BTC = 3000 sats
           each: 0.00001, // 0.00001 BTC = 1000 sats
-          unit: 'BTC' as 'Sats' | 'Space' | 'BTC',
+          unit: 'BTC' as 'Sats' | 'Space' | 'BTC' | 'Token',
           quantity: 3,
           message: '',
           type: RedPacketDistributeType.Random,
@@ -355,7 +371,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       : {
           amount: 0.1,
           each: 0.05,
-          unit: 'Space' as 'Sats' | 'Space' | 'BTC',
+          unit: 'Space' as 'Sats' | 'Space' | 'BTC' | 'Token',
           quantity: 2,
           message: '',
           type: RedPacketDistributeType.Random,
@@ -374,13 +390,16 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     return {
       amount: settings.amount as number | '',
       each: settings.each as number,
-      unit: settings.unit as 'Sats' | 'Space' | 'BTC',
+      unit: settings.unit as 'Sats' | 'Space' | 'BTC' | 'Token',
       quantity: settings.quantity,
       message: settings.message,
       type: settings.type,
       nft: null as any,
       chain: null as any,
-      currentRedPacketType: 'mvc' as 'btc' | 'mvc', // 当前红包类型，独立于gas链
+      currentRedPacketType: 'mvc' as 'btc' | 'mvc' | 'token', // 当前红包类型，独立于gas链
+      // 新增 MetaContract Token 相关字段
+      selectedToken: null as MetaContractToken | null,
+      availableTokens: [] as MetaContractToken[],
     }
   },
 
@@ -407,9 +426,39 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       }
     },
 
+    // 获取Token余额
+    tokenBalance(state): string {
+      if (!state.selectedToken) return '0'
+      return new Decimal(state.selectedToken.confirmed)
+        .div(new Decimal(10).pow(state.selectedToken.decimal))
+        .toString()
+    },
+
+    // 生成Token图标背景色 (使用更温和的颜色)
+    tokenIconBgColor(state): string {
+      if (!state.selectedToken) return '#6366f1'
+      // 使用genesis生成一致的背景色，但调整到合适的范围
+      const hash = SHA256(state.selectedToken.genesis).toString()
+      const r = Math.floor(parseInt(hash.slice(0, 2), 16) * 0.6) + 60 // 60-213
+      const g = Math.floor(parseInt(hash.slice(2, 4), 16) * 0.6) + 60 // 60-213
+      const b = Math.floor(parseInt(hash.slice(4, 6), 16) * 0.6) + 60 // 60-213
+      return `rgb(${r}, ${g}, ${b})`
+    },
+
+    // 获取Token图标显示文字
+    tokenIconText(state): string {
+      if (!state.selectedToken) return ''
+      return state.selectedToken.symbol.slice(0, 2).toUpperCase()
+    },
+
     isFinished(state) {
       if (state.type === RedPacketDistributeType.Nft) {
         return !!state.each && !!state.quantity && !!state.nft && !!state.chain
+      }
+
+      // Token红包需要选择token
+      if (state.unit === 'Token') {
+        return !!state.amount && !!state.quantity && !!state.selectedToken
       }
 
       return !!state.amount && !!state.quantity
@@ -417,6 +466,49 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
   },
 
   actions: {
+    // 获取MetaContract Token余额
+    async loadTokenBalances() {
+      try {
+        if (window.metaidwallet && window.metaidwallet.token) {
+          const tokens = await window.metaidwallet.token.getBalance()
+          this.availableTokens = tokens || []
+        }
+      } catch (error) {
+        console.warn('Failed to load token balances:', error)
+        this.availableTokens = []
+      }
+    },
+
+    // 选择Token
+    selectToken(token: MetaContractToken) {
+      this.selectedToken = token
+      this.unit = 'Token'
+      this.currentRedPacketType = 'token'
+
+      // 重置金额，因为不同Token的精度可能不同
+      this.amount = 0.1
+      this.each = 0.05
+
+      // 保存选择的Token到localStorage
+      try {
+        localStorage.setItem('selectedRedPacketToken', JSON.stringify(token))
+      } catch (e) {
+        console.warn('Failed to save selected token:', e)
+      }
+    },
+
+    // 从localStorage恢复选择的Token
+    loadSelectedToken() {
+      try {
+        const saved = localStorage.getItem('selectedRedPacketToken')
+        if (saved) {
+          this.selectedToken = JSON.parse(saved)
+        }
+      } catch (e) {
+        console.warn('Failed to load selected token:', e)
+      }
+    },
+
     // 根据红包类型保存设置到 localStorage（独立于gas链）
     saveSettings() {
       // 使用红包类型而不是gas链来保存设置
@@ -450,23 +542,37 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
 
       // 根据红包类型设置不同的默认值
       const isBtcRedPacket = redPacketType === 'btc'
-      const defaultSettings = isBtcRedPacket
-        ? {
-            amount: 0.00003, // 0.00003 BTC = 3000 sats
-            each: 0.00001, // 0.00001 BTC = 1000 sats
-            unit: 'BTC' as 'Sats' | 'Space' | 'BTC',
-            quantity: 3,
-            message: '',
-            type: RedPacketDistributeType.Random,
-          }
-        : {
-            amount: 0.1,
-            each: 0.05,
-            unit: 'Space' as 'Sats' | 'Space' | 'BTC',
-            quantity: 2,
-            message: '',
-            type: RedPacketDistributeType.Random,
-          }
+      const isTokenRedPacket = redPacketType === 'token'
+
+      let defaultSettings
+      if (isBtcRedPacket) {
+        defaultSettings = {
+          amount: 0.00003, // 0.00003 BTC = 3000 sats
+          each: 0.00001, // 0.00001 BTC = 1000 sats
+          unit: 'BTC' as 'Sats' | 'Space' | 'BTC' | 'Token',
+          quantity: 3,
+          message: '',
+          type: RedPacketDistributeType.Random,
+        }
+      } else if (isTokenRedPacket) {
+        defaultSettings = {
+          amount: 1, // Token默认1个
+          each: 0.5, // 每个0.5
+          unit: 'Token' as 'Sats' | 'Space' | 'BTC' | 'Token',
+          quantity: 2,
+          message: '',
+          type: RedPacketDistributeType.Random,
+        }
+      } else {
+        defaultSettings = {
+          amount: 0.1,
+          each: 0.05,
+          unit: 'Space' as 'Sats' | 'Space' | 'BTC' | 'Token',
+          quantity: 2,
+          message: '',
+          type: RedPacketDistributeType.Random,
+        }
+      }
 
       let settings = defaultSettings
       if (savedSettings) {
@@ -485,6 +591,11 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       this.quantity = settings.quantity
       this.message = settings.message
       this.type = settings.type
+
+      // 如果是Token红包，加载选择的Token
+      if (isTokenRedPacket) {
+        this.loadSelectedToken()
+      }
     },
 
     validateQuantity() {
@@ -517,6 +628,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
     validateAmount() {
       // 根据红包类型而不是gas链来验证
       const isBtcRedPacket = this.currentRedPacketType === 'btc'
+      const isTokenRedPacket = this.currentRedPacketType === 'token'
 
       if (isBtcRedPacket) {
         // BTC红包特殊限制
@@ -568,6 +680,35 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
             this.amount = BTC_MAX_PER_PACKET_SATS * this.quantity
             // ElMessage.warning('BTC紅包平均金額不能超過100000聰')
           }
+        }
+      } else if (isTokenRedPacket && this.selectedToken) {
+        // Token红包验证
+        const tokenBalance = new Decimal(this.selectedToken.confirmed)
+          .div(new Decimal(10).pow(this.selectedToken.decimal))
+          .toNumber()
+
+        // 最小金额为Token的最小单位
+        const minAmount = new Decimal(1)
+          .div(new Decimal(10).pow(this.selectedToken.decimal))
+          .toNumber()
+
+        if (+this.amount < minAmount * this.quantity) {
+          this.amount = minAmount * this.quantity
+          ElMessage.warning(
+            `${this.selectedToken.symbol}红包总金额不能小于 ${minAmount * this.quantity}`
+          )
+        }
+
+        if (+this.amount > tokenBalance) {
+          this.amount = tokenBalance
+          ElMessage.warning(`${this.selectedToken.symbol}红包总金额不能超过余额 ${tokenBalance}`)
+        }
+
+        // 检查平均单红包金额限制
+        const avgPerPacket = +this.amount / this.quantity
+        if (avgPerPacket < minAmount) {
+          this.amount = minAmount * this.quantity
+          ElMessage.warning(`${this.selectedToken.symbol}红包平均金额不能小于 ${minAmount}`)
         }
       } else {
         // 其他链的默认验证逻辑
@@ -634,6 +775,10 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       this.chain = null
       this.message = ''
 
+      // 重置Token相关字段
+      this.selectedToken = null
+      this.availableTokens = []
+
       // 根据当前链设置不同的默认值
       if (isBtcChain) {
         this.amount = 0.00003
@@ -641,12 +786,14 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
         this.unit = 'BTC'
         this.quantity = 3
         this.type = RedPacketDistributeType.Random
+        this.currentRedPacketType = 'btc'
       } else {
         this.amount = 0.1
         this.each = 0.05
         this.unit = 'Space'
         this.quantity = 2
         this.type = RedPacketDistributeType.Random
+        this.currentRedPacketType = 'mvc'
       }
     },
 
@@ -658,6 +805,24 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
       const chainStore = useChainStore()
 
       if (!this.isFinished) return
+
+      // Token红包特殊处理
+      if (this.unit === 'Token' && this.selectedToken) {
+        // TODO: 实现Token红包发送逻辑
+        console.log('发送Token红包:', {
+          token: this.selectedToken,
+          amount: this.amount,
+          quantity: this.quantity,
+          message: this.message,
+          type: this.type,
+        })
+
+        // 保存当前设置
+        this.saveSettings()
+
+        // ElMessage.success('Token红包功能开发中，敬请期待！')
+        // return { success: false, message: 'Token红包功能开发中' }
+      }
 
       // BTC红包特殊验证
       // if (chainStore.state.currentChain === 'btc') {
@@ -680,6 +845,7 @@ export const useRedPacketFormStore = defineStore('redPacketForm', {
           nft: this.nft,
           type: this.type,
           unit: this.unit,
+          token: this.selectedToken,
         },
         simpleTalk.activeChannel,
         simpleTalk.selfMetaId

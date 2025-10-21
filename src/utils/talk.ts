@@ -43,7 +43,7 @@ import { AttachmentItem } from '@/@types/hd-wallet'
 import { useChainStore } from '@/stores/chain'
 import { Red_Packet_Min, Red_Packet_Max } from '@/data/constants'
 import { useEcdhsStore } from '@/stores/ecdh'
-import { createPin } from './userInfo'
+import { buildOpReturnV2, createPin } from './userInfo'
 import { createPinWithBtc } from './pin'
 import { generateLuckyBagCode } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
@@ -51,6 +51,7 @@ import { useLayoutStore } from '@/stores/layout'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { SimpleChannel } from '@/@types/simple-chat'
 import i18n from './i18n'
+import { de } from 'element-plus/es/locale'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -295,11 +296,11 @@ export const sendInviteBuzz = async (form: any, sdk: SDK) => {
 //   return redPackets
 // }
 
-const nicerAmount = (amount: number, unit: string) => {
+const nicerAmount = (amount: number, unit: string, decimals: number = 1) => {
   if (unit == 'Space' || unit == 'BTC') {
     return new Decimal(amount).mul(10 ** 8).toNumber()
   } else {
-    return amount
+    return new Decimal(amount).mul(10 ** decimals).toNumber()
   }
 }
 
@@ -384,7 +385,7 @@ const nicerAmount = (amount: number, unit: string) => {
 // }
 
 const _putIntoRedPackets = (form: any, address: string): any[] => {
-  const { amount, quantity, each, type, unit } = form
+  const { amount, quantity, each, type, unit, token } = form
 
   // // NFT🧧：将NFT分成指定数量个红包，平均分配
   // if (type === RedPacketDistributeType.Nft) {
@@ -402,10 +403,11 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
   // 货币🧧：使用正态分布算法分配
   const layoutStore = useLayoutStore()
   const isBtcChain = layoutStore.selectedRedPacketType === 'btc'
+  const isToken = layoutStore.selectedRedPacketType === 'token'
 
   // 根据链设置不同的最小红包金额
   const minSats = isBtcChain ? BTC_MIN_PER_PACKET_SATS : Red_Packet_Min // BTC最小546聪，其他链0.0001 Space = 10000聪
-  const totalAmount = nicerAmount(amount, unit) + 210 * quantity * 1 // 预留每个红包210聪的矿工费
+  const totalAmount = nicerAmount(amount, unit, token?.decimal) + 210 * quantity * 1
 
   // 确保最小金额合理
   if (totalAmount < minSats * quantity) {
@@ -416,6 +418,8 @@ const _putIntoRedPackets = (form: any, address: string): any[] => {
       currentMinSats = new Decimal(minSats).div(10 ** 8).toNumber()
     } else if (unit === 'Sats') {
       currentMinSats = minSats
+    } else if (unit === 'Token') {
+      currentMinSats = new Decimal(minSats).div(10 ** token.decimal).toNumber()
     } else {
       currentMinSats = minSats
     }
@@ -543,17 +547,19 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
   const net = import.meta.env.VITE_NET_WORK || 'mainnet'
   // const { addressStr: address } = buildCryptoInfo(key, net);
   // const address = luckyBagAddress
-
+  const layoutStore = useLayoutStore()
+  const isBtcChain = layoutStore.selectedRedPacketType === 'btc'
   // 1.2 构建红包数据
   // const amountInSat = amount * 100_000_000
-  const amountInSat = nicerAmount(form.amount, form.unit) + 210 * form.quantity // 现在直接使用sat为单位
+  const amountInSat =
+    layoutStore.selectedRedPacketType === 'token'
+      ? nicerAmount(form.amount, form.unit, form.token?.decimal)
+      : nicerAmount(form.amount, form.unit, form.token?.decimal) + 210 * form.quantity
 
   const redPackets = _putIntoRedPackets(form, address)
 
   console.table(redPackets)
   console.log({ form })
-  const layoutStore = useLayoutStore()
-  const isBtcChain = layoutStore.selectedRedPacketType === 'btc'
 
   // 2. 构建数据载体
   const dataCarrier: any = {
@@ -569,8 +575,24 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
     amount: amountInSat,
     count: form.quantity,
     metaid: selfMetaId,
-    payList: redPackets,
-    type: isBtcChain ? 'btc' : 'space',
+    payList:
+      layoutStore.selectedRedPacketType === 'token'
+        ? redPackets.map((item, index) => {
+            return {
+              ...item,
+              index,
+              gasAmount: '20000',
+              gasAddress: address,
+              gasIndex: index + 2,
+            }
+          })
+        : redPackets,
+    type:
+      layoutStore.selectedRedPacketType === 'token'
+        ? 'metacontract-ft'
+        : isBtcChain
+        ? 'btc'
+        : 'space',
     feeRate: 1,
     requireType: '',
     requireTickId: '',
@@ -578,6 +600,61 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
     limitAmount: 0,
     channelId: channel.parentGroupId ? channel.id : '', //channel.id,
   }
+  if (layoutStore.selectedRedPacketType === 'token') {
+    const simpleGroupLuckyBagExtraData = {
+      subId,
+      groupId: channel.parentGroupId ? channel.parentGroupId : channel.id,
+      // channelId: '',
+      code,
+      createTime,
+      luckyBagAddress: address,
+      domain: import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
+    }
+    const simpleGroupLuckyBagExtraMetaidData = {
+      operation: 'hide',
+      body: JSON.stringify(simpleGroupLuckyBagExtraData),
+      path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/simplegroupluckybagextra`,
+      contentType: 'application/json',
+      encryption: '0',
+      version: '1.0.0',
+      encoding: 'utf-8',
+      flag: 'metaid',
+    }
+    const opReturnData = buildOpReturnV2(simpleGroupLuckyBagExtraMetaidData, 'mainnet')
+    const opreturnDataHex = Buffer.from(JSON.stringify(opReturnData)).toString('hex')
+    const res = await window.metaidwallet
+      .transfer({
+        broadcast: true,
+        tasks: [
+          {
+            type: 'token',
+            codehash: form.token.codeHash,
+            genesis: form.token.genesis,
+            metaidData: simpleGroupLuckyBagExtraMetaidData,
+            receivers: redPackets.map(item => {
+              return {
+                address: item.address,
+                amount: item.amount,
+                decimal: form.token.decimal,
+              }
+            }),
+          },
+        ],
+      })
+      .catch(e => {
+        throw new Error(e as any)
+      })
+    if (res.status) throw new Error(res.status)
+    if (!res.res[0] || !res.res[0].routeCheckTxHex) throw new Error('send token failed')
+    console.log('res', res)
+    dataCarrier.luckyBagGasAddress = address
+    dataCarrier.tickTxId = res.res[0].txid
+    ;(dataCarrier.tickPinId = res.res[0].txid + 'i' + (redPackets.length + 1)),
+      (dataCarrier.tickId = form.token.codeHash + '/' + form.token.genesis)
+    dataCarrier.collectionId = ''
+  }
+
+  console.log({ dataCarrier })
 
   // 2.1 nft红包处理
   if (form.nft && form.chain) {
@@ -596,13 +673,24 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
   const node = {
     protocol: NodeName.SimpleGroupLuckyBag,
     body: dataCarrier,
-    payTo: redPackets,
+    payTo:
+      layoutStore.selectedRedPacketType === 'token'
+        ? redPackets.map((item, index) => {
+            return {
+              ...item,
+              index,
+              gasAmount: '20000',
+              gasAddress: address,
+              gasIndex: index + 2,
+            }
+          })
+        : redPackets,
     isBroadcast: true,
   }
 
   // 3. 发送节点
   try {
-    const res = await buildTx.createRedPacket(node)
+    const res = await buildTx.createRedPacket(node, layoutStore.selectedRedPacketType)
 
     console.log({ res })
     return res

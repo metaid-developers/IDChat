@@ -69,7 +69,8 @@ export const useBulidTx = createGlobalState(() => {
     }))
   // actions
   const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
-
+    debugger
+ const layoutStore=useLayoutStore()
     const chainStore=useChainStore()
 
 
@@ -135,7 +136,7 @@ export const useBulidTx = createGlobalState(() => {
           for(let item of payTo){
                 pinTxComposer.appendP2PKHOutput({
                 address:new mvc.Address(item.address,'mainnet'),
-                satoshis: item.amount,
+                satoshis: layoutStore.selectedRedPacketType === 'token' ? Number(item.gasAmount) : item.amount,
                 })
           }
         }
@@ -266,6 +267,7 @@ export const useBulidTx = createGlobalState(() => {
         }
         //  return txIDs
       }else{
+        debugger  
          const transactions=[] 
        const pinTxComposer = new TxComposer()
         pinTxComposer.appendP2PKHOutput({
@@ -277,10 +279,11 @@ export const useBulidTx = createGlobalState(() => {
         pinTxComposer.appendOpReturnOutput(pinScript)
         
         if(payTo.length){
+          debugger
           for(let item of payTo){
                 pinTxComposer.appendP2PKHOutput({
                 address:new mvc.Address(item.address,'mainnet'),
-                satoshis: item.amount,
+                satoshis: layoutStore.selectedRedPacketType === 'token' ? Number(item.gasAmount) : item.amount,
                 })
           }
         }
@@ -646,7 +649,7 @@ export const useBulidTx = createGlobalState(() => {
       index: number,
     }>
     isBroadcast:boolean
-  })=>{
+  },type:any)=>{
     const {body,protocol,payTo,isBroadcast}=params
     
     try {

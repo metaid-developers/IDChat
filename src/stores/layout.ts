@@ -6,13 +6,13 @@ export const useLayoutStore = defineStore('layout', {
   state: () => {
     return {
       isShowLeftNav: false,
-      isShowContactList:false,
+      isShowContactList: false,
       // showJoinView: false,
       //showWelcomeDescView: false,
       isShowPublishBuzz: false,
       isShowCreateCommunityModal: false,
       isShowCreateGroupTypeModal: false,
-      isShowCreateBroadcastChannelModal:false,
+      isShowCreateBroadcastChannelModal: false,
       isShowCreatePublicChannelModal: false,
       isShowCreateConsensualChannelModal: false,
       isShowCreateGeneralChannelModal: false,
@@ -41,7 +41,7 @@ export const useLayoutStore = defineStore('layout', {
       isShowCommunitySettingsModal: false,
       isShowMemberList: true,
       isShowMemberListDrawer: false,
-      isShowSubChannelDrawer:false,
+      isShowSubChannelDrawer: false,
       isShowPasswordModal: false,
       isShowRequireNftModal: false,
       isShowRequireFtModal: false,
@@ -52,7 +52,7 @@ export const useLayoutStore = defineStore('layout', {
       isShowLoading: false,
       never: false,
       isShowWallet: false,
-      selectedRedPacketType: 'mvc' as 'btc' | 'mvc', // 红包类型选择，独立于gas链
+      selectedRedPacketType: 'mvc' as 'btc' | 'mvc' | 'token', // 红包类型选择，独立于gas链
       inviteLink: '',
     }
   },

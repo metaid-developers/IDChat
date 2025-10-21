@@ -2,7 +2,6 @@
   <BaseModal
     v-model="layout[ShowControl.isShowRedPacketModal]"
     v-model:show-second-control="layout[ShowControl.isShowChooseTokenModal]"
- 
   >
     <template #title>
       {{ $t('Talk.Modals.create_candy_bags') }}
@@ -92,9 +91,15 @@
                           <MenuButton
                             v-slot="{ scope }"
                             class="text-base flex items-center font-medium px-3 py-1 outline-0"
-                            @click="isShowSelectTokenModal = !isShowSelectTokenModal"
+                            @click="handleSelectToken"
                           >
-                            <span>{{ currentUnit }}</span>
+                            <span>{{
+                              layout.selectedRedPacketType === 'token'
+                                ? form.selectedToken
+                                  ? form.selectedToken.symbol
+                                  : ''
+                                : currentUnit
+                            }}</span>
                             <Icon name="chevron_right" class="w-5 h-5 text-dark-480" />
                           </MenuButton>
                         </div>
@@ -109,11 +114,14 @@
                         >
                           <MenuItems
                             class="absolute flex flex-col p-2 bg-white right-0 translate-y-[20PX] rounded-xl shadow-lg z-50 main-border still w-36  dark:!bg-gray-700"
+                            v-if="layout.selectedRedPacketType !== 'token'"
                           >
                             <MenuItem v-slot="{ active }">
                               <button class="p-2" type="button" @click="triggleUnit">
                                 {{
-                                  layout.selectedRedPacketType === 'btc'
+                                  layout.selectedRedPacketType === 'token'
+                                    ? 'Select Token'
+                                    : layout.selectedRedPacketType === 'btc'
                                     ? currentUnit == 'BTC'
                                       ? 'Sats'
                                       : 'BTC'
@@ -220,7 +228,13 @@
                           class="text-base flex items-center font-medium px-3 py-1 outline-0"
                           @click="isShowSelectTokenModal = !isShowSelectTokenModal"
                         >
-                          <span>{{ currentUnit }}</span>
+                          <span>{{
+                            layout.selectedRedPacketType === 'token'
+                              ? form.selectedToken
+                                ? form.selectedToken.symbol
+                                : 'Token'
+                              : currentUnit
+                          }}</span>
                           <Icon name="chevron_right" class="w-5 h-5 text-dark-480" />
                         </MenuButton>
                       </div>
@@ -238,7 +252,13 @@
                         >
                           <MenuItem v-slot="{ active }">
                             <button class="p-2" type="button" @click="triggleUnit">
-                              {{ currentUnit == 'Space' ? 'Sats' : 'Space' }}
+                              {{
+                                layout.selectedRedPacketType === 'token'
+                                  ? '选择Token'
+                                  : currentUnit == 'Space'
+                                  ? 'Sats'
+                                  : 'Space'
+                              }}
                             </button>
                           </MenuItem>
                           <!-- <MenuItem v-slot="{ active }">
@@ -337,7 +357,10 @@
     </template>
 
     <template #secondTitle>
-      <div class="flex items-center space-x-3">
+      <div v-if="isTokenRedPacket">
+        Select Token
+      </div>
+      <div v-else class="flex items-center space-x-3">
         <Listbox v-model="selectedChain">
           <div class="relative mt-1">
             <ListboxButton
@@ -402,51 +425,117 @@
           </div>
         </Listbox>
 
-        <div class="text-left">{{ $t('Talk.Community.choose_nft') }}</div>
+        <div class="text-left">
+          {{ isTokenRedPacket ? '选择Token红包' : $t('Talk.Community.choose_nft') }}
+        </div>
       </div>
     </template>
 
     <template #secondBody>
-      <p
-        class="text-sm text-dark-400 dark:text-gray-200 pb-4.5 border-b border-solid border-dark-200 dark:border-gray-600"
-      >
-        {{ $t('Talk.Input.choose_nft_red_packet_tip') }}
-      </p>
-
-      <!-- NFT -->
-      <div class="h-full">
-        <div
-          v-if="fetching"
-          class="w-full h-full flex items-center justify-center flex-col gap-y-4"
-        >
-          <img :src="DogWalking" class="w-48 h-48" alt="" />
+      <!-- Token红包选择 -->
+      <div v-if="isTokenRedPacket" class="h-full flex flex-col">
+        <!-- Token余额提示 -->
+        <div v-if="form.selectedToken" class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <div class="flex items-center space-x-2">
-            <Icon name="loading" class="w-4 h-4 animate-spin text-dark-400 dark:!text-gray-200" />
-            <div class="text-dark-400 dark:text-gray-200 text-base font-medium">
-              {{ $t('Talk.Modals.loading') }}
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+              :style="{ backgroundColor: form.tokenIconBgColor }"
+            >
+              {{ form.tokenIconText }}
+            </div>
+            <div>
+              <div class="font-medium">{{ form.selectedToken.name }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                Balance: {{ form.tokenBalance }} {{ form.selectedToken.symbol }}
+              </div>
             </div>
           </div>
         </div>
-        <div class="flex flex-col mt-6" v-else-if="nftSeries.length > 0">
+
+        <!-- Token列表 -->
+        <div class="flex-1 overflow-y-auto">
+          <div v-if="form.availableTokens.length === 0" class="text-center py-8">
+            <div class="text-gray-500 dark:text-gray-400">加载Token余额中...</div>
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="token in form.availableTokens"
+              :key="token.sensibleId"
+              class="p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              :class="{
+                'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600':
+                  form.selectedToken?.sensibleId === token.sensibleId,
+              }"
+              @click="selectToken(token)"
+            >
+              <div class="flex items-center space-x-3">
+                <div
+                  class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                  :style="{ backgroundColor: generateTokenColor(token.genesis) }"
+                >
+                  {{ token.symbol.slice(0, 2).toUpperCase() }}
+                </div>
+                <div class="flex-1">
+                  <div class="font-medium">{{ token.symbol }}</div>
+                  <!-- <div class="text-sm text-gray-500 dark:text-gray-400">{{ token.symbol }}</div> -->
+                  <div class="text-sm text-gray-600 dark:text-gray-300">
+                    Balance:
+                    {{
+                      (token.confirmed / Math.pow(10, token.decimal)).toFixed(
+                        Math.min(token.decimal, 8)
+                      )
+                    }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NFT红包选择 (保留原有逻辑但不会显示，因为现在没有Token红包的入口) -->
+      <div v-else>
+        <p
+          class="text-sm text-dark-400 dark:text-gray-200 pb-4.5 border-b border-solid border-dark-200 dark:border-gray-600"
+        >
+          {{ $t('Talk.Input.choose_nft_red_packet_tip') }}
+        </p>
+
+        <!-- NFT -->
+        <div class="h-full">
           <div
-            v-for="nft in nftSeries"
-            :key="nft.nftSeriesName"
-            class="flex space-x-3 items-center cursor-pointer hover:bg-dark-100 dark:hover:bg-gray-900 rounded p-2"
-            @click="selectNft(nft)"
+            v-if="fetching"
+            class="w-full h-full flex items-center justify-center flex-col gap-y-4"
           >
-            <Image
-              :src="nft.nftIcon"
-              customClass="rounded-xl h-13.5 w-13.5 object-contain object-center"
-            />
-            <div class="text-base ">
-              {{ nft.nftSeriesName }}
+            <img :src="DogWalking" class="w-48 h-48" alt="" />
+            <div class="flex items-center space-x-2">
+              <Icon name="loading" class="w-4 h-4 animate-spin text-dark-400 dark:!text-gray-200" />
+              <div class="text-dark-400 dark:text-gray-200 text-base font-medium">
+                {{ $t('Talk.Modals.loading') }}
+              </div>
             </div>
           </div>
-        </div>
-        <div class="w-full h-full flex items-center justify-center flex-col gap-y-8" v-else>
-          <img :src="Cat" class="w-36 h-36" alt="" />
-          <div class="text-dark-400 dark:text-gray-200 text-base font-medium">
-            {{ $t('Talk.Community.no_nft_available') }}
+          <div class="flex flex-col mt-6" v-else-if="nftSeries.length > 0">
+            <div
+              v-for="nft in nftSeries"
+              :key="nft.nftSeriesName"
+              class="flex space-x-3 items-center cursor-pointer hover:bg-dark-100 dark:hover:bg-gray-900 rounded p-2"
+              @click="selectNft(nft)"
+            >
+              <Image
+                :src="nft.nftIcon"
+                customClass="rounded-xl h-13.5 w-13.5 object-contain object-center"
+              />
+              <div class="text-base ">
+                {{ nft.nftSeriesName }}
+              </div>
+            </div>
+          </div>
+          <div class="w-full h-full flex items-center justify-center flex-col gap-y-8" v-else>
+            <img :src="Cat" class="w-36 h-36" alt="" />
+            <div class="text-dark-400 dark:text-gray-200 text-base font-medium">
+              {{ $t('Talk.Community.no_nft_available') }}
+            </div>
           </div>
         </div>
       </div>
@@ -481,7 +570,7 @@ import {
   PopoverButton,
   PopoverPanel,
 } from '@headlessui/vue'
-import { ref, watch, Ref, watchEffect, onMounted } from 'vue'
+import { ref, watch, Ref, watchEffect, onMounted, computed } from 'vue'
 import { object, number } from 'yup'
 import { useForm } from 'vee-validate'
 import { Chains, RedPacketDistributeType, ShowControl } from '@/enum'
@@ -504,12 +593,28 @@ import { showLoading } from '@/utils/util'
 import Decimal from 'decimal.js-light'
 import { useChainStore } from '@/stores/chain'
 import { broadcastToApi } from '@/utils/userInfo'
+// @ts-ignore
+import { SHA256 } from 'crypto-es/lib/sha256.js'
 
 const layout = useLayoutStore()
 const userStore = useUserStore()
 const isShowSelectTokenModal = ref(false)
 const chainStore = useChainStore()
 const form = useRedPacketFormStore()
+
+const handleSelectToken = () => {
+  if (layout.selectedRedPacketType === 'token') {
+    openTokenSelector()
+    return
+  }
+  isShowSelectTokenModal.value = !isShowSelectTokenModal.value
+}
+
+// 计算属性
+const isTokenRedPacket = computed(() => {
+  return (layout.selectedRedPacketType as any) === 'token'
+})
+
 const showPayment = ref(false)
 const payment = ref<{
   total: number
@@ -519,9 +624,9 @@ const payment = ref<{
   commitTxHex: string
   revealTxHex: string[]
 } | null>(null)
-// 根据form.unit初始化currentUnit，支持所有三种单位
-const currentUnit = ref<'BTC' | 'Space' | 'Sats'>(
-  form.unit === 'BTC' || form.unit === 'Space' || form.unit === 'Sats'
+// 根据form.unit初始化currentUnit，支持所有四种单位
+const currentUnit = ref<'BTC' | 'Space' | 'Sats' | 'Token'>(
+  form.unit === 'BTC' || form.unit === 'Space' || form.unit === 'Sats' || form.unit === 'Token'
     ? form.unit
     : chainStore.state.currentChain === 'btc'
     ? 'BTC'
@@ -607,6 +712,9 @@ const triggleUnit = () => {
       form.unit = 'BTC'
       form.amount = new Decimal(form.amount).div(10 ** 8).toNumber()
     }
+  } else if (layout.selectedRedPacketType === 'token') {
+    // Token红包打开Token选择器
+    openTokenSelector()
   } else {
     // MVC红包的单位切换
     if (currentUnit.value == 'Space') {
@@ -621,10 +729,32 @@ const triggleUnit = () => {
   }
 }
 
+const openTokenSelector = () => {
+  // 打开Token选择器
+  layout.isShowChooseTokenModal = true
+  // 加载Token余额
+  form.loadTokenBalances()
+}
+
 const selectNft = (nft: any) => {
   form.nft = nft
   form.chain = selectedChain.value.value
   layout.isShowChooseTokenModal = false
+}
+
+// Token选择相关函数
+const selectToken = (token: any) => {
+  form.selectToken(token)
+  layout.isShowChooseTokenModal = false
+}
+
+// 生成Token图标颜色的函数
+const generateTokenColor = (genesis: string) => {
+  const hash = SHA256(genesis).toString()
+  const r = Math.floor(parseInt(hash.slice(0, 2), 16) * 0.6) + 60 // 60-213
+  const g = Math.floor(parseInt(hash.slice(2, 4), 16) * 0.6) + 60 // 60-213
+  const b = Math.floor(parseInt(hash.slice(4, 6), 16) * 0.6) + 60 // 60-213
+  return `rgb(${r}, ${g}, ${b})`
 }
 
 watch(
@@ -638,25 +768,36 @@ watch(
 )
 
 const submit = async () => {
-  const ret = (await form.submit()) as any
-  if (ret && ret.status === 'ready_to_broadcast') {
-    layout.isShowLoading = false
-    showPayment.value = true
-    const commitCost = parseFloat(ret.commitCost) || 0
-    const revealCost = parseFloat(ret.revealCost) || 0
-    const totalCost = commitCost + revealCost + 210 * form.quantity
-    payment.value = {
-      total: new Decimal(form.amount).toNumber() + new Decimal(totalCost).div(10 ** 8).toNumber(),
-      gas: new Decimal(totalCost).div(10 ** 8).toNumber(),
-      serviceFee: 0,
-      commitTxHex: ret.commitTxHex,
-      revealTxHex: ret.revealTxsHex,
-      unit: layout.selectedRedPacketType === 'btc' ? 'BTC' : 'Space',
+  try {
+    if (form.unit === 'Token' && !form.selectedToken) {
+      ElMessage.error('Please select a token')
+      openTokenSelector()
+      return
     }
-  } else {
-    layout.isShowRedPacketModal = false
+    const ret = (await form.submit()) as any
+    if (ret && ret.status === 'ready_to_broadcast') {
+      layout.isShowLoading = false
+      showPayment.value = true
+      const commitCost = parseFloat(ret.commitCost) || 0
+      const revealCost = parseFloat(ret.revealCost) || 0
+      const totalCost = commitCost + revealCost + 210 * form.quantity
+      payment.value = {
+        total: new Decimal(form.amount).toNumber() + new Decimal(totalCost).div(10 ** 8).toNumber(),
+        gas: new Decimal(totalCost).div(10 ** 8).toNumber(),
+        serviceFee: 0,
+        commitTxHex: ret.commitTxHex,
+        revealTxHex: ret.revealTxsHex,
+        unit: layout.selectedRedPacketType === 'btc' ? 'BTC' : 'Space',
+      }
+    } else {
+      layout.isShowRedPacketModal = false
+      layout.isShowLoading = false
+      form.reset()
+    }
+  } catch (error) {
+    console.error('Error during submission:', error)
+    ElMessage.error(error.message || 'Submission failed')
     layout.isShowLoading = false
-    form.reset()
   }
 }
 
@@ -705,6 +846,13 @@ watch(
     // 更新UI状态
     if (newType === 'btc') {
       currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'BTC'
+    } else if (newType === 'token') {
+      currentUnit.value = 'Token'
+      form.unit = 'Token'
+      // 加载Token余额
+      form.loadTokenBalances()
+      // 恢复之前选择的Token
+      form.loadSelectedToken()
     } else {
       currentUnit.value = form.unit === 'Sats' ? 'Sats' : 'Space'
     }

@@ -194,7 +194,7 @@
             <Icon name="red_envelope" class="w-full h-full text-dark-800 dark:text-gray-100" />
           </div>
 
-          <Popover  class="relative flex items-center">
+          <Popover class="relative flex items-center">
             <PopoverButton as="div">
               <div class="p-2 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer">
                 <Icon name="photo_3" class="w-full h-full text-dark-800 dark:text-gray-100" />
@@ -211,8 +211,7 @@
             >
               <PopoverPanel
                 class="absolute z-10 transform top-[-16PX] right-0 -translate-y-full"
-                v-slot="{close}" 
-              
+                v-slot="{ close }"
               >
                 <div
                   class="bg-white dark:bg-gray-700 p-2 rounded-xl shadow-lg w-60 divide-y divide-dark-200 dark:divide-gray-600"
@@ -332,10 +331,19 @@
               <!-- BTC Red Packet -->
               <button
                 @click="selectRedPacketType('btc')"
-                class="w-full flex text-center items-center px-4 py-4 justify-center hover:bg-gray-50 dark:hover:bg-gray-700  rounded-t-xl transition-colors duration-200 active:scale-95"
+                class="w-full flex text-center items-center px-4 py-4 justify-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors duration-200 active:scale-95"
               >
                 <h4 class="text-lg  font-medium text-gray-900 dark:text-gray-100">
                   BTC {{ $t('Talk.Modals.red_packet') }}
+                </h4>
+              </button>
+              <!-- Token Red Packet -->
+              <button
+                @click="selectRedPacketType('token')"
+                class="w-full flex text-center items-center px-4 py-4 justify-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors duration-200 active:scale-95"
+              >
+                <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  Token {{ $t('Talk.Modals.red_packet') }}
                 </h4>
               </button>
             </div>
@@ -386,10 +394,8 @@ import { useChainStore } from '@/stores/chain'
 import { useI18n } from 'vue-i18n'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
-import {needWebRefresh} from '@/wallet-adapters/metalet'
+import { needWebRefresh } from '@/wallet-adapters/metalet'
 import { useRootStore } from '@/stores/root'
-
-
 
 interface Props {
   quote?: any
@@ -410,7 +416,7 @@ const ecdhsStore = useEcdhsStore()
 const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const hasInput = computed(() => chatInput.value.length > 0)
-const rootStore=useRootStore()
+const rootStore = useRootStore()
 const computeDecryptedMsg = (session: any) => {
   console.log('props.session', session)
 
@@ -454,9 +460,6 @@ const computeDecryptedMsg = (session: any) => {
     return ''
   }
 }
-
-
-
 
 /** 输入框样式 */
 const isShowingButtonGroup = computed(() => {
@@ -520,24 +523,21 @@ const activeChannel = computed(() => {
   return simpleTalk.activeChannel
 })
 
-const openImageUploader = (close:Function) => {
+const openImageUploader = (close: Function) => {
   rootStore.checkWebViewBridge()
-  if(rootStore.isWebView){
-      needWebRefresh({isNeed:false})
+  if (rootStore.isWebView) {
+    needWebRefresh({ isNeed: false })
   }
 
   imageUploader.value?.click()
   close()
-
 }
-
-
 
 const openRedPackDialog = () => {
   showRedPacketActionSheet.value = true
 }
 
-const selectRedPacketType = (type: 'btc' | 'mvc') => {
+const selectRedPacketType = (type: 'btc' | 'mvc' | 'token') => {
   showRedPacketActionSheet.value = false
   // 设置红包类型，但不改变gas链选择
   layout.selectedRedPacketType = type
@@ -549,9 +549,9 @@ const closeActionSheet = () => {
 }
 
 const handleImageChange = (e: Event) => {
-   rootStore.checkWebViewBridge()
-  if(rootStore.isWebView){
-      needWebRefresh({isNeed:true})
+  rootStore.checkWebViewBridge()
+  if (rootStore.isWebView) {
+    needWebRefresh({ isNeed: true })
   }
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
