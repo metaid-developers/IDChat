@@ -457,7 +457,7 @@
             <div>
               <div class="font-medium">{{ form.selectedToken.symbol }}</div>
               <div class="text-sm text-gray-500 dark:text-gray-400">
-                Balance: {{ form.tokenBalance }} {{ form.selectedToken.symbol }}
+                TokenID: {{ form.selectedToken.genesis.replace(/(\w{4})\w+(\w{5})/, '$1...$2') }}
               </div>
             </div>
           </div>
@@ -831,6 +831,10 @@ const submit = async () => {
     if (form.unit === 'Token' && !form.selectedToken) {
       ElMessage.error('Please select a token')
       openTokenSelector()
+      return
+    }
+    if (form.unit === 'Token' && !window.metaidwallet.version) {
+      ElMessage.error('current wallet not support token red packet, please update your wallet')
       return
     }
     const ret = (await form.submit()) as any
