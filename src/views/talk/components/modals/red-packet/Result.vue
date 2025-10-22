@@ -326,7 +326,7 @@ const nicerAmountWithUnit = (amount: string) => {
   }
 
   const amountNumber = new Decimal(amount)
-    .div(10 ** redPacketResult.tickInfo?.decimal || 8)
+    .div(10 ** (redPacketResult.tickInfo?.decimal || 8))
     .toNumber()
   // if (amountNumber >= 100_000_000) {
   //   return {
