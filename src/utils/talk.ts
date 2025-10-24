@@ -581,7 +581,7 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
             return {
               ...item,
               index,
-              gasAmount: '20000',
+              gasAmount: '40000',
               gasAddress: address,
               gasIndex: index + 2,
             }
@@ -679,7 +679,7 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
             return {
               ...item,
               index,
-              gasAmount: '20000',
+              gasAmount: '40000',
               gasAddress: address,
               gasIndex: index + 2,
             }
