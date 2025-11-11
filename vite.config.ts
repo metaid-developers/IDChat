@@ -55,10 +55,13 @@ export default ({ mode, command }) => {
   //   }
   // }
   // const isProduction = productionEnvs.includes(mode) && command === 'build' ? true : false
+  console.log('当前构建环境：', mode, command)
   const isProduction = command === 'build'
+
+  const isMainnetOrMetaso =isProduction && (mode === 'mainnet' || mode === 'metaso')
  
   return defineConfig({
-    base:isProduction ? '/chat/' : '/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
+    base:isMainnetOrMetaso ? '/chat/' : '/', //process.env.NODE_ENV === 'production' ? '/chat/' : '/',
     plugins: [
       command === 'serve' &&
         nodePolyfills({
@@ -77,7 +80,7 @@ export default ({ mode, command }) => {
         createHtmlPlugin({
         inject: {
           data: {
-            basePath:isProduction ? '/chat/' : ''//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
+            basePath:isMainnetOrMetaso ? '/chat/' : ''//process.env.NODE_ENV === 'production' ? '/chat/' : '/'
           }
         }
       }),
@@ -329,6 +332,6 @@ export default ({ mode, command }) => {
         
       },
     },
-    sourcemap: isProduction ? false : 'inline',
+    sourcemap: command === 'build' ? false : 'inline',
   })
 }

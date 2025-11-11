@@ -6,6 +6,7 @@ import { useUtxosStore } from '@/stores/useable-utxo'
 import { InscriptionRequest } from './pin'
 import { getUseableUtxo } from '@/wallet-adapters/metalet'
 import { useUserStore } from '@/stores/user'
+import { VITE_ADDRESS_HOST } from '@/config/app-config'
 export type Transaction = {
   txComposer: TxComposer
   message: string
@@ -14,11 +15,11 @@ export type Transaction = {
 // Add global interface augmentation for window.metaidwallet
 declare global {
   interface Window {
-    WebViewBridge:any
+    WebViewBridge: any
     metaidwallet: {
-      on:()=>any
-      openAppBrowser:(params:{url:string})=>void
-      needWebRefresh:(params:{isNeed:boolean})=> Promise<any>
+      on: () => any
+      openAppBrowser: (params: { url: string }) => void
+      needWebRefresh: (params: { isNeed: boolean }) => Promise<any>
       getAddress: () => Promise<string>
       getUtxos: () => Promise<any[]>
       unlockP2PKHInput: (params: any) => Promise<any>
@@ -608,7 +609,7 @@ export const createOrUpdateUserInfo = async ({
       metaDatas.push({
         operation: 'create',
         body: userData.chatpubkey,
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`,
         encoding: 'utf-8',
         contentType: 'text/plain',
         flag: 'metaid',
@@ -728,8 +729,8 @@ export const createUserPubkey = async ({
     if (pubkey) {
       const path =
         hasPubkey && pubkeyId
-          ? `${import.meta.env.VITE_ADDRESS_HOST}:@{${pubkeyId}}`
-          : `${import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`
+          ? `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:@{${pubkeyId}}`
+          : `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/info/chatpubkey`
       metaDatas.push({
         operation: hasPubkey ? 'modify' : 'create',
         body: pubkey,

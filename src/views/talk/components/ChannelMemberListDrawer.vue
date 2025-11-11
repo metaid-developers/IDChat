@@ -388,6 +388,7 @@ import { signMvcMessage,getMvcPublickey } from "@/wallet-adapters/metalet";
 import { getRuntimeConfig } from '@/config/runtime-config'
 import subChannel from '@/assets/images/sub-channel.svg?url'
 import { decrypt } from '@/utils/crypto'
+import { VITE_ADDRESS_HOST } from '@/config/app-config'
 
 
 interface Props {
@@ -671,7 +672,7 @@ const handleLeave = async () => {
     }
     const metaidData = {
       body: JSON.stringify(data),
-      path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.SimpleGroupJoin}`,
+      path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.SimpleGroupJoin}`,
       flag: 'metaid',
       version: '1.0.0',
       operation: 'create',

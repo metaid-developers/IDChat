@@ -52,6 +52,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { SimpleChannel } from '@/@types/simple-chat'
 import i18n from './i18n'
 import { de } from 'element-plus/es/locale'
+import { VITE_ADDRESS_HOST, VITE_CHAT_API } from '@/config/app-config'
 dayjs.extend(advancedFormat)
 type CommunityData = {
   communityId: string
@@ -563,7 +564,7 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
 
   // 2. 构建数据载体
   const dataCarrier: any = {
-    domain: import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
+    domain: VITE_CHAT_API() || import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
     luckyBagAddress: address,
     createTime,
     groupId: channel.parentGroupId ? channel.parentGroupId : channel.id,
@@ -608,12 +609,13 @@ export const giveRedPacket = async (form: any, channel: SimpleChannel, selfMetaI
       code,
       createTime,
       luckyBagAddress: address,
-      domain: import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
+      domain: VITE_CHAT_API() || import.meta.env.VITE_CHAT_API, //'https://www.show.now/chat-api-test',
     }
     const simpleGroupLuckyBagExtraMetaidData = {
       operation: 'hide',
       body: JSON.stringify(simpleGroupLuckyBagExtraData),
-      path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/simplegroupluckybagextra`,
+      path: `${VITE_ADDRESS_HOST() ||
+        import.meta.env.VITE_ADDRESS_HOST}:/protocols/simplegroupluckybagextra`,
       contentType: 'application/json',
       encryption: '0',
       version: '1.0.0',
@@ -1005,7 +1007,9 @@ export const updateGroupChannel = async (
 
   const metaidData = {
     body: JSON.stringify(data),
-    path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.SimpleGroupCreate}`,
+    path: `${VITE_ADDRESS_HOST || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${
+      NodeName.SimpleGroupCreate
+    }`,
     flag: MetaFlag.metaid,
     version: '1.0.0',
     operation: 'modify',

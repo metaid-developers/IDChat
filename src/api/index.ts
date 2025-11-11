@@ -49,13 +49,22 @@ interface SetUserPasswordParams extends BaseUserInfoParams {
   type?: number
 }
 
-const baseApi = import.meta.env.VITE_BASEAPI
-const metasvApi = import.meta.env.VITE_META_SV_API
-const wxcoreApi = import.meta.env.VITE_WXCOREAPI
-const mvcBaseApi=import.meta.env.VITE_MVC_BASEAPI
-const cyber3api=import.meta.env.VITE_CYBER3_API
+import { getRuntimeConfig } from '@/config/runtime-config'
+
+const getApiConfig = () => {
+  const config = getRuntimeConfig()
+  return {
+    baseApi: config.api.baseApi,
+    metasvApi: config.api.metaSvApi,
+    wxcoreApi: config.api.wxcoreApi,
+    mvcBaseApi: config.api.mvcBaseApi,
+    cyber3Api: config.api.cyber3Api,
+  }
+}
+
 const callApi = async (config: ApiRequestTypes): Promise<ApiResultTypes> => {
   const Http = new HttpRequests()
+  const { baseApi } = getApiConfig()
   const apiPrefix = config.apiPrefix || baseApi
   const url = apiPrefix + config.url
   try {
@@ -82,7 +91,6 @@ const getMetasvSig = async (path: string): Promise<MetasvSigTypes> => {
   return Http.postFetch<BaseApiResultTypes<MetasvSigTypes>>(url, {
     path: path,
   }).then(res => {
-    
     if (res.code === 0) {
       const sigObj = res.data as MetasvSigTypes
       _cachedSigs[path] = sigObj
@@ -93,15 +101,14 @@ const getMetasvSig = async (path: string): Promise<MetasvSigTypes> => {
   })
 }
 
-
-export const mvcApi=async( 
+export const mvcApi = async (
   path: string,
   params: ObjTypes<string | number> = {},
   method = 'get'
 ): Promise<{
-  code:number,
-  data:any
-}> =>{
+  code: number
+  data: any
+}> => {
   const url = mvcBaseApi + path
   const Http = new HttpRequests()
   if (method === 'post') {
@@ -123,11 +130,11 @@ export const mvcApi=async(
   }
 }
 
-export const cyber3Api=async( 
+export const cyber3Api = async (
   path: string,
   params: ObjTypes<string | number> = {},
   method = 'get'
-): Promise<any> =>{
+): Promise<any> => {
   const url = cyber3api + path
   const Http = new HttpRequests()
   if (method === 'post') {

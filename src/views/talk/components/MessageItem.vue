@@ -311,6 +311,196 @@
             </div>
           </div>
 
+          <!-- MetaApp 应用链接卡片 -->
+          <div
+            class="w-full py-0.5 flex"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isMetaAppLink && metaAppInfo"
+          >
+            <div
+              class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group overflow-hidden"
+              @click="handleMetaAppLinkClick"
+            >
+              <!-- 顶部：icon | appName version | Made by creator -->
+              <div
+                class="p-4 pb-2 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600"
+              >
+                <!-- Icon -->
+                <div class="w-12 h-12 shrink-0">
+                  <ChatImage
+                    v-if="metaAppLinkInfo.icon"
+                    :src="metaAppLinkInfo.icon"
+                    customClass="w-12 h-12 rounded-lg object-cover"
+                  />
+                  <div
+                    v-else
+                    class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+                  >
+                    <Icon name="cube" class="w-6 h-6 text-gray-400" />
+                  </div>
+                </div>
+
+                <!-- AppName & Version -->
+                <div class="flex-1 min-w-0">
+                  <div class="text-dark-800 dark:text-gray-100 font-medium text-sm truncate">
+                    {{ metaAppLinkInfo.appName || 'MetaApp' }}
+                  </div>
+                  <div class="text-dark-400 dark:text-gray-400 text-xs mt-0.5">
+                    {{ metaAppLinkInfo.version }}
+                  </div>
+                </div>
+
+                <!-- Made by Creator -->
+                <div class="flex flex-col">
+                  <div class="text-dark-400 dark:text-gray-400 font-medium text-sm">
+                    Made by
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <UserAvatar
+                      :image="pinUserInfo[metaAppLinkInfo.creator]?.avatar || ''"
+                      :name="
+                        pinUserInfo[metaAppLinkInfo.creator]?.name ||
+                          metaAppLinkInfo.creator.slice(0, 8)
+                      "
+                      :meta-id="pinUserInfo[metaAppLinkInfo.creator]?.metaid || ''"
+                      :meta-name="''"
+                      class="w-6 h-6"
+                      :disabled="true"
+                    />
+                    <div class="text-dark-800 dark:text-gray-100 text-xs">
+                      {{
+                        pinUserInfo[metaAppLinkInfo.creator]?.name ||
+                          metaAppLinkInfo.creator.slice(0, 8)
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Title -->
+              <div class="px-4 py-3">
+                <div class="text-dark-800 dark:text-gray-100 font-medium text-base line-clamp-2">
+                  {{ metaAppLinkInfo.title }}
+                </div>
+              </div>
+
+              <!-- Cover Image -->
+              <div v-if="metaAppLinkInfo.coverImg" class="w-full h-40 bg-gray-100 dark:bg-gray-800">
+                <ChatImage
+                  :src="metaAppLinkInfo.coverImg"
+                  customClass="w-full h-full object-cover rounded-none"
+                  wrapperClass="w-full h-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Buzz 卡片 -->
+          <div
+            class="w-full py-0.5 flex"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isBuzzLink && pinInfo"
+          >
+            <div
+              class=" max-w-[300px]  min-w-[300px] lg:max-w-[420px]   shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md overflow-hidden"
+              @click="handleBuzzOrNoteLinkClick"
+            >
+              <div class="p-4 space-y-3">
+                <!-- 用户信息和时间 -->
+                <div class="flex items-center space-x-2">
+                  <UserAvatar
+                    :image="pinUserInfo[pinInfo.creator]?.avatar || ''"
+                    :name="pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8)"
+                    :meta-id="pinUserInfo[pinInfo.creator]?.metaid || ''"
+                    :meta-name="''"
+                    class="w-10 h-10 shrink-0"
+                    :disabled="true"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-dark-800 dark:text-gray-100 font-medium text-sm truncate">
+                      {{ pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8) }}
+                    </div>
+                    <div class="text-dark-400 dark:text-gray-400 text-xs">
+                      {{ formatTimestamp(pinInfo.timestamp * 1000, i18n) }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 内容布局：图片 + 文本 -->
+                <div class="flex gap-3">
+                  <!-- 图片 -->
+                  <div v-if="buzzFirstImage" class="w-20 h-20 shrink-0">
+                    <ChatImage :src="buzzFirstImage" customClass="w-20 h-20 object-cover rounded" />
+                  </div>
+
+                  <!-- 文本内容 -->
+                  <div class="flex-1 min-w-0">
+                    <div class="text-dark-800 dark:text-gray-100 text-sm line-clamp-3">
+                      {{ pinInfo.parsedSummary?.content || '' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SimpleNote 卡片 -->
+          <div
+            class="w-full py-0.5 flex"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isSimpleNoteLink && pinInfo"
+          >
+            <div
+              class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md overflow-hidden"
+              @click="handleBuzzOrNoteLinkClick"
+            >
+              <!-- 用户信息和时间 -->
+              <div class="p-4 pb-2 flex items-center space-x-2">
+                <UserAvatar
+                  :image="pinUserInfo[pinInfo.creator]?.avatar || ''"
+                  :name="pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8)"
+                  :meta-id="pinUserInfo[pinInfo.creator]?.metaid || ''"
+                  :meta-name="''"
+                  class="w-8 h-8 shrink-0"
+                  :disabled="true"
+                />
+                <div class="flex-1 min-w-0">
+                  <div class="text-dark-800 dark:text-gray-100 font-medium text-xs truncate">
+                    {{ pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8) }}
+                  </div>
+                  <div class="text-dark-400 dark:text-gray-400 text-xxs">
+                    {{ formatTimestamp(pinInfo.timestamp * 1000, i18n) }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- 封面图 -->
+              <div
+                v-if="noteCoverImage"
+                class="w-full h-30 bg-gray-100 dark:bg-gray-800 overflow-hidden"
+              >
+                <ChatImage
+                  :src="noteCoverImage"
+                  customClass="w-full h-full object-cover"
+                  wrapperClass="w-full h-full"
+                />
+              </div>
+              <div
+                v-else
+                class=" min-w-[300px] w-full h-30 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center"
+              >
+                <Icon name="document_text" class="w-16 h-16 text-gray-400" />
+              </div>
+
+              <!-- 标题 -->
+              <div class="p-4 pt-3">
+                <div class="text-dark-800 dark:text-gray-100 font-medium text-base line-clamp-2">
+                  {{ pinInfo.parsedSummary?.title || 'Untitled Note' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div
             class="my-1.5 max-w-full flex"
             :class="[isMyMessage ? 'flex-row-reverse' : '']"
@@ -416,7 +606,10 @@ import { useModalsStore } from '@/stores/modals'
 import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
+import { getUserInfoByAddress } from '@/api/man'
 import { useImagePreview } from '@/stores/imagePreview'
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 import MessageItemQuote from './MessageItemQuote.vue'
 import { NodeName ,ChatChain} from '@/enum'
 import { containsString } from '@/utils/util'
@@ -424,7 +617,6 @@ import { ElMessage } from 'element-plus'
 import type { ChatMessageItem } from '@/@types/common'
 import { isMobile, useRootStore } from '@/stores/root'
 import { useRouter } from 'vue-router'
-import {getUserInfoByAddress} from '@/api/man'
 import ChatImage from '@/components/ChatImage/ChatImage.vue'
 import btcIcon from '@/assets/images/btc.png'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
@@ -448,6 +640,75 @@ const visiableMenu = ref(false)
 // 群信息缓存
 const channelInfo = ref<any>(null)
 const subChannelInfo = ref<any>(null)
+
+// MetaApp 信息缓存
+interface MetaAppContentSummary {
+  title: string
+  appName: string
+  runtime: string
+  icon: string
+  prompt: string
+  coverImg: string
+  introImgs: string[]
+  intro: string
+  disabled: boolean
+  indexFile: string
+  code: string
+  contentHash: string
+  metadata: string
+  tags: string[]
+  version: string
+  contentType: string
+  content: string
+}
+
+interface MetaAppPinInfo {
+  id: string
+  metaid: string
+  address: string
+  creator: string
+  timestamp: number
+  path: string
+  contentSummary: string
+  parsedSummary?: MetaAppContentSummary
+}
+
+const metaAppInfo = ref<MetaAppPinInfo | null>(null)
+
+// Pin 信息缓存 (Buzz/SimpleNote)
+interface PinContentSummary {
+  content?: string
+  contentType?: string
+  attachments?: string[]
+  title?: string
+  subtitle?: string
+  coverImg?: string
+  encryption?: string
+  createTime?: number
+  tags?: string[]
+}
+
+interface PinInfo {
+  id: string
+  metaid: string
+  address: string
+  creator: string
+  timestamp: number
+  path: string
+  contentSummary: string
+  parsedSummary?: PinContentSummary
+}
+
+interface UserInfoCache {
+  [address: string]: {
+    name?: string
+    avatar?: string
+    metaid?: string
+  }
+}
+
+const pinInfo = ref<PinInfo | null>(null)
+const pinUserInfo = ref<UserInfoCache>({})
 
 const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
 
@@ -692,7 +953,7 @@ const handleMessageClick = (event: MouseEvent) => {
     event.preventDefault()
     const url = target.getAttribute('data-webview-url')
     if (url) {
-      
+
       openAppBrowser({ url })
     }
   }
@@ -974,6 +1235,272 @@ const fetchSubChannelInfo=async(pinId:string)=>{
   }
 }
 
+// 识别 MetaApp 链接
+const isMetaAppLink = computed(() => {
+  const messageContent = decryptedMessage(
+    props.message.content,
+    props.message.encryption,
+    props.message.protocol,
+    false
+  )
+
+  if (!messageContent) return false
+
+  // 检测 MetaApp 链接的正则表达式
+  const metaAppLinkPattern = /(?:https?:\/\/[^/]+)?\/metaapp\/([a-f0-9]+i0)/i
+
+  const isMetaApp = metaAppLinkPattern.test(messageContent)
+
+  // 如果是 MetaApp 链接且还没有获取过应用信息，则获取应用信息
+  if (isMetaApp && !metaAppInfo.value) {
+    const match = messageContent.match(metaAppLinkPattern)
+    if (match) {
+      const pid = match[1]
+      fetchMetaAppInfo(pid)
+    }
+  }
+
+  return isMetaApp && metaAppInfo.value?.path === '/protocols/metaapp'
+})
+
+// 获取 MetaApp 信息
+const fetchMetaAppInfo = async (pid: string) => {
+  try {
+    const response = await fetch(`https://manapi.metaid.io/pin/${pid}`)
+    const result = await response.json()
+
+    if (result.code === 1 && result.data) {
+      metaAppInfo.value = result.data
+
+      // 解析 contentSummary
+      if (result.data.contentSummary) {
+        try {
+          if (metaAppInfo.value) {
+            metaAppInfo.value.parsedSummary = JSON.parse(result.data.contentSummary)
+          }
+        } catch (e) {
+          console.error('Failed to parse MetaApp contentSummary:', e)
+        }
+      }
+
+      // 获取创建者用户信息
+      if (result.data.creator && !pinUserInfo.value[result.data.creator]) {
+        fetchPinUserInfo(result.data.creator)
+      }
+
+      console.log('Fetched MetaApp info:', metaAppInfo.value)
+    }
+  } catch (error) {
+    console.error('Failed to fetch MetaApp info:', error)
+  }
+}
+
+// 解析 MetaApp 链接信息
+const metaAppLinkInfo = computed(() => {
+  const messageContent = decryptedMessage(
+    props.message.content,
+    props.message.encryption,
+    props.message.protocol,
+    false
+  )
+
+  if (!messageContent || !metaAppInfo.value) {
+    return {
+      pid: '',
+      title: 'MetaApp',
+      appName: '',
+      version: '',
+      icon: '',
+      coverImg: '',
+      creator: '',
+      fullUrl: ''
+    }
+  }
+
+  const metaAppLinkPattern = /(?:https?:\/\/[^/]+)?\/metaapp\/([a-f0-9]+i0)/i
+  const match = messageContent.match(metaAppLinkPattern)
+
+  if (match) {
+    const pid = match[1]
+    const summary = metaAppInfo.value.parsedSummary
+
+    return {
+      pid,
+      title: summary?.title || 'MetaApp',
+      appName: summary?.appName || '',
+      version: summary?.version || '',
+      icon: summary?.icon || '',
+      coverImg: summary?.coverImg || '',
+      creator: metaAppInfo.value.creator || '',
+      fullUrl: messageContent
+    }
+  }
+
+  return {
+    pid: '',
+    title: 'MetaApp',
+    appName: '',
+    version: '',
+    icon: '',
+    coverImg: '',
+    creator: '',
+    fullUrl: messageContent
+  }
+})
+
+// 处理 MetaApp 链接点击
+const handleMetaAppLinkClick = () => {
+  const linkInfo = metaAppLinkInfo.value
+  if (linkInfo.fullUrl) {
+    // 在新窗口打开 MetaApp 链接
+    window.open(linkInfo.fullUrl, openWindowTarget())
+  }
+}
+
+// 识别 Buzz/SimpleNote 链接
+const isBuzzOrNoteLink = computed(() => {
+  const messageContent = decryptedMessage(
+    props.message.content,
+    props.message.encryption,
+    props.message.protocol,
+    false
+  )
+
+  if (!messageContent) return false
+
+  // 检测 Buzz 或 SimpleNote 链接的正则表达式（支持完整 URL 和相对路径）
+  const buzzPattern = /(?:https?:\/\/[^/]+)?\/buzz\/([a-f0-9]+i0)/i
+  const notePattern = /(?:https?:\/\/[^/]+)?\/simpleNote\/([a-f0-9]+i0)/i
+
+  const isBuzz = buzzPattern.test(messageContent)
+  const isNote = notePattern.test(messageContent)
+
+  // 如果是 Buzz 或 Note 链接且还没有获取过信息，则获取信息
+  if ((isBuzz || isNote) && !pinInfo.value) {
+    const buzzMatch = messageContent.match(buzzPattern)
+    const noteMatch = messageContent.match(notePattern)
+    const match = buzzMatch || noteMatch
+
+    if (match) {
+      const pid = match[1]
+      fetchPinInfo(pid)
+    }
+  }
+
+  return isBuzz || isNote
+})
+
+// 获取 Pin 信息
+const fetchPinInfo = async (pid: string) => {
+  try {
+    const response = await fetch(`https://manapi.metaid.io/pin/${pid}`)
+    const result = await response.json()
+
+    if (result.code === 1 && result.data) {
+      pinInfo.value = result.data
+
+      // 解析 contentSummary
+      if (result.data.contentSummary) {
+        try {
+          if (pinInfo.value) {
+            pinInfo.value.parsedSummary = JSON.parse(result.data.contentSummary)
+          }
+        } catch (e) {
+          console.error('Failed to parse contentSummary:', e)
+        }
+      }
+
+      // 获取用户信息
+      if (result.data.creator && !pinUserInfo.value[result.data.creator]) {
+        fetchPinUserInfo(result.data.creator)
+      }
+
+      console.log('Fetched Pin info:', pinInfo.value)
+    }
+  } catch (error) {
+    console.error('Failed to fetch Pin info:', error)
+  }
+}
+
+// 获取 Pin 创建者用户信息
+const fetchPinUserInfo = async (address: string) => {
+  try {
+    const userInfo = await getUserInfoByAddress(address)
+    pinUserInfo.value[address] = {
+      name: userInfo.name || address.slice(0, 8),
+      avatar: userInfo.avatar,
+      metaid: userInfo.metaid
+    }
+  } catch (error) {
+    console.error('Failed to fetch user info:', error)
+    // 设置默认值
+    pinUserInfo.value[address] = {
+      name: address.slice(0, 8),
+      avatar: '',
+      metaid: ''
+    }
+  }
+}
+
+// 判断是否为 Buzz
+const isBuzzLink = computed(() => {
+  return isBuzzOrNoteLink.value && pinInfo.value?.path === '/protocols/simplebuzz'
+})
+
+// 判断是否为 SimpleNote
+const isSimpleNoteLink = computed(() => {
+  return isBuzzOrNoteLink.value && pinInfo.value?.path === '/protocols/simplenote'
+})
+
+// 判断附件是否为图片
+const isImageAttachment = (attachment: string): boolean => {
+  if (!attachment) return false
+  const metafilePattern = /^metafile:\/\/[a-f0-9]+i0(\.(png|jpg|jpeg|gif|webp))?$/i
+  return metafilePattern.test(attachment)
+}
+
+// 获取 Buzz 的第一张图片
+const buzzFirstImage = computed(() => {
+  if (!pinInfo.value?.parsedSummary?.attachments) return null
+
+  const images = pinInfo.value.parsedSummary.attachments.filter(isImageAttachment)
+  return images.length > 0 ? images[0] : null
+})
+
+// 获取 SimpleNote 的封面图
+const noteCoverImage = computed(() => {
+  const summary = pinInfo.value?.parsedSummary
+  if (!summary) return null
+
+  // 优先使用 coverImg
+  if (summary.coverImg && isImageAttachment(summary.coverImg)) {
+    return summary.coverImg
+  }
+
+  // 尝试从 attachments 获取
+  if (summary.attachments && summary.attachments.length > 0) {
+    const images = summary.attachments.filter(isImageAttachment)
+    if (images.length > 0) return images[0]
+  }
+
+  return null
+})
+
+// 处理 Buzz/Note 链接点击
+const handleBuzzOrNoteLinkClick = () => {
+  const messageContent = decryptedMessage(
+    props.message.content,
+    props.message.encryption,
+    props.message.protocol,
+    false
+  )
+
+  if (messageContent) {
+    window.open(messageContent, openWindowTarget())
+  }
+}
+
+
 // 处理群链接点击
 const handleGroupLinkClick = () => {
   const linkInfo = groupLinkInfo.value
@@ -998,5 +1525,25 @@ const isReceiveRedPacket = computed(() =>
     background: linear-gradient(113deg, #fff6e6 -12%, #e5bc77 103%);
     color: #5a4015;
   }
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rounded-none {
+  border-radius: 0 !important;
 }
 </style>

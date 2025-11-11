@@ -10,37 +10,43 @@ import {  NodeName,MemberRule } from '@/enum'
 import type { PriviteChatMessageItem } from '@/@types/common'
 import { useEcdhsStore } from '@/stores/ecdh'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 
 export const TESTGROUPID='525b620f60330de2a6943e49d98dc12a4f56444219335c8e9278e8905cd3a094i0'
 
-
-const TalkApi = new HttpRequest(`${import.meta.env.VITE_CHAT_API}/group-chat`, {
-  responseHandel: response => {
-    return new Promise((resolve, reject) => {
-      if(response?.status && response?.status == 500){
-        reject(response.data)
-        return
-      }
-
-      if (response?.data && typeof response.data?.code === 'number') {
-        
-        
-        if (response.data.code === 0) {
-          resolve(response.data)
-        } else {
-         resolve(response.data)
-        }
-      } else {
-        resolve(response.data)
-      }
-    })
+// 使用工厂函数创建延迟初始化的 API 客户端
+const TalkApi = createLazyApiClient(
+  () => {
+    const config = getRuntimeConfig()
+    return `${config.api.chatApi}/group-chat`
   },
-  errorHandel:((error)=>{
-    return new Promise((resolve,reject)=>{
-      reject(error)
+  {
+    responseHandel: response => {
+      return new Promise((resolve, reject) => {
+        if(response?.status && response?.status == 500){
+          reject(response.data)
+          return
+        }
+
+        if (response?.data && typeof response.data?.code === 'number') {
+          if (response.data.code === 0) {
+            resolve(response.data)
+          } else {
+           resolve(response.data)
+          }
+        } else {
+          resolve(response.data)
+        }
+      })
+    },
+    errorHandel:((error)=>{
+      return new Promise((resolve,reject)=>{
+        reject(error)
+      })
     })
-  })
-}).request
+  }
+)
 
 
 

@@ -1,8 +1,10 @@
 import { PayPlatform } from '@/enum'
 import { getToken, getUserName, useUserStore } from '@/stores/user'
 import HttpRequest from '@/utils/request'
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 
-const Legal = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/legal-currency`, {
+const Legal = createLazyApiClient(() => `${getRuntimeConfig().api.baseApi}/legal-currency`, {
   // @ts-ignore
   // const Legal = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/newlegal`, {
   // const Legal = new HttpRequest(`http://192.168.168.140:8126`, {
@@ -32,7 +34,7 @@ const Legal = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/legal-currency`, 
       }
     })
   },
-}).request
+})
 
 // 购买法币NFT
 export const GetLegalBuyNftInfo = (params: {

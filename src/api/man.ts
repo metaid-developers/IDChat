@@ -1,6 +1,8 @@
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 import HttpRequest from '@/utils/request'
 
-const manApi = new HttpRequest(`${import.meta.env.VITE_MAN_API}/api`, {
+const manApi = createLazyApiClient(() => `${getRuntimeConfig().api.manApi}/api`, {
   responseHandel: response => {
     return new Promise((resolve, reject) => {
       if (response?.data && typeof response.data?.code === 'number') {
@@ -17,17 +19,16 @@ const manApi = new HttpRequest(`${import.meta.env.VITE_MAN_API}/api`, {
       }
     })
   },
-}).request
+})
 
-export interface ChatUserInfo{
-
-address:string
-avatar:string
-avatarImage:string
-chatPublicKey:string
-chatPublicKeyId:string
-metaid:string
-name:string
+export interface ChatUserInfo {
+  address: string
+  avatar: string
+  avatarImage: string
+  chatPublicKey: string
+  chatPublicKeyId: string
+  metaid: string
+  name: string
 }
 
 export interface UserInfo {
@@ -52,7 +53,7 @@ export interface UserInfo {
   pinId: string
   soulbondToken: string
   unconfirmed: string
-  chatpubkey?:string
+  chatpubkey?: string
 }
 
 export const getUserInfoByAddress = async (address: string): Promise<UserInfo> => {

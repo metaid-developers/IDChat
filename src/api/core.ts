@@ -2,9 +2,11 @@ import { useUserStore } from '@/stores/user'
 import HttpRequest from '@/utils/request'
 import { ApiResultTypes, BaseUserInfoParams } from '.'
 import i18n from '@/utils/i18n'
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 
 // @ts-ignore
-const Core = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/showpaycore`, {
+const Core = createLazyApiClient(() => `${getRuntimeConfig().api.baseApi}/showpaycore`, {
   header: () => {
     const userStore = useUserStore()
     if (userStore.isAuthorized) {
@@ -36,7 +38,7 @@ const Core = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/showpaycore`, {
       }
     })
   },
-}).request
+})
 
 export const UpdateUserInfo = (): Promise<apiResponse> => {
   const userStore = useUserStore()
@@ -202,7 +204,7 @@ export const MnemoicLogin = (params: {
   sign: string //publickey+word签名
   word: string
   type: number // 1.web 2.app
-  path:number
+  path: number
 }): Promise<{
   code: number
   data: BindUserInfo

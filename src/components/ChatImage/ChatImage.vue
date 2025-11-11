@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-image-container relative">
+  <div class="chat-image-container relative " :class="wrapperClass">
     <!-- 占位符 - 在非第一次加载时显示（重试时或失败后） -->
     <div
       v-show="(hasError && hasStartedLoading) || (!isFirstLoad && hasStartedLoading && !isLoaded)"
@@ -73,6 +73,7 @@ interface Props {
   src: string
   alt?: string
   customClass?: string
+  wrapperClass?: string
   maxRetries?: number
 }
 
@@ -80,6 +81,7 @@ const props = withDefaults(defineProps<Props>(), {
   alt: 'Chat Image',
   customClass: '',
   maxRetries: 3,
+  wrapperClass: '',
 })
 
 // 状态管理
@@ -95,7 +97,10 @@ const currentSrc = computed(() => {
   if (!props.src) return ''
 
   // 使用metafile函数直接转换URL
-  let httpUrl = metafile(props.src, 235, 'metafile')
+  let httpUrl = metafile(props.src, 235, 'metafile').replace(
+    /\.(png|jpg|jpeg|gif|webp|bmp|svg)/,
+    ''
+  )
 
   // 为了防止缓存问题，在重试时添加时间戳
   if (retryCount.value > 0) {

@@ -12,37 +12,42 @@ import { useEcdhsStore } from '@/stores/ecdh'
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { useSimpleTalkStore } from '@/stores/simple-talk';
 import { useCredentialsStore } from '@/stores/credentials';
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 
 
 
 
-const ChatNotifyApi = new HttpRequest(`${import.meta.env.VITE_CHAT_NOTIFY}/push-base`, {
-  responseHandel: response => {
-    return new Promise((resolve, reject) => {
-      if(response?.status && response?.status == 500){
-        reject(response.data)
-        return
-      }
-
-      if (response?.data && typeof response.data?.code === 'number') {
-        
-        
-        if (response.data.code === 0) {
-          resolve(response.data)
-        } else {
-         resolve(response.data)
+const ChatNotifyApi = createLazyApiClient(
+  () => `${getRuntimeConfig().api.chatNotify}/push-base`,
+  {
+    responseHandel: response => {
+      return new Promise((resolve, reject) => {
+        if(response?.status && response?.status == 500){
+          reject(response.data)
+          return
         }
-      } else {
-        resolve(response.data)
-      }
+
+        if (response?.data && typeof response.data?.code === 'number') {
+          
+          
+          if (response.data.code === 0) {
+            resolve(response.data)
+          } else {
+           resolve(response.data)
+          }
+        } else {
+          resolve(response.data)
+        }
+      })
+    },
+    errorHandel:((error)=>{
+      return new Promise((resolve,reject)=>{
+        reject(error)
+      })
     })
-  },
-  errorHandel:((error)=>{
-    return new Promise((resolve,reject)=>{
-      reject(error)
-    })
-  })
-}).request
+  }
+)
 
 
 export const getMyBlockChatList = async (): Promise<any> => {

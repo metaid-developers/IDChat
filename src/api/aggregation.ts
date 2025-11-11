@@ -12,11 +12,14 @@ import HttpRequest from '@/utils/request'
 import { error } from 'console'
 import { ethers } from 'ethers'
 import { changeSymbol } from '@/utils/util'
-import { mvcApi } from "@/api";
+import { mvcApi } from '@/api'
 import Decimal from 'decimal.js-light'
-const aggregation = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/aggregation`, {
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
+
+const aggregation = createLazyApiClient(() => `${getRuntimeConfig().api.baseApi}/aggregation`, {
   header: {
-    SiteConfigMetanetId: import.meta.env.VITE_SiteConfigMetanetId,
+    SiteConfigMetanetId: () => getRuntimeConfig().other.siteConfigMetanetId || '',
   },
   responseHandel: response => {
     return new Promise((resolve, reject) => {
@@ -34,12 +37,14 @@ const aggregation = new HttpRequest(`${import.meta.env.VITE_BASEAPI}/aggregation
       }
     })
   },
-}).request
+})
 
-const metanameApi = new HttpRequest(`${import.meta.env.VITE_MetaName_BaseApi}`, {}).request
+const metanameApi = createLazyApiClient(
+  () => getRuntimeConfig().api.baseApi, // 注意：这里使用的是 VITE_MetaName_BaseApi，但在 app-config 中没有单独定义，先用 baseApi
+  {}
+)
 
-
-const cyber3api=new HttpRequest(`${import.meta.env.VITE_CYBER3_API}`, {}).request
+const cyber3api = createLazyApiClient(() => getRuntimeConfig().api.cyber3Api, {})
 
 export const MetaBotV1 = (params: {
   address: string
@@ -440,18 +445,18 @@ export const GetFTs = (params: {
   code: number
   data: {
     total: number
-    data:Array<{
-      codeHash: string,
-      confirmed: number,
-      confirmedString: string,
-      decimal: number,
-      genesis: string,
-      icon: string,
-      name: string,
-      sensibleId: string,
-      symbol:string,
-      unconfirmed: number,
-      unconfirmedString: string,
+    data: Array<{
+      codeHash: string
+      confirmed: number
+      confirmedString: string
+      decimal: number
+      genesis: string
+      icon: string
+      name: string
+      sensibleId: string
+      symbol: string
+      unconfirmed: number
+      unconfirmedString: string
       utxoCount: string
     }>
     // results: {
@@ -460,23 +465,21 @@ export const GetFTs = (params: {
   }
 }> => {
   const { address, ..._params } = params
-  
+
   //return aggregation.get(`/v2/app/show/ft/${address}/summaries`, { params: _params })
-   
-    
-  return mvcApi(`/v1/contract/ft/address/${address}/balance`,_params)
+
+  return mvcApi(`/v1/contract/ft/address/${address}/balance`, _params)
 }
 
-export const GetBalance = async(  address?: string
-): Promise<number> => {
-    const res = await cyber3api.get(`/address/${address}/balance`)
-    if (res) {
-      const balance=new Decimal(res?.confirmed).add(res?.unconfirmed).toNumber()
-      return balance
-    }else{
-      return 0
-    }
- 
+export const GetBalance = async (address?: string): Promise<number> => {
+  const res = await cyber3api.get(`/address/${address}/balance`)
+  if (res) {
+    const balance = new Decimal(res?.confirmed).add(res?.unconfirmed).toNumber()
+    return balance
+  } else {
+    return 0
+  }
+
   //return aggregation.get(`/v2/app/show/balance`, { params: params })
 }
 
@@ -763,7 +766,6 @@ export const GetMetaNameResolver = (params: {
     }
   }
 }> => {
-  
   return aggregation.get(`/v2/app/metaname/indexer/info?`, { params })
 }
 
@@ -842,7 +844,6 @@ export const GetMetaNameInfo = (
     ownerAddress: string
   }
 }> => {
-  
   return aggregation.get(`/v2/app/metaname/indexer/info`, { params: { name } })
 }
 

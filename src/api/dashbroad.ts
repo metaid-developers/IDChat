@@ -1,8 +1,10 @@
 import { UtxoItem } from '@/@types/sdk'
 import { useUserStore } from '@/stores/user'
 import HttpRequest from '@/utils/request'
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 
-const Dashbroad = new HttpRequest(import.meta.env.VITE_Dashbroad_API, {
+const Dashbroad = createLazyApiClient(() => getRuntimeConfig().api.dashbroadApi, {
   header: () => {
     const userStore = useUserStore()
     if (userStore.isAuthorized) {
@@ -26,7 +28,7 @@ const Dashbroad = new HttpRequest(import.meta.env.VITE_Dashbroad_API, {
       return Promise.reject(error)
     }
   },
-}).request
+})
 
 export const CreateBroadcastTask = (params: {
   txId: string

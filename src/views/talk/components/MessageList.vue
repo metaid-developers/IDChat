@@ -154,6 +154,7 @@ import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
 import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
+import { VITE_ADDRESS_HOST } from '@/config/app-config'
 
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
@@ -747,7 +748,9 @@ async function onToBuzz(data: ShareChatMessageData) {
 
   const metaidData = {
     body: JSON.stringify(data),
-    path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${NodeName.ShareChatMessage}`,
+    path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${
+      NodeName.ShareChatMessage
+    }`,
     flag: 'metaid',
     version: '1.0.1',
     operation: 'create',

@@ -8,13 +8,11 @@
     >
       <div class="">
         <!-- <Icon name="welcome_icon" class="w-[140px] h-[38px]"></Icon> -->
-        <img :src="welcome" class="w-[140px] h-[38px]" alt="" />
+        <img :src="VITE_AppLogo()" class="w-[140px] h-[38px]" alt="" />
       </div>
-      <div
-        class="text-2xl welcome-desc text-[#AAAAAA]  mt-3  flex items-center justify-center"
-      >
+      <div class="text-2xl welcome-desc text-[#AAAAAA]  mt-3  flex items-center justify-center">
         <span>
-          A Decentralized Messaging App Built on Bitcoin
+          {{ VITE_AppDescription() }}
         </span>
       </div>
     </div>
@@ -40,6 +38,7 @@ import ChannelContent from './ChannelContent.vue'
 import { GetOwnerStakeInfo } from '@/api/dao'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import welcome from '@/assets/images/welcome.png'
+import { VITE_AppDescription, VITE_AppLogo } from '@/config/app-config'
 // const talk = useTalkStore()
 const layout = useLayoutStore()
 const user = useUserStore()

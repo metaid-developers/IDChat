@@ -71,7 +71,6 @@
         </div>
       </div>
 
-
       <div
         class="my-2"
         v-if="
@@ -149,6 +148,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MemberRule, RuleOp } from '@/enum'
 import { useI18n } from 'vue-i18n'
+import { VITE_ADDRESS_HOST } from '@/config/app-config'
 
 const userStore = useUserStore()
 const chainStore = useChainStore()
@@ -162,7 +162,13 @@ function onCancel() {
 
 const props = defineProps(['member', 'createUserMetaId', 'groupId', 'role'])
 const simpleTalk = useSimpleTalkStore()
-const emit = defineEmits(['updated', 'updateUserAdmin', 'updateUserWhiteList','updateUserBlockList','toPrivateChat'])
+const emit = defineEmits([
+  'updated',
+  'updateUserAdmin',
+  'updateUserWhiteList',
+  'updateUserBlockList',
+  'toPrivateChat',
+])
 // const talk = useTalkStore()
 const router = useRouter()
 const route = useRoute()
@@ -266,7 +272,7 @@ const manageWhitelist = () => {
 
 const onSetBlockListConfirm = () => {
   clicked.value = false
-  
+
   const hasPermission = selfPermission.value.isCreator || selfPermission.value.isAdmin
   if (!hasPermission) {
     return ElMessage.error(`${i18n.t('Non_permission_set Blocklist')}`)
@@ -290,7 +296,8 @@ const onConfirm = async () => {
 
     const metaidData = {
       body: JSON.stringify(data),
-      path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/simplegroupremoveuser`,
+      path: `${VITE_ADDRESS_HOST() ||
+        import.meta.env.VITE_ADDRESS_HOST}:/protocols/simplegroupremoveuser`,
       flag: 'metaid',
       version: '1.0.0',
       operation: 'create',

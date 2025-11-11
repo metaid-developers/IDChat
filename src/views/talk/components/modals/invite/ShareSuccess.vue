@@ -27,6 +27,7 @@ import { ShowControl } from '@/enum'
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
 import BaseModal from '../BaseModal.vue'
+import { VITE_SHOW_NOW_HOST } from '@/config/app-config'
 
 const layout = useLayoutStore()
 const talk = useTalkStore()
@@ -34,7 +35,9 @@ const talk = useTalkStore()
 const goCheckOutBuzz = () => {
   if (!talk.shareToBuzzTxId) return
 
-  const url = `${import.meta.env.VITE_SHOW_NOW_HOST}/buzz/${talk.shareToBuzzTxId}i0`
+  const url = `${VITE_SHOW_NOW_HOST() || import.meta.env.VITE_SHOW_NOW_HOST}/buzz/${
+    talk.shareToBuzzTxId
+  }i0`
   window.open(url, '_blank')
 
   talk.shareToBuzzTxId = ''

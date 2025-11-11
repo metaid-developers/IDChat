@@ -17,6 +17,7 @@ import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { ecdhDecrypt, decryptToBlob } from '@/utils/crypto'
 import { waitFor } from 'inspector'
 import { GenesisItem } from '@/@types/common'
+import { VITE_MAN_API } from '@/config/app-config'
 export interface MetafileSchems {
   txId?: string
   data?: Blob
@@ -55,17 +56,14 @@ export class DBClass extends Dexie {
       data: Blob
     }>(async resolve => {
       try {
-        
         const txId = this.getMetaFileTxId(metafile)
-      
-        
+
         const fileUrl =
           width !== -1
             ? tranformMetafile(metafile, width)
-            : `${import.meta.env.VITE_MAN_API}/content/${txId}`
-            
+            : `${VITE_MAN_API() || import.meta.env.VITE_MAN_API}/content/${txId}`
+
         if (isPrivateChat && chatPubkeyForDecrypt) {
-          
           const ecdhsStore = useEcdhsStore()
           const result = await getFileDataFromUrl(fileUrl)
           if (result) {
@@ -117,19 +115,15 @@ export class DBClass extends Dexie {
     chatPubkeyForDecrypt?: string
   ) {
     return new Promise<string>(async resolve => {
-       
-      
-  
       const result = await this.getMetaFileData(
         metafile,
         width,
         isPrivateChat,
         chatPubkeyForDecrypt
       ).catch(() => {
-        
         resolve('')
       })
-      
+
       if (result) {
         const params: MetafileSchems = {
           txId: result.txId,
@@ -155,7 +149,6 @@ export class DBClass extends Dexie {
     chatPubkeyForDecrypt = ''
   ) {
     return new Promise<string>(async resolve => {
-      
       if (!metafileTxId) {
         resolve('')
       } else if (
@@ -175,7 +168,7 @@ export class DBClass extends Dexie {
         if (file) {
           this.metafiles.update(txId, { latestTime: new Date().getTime() })
           // 存在数据库
-          
+
           // 原图
           if (width === -1) {
             // 存在原图
@@ -229,7 +222,6 @@ export class DBClass extends Dexie {
             }
           }
         } else {
-          
           // 不存在数据库
           const res = await this.addMetaFileData(txId, width, isPrivateChat, chatPubkeyForDecrypt)
           resolve(res)
@@ -244,9 +236,7 @@ export class DBClass extends Dexie {
     isPrivateChat: boolean = false,
     chatPubkeyForDecrypt: string = ''
   ) {
-    
     return new Promise<string>(async resolve => {
-      
       const result = await this.getMetaFileData(
         metafile,
         width,

@@ -237,6 +237,7 @@ import { GetUserEcdhPubkeyForPrivateChat } from '@/api/talk'
 import { useEcdhsStore } from '@/stores/ecdh'
 import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { VITE_CHAT_API } from '@/config/app-config'
 const layout = useLayoutStore()
 
 interface RemoteSearchGroup {
@@ -305,9 +306,11 @@ export default defineComponent({
         isSearching.value = true
 
         const response = await fetch(
-          `${
-            import.meta.env.VITE_CHAT_API
-          }/group-chat/search-groups-and-users?query=${encodeURIComponent(searchValue)}`
+          `${VITE_CHAT_API() ||
+            import.meta.env
+              .VITE_CHAT_API}/group-chat/search-groups-and-users?query=${encodeURIComponent(
+            searchValue
+          )}`
         )
         const data = await response.json()
 

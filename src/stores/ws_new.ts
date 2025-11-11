@@ -4,7 +4,8 @@ import { useUserStore } from './user'
 import { SocketIOClient } from '@/lib/socket'
 import { disconnect } from 'process'
 import { useSimpleTalkStore } from './simple-talk'
-import { useRootStore,isIOS,isAndroid } from './root'
+import { useRootStore, isIOS, isAndroid } from './root'
+import { VITE_IDCHAT_PATH_WS, VITE_SHOW_NOW_WS } from '@/config/app-config'
 
 interface MessageData {
   message: string
@@ -16,7 +17,7 @@ interface SocketConfig {
   url: string
   path: string
   metaid: string
-  type:'pc' | 'app'
+  type: 'pc' | 'app'
 }
 
 export const useWsStore = defineStore('ws', {
@@ -38,24 +39,24 @@ export const useWsStore = defineStore('ws', {
       return simpleTalk.activeChannelId
     },
 
-    isConnected(state){
+    isConnected(state) {
       return state.ws?.isConnected()
-    }
+    },
   },
 
   actions: {
     async init() {
       const selfMetaId = this.selfMetaId
-      const rootStore=useRootStore()
+      const rootStore = useRootStore()
       rootStore.checkWebViewBridge()
       if (!selfMetaId) return
       const config: SocketConfig = {
-        url: `${import.meta.env.VITE_SHOW_NOW_WS}`,
-        path:`${import.meta.env.VITE_IDCHAT_PATH_WS}/socket.io`,
+        url: `${VITE_SHOW_NOW_WS() || import.meta.env.VITE_SHOW_NOW_WS}`,
+        path: `${VITE_IDCHAT_PATH_WS()}/socket.io`,
         metaid: selfMetaId,
-        type:rootStore.isWebView || isIOS || isAndroid ?  'app' : 'pc'
+        type: rootStore.isWebView || isIOS || isAndroid ? 'app' : 'pc',
       }
-      
+
       this.ws = new SocketIOClient(config)
       // this.ws=client
       this.ws.connect()

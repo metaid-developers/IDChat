@@ -1992,7 +1992,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
 
       // 标记为已读
-      this.markAsRead(channelId)
+      // this.markAsRead(channelId)
 
       // 保存到本地存储
       localStorage.setItem(`lastActiveChannel-${this.selfMetaId}`, channelId)

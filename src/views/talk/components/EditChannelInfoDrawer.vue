@@ -262,6 +262,11 @@ const saveChannelInfo = async () => {
       deleteStatus: cur.deleteStatus,
     }
 
+    if (groupIcon?.indexOf('metafile://') === 0) {
+      groupIcon = groupIcon
+    } else {
+      groupIcon = cur.roomIcon
+    }
     if (groupIcon !== cur.roomIcon || groupName !== cur.roomName) {
       const ret = await updateGroupChannel(group, { groupIcon, groupName })
     }

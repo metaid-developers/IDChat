@@ -7,7 +7,6 @@ import { useNetworkStore } from '@/stores/network';
 import {broadcast} from '@/api/metalet'
 import { ElMessage } from 'element-plus'
 import { useConnectionStore } from '@/stores/connection';
-import {SERVICE_ADDRESS,SERVICE_FEE} from '@/data/constants'
 import { AttachmentItem } from '@/@types/hd-wallet'
 import { NodeName,IsEncrypt } from '@/enum'
 import {hexToUint8Array,hexToBase64} from '@/utils/util'
@@ -21,6 +20,7 @@ import { useChainStore } from '@/stores/chain';
 import { initEccLib } from 'bitcoinjs-lib'
 import i18n from '@/utils/i18n'
 import { useLayoutStore } from '@/stores/layout';
+import { VITE_ADDRESS_HOST } from '@/config/app-config';
 export enum MetaFlag{
  metaid='metaid',
   testid='testid'
@@ -476,7 +476,7 @@ export const useBulidTx = createGlobalState(() => {
       
       const metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
@@ -505,7 +505,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
@@ -562,7 +562,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation:Operation.create,//op == Operation.modify ? Operation.modify : Operation.create,
@@ -591,7 +591,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation:Operation.create,//op == Operation.modify ? Operation.modify : Operation.create,
@@ -621,7 +621,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation:Operation.create,//op == Operation.modify ? Operation.modify : Operation.create,
@@ -655,7 +655,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
@@ -692,7 +692,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:body,
-        path:`${import.meta.env.VITE_ADDRESS_HOST}:/${NodeName.File}` ,
+        path:`${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/${NodeName.File}` ,
         flag: MetaFlag.metaid,
         operation: Operation.create,
         contentType:`${mime};binary`, //`image/${mime};binary`,
@@ -752,7 +752,7 @@ export const useBulidTx = createGlobalState(() => {
         
           metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation: Operation.create,
@@ -839,7 +839,7 @@ export const useBulidTx = createGlobalState(() => {
     try {
       const metaidData={
         body:JSON.stringify(body),
-        path: `${import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
+        path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocol}`,
         flag: MetaFlag.metaid,
         version: '1.0.0',
         operation:body.channelId ? Operation.modify : Operation.create,

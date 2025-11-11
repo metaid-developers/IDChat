@@ -1,13 +1,38 @@
 {
-  "whiteListCreateBroadcast": [
-    "16xN11wyQmUTS3qFwaJYbwHbjHaFkibxWo",
-    "1APkQsxmFLtVKT9Fng7Z6t7pSJ3q17km1F",
-    "12ghVWG1yAgNjzXj4mr3qK9DgyornMUikZ",
-    "18fhajgmPcR6DVn5vQU2AqmkSzoGJBy9oV",
-    "16cuqxU9RBJeTRvh7Ya6Bdk77acTNeeT7v"
-  ],
+  "app": {
+    "name": "IDChat | Decentralized Messenger Built on Bitcoin",
+    "description": "A Decentralized Messaging App Built on Bitcoin",
+    "keywords": "IDChat | Decentralized Messenger Built on Bitcoin",
+    "key": "IDChat | Decentralized Messenger Built on Bitcoin",
+    "logo": "/logo.png",
+    "favicon": "/favicon.ico",
+    "designSize": 1920
+  },
+  "api": {
+    "mvcBaseApi": "https://api.mvcscan.com/browser",
+    "manApi": "https://man.metaid.io",
+    "chatApi": "https://www.show.now/chat-api-test",
+    "chatNotify": "https://api.idchat.io",
+    "metasoUrl": "https://www.metaso.network",
+    "showNowHost": "https://www.show.now",
+    "showNowWs": "https://www.show.now",
+    "idchatPathWs": "/socket-test"
+  },
+  "blockchain": {
+    "network": "mainnet",
+    "networkNew": "livenet",
+    "metaidTag": "metaid",
+    "walletPath": "10001",
+    "changeAddress": "1By2LtxHQRwzhL2vYMNXuV2WQzkrXM4oS",
+    "serviceAddress": "115AxP3jECNa5XmnVHYtEJa2cqP6wYjSJV",
+    "serviceFee": 1999,
+    "addressHost": "bc1p20k3x2c4mglfxr5wa5sgtgechwstpld80kru2cg4gmm4urvuaqqsvapxu0"
+  },
   "features": {
     "enableChat": true,
-    "enablePayment": true
-  }
+    "enablePayment": true,
+    "stakeholderOnlyLimit": 1
+  },
+
+  "other": {}
 }

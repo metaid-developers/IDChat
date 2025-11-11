@@ -5,8 +5,10 @@ import pako from 'pako'
 import { gzip } from 'node-gzip'
 import { changeSymbol } from '@/utils/util'
 import Decimal from 'decimal.js-light'
+import { getRuntimeConfig } from '@/config/runtime-config'
+import { createLazyApiClient } from '@/utils/api-factory'
 
-const DAO = new HttpRequest(`${import.meta.env.VITE_DAO_API}`, {
+const DAO = createLazyApiClient(() => getRuntimeConfig().api.daoApi, {
   responseHandel: response => {
     return new Promise((resolve, reject) => {
       if (response?.data && typeof response.data?.code === 'number') {
@@ -23,7 +25,7 @@ const DAO = new HttpRequest(`${import.meta.env.VITE_DAO_API}`, {
       }
     })
   },
-}).request
+})
 
 export function Proposals(params: { symbol: string; offset: number; limit: number }) {
   return new Promise<ProposalItem[]>(async (resolve, reject) => {
@@ -107,7 +109,7 @@ export const GetStake = async (params: {
   op: DAOStakeOperate
 }): Promise<{ code: number; data: DAOStakeReqstakeArgs; msg: string }> => {
   params.symbol = changeSymbol(params.symbol)
-  
+
   return DAO.post('/reqstakeargs', params)
 }
 
