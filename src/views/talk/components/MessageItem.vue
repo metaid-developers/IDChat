@@ -209,7 +209,7 @@
             v-else-if="isGiveawayRedPacket"
           >
             <div
-              class="max-w-full sm:max-w-[300PX] shadow rounded-xl cursor-pointer origin-center hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-700 group"
+              class="lg:max-w-full max-w-[300PX] shadow rounded-xl cursor-pointer origin-center hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-700 group"
               :class="[
                 hasRedPacketReceived || redPackClaimOver
                   ? 'opacity-50'
@@ -261,7 +261,7 @@
             v-else-if="isChatGroupLink"
           >
             <div
-              class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
+              class="lg:max-w-full max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
               @click="handleGroupLinkClick"
             >
               <div class="p-4 space-y-3">
@@ -318,7 +318,7 @@
             v-else-if="isMetaAppLink && metaAppInfo"
           >
             <div
-              class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group overflow-hidden"
+              class="lg:max-w-full max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group overflow-hidden"
               @click="handleMetaAppLinkClick"
             >
               <!-- 顶部：icon | appName version | Made by creator -->
@@ -330,7 +330,7 @@
                   <ChatImage
                     v-if="metaAppLinkInfo.icon"
                     :src="metaAppLinkInfo.icon"
-                    customClass="w-12 h-12 rounded-lg object-cover"
+                    customClass="w-12 h-12 rounded-lg object-cover "
                   />
                   <div
                     v-else
@@ -385,12 +385,21 @@
               </div>
 
               <!-- Cover Image -->
-              <div v-if="metaAppLinkInfo.coverImg" class="w-full h-40 bg-gray-100 dark:bg-gray-800">
+              <div v-if="metaAppLinkInfo.coverImg" class="w-full h-40  p-4 ">
                 <ChatImage
                   :src="metaAppLinkInfo.coverImg"
                   customClass="w-full h-full object-cover rounded-none"
                   wrapperClass="w-full h-full"
                 />
+              </div>
+
+              <!-- OPEN APP 按钮 -->
+              <div class="p-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                <div
+                  class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium text-sm"
+                >
+                  OPEN APP
+                </div>
               </div>
             </div>
           </div>
@@ -428,9 +437,24 @@
 
                 <!-- 内容布局：图片 + 文本 -->
                 <div class="flex gap-3">
-                  <!-- 图片 -->
-                  <div v-if="buzzFirstImage" class="w-20 h-20 shrink-0">
-                    <ChatImage :src="buzzFirstImage" customClass="w-20 h-20 object-cover rounded" />
+                  <!-- 图片或视频图标 -->
+                  <div
+                    v-if="buzzHasVideo || buzzFirstImage"
+                    class="w-20 h-20 shrink-0 overflow-hidden rounded relative"
+                  >
+                    <!-- 视频图标 -->
+                    <div
+                      v-if="buzzHasVideo"
+                      class="w-20 h-20 bg-gray-100 dark:bg-gray-800 flex items-center justify-center rounded text-lg"
+                    >
+                      <el-icon><VideoPlay /></el-icon>
+                    </div>
+                    <!-- 图片 -->
+                    <ChatImage
+                      v-else-if="buzzFirstImage"
+                      :src="buzzFirstImage"
+                      customClass="w-20 h-20 object-cover rounded-none"
+                    />
                   </div>
 
                   <!-- 文本内容 -->
@@ -451,7 +475,7 @@
             v-else-if="isSimpleNoteLink && pinInfo"
           >
             <div
-              class="max-w-full sm:max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md overflow-hidden"
+              class="lg:max-w-full max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md overflow-hidden"
               @click="handleBuzzOrNoteLinkClick"
             >
               <!-- 用户信息和时间 -->
@@ -537,7 +561,7 @@
               @click="handleMessageClick"
             >
               <div
-                class="whitespace-pre-wrap"
+                class="whitespace-pre-wrap break-all"
                 v-html="
                   parseTextMessage(
                     decryptedMessage(
@@ -623,6 +647,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
 import {openAppBrowser} from '@/wallet-adapters/metalet'
 import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
+import { VideoPlay } from '@element-plus/icons-vue'
 
 const i18n = useI18n()
 
@@ -641,7 +666,21 @@ const visiableMenu = ref(false)
 const channelInfo = ref<any>(null)
 const subChannelInfo = ref<any>(null)
 
-// MetaApp 信息缓存
+// 通用 PIN 信息缓存（包含所有类型：MetaApp, Buzz, SimpleNote 等）
+interface UniversalPinInfo {
+  id: string
+  metaid: string
+  address: string
+  creator: string
+  timestamp: number
+  path: string
+  contentSummary: string
+  parsedSummary?: any
+}
+
+const universalPinInfo = ref<UniversalPinInfo | null>(null)
+
+// MetaApp 信息缓存（保留用于类型检查）
 interface MetaAppContentSummary {
   title: string
   appName: string
@@ -919,6 +958,30 @@ const parseTextMessage = (text: string) => {
   const COOKIE = /document\.cookie/gi
   const HTTP = /(http|https):\/\//gi
   const re = /(f|ht){1}(tp|tps):\/\/([\w-]+\S)+[\w-]+([\w-?%#&=]*)?(\/[\w- ./?%#&=]*)?/g
+
+  // 检测特殊协议链接（这些链接会渲染成卡片，不需要转换成 HTML 链接）
+  const specialProtocolPatterns = [
+    /\/channels\/public\/[a-f0-9]+/i,           // 群聊链接
+  ]
+
+  // 通用 PIN 检测：检测 URL 中是否包含 PIN (64位16进制+"i"+数字)
+  const urlPattern = /(https?:\/\/[^\s]+)/i
+  const pinPattern = /([a-f0-9]{64}i\d+)/i
+
+  const isUrl = urlPattern.test(text)
+  const hasPinId = pinPattern.test(text)
+
+  // 如果是 URL 且包含 PIN，说明是协议卡片链接，直接返回原文
+  if (isUrl && hasPinId) {
+    return text.replace(/\\n/g, '\n').replace(/\n/g, '<br />')
+  }
+
+  // 如果消息匹配其他特殊协议，直接返回原文
+  for (const pattern of specialProtocolPatterns) {
+    if (pattern.test(text)) {
+      return text.replace(/\\n/g, '\n').replace(/\n/g, '<br />')
+    }
+  }
 
   if (HTML.test(text)) {
     return '无效输入,别耍花样!'
@@ -1235,8 +1298,16 @@ const fetchSubChannelInfo=async(pinId:string)=>{
   }
 }
 
-// 识别 MetaApp 链接
-const isMetaAppLink = computed(() => {
+// 从 URL 中提取 PIN ID（64位16进制 + "i" + 数字）
+const extractPinId = (url: string): string | null => {
+  // PIN 格式：64位16进制字符 + "i" + 数字
+  const pinPattern = /([a-f0-9]{64}i\d+)/i
+  const match = url.match(pinPattern)
+  return match ? match[1] : null
+}
+
+// 检测消息是否包含 PIN 链接
+const hasPinLink = computed(() => {
   const messageContent = decryptedMessage(
     props.message.content,
     props.message.encryption,
@@ -1246,40 +1317,36 @@ const isMetaAppLink = computed(() => {
 
   if (!messageContent) return false
 
-  // 检测 MetaApp 链接的正则表达式
-  const metaAppLinkPattern = /(?:https?:\/\/[^/]+)?\/metaapp\/([a-f0-9]+i0)/i
+  // 检测是否是 URL 且包含 PIN
+  const urlPattern = /(https?:\/\/[^\s]+)/i
+  const hasUrl = urlPattern.test(messageContent)
 
-  const isMetaApp = metaAppLinkPattern.test(messageContent)
+  if (!hasUrl) return false
 
-  // 如果是 MetaApp 链接且还没有获取过应用信息，则获取应用信息
-  if (isMetaApp && !metaAppInfo.value) {
-    const match = messageContent.match(metaAppLinkPattern)
-    if (match) {
-      const pid = match[1]
-      fetchMetaAppInfo(pid)
-    }
+  const pinId = extractPinId(messageContent)
+
+  if (pinId && !universalPinInfo.value) {
+    fetchUniversalPinInfo(pinId, messageContent)
   }
 
-  return isMetaApp && metaAppInfo.value?.path === '/protocols/metaapp'
+  return !!pinId
 })
 
-// 获取 MetaApp 信息
-const fetchMetaAppInfo = async (pid: string) => {
+// 获取通用 PIN 信息
+const fetchUniversalPinInfo = async (pinId: string, fullUrl: string) => {
   try {
-    const response = await fetch(`https://manapi.metaid.io/pin/${pid}`)
+    const response = await fetch(`https://manapi.metaid.io/pin/${pinId}`)
     const result = await response.json()
 
     if (result.code === 1 && result.data) {
-      metaAppInfo.value = result.data
+      universalPinInfo.value = result.data
 
       // 解析 contentSummary
-      if (result.data.contentSummary) {
+      if (result.data.contentSummary && universalPinInfo.value) {
         try {
-          if (metaAppInfo.value) {
-            metaAppInfo.value.parsedSummary = JSON.parse(result.data.contentSummary)
-          }
+          universalPinInfo.value.parsedSummary = JSON.parse(result.data.contentSummary)
         } catch (e) {
-          console.error('Failed to parse MetaApp contentSummary:', e)
+          console.error('Failed to parse contentSummary:', e)
         }
       }
 
@@ -1288,12 +1355,45 @@ const fetchMetaAppInfo = async (pid: string) => {
         fetchPinUserInfo(result.data.creator)
       }
 
-      console.log('Fetched MetaApp info:', metaAppInfo.value)
+      // 根据 path 更新对应的缓存
+      const path = result.data.path
+      if (path === '/protocols/metaapp') {
+        metaAppInfo.value = result.data
+        if (result.data.contentSummary && metaAppInfo.value) {
+          try {
+            metaAppInfo.value.parsedSummary = JSON.parse(result.data.contentSummary)
+          } catch (e) {}
+        }
+      } else if (path === '/protocols/simplebuzz' || path === '/protocols/simplenote') {
+        pinInfo.value = result.data
+        if (result.data.contentSummary && pinInfo.value) {
+          try {
+            pinInfo.value.parsedSummary = JSON.parse(result.data.contentSummary)
+          } catch (e) {}
+        }
+      }
+
+      console.log('Fetched Universal Pin info:', universalPinInfo.value)
     }
   } catch (error) {
-    console.error('Failed to fetch MetaApp info:', error)
+    console.error('Failed to fetch Universal Pin info:', error)
   }
 }
+
+// 判断是否为 MetaApp（基于 path）
+const isMetaAppLink = computed(() => {
+  return hasPinLink.value && universalPinInfo.value?.path === '/protocols/metaapp'
+})
+
+// 判断是否为 Buzz（基于 path）
+const isBuzzLink = computed(() => {
+  return hasPinLink.value && universalPinInfo.value?.path === '/protocols/simplebuzz'
+})
+
+// 判断是否为 SimpleNote（基于 path）
+const isSimpleNoteLink = computed(() => {
+  return hasPinLink.value && universalPinInfo.value?.path === '/protocols/simplenote'
+})
 
 // 解析 MetaApp 链接信息
 const metaAppLinkInfo = computed(() => {
@@ -1304,7 +1404,7 @@ const metaAppLinkInfo = computed(() => {
     false
   )
 
-  if (!messageContent || !metaAppInfo.value) {
+  if (!metaAppInfo.value) {
     return {
       pid: '',
       title: 'MetaApp',
@@ -1313,38 +1413,21 @@ const metaAppLinkInfo = computed(() => {
       icon: '',
       coverImg: '',
       creator: '',
-      fullUrl: ''
+      fullUrl: messageContent || ''
     }
   }
 
-  const metaAppLinkPattern = /(?:https?:\/\/[^/]+)?\/metaapp\/([a-f0-9]+i0)/i
-  const match = messageContent.match(metaAppLinkPattern)
-
-  if (match) {
-    const pid = match[1]
-    const summary = metaAppInfo.value.parsedSummary
-
-    return {
-      pid,
-      title: summary?.title || 'MetaApp',
-      appName: summary?.appName || '',
-      version: summary?.version || '',
-      icon: summary?.icon || '',
-      coverImg: summary?.coverImg || '',
-      creator: metaAppInfo.value.creator || '',
-      fullUrl: messageContent
-    }
-  }
+  const summary = metaAppInfo.value.parsedSummary
 
   return {
-    pid: '',
-    title: 'MetaApp',
-    appName: '',
-    version: '',
-    icon: '',
-    coverImg: '',
-    creator: '',
-    fullUrl: messageContent
+    pid: metaAppInfo.value.id || '',
+    title: summary?.title || 'MetaApp',
+    appName: summary?.appName || '',
+    version: summary?.version || '',
+    icon: summary?.icon || '',
+    coverImg: summary?.coverImg || '',
+    creator: metaAppInfo.value.creator || '',
+    fullUrl: messageContent || ''
   }
 })
 
@@ -1353,72 +1436,11 @@ const handleMetaAppLinkClick = () => {
   const linkInfo = metaAppLinkInfo.value
   if (linkInfo.fullUrl) {
     // 在新窗口打开 MetaApp 链接
+    if (rootstore.isWebView) {
+      openAppBrowser({url:linkInfo.fullUrl})
+      return
+    }
     window.open(linkInfo.fullUrl, openWindowTarget())
-  }
-}
-
-// 识别 Buzz/SimpleNote 链接
-const isBuzzOrNoteLink = computed(() => {
-  const messageContent = decryptedMessage(
-    props.message.content,
-    props.message.encryption,
-    props.message.protocol,
-    false
-  )
-
-  if (!messageContent) return false
-
-  // 检测 Buzz 或 SimpleNote 链接的正则表达式（支持完整 URL 和相对路径）
-  const buzzPattern = /(?:https?:\/\/[^/]+)?\/buzz\/([a-f0-9]+i0)/i
-  const notePattern = /(?:https?:\/\/[^/]+)?\/simpleNote\/([a-f0-9]+i0)/i
-
-  const isBuzz = buzzPattern.test(messageContent)
-  const isNote = notePattern.test(messageContent)
-
-  // 如果是 Buzz 或 Note 链接且还没有获取过信息，则获取信息
-  if ((isBuzz || isNote) && !pinInfo.value) {
-    const buzzMatch = messageContent.match(buzzPattern)
-    const noteMatch = messageContent.match(notePattern)
-    const match = buzzMatch || noteMatch
-
-    if (match) {
-      const pid = match[1]
-      fetchPinInfo(pid)
-    }
-  }
-
-  return isBuzz || isNote
-})
-
-// 获取 Pin 信息
-const fetchPinInfo = async (pid: string) => {
-  try {
-    const response = await fetch(`https://manapi.metaid.io/pin/${pid}`)
-    const result = await response.json()
-
-    if (result.code === 1 && result.data) {
-      pinInfo.value = result.data
-
-      // 解析 contentSummary
-      if (result.data.contentSummary) {
-        try {
-          if (pinInfo.value) {
-            pinInfo.value.parsedSummary = JSON.parse(result.data.contentSummary)
-          }
-        } catch (e) {
-          console.error('Failed to parse contentSummary:', e)
-        }
-      }
-
-      // 获取用户信息
-      if (result.data.creator && !pinUserInfo.value[result.data.creator]) {
-        fetchPinUserInfo(result.data.creator)
-      }
-
-      console.log('Fetched Pin info:', pinInfo.value)
-    }
-  } catch (error) {
-    console.error('Failed to fetch Pin info:', error)
   }
 }
 
@@ -1442,21 +1464,18 @@ const fetchPinUserInfo = async (address: string) => {
   }
 }
 
-// 判断是否为 Buzz
-const isBuzzLink = computed(() => {
-  return isBuzzOrNoteLink.value && pinInfo.value?.path === '/protocols/simplebuzz'
-})
-
-// 判断是否为 SimpleNote
-const isSimpleNoteLink = computed(() => {
-  return isBuzzOrNoteLink.value && pinInfo.value?.path === '/protocols/simplenote'
-})
-
 // 判断附件是否为图片
 const isImageAttachment = (attachment: string): boolean => {
   if (!attachment) return false
   const metafilePattern = /^metafile:\/\/[a-f0-9]+i0(\.(png|jpg|jpeg|gif|webp))?$/i
   return metafilePattern.test(attachment)
+}
+
+// 判断附件是否为视频
+const isVideoAttachment = (attachment: string): boolean => {
+  if (!attachment) return false
+  const videoPattern = /^metafile:\/\/video\/[a-f0-9]+i0$/i
+  return videoPattern.test(attachment)
 }
 
 // 获取 Buzz 的第一张图片
@@ -1465,6 +1484,12 @@ const buzzFirstImage = computed(() => {
 
   const images = pinInfo.value.parsedSummary.attachments.filter(isImageAttachment)
   return images.length > 0 ? images[0] : null
+})
+
+// 判断 Buzz 是否有视频
+const buzzHasVideo = computed(() => {
+  if (!pinInfo.value?.parsedSummary?.attachments || pinInfo.value.parsedSummary.attachments.length === 0) return false
+  return isVideoAttachment(pinInfo.value.parsedSummary.attachments[0])
 })
 
 // 获取 SimpleNote 的封面图
@@ -1496,6 +1521,10 @@ const handleBuzzOrNoteLinkClick = () => {
   )
 
   if (messageContent) {
+    if (rootstore.isWebView) {
+      openAppBrowser({ url: messageContent })
+      return
+    }
     window.open(messageContent, openWindowTarget())
   }
 }
@@ -1506,6 +1535,7 @@ const handleGroupLinkClick = () => {
   const linkInfo = groupLinkInfo.value
   if (linkInfo.fullUrl) {
     // 在新窗口打开群链接
+
     window.open(linkInfo.fullUrl, '_self')
   }
 }

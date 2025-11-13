@@ -31,6 +31,7 @@ export function getAppConfig() {
     mvcBaseApi: config.api.mvcBaseApi,
     cyber3Api: config.api.cyber3Api,
     manApi: config.api.manApi,
+    fileApi: config.api.fileApi,
     daoApi: config.api.daoApi,
     dashbroadApi: config.api.dashbroadApi,
     chatApi: config.api.chatApi,
@@ -107,6 +108,7 @@ export const VITE_BSV_META_SV_API = () => getRuntimeConfig().api.bsvMetaSvApi
 export const VITE_MVC_BASEAPI = () => getRuntimeConfig().api.mvcBaseApi
 export const VITE_CYBER3_API = () => getRuntimeConfig().api.cyber3Api
 export const VITE_MAN_API = () => getRuntimeConfig().api.manApi
+export const VITE_FILE_API = () => getRuntimeConfig().api.fileApi
 export const VITE_DAO_API = () => getRuntimeConfig().api.daoApi
 export const VITE_Dashbroad_API = () => getRuntimeConfig().api.dashbroadApi
 export const VITE_CHAT_API = () => getRuntimeConfig().api.chatApi

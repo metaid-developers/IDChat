@@ -18,6 +18,7 @@
     "mvcBaseApi": "https://api.mvcscan.com/browser",
     "cyber3Api": "https://api.microvisionchain.com/open-api",
     "manApi": "https://man.metaid.io",
+    "fileApi": "https://man.metaid.io",
     "daoApi": "https://api.mvcswap.com/stake/test",
     "dashbroadApi": "https://api-test.microvisionchain.com/tool/api",
     "chatApi": "https://www.show.now/chat-api-test",

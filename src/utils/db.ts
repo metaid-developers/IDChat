@@ -17,7 +17,7 @@ import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { ecdhDecrypt, decryptToBlob } from '@/utils/crypto'
 import { waitFor } from 'inspector'
 import { GenesisItem } from '@/@types/common'
-import { VITE_MAN_API } from '@/config/app-config'
+import { VITE_FILE_API } from '@/config/app-config'
 export interface MetafileSchems {
   txId?: string
   data?: Blob
@@ -61,7 +61,7 @@ export class DBClass extends Dexie {
         const fileUrl =
           width !== -1
             ? tranformMetafile(metafile, width)
-            : `${VITE_MAN_API() || import.meta.env.VITE_MAN_API}/content/${txId}`
+            : `${VITE_FILE_API() || import.meta.env.VITE_FILE_API}/content/${txId}`
 
         if (isPrivateChat && chatPubkeyForDecrypt) {
           const ecdhsStore = useEcdhsStore()

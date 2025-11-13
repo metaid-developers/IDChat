@@ -5,7 +5,7 @@ import { useRootStore } from '@/stores/root'
 import { router } from '@/router'
 import utc from 'dayjs/plugin/utc'
 import { Chains } from '@/enum'
-import { VITE_MAN_API } from '@/config/app-config'
+import { VITE_FILE_API } from '@/config/app-config'
 dayjs.extend(utc)
 
 export const ellipsisMiddle = (str: string, frontKeep = 20, backKeep = 5) => {
@@ -189,7 +189,7 @@ export function metafile(metafile: string, width = 235, type: 'metafile' | 'meta
     //path='content'
   }
   //const fileUrl = `${import.meta.env.VITE_AppImgApi}${path}${metafile.replace('ipfs://', '')}`
-  const fileUrl = `${VITE_MAN_API() || import.meta.env.VITE_MAN_API}${path}${metafile}`
+  const fileUrl = `${VITE_FILE_API() || import.meta.env.VITE_FILE_API}${path}${metafile}`
 
   // 文件后缀
   const fileSuffix = metafile.split('.')[metafile.split('.').length - 1]

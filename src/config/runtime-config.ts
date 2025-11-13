@@ -18,6 +18,7 @@ export interface AppRuntimeConfig {
     mvcBaseApi: string
     cyber3Api: string
     manApi: string
+    fileApi: string
     daoApi: string
     dashbroadApi: string
     chatApi: string
@@ -86,7 +87,7 @@ function getDefaultConfig(): AppRuntimeConfig {
       description: 'IDChat | Decentralized Messenger Built on Bitcoin',
       keywords: 'IDChat | Decentralized Messenger Built on Bitcoin',
       key: 'IDChat | Decentralized Messenger Built on Bitcoin',
-      logo: '/show3.svg',
+      logo: '/logo.png',
       favicon: '/favicon.ico',
       designSize: 1920,
     },
@@ -100,6 +101,7 @@ function getDefaultConfig(): AppRuntimeConfig {
       mvcBaseApi: 'https://api.mvcscan.com/browser',
       cyber3Api: 'https://api.microvisionchain.com/open-api',
       manApi: 'https://man.metaid.io',
+      fileApi: 'https://man.metaid.io',
       daoApi: 'https://api.mvcswap.com/stake',
       dashbroadApi: 'https://api.show3.io/tool/api',
       chatApi: 'https://www.show.now/chat-api-test',
@@ -179,7 +181,7 @@ export async function loadRuntimeConfig(): Promise<AppRuntimeConfig> {
   try {
     const response = await fetch(
       import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso'
-        ? '/chat/app-config.json?t=' + Date.now()
+        ? '/app-config.json?t=' + Date.now()
         : '/app-config.json?t=' + Date.now()
     )
     if (!response.ok) {
