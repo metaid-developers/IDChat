@@ -19,13 +19,11 @@
           :message="props.message"
           :message-id="messageId"
           :parsed="
-            parseTextMessage(
-              decryptedMessage(
-                message?.content,
-                message?.encryption,
-                message?.protocol,
-                message?.isMock
-              )
+            decryptedMessage(
+              message?.content,
+              message?.encryption,
+              message?.protocol,
+              message?.isMock
             )
           "
           v-model:translateStatus="translateStatus"
@@ -1005,6 +1003,12 @@ const parseTextMessage = (text: string) => {
 
     return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
   })
+
+  // 处理 @ 提及：将 @用户名 高亮显示
+  text = text.replace(/@(\S+)/g, function(match, username) {
+    return `<span class="mention" style="color: #fc457b; font-weight: 600; cursor: pointer;">@${username}</span>`
+  })
+
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')
 }

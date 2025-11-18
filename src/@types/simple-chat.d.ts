@@ -4,6 +4,20 @@ import { SubChannel } from './talk'
 // 简化的聊天类型定义
 export type ChatType = 'group' | 'private' | 'sub-group'
 
+// @提及记录
+export interface MentionRecord {
+  id: string // 唯一ID: `${channelId}_${messageIndex}`
+  channelId: string // 频道/群组ID
+  messageId: string // 消息ID (txId)
+  messageIndex: number // 消息索引，用于快速跳转
+  timestamp: number // 消息时间戳
+  senderMetaId: string // 发送者MetaId
+  senderName: string // 发送者名称
+  content: string // 消息内容预览
+  isRead: number // 是否已读 (0:未读, 1:已读) 用于IndexedDB索引
+  createdAt: number // 记录创建时间
+}
+
 // export type MessageType = 'text' | 'image' | 'reply'
 export interface MuteNotifyItem {
   groupId: string
@@ -175,6 +189,8 @@ export interface SimpleChannel {
   }
   unreadCount: number // 注意: 这个字段现在通过 lastMessage.index - lastReadIndex 动态计算，而不是存储值
   lastReadIndex?: number
+  unreadMentionCount?: number // 未读的@提及数量（持久化字段）
+  mentionCheckTimestamp?: number // 最后一次计算提及数量的时间戳
   // 私聊特有字段
   targetMetaId?: string // 私聊对象的metaId
   publicKeyStr?: string // 私聊加密公钥
@@ -274,6 +290,9 @@ export interface UnifiedChatMessage {
   chain: string // 区块链类型，如 "mvc" 或 "btc"
   blockHeight: number // 区块高度
   index: number // 消息索引
+
+  // @ 提及功能字段
+  mention: Array<string>
 
   // 私聊特有字段
   from?: string // 私聊：发送者的 metaId

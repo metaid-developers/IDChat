@@ -10,15 +10,16 @@
   },
   "api": {
     "mvcBaseApi": "https://api.mvcscan.com/browser",
-    "manApi": "http://47.86.231.135:7777",
-    "chatApi": "http://47.86.231.135:7778",
+    "manApi": "https://man.metaid.io",
     "fileApi": "https://man.metaid.io",
+    "chatApi": "https://www.show.now/chat-api-test",
     "chatNotify": "https://api.idchat.io",
     "metasoUrl": "https://www.metaso.network",
     "showNowHost": "https://www.show.now",
-    "showNowWs": "http://47.86.231.135:7779",
-    "idchatPathWs": ""
+    "showNowWs": "https://www.show.now",
+    "idchatPathWs": "/socket-test"
   },
+
   "blockchain": {
     "network": "mainnet",
     "networkNew": "livenet",

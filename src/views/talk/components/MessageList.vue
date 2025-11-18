@@ -50,6 +50,7 @@
               :id="item.timestamp"
               :data-message-index="item.index"
               :data-message-mockId="item.mockId || ''"
+              :data-message-txid="item.txId || ''"
               :ref="el => setMessageRef(el, item)"
               @quote="message => emit('quote', message)"
               @toBuzz="onToBuzz"
@@ -72,6 +73,25 @@
               :lastReadIndex="lastReadIndex"
             />
           </template>
+
+          <!-- @ 提及跳转按钮 -->
+          <Transition name="fade-scroll-button" mode="out-in">
+            <div
+              v-show="unreadMentionCount > 0"
+              class="scroll-to-mention-button cursor-pointer"
+              @click="jumpToNextUnreadMention()"
+            >
+              <el-badge :value="unreadMentionCount" class="item" :max="99" :show-zero="false">
+                <div
+                  class="w-10 h-10 min-h-10 min-w-10 bg-pink-500 shadow-md rounded-full flex items-center justify-center"
+                >
+                  <span class="text-white font-bold text-lg">@</span>
+                </div>
+              </el-badge>
+            </div>
+          </Transition>
+
+          <!-- 滚动到底部按钮 -->
           <Transition name="fade-scroll-button" mode="out-in">
             <div
               v-show="showScrollToBottom || unReadCount > 0 || notLoadAll"
@@ -180,10 +200,55 @@ const showScrollToBottom = ref(false)
 
 const lastReadIndex = ref(-1)
 
+// 未读@提及相关
+const unreadMentions = ref<any[]>([])
+const currentMentionIndex = ref(0)
+
 const { activeChannel } = storeToRefs(useSimpleTalkStore())
 const props = defineProps({
   isSendRedPacketinProgress: Boolean,
 })
+
+// 计算未读@提及数量
+const unreadMentionCount = computed(() => {
+  return simpleTalk.getChannelUnreadMentionCount(simpleTalk.activeChannelId)
+})
+
+// 加载未读@提及列表
+const loadUnreadMentions = async () => {
+  if (!simpleTalk.activeChannelId) return
+
+  try {
+    unreadMentions.value = await simpleTalk.getChannelUnreadMentions(simpleTalk.activeChannelId)
+    currentMentionIndex.value = 0
+    console.log(`📌 加载了 ${unreadMentions.value.length} 条未读@提及`)
+  } catch (error) {
+    console.error('加载未读@提及失败:', error)
+  }
+}
+
+// 跳转到下一个未读@提及
+const jumpToNextUnreadMention = async () => {
+  if (unreadMentions.value.length === 0) {
+    await loadUnreadMentions()
+  }
+
+  if (unreadMentions.value.length === 0) {
+    console.warn('⚠️ 没有未读@提及')
+    return
+  }
+
+  const mention = unreadMentions.value[currentMentionIndex.value]
+  if (!mention) return
+
+  console.log(`📍 跳转到@提及: index=${mention.messageIndex}`)
+
+  // 使用 scrollToIndex 跳转
+  scrollToIndex(mention.messageIndex)
+
+  // 移动到下一个提及（循环）
+  currentMentionIndex.value = (currentMentionIndex.value + 1) % unreadMentions.value.length
+}
 
 // 消息元素引用和观察器
 const messageRefs = ref<Map<number, HTMLElement>>(new Map())
@@ -263,6 +328,10 @@ const initMessageObserver = () => {
             // 查找对应的消息对象来获取时间戳
             const message = simpleTalk.activeChannelMessages.find(msg => msg.index === messageIndex)
             const messageTimestamp = message?.timestamp
+            if (message?.mention && message.mention.includes(simpleTalk.selfMetaId)) {
+              console.log('包含提及，跳过已读更新', messageIndex)
+              simpleTalk.markMentionRead(message.index)
+            }
 
             console.log(
               `📖 消息 ${messageIndex} 进入视图，更新已读索引${
@@ -301,7 +370,7 @@ const observeMessages = () => {
   // 观察所有消息元素
   messageRefs.value.forEach((element, messageIndex) => {
     if (element && messageObserver.value) {
-      console.log('观察消息元素', element, messageIndex)
+      // console.log('观察消息元素', element, messageIndex)
       if (element.setAttribute) {
         element.setAttribute('data-message-index', messageIndex.toString())
         messageObserver.value.observe(element)
@@ -584,6 +653,7 @@ watch(
       setTimeout(() => {
         // 查找最后已读消息对应的元素
         const targetElement = messageRefs.value.get(lastReadIndex.value + 1)
+        console.log('targetElement for lastReadIndex', targetElement, lastReadIndex.value)
         if (lastReadIndex.value !== 0 && targetElement && listContainer.value) {
           console.log('📍 找到最后已读消息元素，滚动到位置:', lastReadIndex)
 
@@ -629,6 +699,17 @@ watch(
     }
   },
   { immediate: true, deep: true }
+)
+
+// 监听活动频道变化，重新加载未读@提及
+watch(
+  () => simpleTalk.activeChannelId,
+  async newChannelId => {
+    if (newChannelId) {
+      await loadUnreadMentions()
+    }
+  },
+  { immediate: true }
 )
 
 // 监听 lastReadIndex 变化，用户阅读消息后隐藏未读分
@@ -893,6 +974,14 @@ defineExpose({
   position: absolute;
   right: 16px;
   bottom: 16px;
+  z-index: 50;
+}
+
+/* 滚动到@提及按钮 */
+.scroll-to-mention-button {
+  position: absolute;
+  right: 16px;
+  bottom: 76px; /* 在滚动到底部按钮上方 60px（按钮高度）+ 16px（间距） */
   z-index: 50;
 }
 

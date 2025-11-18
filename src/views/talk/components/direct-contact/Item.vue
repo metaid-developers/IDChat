@@ -44,14 +44,29 @@
             {{ computeDecryptedMsg(session) }}
           </span>
         </div>
-        <el-badge
-          v-show="unReadCount(session) > 0"
-          class="item"
-          :value="unReadCount(session)"
-          :offset="[10, 5]"
-          :max="999"
-        >
-        </el-badge>
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- @ mention badge -->
+          <el-badge
+            v-show="session?.unreadMentionCount && session.unreadMentionCount > 0"
+            class="item mention-badge"
+            :value="session.unreadMentionCount"
+            :offset="[10, 5]"
+            :max="999"
+          >
+            <div class="flex items-center justify-center  text-white text-xs font-bold">
+              @
+            </div>
+          </el-badge>
+          <!-- regular unread badge -->
+          <el-badge
+            v-show="unReadCount(session) > 0"
+            class="item"
+            :value="unReadCount(session)"
+            :offset="[10, 5]"
+            :max="999"
+          >
+          </el-badge>
+        </div>
       </div>
     </div>
   </div>
@@ -91,9 +106,6 @@ const route = useRoute()
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
 
-
-
-
 const simpleTalkStore = useSimpleTalkStore()
 const unReadCount = (session: SimpleChannel) => {
   if (
@@ -107,7 +119,6 @@ const unReadCount = (session: SimpleChannel) => {
   return 0
 }
 const computeDecryptedMsg = (session: SimpleChannel) => {
-  
   try {
     if (!session.lastMessage || !session.lastMessage.content) {
       return ''

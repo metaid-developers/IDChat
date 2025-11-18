@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import type { SimpleChannel,ShowSubChannleHeaderItem,MuteNotifyItem,BlockedChats, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem } from '@/@types/simple-chat.d'
-import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers, getOneChannel, getNewstPrivateChatMessages } from '@/api/talk'
+import type { SimpleChannel,ShowSubChannleHeaderItem,MuteNotifyItem,BlockedChats, UnifiedChatMessage, SimpleUser, ChatType, UnifiedChatApiResponse, UnifiedChatResponseData,GroupChannel,GroupUserRoleInfo,MemberListRes,MemberItem, MentionRecord } from '@/@types/simple-chat.d'
+import { GetUserEcdhPubkeyForPrivateChat, getChannels,getUserGroupRole,getGroupChannelList,getChannelMembers, getOneChannel, getNewstPrivateChatMessages, getPrivateChatMessages, getSubChannelMessages, getChannelMessages } from '@/api/talk'
 
 import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
 import { useUserStore } from './user'
@@ -28,7 +28,7 @@ import { useRootStore } from './root'
 class SimpleChatDB {
   private db: IDBDatabase | null = null
   private readonly DB_NAME = 'SimpleChatDB'
-  private readonly DB_VERSION = 4 // 增加版本号以添加 lastReadIndex 表
+  private readonly DB_VERSION = 6 // 增加版本号以添加 mentions 表
   private userPrefix = 'default_' // 用户数据前缀
 
   constructor(userMetaId?: string) {
@@ -175,6 +175,43 @@ class SimpleChatDB {
             }
           }
         }
+
+        // 创建 mentions 表（版本6新增）
+        if (!this.db.objectStoreNames.contains('mentions')) {
+          const mentionStore = this.db.createObjectStore('mentions', { keyPath: 'id' })
+          mentionStore.createIndex('userPrefix', 'userPrefix')
+          mentionStore.createIndex('channelId', 'channelId')
+          mentionStore.createIndex('isRead', 'isRead')
+          mentionStore.createIndex('timestamp', 'timestamp')
+          mentionStore.createIndex('channelRead', ['channelId', 'isRead'])
+          console.log('✅ 创建 mentions 表')
+        } else {
+          // 表已存在，检查并添加缺失的索引
+          const transaction = (event.target as IDBOpenDBRequest).transaction
+          if (transaction) {
+            const mentionStore = transaction.objectStore('mentions')
+            if (!mentionStore.indexNames.contains('userPrefix')) {
+              mentionStore.createIndex('userPrefix', 'userPrefix')
+              console.log('✅ 添加 mentions 表 userPrefix 索引')
+            }
+            if (!mentionStore.indexNames.contains('channelId')) {
+              mentionStore.createIndex('channelId', 'channelId')
+              console.log('✅ 添加 mentions 表 channelId 索引')
+            }
+            if (!mentionStore.indexNames.contains('isRead')) {
+              mentionStore.createIndex('isRead', 'isRead')
+              console.log('✅ 添加 mentions 表 isRead 索引')
+            }
+            if (!mentionStore.indexNames.contains('timestamp')) {
+              mentionStore.createIndex('timestamp', 'timestamp')
+              console.log('✅ 添加 mentions 表 timestamp 索引')
+            }
+            if (!mentionStore.indexNames.contains('channelRead')) {
+              mentionStore.createIndex('channelRead', ['channelId', 'isRead'])
+              console.log('✅ 添加 mentions 表 channelRead 联合索引')
+            }
+          }
+        }
       }
 
       request.onsuccess = () => {
@@ -205,7 +242,7 @@ class SimpleChatDB {
   async clearUserData(): Promise<void> {
     if (!this.db) return
     
-    const transaction = this.db.transaction(['channels', 'messages', 'users', 'redPacketIds', 'lastReadIndexes'], 'readwrite')
+    const transaction = this.db.transaction(['channels', 'messages', 'users', 'redPacketIds', 'lastReadIndexes', 'mentions'], 'readwrite')
     
     // 清除频道
     const channelStore = transaction.objectStore('channels')
@@ -258,6 +295,16 @@ class SimpleChatDB {
         const keys = lastReadIndexRequest.result
         keys.forEach(key => lastReadIndexStore.delete(key))
       }
+    }
+
+    // 清除@提及记录
+    const mentionStore = transaction.objectStore('mentions')
+    const mentionIndex = mentionStore.index('userPrefix')
+    const mentionRequest = mentionIndex.getAllKeys(this.userPrefix)
+    
+    mentionRequest.onsuccess = () => {
+      const keys = mentionRequest.result
+      keys.forEach(key => mentionStore.delete(key))
     }
   }
 
@@ -330,6 +377,8 @@ class SimpleChatDB {
         createdBy: channel.createdBy,
         createdAt: channel.createdAt,
         unreadCount: channel.unreadCount,
+        unreadMentionCount: channel.unreadMentionCount || 0, // 保留@提及未读数
+        mentionCheckTimestamp: channel.mentionCheckTimestamp || 0, // 保留提及检查时间戳
         lastReadIndex: channel.lastReadIndex||0, // 保留已读索引
         targetMetaId: channel.targetMetaId,
         publicKeyStr: channel.publicKeyStr,
@@ -571,7 +620,10 @@ class SimpleChatDB {
         // 群聊特有字段
         groupId: message.groupId ? String(message.groupId) : undefined,
         channelId: message.channelId ? String(message.channelId) : undefined,
-        metanetId: message.metanetId ? String(message.metanetId) : undefined
+        metanetId: message.metanetId ? String(message.metanetId) : undefined,
+        
+        // @提及字段
+        mention: Array.isArray(message.mention) ? [...message.mention] : []
       }
 
       // 最后做一次序列化测试，确保整个对象可以被克隆
@@ -610,7 +662,9 @@ class SimpleChatDB {
         index: 0,
         // 本地状态字段
         mockId: message.mockId ? String(message.mockId) : undefined,
-        error: message.error ? String(message.error) : undefined
+        error: message.error ? String(message.error) : undefined,
+        // @提及字段
+        mention: Array.isArray(message.mention) ? [...message.mention] : []
       }
     }
   }
@@ -625,8 +679,6 @@ class SimpleChatDB {
       
       request.onsuccess = () => {
         const allMessages = request.result || []
-        console.log(`📊 IndexedDB中总消息数: ${allMessages.length}`)
-        console.log(`🔍 查找频道 ${channelId} 的消息，当前用户前缀: ${this.userPrefix}`)
         
         const userMessages = allMessages.filter(msg => {
           const matchUser = msg.userPrefix === this.userPrefix
@@ -635,15 +687,12 @@ class SimpleChatDB {
           return matchUser && matchChannel
         })
         
-        console.log(`📝 找到 ${userMessages.length} 条匹配的消息`)
         
         // 按 index 升序排序（index 应该对应消息在频道中的顺序）
         const messages = userMessages
           .map(({ userPrefix, id, ...message }) => message) // 同时移除userPrefix和id字段
           .sort((a, b) => a.index - b.index) // 按index升序：旧消息在前，新消息在后
           .slice(0, limit)
-        
-        console.log(`📋 消息排序: 按index升序排列，共 ${messages.length} 条消息`)
         resolve(messages)
       }
       request.onerror = () => {
@@ -708,6 +757,170 @@ class SimpleChatDB {
       }
     })
   }
+
+  // ==================== Mention 相关方法 ====================
+  
+  /**
+   * 保存@提及记录
+   */
+  async saveMention(mention: any): Promise<void> {
+    if (!this.db) return
+    
+    const mentionWithPrefix = {
+      ...mention,
+      userPrefix: this.userPrefix
+    }
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['mentions'], 'readwrite')
+      const store = transaction.objectStore('mentions')
+      const request = store.put(mentionWithPrefix)
+      
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  /**
+   * 根据channelId获取未读@提及列表
+   */
+  async getUnreadMentions(channelId: string): Promise<any[]> {
+    if (!this.db) return []
+    
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['mentions'], 'readonly')
+      const store = transaction.objectStore('mentions')
+      const index = store.index('channelRead')
+      const request = index.getAll([channelId, 0]) // 0 表示未读
+      
+      request.onsuccess = () => {
+        const mentions = (request.result || [])
+          .filter((m: any) => m.userPrefix === this.userPrefix)
+          .map(({ userPrefix, ...mention }) => mention)
+          .sort((a: any, b: any) => a.timestamp - b.timestamp)
+        resolve(mentions)
+      }
+      
+      request.onerror = () => resolve([])
+    })
+  }
+
+  /**
+   * 根据channelId获取所有@提及列表（包含已读）
+   */
+  async getAllMentions(channelId: string): Promise<any[]> {
+    if (!this.db) return []
+    
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['mentions'], 'readonly')
+      const store = transaction.objectStore('mentions')
+      const index = store.index('channelId')
+      const request = index.getAll(channelId)
+      
+      request.onsuccess = () => {
+        const mentions = (request.result || [])
+          .filter((m: any) => m.userPrefix === this.userPrefix)
+          .map(({ userPrefix, ...mention }) => mention)
+          .sort((a: any, b: any) => a.timestamp - b.timestamp)
+        resolve(mentions)
+      }
+      
+      request.onerror = () => resolve([])
+    })
+  }
+
+  /**
+   * 统计频道未读@提及数量
+   */
+  async countUnreadMentions(channelId: string): Promise<number> {
+    if (!this.db) return 0
+    
+    return new Promise((resolve) => {
+      const transaction = this.db!.transaction(['mentions'], 'readonly')
+      const store = transaction.objectStore('mentions')
+      const index = store.index('channelRead')
+      const request = index.count([channelId, 0]) // 0 表示未读
+      
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => resolve(0)
+    })
+  }
+
+  /**
+   * 标记@提及为已读
+   */
+  async markMentionAsRead(mentionId: string): Promise<void> {
+    if (!this.db) return
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['mentions'], 'readwrite')
+      const store = transaction.objectStore('mentions')
+      const getRequest = store.get(mentionId)
+      
+      getRequest.onsuccess = () => {
+        const mention = getRequest.result
+        if (mention) {
+          mention.isRead = true
+          const putRequest = store.put(mention)
+          putRequest.onsuccess = () => resolve()
+          putRequest.onerror = () => reject(putRequest.error)
+        } else {
+          resolve()
+        }
+      }
+      
+      getRequest.onerror = () => reject(getRequest.error)
+    })
+  }
+
+  /**
+   * 标记频道所有@提及为已读
+   */
+  async markAllMentionsAsRead(channelId: string): Promise<void> {
+    if (!this.db) return
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['mentions'], 'readwrite')
+      const store = transaction.objectStore('mentions')
+      const index = store.index('channelRead')
+      const request = index.openCursor([channelId, 0]) // 0 表示未读
+      
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest).result
+        if (cursor) {
+          const mention = cursor.value
+          if (mention.userPrefix === this.userPrefix) {
+            mention.isRead = true
+            cursor.update(mention)
+          }
+          cursor.continue()
+        } else {
+          resolve()
+        }
+      }
+      
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  /**
+   * 删除@提及记录
+   */
+  async deleteMention(mentionId: string): Promise<void> {
+    if (!this.db) return
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['mentions'], 'readwrite')
+      const store = transaction.objectStore('mentions')
+      const request = store.delete(mentionId)
+      
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  // ==================== End Mention 方法 ====================
+
 
   async clearAllData(): Promise<void> {
     if (!this.db) return
@@ -1118,6 +1331,19 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
     },
 
+    // 获取指定频道的未读@提及数量
+    getChannelUnreadMentionCount(): (channelId: string) => number {
+      return (channelId: string) => {
+        const channel = this.channels.find(c => c.id === channelId)
+        return channel?.unreadMentionCount || 0
+      }
+    },
+
+    // 获取所有频道的未读@提及总数
+    totalUnreadMentionCount(): number {
+      return this.channels.reduce((sum, channel) => sum + (channel.unreadMentionCount || 0), 0)
+    },
+
     // 检查是否有本地数据
     hasLocalData(): boolean {
       return this.channels.length > 0
@@ -1320,7 +1546,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         console.log('✅ 服务端数据同步完成')
 
         // 4. 恢复上次的激活频道（异步）
-        await this.restoreLastActiveChannel()
+        // await this.restoreLastActiveChannel()
 
         this.isInitialized = true
         console.log(`✅ 用户 ${currentUserMetaId} 的聊天系统初始化成功`)
@@ -1328,17 +1554,21 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 通知 IDChat app 未读消息数量
         this.notifyIDChatAppBadge()
 
+        // 5. 异步加载最近三个月的历史消息（后台执行，不阻塞界面）
+        this.loadRecentHistoryMessages().catch(error => {
+          console.warn('⚠️ 后台加载历史消息失败:', error)
+        })
         
          if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
           
           const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last?.metaid)
           if (ecdhRes?.chatPublicKey) {
-          userStore.updateUserInfo({
-          chatpubkey: ecdhRes?.chatPublicKey
-          })
-          rootStore.updateShowCreatePubkey(false)
+            userStore.updateUserInfo({
+            chatpubkey: ecdhRes?.chatPublicKey
+            })
+            rootStore.updateShowCreatePubkey(false)
           }else{
-          rootStore.updateShowCreatePubkey(true)
+            rootStore.updateShowCreatePubkey(true)
           }
       }
 
@@ -1389,10 +1619,317 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 加载已领取的红包ID
         await this.initReceivedRedPacketIds()
 
+        // 加载每个频道的消息到缓存，并从mention表统计未读@提及数量
+        for (const channel of channels) {
+          try {
+            // const messages = await this.db.getMessages(channel.id)
+            // if (messages.length > 0) {
+            //   this.messageCache.set(channel.id, messages)
+            //   console.log(`📂 频道 ${channel.name} 加载了 ${messages.length} 条消息`)
+            // }
+            
+            // 从mention表统计未读@提及数量
+            const unreadMentionCount = await this.db.countUnreadMentions(channel.id)
+            channel.unreadMentionCount = unreadMentionCount
+            if (unreadMentionCount > 0) {
+              console.log(`� 频道 ${channel.name} 有 ${unreadMentionCount} 条未读 @ 提及`)
+            }
+          } catch (error) {
+            console.warn(`⚠️ 加载频道 ${channel.id} 消息失败:`, error)
+          }
+        }
         
       } catch (error) {
         console.error('从本地加载数据失败:', error)
       }
+    },
+
+    /**
+     * 异步加载最近三个月的历史消息
+     * 智能检查消息连续性，只加载缺失的部分
+     */
+    async loadRecentHistoryMessages(): Promise<void> {
+      if (!this.selfMetaId) return
+
+      console.log('🔄 开始智能加载历史消息（检查连续性）...')
+      
+      try {
+        // 计算三个月前的时间戳（秒）
+        const threeMonthsAgo = Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000)
+        
+        // 遍历所有频道，检查并加载缺失消息
+        const loadPromises = this.channels.map(async (channel) => {
+          try {
+            await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
+          } catch (error) {
+            console.warn(`⚠️ 加载频道 ${channel.name} 历史消息失败:`, error)
+          }
+        })
+
+        // 并发加载，限制并发数
+        const batchSize = 5
+        for (let i = 0; i < loadPromises.length; i += batchSize) {
+          const batch = loadPromises.slice(i, i + batchSize)
+          await Promise.all(batch)
+          // 每批次之间稍微延迟，避免请求过于集中
+          await sleep(500)
+        }
+
+        console.log('✅ 历史消息加载完成')
+        
+        // 加载完成后同步未读@提及数量
+        await this.syncUnreadMentionCounts()
+        
+      } catch (error) {
+        console.error('❌ 加载历史消息失败:', error)
+      }
+    },
+
+    /**
+     * 智能加载频道历史消息
+     * 检查本地消息连续性，只加载缺失部分
+     */
+    async loadChannelHistoryMessagesIntelligent(channelId: string, threeMonthsAgo: number): Promise<void> {
+      const channel = this.channels.find(c => c.id === channelId)
+      if (!channel) return
+
+      // 如果没有最新消息，跳过
+      if (!channel.lastMessage || !channel.lastMessage.index) {
+        console.log(`⏭️ 频道 ${channel.name} 没有消息，跳过加载`)
+        return
+      }
+
+      const latestIndex = channel.lastMessage.index
+      const latestTimestamp = channel.lastMessage.timestamp
+
+      // 从数据库加载已有消息
+      const localMessages = await this.db.getMessages(channelId, 10000)
+      
+      if (localMessages.length === 0) {
+        // 本地没有消息，从最新消息开始加载
+        console.log(`📥 频道 ${channel.name} 本地无消息，开始加载...`)
+        await this.loadChannelHistoryMessages(channelId, latestTimestamp)
+        return
+      }
+
+      // 按 index 排序
+      localMessages.sort((a, b) => a.index - b.index)
+      
+      // 检查消息连续性
+      let needLoad = false
+      let loadFromTimestamp = latestTimestamp
+      
+      // 从最新消息往前检查
+      for (let i = localMessages.length - 1; i > 0; i--) {
+        const current = localMessages[i]
+        const prev = localMessages[i - 1]
+        
+        // 检查是否有间隙
+        if (current.index - prev.index > 1) {
+          needLoad = true
+          loadFromTimestamp = prev.timestamp
+          console.log(`🔍 频道 ${channel.name} 发现消息间隙: index ${prev.index} -> ${current.index}`)
+          break
+        }
+      }
+
+      // 检查最早的消息
+      const oldestMessage = localMessages[0]
+      const oldestIndex = oldestMessage.index
+      const oldestTimestamp = oldestMessage.timestamp
+
+      // 如果最早的消息 index > 1 且时间戳大于三个月前，继续加载
+      if (oldestIndex > 1 && oldestTimestamp > threeMonthsAgo) {
+        needLoad = true
+        loadFromTimestamp = oldestTimestamp
+        console.log(`🔍 频道 ${channel.name} 需要加载更早消息: 最早 index=${oldestIndex}, timestamp=${oldestTimestamp}`)
+      }
+
+      if (needLoad) {
+        console.log(`📥 频道 ${channel.name} 开始加载历史消息，从 timestamp=${loadFromTimestamp}`)
+        await this.loadChannelHistoryMessages(channelId, loadFromTimestamp, threeMonthsAgo)
+      } else {
+        console.log(`✅ 频道 ${channel.name} 消息完整，无需加载`)
+      }
+    },
+
+    /**
+     * 加载指定频道的历史消息
+     * @param channelId 频道ID
+     * @param sinceTimestamp 从此时间戳开始加载（默认使用频道最新消息时间）
+     * @param stopTimestamp 停止时间戳（三个月前）
+     */
+    async loadChannelHistoryMessages(
+      channelId: string, 
+      sinceTimestamp?: number, 
+      stopTimestamp?: number
+    ): Promise<void> {
+      const channel = this.channels.find(c => c.id === channelId)
+      if (!channel) return
+
+      // 默认使用频道最新消息的时间戳
+      const startTimestamp = sinceTimestamp || channel.lastMessage?.timestamp || Math.floor(Date.now() / 1000)
+      const threeMonthsAgo = stopTimestamp || Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000)
+
+      const isPrivateChat = channel.type === 'private'
+      const isSubGroupChat = channel.type === 'sub-group'
+      const secretKey = channel.type === 'group' || channel.type === 'sub-group' 
+        ? channel.id.substring(0, 16) 
+        : null
+
+      try {
+        let allMessages: UnifiedChatMessage[] = []
+        let hasMore = true
+        let currentTimestamp = startTimestamp
+        let batchCount = 0
+        const maxBatches = 30 // 最多加载30批，防止无限循环
+
+        while (hasMore && batchCount < maxBatches) {
+          let messages: UnifiedChatMessage[] = []
+
+          if (isPrivateChat) {
+            const response = await getPrivateChatMessages({
+              metaId: this.selfMetaId,
+              otherMetaId: channelId,
+              cursor: '0',
+              size: '100',
+              timestamp: String(currentTimestamp)
+            })
+            messages = response.list || []
+          } else if (isSubGroupChat) {
+            const response = await getSubChannelMessages({
+              channelId,
+              metaId: this.selfMetaId,
+              cursor: '0',
+              size: '100',
+              timestamp: String(currentTimestamp)
+            })
+            messages = response.list || []
+          } else {
+            const response = await getChannelMessages({
+              groupId: channelId,
+              metaId: this.selfMetaId,
+              cursor: '0',
+              size: '100',
+              timestamp: String(currentTimestamp)
+            })
+            messages = response.list || []
+          }
+
+          if (messages.length === 0) {
+            hasMore = false
+            break
+          }
+
+          // 保存消息并处理@提及
+          for (const message of messages) {
+            // 保存消息到数据库
+            await this.db.saveMessage(message)
+            allMessages.push(message)
+
+            // 检查是否有@提及当前用户
+            if (message.mention && 
+                Array.isArray(message.mention) && 
+                message.mention.includes(this.selfMetaId) &&
+                message.metaId !== this.selfMetaId) {
+              
+              // 创建@提及记录
+              const mentionRecord: MentionRecord = {
+                id: `${channelId}_${message.index}`,
+                channelId: channelId,
+                messageId: message.txId,
+                messageIndex: message.index,
+                timestamp: message.timestamp,
+                senderMetaId: message.metaId,
+                senderName: message.userInfo?.name || message.nickName || 'Unknown',
+                content: message.content.substring(0, 100),
+                isRead: message.index <= (channel.lastReadIndex || 0) ? 1 : 0, // 根据已读索引判断
+                createdAt: Date.now()
+              }
+              
+              await this.db.saveMention(mentionRecord)
+              console.log(`📌 创建历史@提及记录: ${mentionRecord.id}`)
+            }
+          }
+
+          // 检查是否到达停止条件
+          const oldestMessage = messages[messages.length - 1]
+          if (!oldestMessage) break
+
+          // 如果最早的消息 index < 1，停止加载
+          if (oldestMessage.index < 1) {
+            console.log(`⏹️ 频道 ${channel.name} 已到达最早消息 (index=${oldestMessage.index})`)
+            hasMore = false
+            break
+          }
+
+          // 如果已经超过三个月，停止加载
+          if (oldestMessage.timestamp < threeMonthsAgo) {
+            console.log(`⏹️ 频道 ${channel.name} 已加载到三个月前`)
+            hasMore = false
+            break
+          }
+
+          // 更新时间戳，准备下一批
+          currentTimestamp = oldestMessage.timestamp - 1
+          batchCount++
+
+          console.log(`📥 频道 ${channel.name} 第 ${batchCount} 批加载了 ${messages.length} 条消息`)
+        }
+
+        if (allMessages.length > 0) {
+          console.log(`✅ 频道 ${channel.name} 共加载了 ${allMessages.length} 条历史消息`)
+        }
+      } catch (error) {
+        console.error(`❌ 加载频道 ${channelId} 历史消息失败:`, error)
+      }
+    },
+
+    /**
+     * 计算所有频道的未读 @ 提及数量
+     */
+    calculateUnreadMentions(): void {
+      if (!this.selfMetaId) return
+
+      console.log('🔄 开始计算未读 @ 提及数量...')
+      const now = Date.now()
+
+      for (const channel of this.channels) {
+        const lastReadIndex = channel.lastReadIndex || 0
+        let mentionCount = 0
+
+        // 从缓存或数据库获取消息
+        const messages = this.messageCache.get(channel.id) || []
+        
+        // 统计未读消息中提及当前用户的数量
+        for (const message of messages) {
+          // 只统计未读消息
+          if (message.index > lastReadIndex) {
+            // 检查是否提及了当前用户
+            if (message.mention && Array.isArray(message.mention) && 
+                message.mention.includes(this.selfMetaId)) {
+              mentionCount++
+            }
+          }
+        }
+
+        // 更新频道的未读提及数量和检查时间戳
+        channel.unreadMentionCount = mentionCount
+        channel.mentionCheckTimestamp = now
+        
+        if (mentionCount > 0) {
+          console.log(`📌 频道 ${channel.name} 有 ${mentionCount} 条未读 @ 提及`)
+        }
+      }
+
+      // 保存更新后的频道信息（包括持久化的提及数量和时间戳）
+      this.channels.forEach(channel => {
+        this.db.saveChannel(channel).catch(error => {
+          console.warn(`保存频道 ${channel.id} 失败:`, error)
+        })
+      })
+
+      console.log('✅ 未读 @ 提及计算完成')
     },
 
     /**
@@ -1868,6 +2405,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             ...serverChannel,
             unreadCount: existing.unreadCount, // 保留本地未读数
             lastReadIndex: existing.lastReadIndex || 0, // 保留本地已读消息索引
+            unreadMentionCount: existing.unreadMentionCount || 0, // 保留本地未读@提及数
             // 保留本地的权限信息和缓存时间
             memberPermissions: existing.memberPermissions,
             permissionsLastUpdated: existing.permissionsLastUpdated,
@@ -1909,6 +2447,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
       // 异步加载群聊的子频道列表
       this.loadSubChannelsForGroups(mergedChannels)
+
+      // 同步更新所有频道的未读@提及数量
+      await this.syncUnreadMentionCounts()
     },
 
     /**
@@ -2113,22 +2654,22 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
         console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
 
-        // // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
-        // const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
-        // console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
+        // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
+        const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
+        console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
         
-        // // 3. 检查本地消息是否充足且连续
-        // console.log(`🔍 检查本地消息连续性...`)
-        // const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
-        // if (localMessages.length >= 20 && messagesAreContinuous) {
-        //   console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
-        //   this.messageCache.set(channelId, localMessages)
-        //   return
-        // } else if (localMessages.length >= 20) {
-        //   console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
-        // } else {
-        //   console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
-        // }
+        // 3. 检查本地消息是否充足且连续
+        console.log(`🔍 检查本地消息连续性...`)
+        const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
+        if (localMessages.length >= 20 && messagesAreContinuous) {
+          console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
+          this.messageCache.set(channelId, localMessages)
+          return
+        } else if (localMessages.length >= 20) {
+          console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
+        } else {
+          console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
+        }
        
         // 4. 本地消息不足或不连续，需要从服务器获取
         await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, null, [],lastReadTimestamp)
@@ -2367,9 +2908,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         console.log(`🚀 加载频道 ${targetChannelId} 的最新消息...`)
         
-        // 1. 清空当前消息缓存
-        this.messageCache.delete(targetChannelId)
-        console.log(`🗑️ 已清空频道 ${targetChannelId} 的消息缓存`)
+       
 
         // 2. 查找频道信息
         const channel = this.channels.find(c => c.id === targetChannelId)
@@ -2388,6 +2927,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           this.messageCache.set(targetChannelId, [])
           return
         }
+         // 1. 清空当前消息缓存
+        this.messageCache.delete(targetChannelId)
+        console.log(`🗑️ 已清空频道 ${targetChannelId} 的消息缓存`)
 
         // 4. 按时间排序并设置为当前消息
         const sortedMessages = serverMessages.sort((a, b) => a.timestamp - b.timestamp)
@@ -3000,6 +3542,20 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 现在通过设置 lastReadIndex 来标记已读，而不是直接设置 unreadCount
         // 未读数会通过 lastMessage.index - lastReadIndex 自动计算
         this.setLastReadIndex(channelId, channel.lastMessage.index, channel.lastMessage.timestamp)
+        
+        // 标记所有@提及为已读
+        if (channel.unreadMentionCount && channel.unreadMentionCount > 0) {
+          this.db.markAllMentionsAsRead(channelId).then(async () => {
+            // 重新统计未读数量（应该为0）
+            const unreadCount = await this.db.countUnreadMentions(channelId)
+            channel.unreadMentionCount = unreadCount
+            channel.mentionCheckTimestamp = Date.now()
+            await this.db.saveChannel(channel)
+            console.log(`✅ 频道 ${channel.name} 未读 @ 提及已清除`)
+          }).catch(error => {
+            console.warn(`标记频道 ${channelId} 提及为已读失败:`, error)
+          })
+        }
       }
     },
 
@@ -3039,6 +3595,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         await this.db.saveLastReadIndex(this.selfMetaId, channelId, messageIndex, timestamp)
 
         // 更新内存中的 lastReadIndex（保持向后兼容）
+
+        
        
 
         const timestampInfo = timestamp ? ` (消息时间: ${new Date(timestamp).toLocaleString()})` : ''
@@ -3288,7 +3846,13 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     /**
      * 发送消息并更新频道数据
      */
-    async sendMessage(channelId: string, content: string, messageType: MessageType = MessageType.msg, reply: any): Promise<UnifiedChatMessage | null> {
+    async sendMessage(
+      channelId: string, 
+      content: string, 
+      messageType: MessageType = MessageType.msg, 
+      reply: any,
+      mentions?: Array<{ metaId: string; name: string }>
+    ): Promise<UnifiedChatMessage | null> {
       try {
         const chainStore = useChainStore()
         const userStore = useUserStore()
@@ -3345,6 +3909,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           chain: chainStore.state.currentChain,
           blockHeight: 0,
           index: channel?.lastMessage ? (channel.lastMessage.index || 0) + 1 : 1,
+          
+          // @ 提及功能
+          mention: mentions && mentions.length > 0 ? mentions.map(m => m.metaId) : [],
 
           // 私聊特有字段
           from: isPrivateChat ? this.selfMetaId : undefined,
@@ -3389,7 +3956,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             contentType,
             encryption,
             replyPin: reply ? `${reply.txId}i0` : '',
-          }
+            mention: mentions && mentions.length > 0 ? mentions.map(m => m.metaId) : [],
+          } 
           
           const node = {
             protocol: NodeName.SimpleGroupChat,
@@ -3624,6 +4192,41 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       // 更新频道信息
       if(!message.mockId){
         await this.updateChannelLastMessage(channelId, message)
+        
+        // 检查是否提及了当前用户，创建@提及记录
+        if (message.mention && Array.isArray(message.mention) && 
+            message.mention.includes(this.selfMetaId) &&
+            message.metaId !== this.selfMetaId) { // 排除自己发送的消息
+          
+          // 创建@提及记录
+          const mentionRecord: MentionRecord = {
+            id: `${channelId}_${message.index}`,
+            channelId: channelId,
+            messageId: message.txId,
+            messageIndex: message.index,
+            timestamp: message.timestamp,
+            senderMetaId: message.metaId,
+            senderName: message.userInfo?.name || message.nickName || 'Unknown',
+            content: message.content.substring(0, 100), // 内容预览，最多100字符
+            isRead: 0, // 0表示未读
+            createdAt: Date.now()
+          }
+
+          console.log(`📌 创建@提及记录数据:`, mentionRecord)
+          
+          await this.db.saveMention(mentionRecord)
+          console.log(`📌 创建@提及记录: ${mentionRecord.id}`)
+          
+          // 更新频道未读提及计数
+          const channel = this.channels.find(c => c.id === channelId)
+          if (channel) {
+            const unreadCount = await this.db.countUnreadMentions(channelId)
+            channel.unreadMentionCount = unreadCount
+            channel.mentionCheckTimestamp = Date.now()
+            await this.db.saveChannel(channel)
+            console.log(`📌 频道 ${channel.name} 未读 @ 提及: ${unreadCount}`)
+          }
+        }
       }
       
 
@@ -4132,8 +4735,138 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         return true
       }
       return false
+    },
+
+    // ==================== @提及相关方法 ====================
+    
+    /**
+     * 同步所有频道的未读@提及数量
+     */
+    async syncUnreadMentionCounts(): Promise<void> {
+      console.log('🔄 开始同步所有频道的未读@提及数量...')
+      
+      try {
+        for (const channel of this.channels) {
+          const unreadCount = await this.db.countUnreadMentions(channel.id)
+          channel.unreadMentionCount = unreadCount
+          
+          if (unreadCount > 0) {
+            console.log(`📌 频道 ${channel.name} 有 ${unreadCount} 条未读 @ 提及`)
+          }
+        }
+        
+        console.log('✅ 未读@提及数量同步完成')
+      } catch (error) {
+        console.error('❌ 同步未读@提及数量失败:', error)
+      }
+    },
+    
+    /**
+     * 获取频道的未读@提及列表
+     */
+    async getChannelUnreadMentions(channelId: string): Promise<MentionRecord[]> {
+      try {
+        const mentions = await this.db.getUnreadMentions(channelId)
+        return mentions as MentionRecord[]
+      } catch (error) {
+        console.error('获取未读@提及失败:', error)
+        return []
+      }
+    },
+
+    /**
+     * 获取频道的所有@提及列表（包含已读）
+     */
+    async getChannelAllMentions(channelId: string): Promise<MentionRecord[]> {
+      try {
+        const mentions = await this.db.getAllMentions(channelId)
+        return mentions as MentionRecord[]
+      } catch (error) {
+        console.error('获取@提及失败:', error)
+        return []
+      }
+    },
+
+    /**
+     * 跳转到指定的@提及消息
+     * @param mention @提及记录
+     * @returns 是否成功找到消息
+     */
+    async jumpToMention(mention: MentionRecord): Promise<boolean> {
+      try {
+        // 1. 切换到对应的频道（如果不是当前频道）
+        if (this.activeChannelId !== mention.channelId) {
+          this.setActiveChannel(mention.channelId)
+        }
+
+        // 2. 确保消息已加载到缓存
+        let messages = this.messageCache.get(mention.channelId) || []
+        
+        // 如果缓存中没有该消息，尝试加载
+        const hasMessage = messages.some(m => m.index === mention.messageIndex)
+        if (!hasMessage) {
+          console.log(`📥 消息 index=${mention.messageIndex} 不在缓存中，正在加载...`)
+          // 从数据库加载消息
+          const dbMessages = await this.db.getMessages(mention.channelId)
+          if (dbMessages.length > 0) {
+            this.messageCache.set(mention.channelId, dbMessages)
+            messages = dbMessages
+          }
+        }
+
+        // 3. 查找消息
+        const targetMessage = messages.find(m => m.index === mention.messageIndex)
+        if (!targetMessage) {
+          console.warn(`⚠️ 未找到 index=${mention.messageIndex} 的消息`)
+          return false
+        }
+
+        // 4. 标记该提及为已读
+        await this.db.markMentionAsRead(mention.id)
+        
+        // 5. 更新频道未读提及计数
+        const channel = this.channels.find(c => c.id === mention.channelId)
+        if (channel) {
+          const unreadCount = await this.db.countUnreadMentions(mention.channelId)
+          channel.unreadMentionCount = unreadCount
+          await this.db.saveChannel(channel)
+        }
+
+        // 6. 触发滚动到消息的事件（通过 DOM ID 或其他方式）
+        // 这部分需要在组件中配合实现
+        console.log(`✅ 跳转到消息 index=${mention.messageIndex}`)
+        
+        return true
+      } catch (error) {
+        console.error('跳转到@提及失败:', error)
+        return false
+      }
+    },
+
+    /**
+     * 标记单个@提及为已读
+     */
+    async markMentionRead(index: number, channelId?: string): Promise<void> {
+      try {
+        if(!channelId)channelId=this.activeChannelId
+        const mentionId = `${channelId}_${index}`
+        await this.db.markMentionAsRead(mentionId)
+        
+        // 更新频道未读提及计数
+        const channel = this.channels.find(c => c.id === channelId)
+        if (channel) {
+          const unreadCount = await this.db.countUnreadMentions(channelId)
+          channel.unreadMentionCount = unreadCount
+          await this.db.saveChannel(channel)
+        }
+        
+        console.log(`✅ @提及 ${mentionId} 已标记为已读`)
+      } catch (error) {
+        console.error('标记@提及已读失败:', error)
+      }
     }
   },
   
 })
+
 

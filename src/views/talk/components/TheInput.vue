@@ -165,8 +165,20 @@
           @keydown="handleKeyDown"
           @compositionstart="onCompositionStart"
           @compositionend="onCompositionEnd"
+          @input="handleInput"
         />
       </div>
+
+      <!-- @ 提及下拉菜单 -->
+      <MentionDropdown
+        :show="showMentionDropdown"
+        :users="mentionUsers"
+        :position="mentionDropdownPosition"
+        :loading="mentionLoading"
+        :query="mentionQuery"
+        @select="handleMentionSelect"
+        ref="mentionDropdownRef"
+      />
 
       <Teleport to="body">
         <input
@@ -365,7 +377,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRaw, Ref, onMounted } from 'vue'
+import { computed, ref, toRaw, Ref, onMounted, nextTick, watch } from 'vue'
 import { Popover, PopoverButton, PopoverPanel, TransitionRoot } from '@headlessui/vue'
 import { ElMessage, ElPopover, ElMessageBox } from 'element-plus'
 
@@ -388,6 +400,7 @@ import { useLayoutStore } from '@/stores/layout'
 import { MessageType as SimpleMessageType, SimpleChannel } from '@/@types/simple-chat.d'
 import TalkImagePreview from './ImagePreview.vue'
 import StickerVue from '@/components/Sticker/Sticker.vue'
+import MentionDropdown from './MentionDropdown.vue'
 import Decimal from 'decimal.js-light'
 import { router } from '@/router'
 import { useChainStore } from '@/stores/chain'
@@ -396,6 +409,7 @@ import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
 import { needWebRefresh } from '@/wallet-adapters/metalet'
 import { useRootStore } from '@/stores/root'
+import { searchChannelMembers, getChannelMembers } from '@/api/talk'
 
 interface Props {
   quote?: any
@@ -667,7 +681,196 @@ const onCompositionEnd = () => {
   isComposing.value = false
 }
 
+// @ 提及功能相关状态
+const showMentionDropdown = ref(false)
+const mentionUsers = ref<any[]>([])
+const mentionLoading = ref(false)
+const mentionQuery = ref('')
+const mentionStartPos = ref(0)
+const mentionDropdownPosition = ref<{ top?: number; bottom?: number; left: number }>({ left: 0 })
+const mentionDropdownRef = ref<any>(null)
+const currentMentions = ref<Array<{ metaId: string; name: string }>>([])
+const defaultMembersCache = ref<any[]>([]) // 缓存默认成员列表
+
+// 处理输入事件，检测 @ 符号
+const handleInput = (e: Event) => {
+  const target = e.target as HTMLTextAreaElement
+  const cursorPos = target.selectionStart || 0
+  const textBeforeCursor = chatInput.value.substring(0, cursorPos)
+
+  // 同步更新 mentions：检查当前文本中是否还包含已记录的 @用户名
+  syncMentionsWithText()
+
+  // 查找最后一个 @ 符号的位置
+  const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+
+  if (lastAtIndex !== -1) {
+    // 检查 @ 符号后面是否有空格，如果有则关闭下拉框
+    const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
+    if (textAfterAt.includes(' ') || textAfterAt.includes('\n')) {
+      showMentionDropdown.value = false
+      return
+    }
+
+    // 提取 @ 后的查询文本
+    const query = textAfterAt
+    mentionQuery.value = query
+    mentionStartPos.value = lastAtIndex
+
+    // 计算下拉框位置
+    updateMentionDropdownPosition(target)
+
+    // 只在群聊中显示 @ 提及功能
+    if (
+      simpleTalk.activeChannel?.type === 'group' ||
+      simpleTalk.activeChannel?.type === 'sub-group'
+    ) {
+      showMentionDropdown.value = true
+
+      // 如果没有输入文字，使用默认成员列表或从接口获取
+      if (!query) {
+        loadDefaultMembers()
+      } else {
+        searchMentionUsers(query)
+      }
+    }
+  } else {
+    showMentionDropdown.value = false
+  }
+}
+
+// 同步 mentions 数组与输入文本
+const syncMentionsWithText = () => {
+  // 过滤出文本中仍然存在的 mentions
+  currentMentions.value = currentMentions.value.filter(mention => {
+    // 检查 @用户名 是否还在文本中
+    const mentionPattern = `@${mention.name}`
+    return chatInput.value.includes(mentionPattern)
+  })
+
+  console.log('📝 同步后的 mentions:', currentMentions.value)
+}
+
+// 计算下拉框位置（显示在输入框上方，紧贴输入框）
+const updateMentionDropdownPosition = (textarea: HTMLTextAreaElement) => {
+  const rect = textarea.getBoundingClientRect()
+
+  // 计算下拉框应该显示的位置
+  // 使用 bottom 定位，让下拉框紧贴在输入框上方
+  mentionDropdownPosition.value = {
+    // 使用 bottom 来实现自下而上的布局
+    // 这样无论列表有多少项，都会紧贴在输入框上方
+    bottom: window.innerHeight - rect.top - window.scrollY + 5, // 5px 间距
+    left: rect.left + window.scrollX + 50,
+    top: -1, // 设置为负数表示使用 bottom 定位
+  }
+}
+
+// 加载默认成员列表
+const loadDefaultMembers = async () => {
+  if (!simpleTalk.activeChannelId) return
+
+  // 如果已有缓存，直接使用
+  if (defaultMembersCache.value.length > 0) {
+    mentionUsers.value = defaultMembersCache.value
+    return
+  }
+
+  mentionLoading.value = true
+
+  try {
+    const results = await getChannelMembers({
+      groupId: simpleTalk.activeChannelId,
+      size: '10',
+      orderBy: 'timestamp',
+      orderType: 'desc',
+    })
+
+    // 合并所有成员列表，优先显示创建者和管理员
+    const allMembers = [...(results.list || [])].slice(0, 10) // 只取前10个
+
+    defaultMembersCache.value = allMembers
+    mentionUsers.value = allMembers
+  } catch (error) {
+    console.error('获取群成员失败:', error)
+    mentionUsers.value = []
+  } finally {
+    mentionLoading.value = false
+  }
+}
+
+// 搜索群成员
+const searchMentionUsers = async (query: string) => {
+  if (!simpleTalk.activeChannelId) return
+
+  mentionLoading.value = true
+
+  try {
+    const results = await searchChannelMembers({
+      groupId: simpleTalk.activeChannelId,
+      query: query,
+      size: '10',
+    })
+
+    mentionUsers.value = results || []
+  } catch (error) {
+    console.error('搜索群成员失败:', error)
+    mentionUsers.value = []
+  } finally {
+    mentionLoading.value = false
+  }
+}
+
+// 处理选择用户
+const handleMentionSelect = (user: any) => {
+  const beforeMention = chatInput.value.substring(0, mentionStartPos.value)
+  const afterMention = chatInput.value.substring(
+    theTextBox.value?.selectionStart || chatInput.value.length
+  )
+
+  // 替换 @ 和查询文本为 @用户名
+  const mentionText = `@${user.userInfo.name} `
+  chatInput.value = beforeMention + mentionText + afterMention
+
+  // 记录被提及的用户信息
+  currentMentions.value.push({
+    metaId: user.metaId,
+    name: user.userInfo.name,
+  })
+
+  // 关闭下拉框
+  showMentionDropdown.value = false
+
+  // 将光标移动到插入的文本后面
+  nextTick(() => {
+    const newCursorPos = beforeMention.length + mentionText.length
+    theTextBox.value?.setSelectionRange(newCursorPos, newCursorPos)
+    theTextBox.value?.focus()
+  })
+}
+
 const handleKeyDown = (e: KeyboardEvent) => {
+  // 如果 @ 提及下拉框显示中，处理方向键和回车
+  if (showMentionDropdown.value && mentionDropdownRef.value) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      mentionDropdownRef.value.selectNext()
+      return
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      mentionDropdownRef.value.selectPrevious()
+      return
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      mentionDropdownRef.value.selectCurrent()
+      return
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      showMentionDropdown.value = false
+      return
+    }
+  }
+
   // 如果正在使用输入法，不处理回车键
   if (e.key === 'Enter' && !e.shiftKey && !isComposing.value) {
     e.preventDefault()
@@ -790,8 +993,15 @@ const trySendText = async (e: any) => {
   }
 
   try {
-    // 使用 simple-talk 的 sendMessage 方法
-    await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content, 0, props.quote)
+    // 准备 mentions 数据
+    const mentions = currentMentions.value.length > 0 ? [...currentMentions.value] : undefined
+
+    // 使用 simple-talk 的 sendMessage 方法，传递 mentions
+    await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content, 0, props.quote, mentions)
+
+    // 清空 mentions 记录
+    currentMentions.value = []
+
     if (props.quote) {
       emit('update:quote', undefined)
     }
@@ -802,6 +1012,16 @@ const trySendText = async (e: any) => {
   isSending.value = false
 }
 /** ------ */
+
+// 监听频道切换，清除缓存的成员列表
+watch(
+  () => simpleTalk.activeChannelId,
+  () => {
+    defaultMembersCache.value = []
+    showMentionDropdown.value = false
+    currentMentions.value = []
+  }
+)
 </script>
 
 <style lang="scss" scoped>
