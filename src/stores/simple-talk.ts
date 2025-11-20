@@ -675,23 +675,22 @@ class SimpleChatDB {
     return new Promise((resolve) => {
       const transaction = this.db!.transaction(['messages'], 'readonly')
       const store = transaction.objectStore('messages')
-      const request = store.getAll()
+
+      // 优先使用 channelId 索引获取
+      let request: IDBRequest
+      if (store.indexNames.contains('channelId')) {
+        const index = store.index('channelId')
+        request = index.getAll(channelId)
+      } else {
+        request = store.getAll()
+      }
       
       request.onsuccess = () => {
         const allMessages = request.result || []
-        
-        const userMessages = allMessages.filter(msg => {
-          const matchUser = msg.userPrefix === this.userPrefix
-          const matchChannel = msg.channelId === channelId
-          
-          return matchUser && matchChannel
-        })
-        
-        
-        // 按 index 升序排序（index 应该对应消息在频道中的顺序）
+        const userMessages = allMessages.filter((msg: any) => msg.userPrefix === this.userPrefix && String(msg.channelId) === String(channelId))
         const messages = userMessages
-          .map(({ userPrefix, id, ...message }) => message) // 同时移除userPrefix和id字段
-          .sort((a, b) => a.index - b.index) // 按index升序：旧消息在前，新消息在后
+          .map(({ userPrefix, id, ...message }: any) => message)
+          .sort((a: any, b: any) => (a.index || 0) - (b.index || 0))
           .slice(0, limit)
         resolve(messages)
       }
@@ -1555,14 +1554,16 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         this.notifyIDChatAppBadge()
 
         // 5. 异步加载最近三个月的历史消息（后台执行，不阻塞界面）
-        this.loadRecentHistoryMessages().catch(error => {
-          console.warn('⚠️ 后台加载历史消息失败:', error)
-        })
+        setTimeout(() => {
+          this.loadRecentHistoryMessages().catch(error => {
+            console.warn('⚠️ 后台加载历史消息失败:', error)
+          })
+        }, 5000)
         
          if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
           
-          const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last?.metaid)
-          if (ecdhRes?.chatPublicKey) {
+          GetUserEcdhPubkeyForPrivateChat(userStore.last?.metaid).then((ecdhRes) => {
+            if (ecdhRes?.chatPublicKey) {
             userStore.updateUserInfo({
             chatpubkey: ecdhRes?.chatPublicKey
             })
@@ -1570,6 +1571,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }else{
             rootStore.updateShowCreatePubkey(true)
           }
+          })
+          
       }
 
       } catch (error) {
@@ -1620,24 +1623,24 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         await this.initReceivedRedPacketIds()
 
         // 加载每个频道的消息到缓存，并从mention表统计未读@提及数量
-        for (const channel of channels) {
-          try {
-            // const messages = await this.db.getMessages(channel.id)
-            // if (messages.length > 0) {
-            //   this.messageCache.set(channel.id, messages)
-            //   console.log(`📂 频道 ${channel.name} 加载了 ${messages.length} 条消息`)
-            // }
+        // for (const channel of channels) {
+        //   try {
+        //     // const messages = await this.db.getMessages(channel.id)
+        //     // if (messages.length > 0) {
+        //     //   this.messageCache.set(channel.id, messages)
+        //     //   console.log(`📂 频道 ${channel.name} 加载了 ${messages.length} 条消息`)
+        //     // }
             
-            // 从mention表统计未读@提及数量
-            const unreadMentionCount = await this.db.countUnreadMentions(channel.id)
-            channel.unreadMentionCount = unreadMentionCount
-            if (unreadMentionCount > 0) {
-              console.log(`� 频道 ${channel.name} 有 ${unreadMentionCount} 条未读 @ 提及`)
-            }
-          } catch (error) {
-            console.warn(`⚠️ 加载频道 ${channel.id} 消息失败:`, error)
-          }
-        }
+        //     // 从mention表统计未读@提及数量
+        //     const unreadMentionCount = await this.db.countUnreadMentions(channel.id)
+        //     channel.unreadMentionCount = unreadMentionCount
+        //     if (unreadMentionCount > 0) {
+        //       console.log(` 频道 ${channel.name} 有 ${unreadMentionCount} 条未读 @ 提及`)
+        //     }
+        //   } catch (error) {
+        //     console.warn(`⚠️ 加载频道 ${channel.id} 消息失败:`, error)
+        //   }
+        // }
         
       } catch (error) {
         console.error('从本地加载数据失败:', error)
@@ -1660,14 +1663,17 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 遍历所有频道，检查并加载缺失消息
         const loadPromises = this.channels.map(async (channel) => {
           try {
-            await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
+           
+await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
+            
+            
           } catch (error) {
             console.warn(`⚠️ 加载频道 ${channel.name} 历史消息失败:`, error)
           }
         })
 
         // 并发加载，限制并发数
-        const batchSize = 5
+        const batchSize = 2
         for (let i = 0; i < loadPromises.length; i += batchSize) {
           const batch = loadPromises.slice(i, i + batchSize)
           await Promise.all(batch)
@@ -1708,7 +1714,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       if (localMessages.length === 0) {
         // 本地没有消息，从最新消息开始加载
         console.log(`📥 频道 ${channel.name} 本地无消息，开始加载...`)
-        await this.loadChannelHistoryMessages(channelId, latestTimestamp)
+        await this.loadChannelHistoryMessages(channelId, undefined, threeMonthsAgo)
         return
       }
 
@@ -1768,14 +1774,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       if (!channel) return
 
       // 默认使用频道最新消息的时间戳
-      const startTimestamp = sinceTimestamp || channel.lastMessage?.timestamp || Math.floor(Date.now() / 1000)
+      const startTimestamp = sinceTimestamp || '0'
       const threeMonthsAgo = stopTimestamp || Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000)
 
       const isPrivateChat = channel.type === 'private'
       const isSubGroupChat = channel.type === 'sub-group'
-      const secretKey = channel.type === 'group' || channel.type === 'sub-group' 
-        ? channel.id.substring(0, 16) 
-        : null
 
       try {
         let allMessages: UnifiedChatMessage[] = []
@@ -1793,7 +1796,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               otherMetaId: channelId,
               cursor: '0',
               size: '100',
-              timestamp: String(currentTimestamp)
+              timestamp: String(currentTimestamp)+'000000'
             })
             messages = response.list || []
           } else if (isSubGroupChat) {
@@ -1857,7 +1860,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           if (!oldestMessage) break
 
           // 如果最早的消息 index < 1，停止加载
-          if (oldestMessage.index < 1) {
+          if (oldestMessage.index <= 1) {
             console.log(`⏹️ 频道 ${channel.name} 已到达最早消息 (index=${oldestMessage.index})`)
             hasMore = false
             break
@@ -1871,7 +1874,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
 
           // 更新时间戳，准备下一批
-          currentTimestamp = oldestMessage.timestamp - 1
+          currentTimestamp = oldestMessage.timestamp
           batchCount++
 
           console.log(`📥 频道 ${channel.name} 第 ${batchCount} 批加载了 ${messages.length} 条消息`)
@@ -2446,7 +2449,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       this.channels = mergedChannels
 
       // 异步加载群聊的子频道列表
-      this.loadSubChannelsForGroups(mergedChannels)
+      // this.loadSubChannelsForGroups(mergedChannels)
 
       // 同步更新所有频道的未读@提及数量
       await this.syncUnreadMentionCounts()

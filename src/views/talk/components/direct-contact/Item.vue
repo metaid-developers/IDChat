@@ -53,7 +53,9 @@
             :offset="[10, 5]"
             :max="999"
           >
-            <div class="flex items-center justify-center  text-white text-xs font-bold">
+            <div
+              class="flex items-center justify-center   font-bold text-dark-250 dark:text-gray-400 pr-2"
+            >
               @
             </div>
           </el-badge>
