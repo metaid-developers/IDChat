@@ -640,6 +640,15 @@ const trySendImage = async () => {
     const sharedSecret = ecdh?.sharedSecret //atobToHex(credential!.signature)
     attachments[0].data = ecdhEncryptForPrivateImg(attachments[0].data, sharedSecret)
   }
+  if (
+    simpleTalk.activeChannel?.type === 'group' &&
+    simpleTalk.activeChannel.roomJoinType === '100'
+  ) {
+    attachments[0].data = ecdhEncryptForPrivateImg(
+      attachments[0].data,
+      simpleTalk.activeChannel.passwordKey!
+    )
+  }
 
   // clone，用于填充mock信息
   const originalFileUrl = imagePreviewUrl.value
@@ -952,7 +961,32 @@ const trySendText = async (e: any) => {
     simpleTalk.activeChannel?.type === 'group' ||
     simpleTalk.activeChannel?.type === 'sub-group'
   ) {
-    content = encrypt(chatInput.value, simpleTalk.activeChannel.id.substring(0, 16))
+    if (simpleTalk.activeChannel.roomJoinType !== '100') {
+      content = encrypt(chatInput.value, simpleTalk.activeChannel.id.substring(0, 16))
+    } else {
+      // 私密群聊加密
+      let secretKey = simpleTalk.activeChannel.passwordKey
+
+      // 如果是创建者且没有缓存的 passwordKey，从钱包获取
+      if (!secretKey && simpleTalk.activeChannel.createdBy === simpleTalk.selfMetaId) {
+        const pkh = await (window.metaidwallet as any).getPKHByPath({
+          path: `m/${simpleTalk.activeChannel.path || '100/0'}`,
+        })
+        secretKey = pkh.substring(0, 16)
+
+        // 更新缓存
+        simpleTalk.activeChannel.passwordKey = secretKey
+      }
+
+      if (!secretKey) {
+        isSending.value = false
+        return ElMessage.error('无法获取群组密钥，请重新加入群组')
+      }
+
+      content = encrypt(chatInput.value, secretKey)
+      console.log('🔐 私密群聊消息已加密, passwordKey:', secretKey.substring(0, 8) + '...')
+    }
+
     console.log('sub-group chat content:', content, simpleTalk.activeChannel.id.substring(0, 16))
   } else {
     // 私聊加密

@@ -206,5 +206,6 @@ interface Window {
     needWebRefresh: (params: { isNeed: boolean }) => Promise<any>
     saveBase64Image: (base64string: string) => Promise<any>
     setAppBadge: (count: number) => void
+    getPKHByPath: (params: { path: string }) => Promise<string>
   }
 }

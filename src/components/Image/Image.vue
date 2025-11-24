@@ -32,14 +32,16 @@ interface Props {
   width?: number
   type?: 'metafile' | 'metaId'
   defaultImage?: string
-  isPrivateChat?:boolean
-  chatPubkeyForDecrypt?:string
+  isPrivateChat?: boolean
+  chatPubkeyForDecrypt?: string
+  chatPasswordForDecrypt?: string
 }
 const props = withDefaults(defineProps<Props>(), {
   width: 235,
   type: 'metafile',
-  isPrivateChat:false,
-  chatPubkeyForDecrypt:''
+  isPrivateChat: false,
+  chatPubkeyForDecrypt: '',
+  chatPasswordForDecrypt: '',
 })
 
 const emit = defineEmits(['load', 'error'])
@@ -67,7 +69,15 @@ async function getImageUrl() {
   const src = props.src
 
   try {
-    const res = await DB.getMetaFile(src, props.width, 'metafile',props.isPrivateChat,props.chatPubkeyForDecrypt)
+    const res = await DB.getMetaFile(
+      src,
+      props.width,
+      'metafile',
+      props.isPrivateChat,
+      props.chatPubkeyForDecrypt,
+      props.chatPasswordForDecrypt
+    )
+    console.log('获取图片成功:', res)
     url.value = res
     isSkeleton.value = false
   } catch (error) {

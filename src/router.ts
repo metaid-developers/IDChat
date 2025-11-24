@@ -15,7 +15,7 @@ import { KeepAlive } from 'vue'
 // import.meta.env.MODE == 'development' ? '/' : '/chat/'
 export const routerHistory = createWebHistory(
   import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso' ? '/chat/' : '/'
-  )
+)
 
 export const router = createRouter({
   history: routerHistory,
@@ -181,6 +181,14 @@ export const router = createRouter({
           meta: { isAuth: true, KeepAlive: true },
         },
       ],
+    },
+
+    // 群聊邀请链接路由
+    {
+      path: '/channels/:groupType(public|private)/:groupId',
+      name: 'channelInvite',
+      component: () => import('@/views/talk/ChannelInvite.vue'),
+      meta: { isAuth: true },
     },
 
     // .meta解析

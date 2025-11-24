@@ -67,6 +67,14 @@
               @click="openBroadcastDialog"
               >{{ $t('broadcast_channel_create') }}</el-button
             >
+            <el-button
+              v-if="isCurrentUserCreator"
+              color="#ffffff"
+              size="default"
+              :icon="UserPlus"
+              @click="showInviteModal = true"
+              >{{ $t('Talk.Channel.invite_members') }}</el-button
+            >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true">{{
               $t('Talk.Channel.search')
             }}</el-button>
@@ -336,6 +344,117 @@
 
   <!-- 创建子频道弹窗 -->
   <CreateBroadcastChannelModal v-model="showCreateBroadcastModal" />
+
+  <!-- 邀请成员弹窗 -->
+  <ElDialog
+    v-model="showInviteModal"
+    :title="$t('Talk.Channel.invite_members')"
+    width="500px"
+    :append-to-body="true"
+  >
+    <div class="invite-modal-content">
+      <!-- 搜索框 -->
+      <ElInput
+        v-model="inviteSearchQuery"
+        :placeholder="$t('Talk.Channel.search_users')"
+        :prefix-icon="Search"
+        clearable
+        @input="handleInviteSearch"
+      />
+
+      <!-- 已选用户列表 -->
+      <div v-if="selectedUsers.length > 0" class="selected-users mt-4 mb-2">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            {{ $t('Talk.Channel.selected_users') }}: {{ selectedUsers.length }}
+          </span>
+          <ElButton size="small" text @click="clearSelectedUsers">
+            {{ $t('Talk.Channel.clear_all') }}
+          </ElButton>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <el-tag
+            v-for="user in selectedUsers"
+            :key="user.metaId"
+            closable
+            @close="removeSelectedUser(user.metaId)"
+          >
+            {{ user.userName || user.metaId.slice(0, 8) }}
+          </el-tag>
+        </div>
+      </div>
+
+      <!-- 批量操作按钮 -->
+      <div v-if="selectedUsers.length > 0" class="batch-actions mt-3 mb-3">
+        <ElButton type="primary" :loading="batchInviting" @click="handleBatchInvite">
+          {{ $t('Talk.Channel.batch_invite') }} ({{ selectedUsers.length }})
+        </ElButton>
+      </div>
+
+      <!-- 搜索结果列表 -->
+      <div class="search-results mt-4">
+        <div v-if="inviteSearching" class="text-center py-4">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <span class="ml-2">{{ $t('searching') }}</span>
+        </div>
+
+        <div
+          v-else-if="inviteSearchQuery && inviteUserList.length === 0"
+          class="text-center py-4 text-gray-400"
+        >
+          {{ $t('no_results') }}
+        </div>
+
+        <div v-else-if="inviteUserList.length > 0" class="user-list">
+          <div
+            v-for="user in inviteUserList"
+            :key="user.metaId"
+            class="user-item flex items-center justify-between p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          >
+            <div class="flex items-center gap-3 flex-1">
+              <el-checkbox
+                :model-value="isUserSelected(user.metaId)"
+                :disabled="!canInviteUser(user)"
+                @change="checked => toggleUserSelection(user, checked)"
+              />
+              <UserAvatar
+                :image="user.avatar || ''"
+                :name="user.userName || user.metaId.slice(0, 8)"
+                :meta-id="user.metaId"
+                :meta-name="''"
+                class="w-10 h-10"
+              />
+              <div class="flex-1">
+                <div class="font-medium text-dark-800 dark:text-gray-100">
+                  {{ user.userName || user.metaId.slice(0, 8) }}
+                </div>
+                <div class="text-xs text-dark-300 dark:text-gray-400">
+                  {{ user.metaId.slice(0, 12) }}...
+                </div>
+                <div v-if="!canInviteUser(user)" class="text-xs text-red-500 mt-1">
+                  {{ $t('Talk.Channel.user_chat_not_enabled') }}
+                </div>
+              </div>
+            </div>
+            <el-tooltip
+              :content="getInviteButtonTooltip(user)"
+              placement="top"
+              :disabled="canInviteUser(user)"
+            >
+              <ElButton
+                type="primary"
+                size="small"
+                :disabled="!canInviteUser(user)"
+                @click="handleInviteUser(user)"
+              >
+                {{ $t('Talk.Channel.invite') }}
+              </ElButton>
+            </el-tooltip>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ElDialog>
 </template>
 
 <script lang="ts" setup>
@@ -357,11 +476,13 @@ import EditAnnouncementDrawer from './EditAnnouncementDrawer.vue'
 import EditChannelInfoDrawer from './EditChannelInfoDrawer.vue'
 import CreateBroadcastChannelModal from './CreateBroadcastChannelModal.vue'
 import InfiniteScroll from '@/components/InfiniteScroll/InfiniteScroll.vue'
+import UserAvatar from '@/components/UserAvatar/UserAvatar.vue'
+import ChatIcon from '@/components/ChatIcon/ChatIcon.vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getChannelMembers, searchChannelMembers,getUserGroupRole } from '@/api/talk'
-import { ElMessage } from 'element-plus'
+import { getChannelMembers, searchChannelMembers, getUserGroupRole, searchGroupsAndUsers, BatchGetUsersEcdhPubkeyForPrivateChat } from '@/api/talk'
+import { ElMessage, ElDialog } from 'element-plus'
 import copy from 'copy-to-clipboard'
-import {addMyBlockChatList,removeMyBlockChat} from '@/api/chat-notify'
+import { addMyBlockChatList, removeMyBlockChat } from '@/api/chat-notify'
 import {
   ArrowRight,
   CircleClose,
@@ -371,8 +492,10 @@ import {
   Edit,
   Link,
   Remove,
-CirclePlus,
+  CirclePlus,
   Search,
+  Loading,
+  User as UserPlus,
 } from '@element-plus/icons-vue'
 import { metafile } from '@/utils/filters'
 import { NodeName,MemberRule,RuleOp } from '@/enum'
@@ -382,6 +505,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import { setChannelAdmins,setChannelWhiteList,setChannelBlockList } from '@/utils/talk'
 import type {MemberListRes,MemberItem } from '@/@types/simple-chat.d'
+import type { SearchUserItem } from '@/@types/simple-chat.d'
 import {MessageType} from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
 import { signMvcMessage,getMvcPublickey } from "@/wallet-adapters/metalet";
@@ -425,6 +549,15 @@ const currentPage = ref(0)
 // 每页大小
 const pageSize = 20
 
+// 邀请功能相关状态
+const showInviteModal = ref(false)
+const inviteSearchQuery = ref('')
+const inviteUserList = ref<SearchUserItem[]>([])
+const inviteSearching = ref(false)
+const userChatPublicKeys = ref<Map<string, string>>(new Map()) // 存储用户的 chatPublicKey
+const selectedUsers = ref<SearchUserItem[]>([]) // 选中的用户列表
+const batchInviting = ref(false) // 批量邀请中
+
 const i18n=useI18n()
 
 
@@ -460,6 +593,32 @@ const triggleMuteNotify=computed(()=>{
 const isCurrentUserCreator = computed(() => {
   return currentChannelInfo.value?.createdBy === userStore.last?.metaid
 })
+
+// 判断是否为私密群聊
+const isPrivateGroup = computed(() => {
+  return currentChannelInfo.value?.roomJoinType === '100'
+})
+
+// 检查用户是否可以被邀请（私密群聊需要 chatPublicKey）
+const canInviteUser = (user: SearchUserItem): boolean => {
+  if (!isPrivateGroup.value) {
+    // 公开群聊都可以邀请
+    return true
+  }
+  // 私密群聊需要检查是否有 chatPublicKey
+  return userChatPublicKeys.value.has(user.metaId)
+}
+
+// 获取邀请按钮的提示文本
+const getInviteButtonTooltip = (user: SearchUserItem): string => {
+  if (!isPrivateGroup.value) {
+    return i18n.t('talk.invite')
+  }
+  if (userChatPublicKeys.value.has(user.metaId)) {
+    return i18n.t('talk.invite')
+  }
+  return i18n.t('talk.user_chat_not_enabled')
+}
 
 const isWhiteListCreatBroadcast=computed(()=>{
   // const config = getRuntimeConfig()
@@ -1033,6 +1192,229 @@ const handleBlockList = async (member: MemberItem) => {
     ElMessage.error((error as any).message || 'Failed to update blocklist')
   }
 }
+
+// 邀请功能相关方法
+
+// 处理邀请搜索
+const handleInviteSearch = async () => {
+  const query = inviteSearchQuery.value.trim()
+
+  if (!query) {
+    inviteUserList.value = []
+    userChatPublicKeys.value.clear()
+    return
+  }
+
+  inviteSearching.value = true
+  try {
+    const result = await searchGroupsAndUsers({ query, size: '20' })
+
+    // 过滤掉群组，只保留用户
+    if (result && result.users && result.users.length > 0) {
+      inviteUserList.value = result.users
+
+      // 批量获取用户的 chatPublicKey
+      const metaIds = result.users.map(user => user.metaId)
+
+      try {
+        const userInfos = await BatchGetUsersEcdhPubkeyForPrivateChat({ metaIds })
+
+        // 存储到 Map 中
+        userChatPublicKeys.value.clear()
+        if (userInfos && userInfos.length > 0) {
+          userInfos.forEach(userInfo => {
+            if (userInfo.chatPublicKey) {
+              userChatPublicKeys.value.set(userInfo.metaid, userInfo.chatPublicKey)
+            }
+          })
+        }
+
+        console.log('获取到的用户 chatPublicKey:', userChatPublicKeys.value)
+      } catch (error) {
+        console.warn('获取用户 chatPublicKey 失败:', error)
+        // 即使失败也继续显示用户列表，但邀请按钮会被禁用
+      }
+    } else {
+      inviteUserList.value = []
+      userChatPublicKeys.value.clear()
+    }
+  } catch (error) {
+    console.error('搜索用户失败:', error)
+    inviteUserList.value = []
+    userChatPublicKeys.value.clear()
+    ElMessage.error('搜索失败')
+  } finally {
+    inviteSearching.value = false
+  }
+}
+
+// 处理邀请用户
+const handleInviteUser = async (user: SearchUserItem) => {
+  if (!currentChannelInfo.value) return
+
+  try {
+    const { batchInviteUsersToGroup } = await import('@/utils/talk')
+
+    const groupId = currentChannelInfo.value.id
+    const isPrivateGroup = currentChannelInfo.value.roomJoinType === '100'
+    const passwordKey = isPrivateGroup ? currentChannelInfo.value.passwordKey : undefined
+
+    // 检查私密群聊的必要条件
+    if (isPrivateGroup) {
+      if (!passwordKey) {
+        ElMessage.error('私密群聊密钥未设置')
+        return
+      }
+
+      const userChatPublicKey = userChatPublicKeys.value.get(user.metaId)
+      if (!userChatPublicKey) {
+        ElMessage.warning('该用户未开通私聊，无法邀请到私密群聊')
+        return
+      }
+    }
+
+    // 准备单个用户的列表
+    const userList = [{
+      metaId: user.metaId,
+      chatPublicKey: userChatPublicKeys.value.get(user.metaId) || '',
+      userName: user.userName || user.metaId.slice(0, 8),
+    }]
+
+    console.log('🚀 邀请单个用户:', {
+      groupId,
+      user: userList[0],
+      isPrivateGroup,
+    })
+
+    const result = await batchInviteUsersToGroup({
+      groupId,
+      userList,
+      passwordKey,
+    })
+
+    console.log('📊 邀请结果:', result)
+
+    if (result.status === 'success') {
+      ElMessage.success(`已成功邀请 ${user.userName || user.metaId.slice(0, 8)}`)
+      // 关闭邀请弹窗
+      showInviteModal.value = false
+    } else {
+      const errorMsg = result.results[0]?.error || '邀请失败'
+      ElMessage.error(errorMsg)
+    }
+
+  } catch (error) {
+    console.error('邀请用户失败:', error)
+    ElMessage.error('邀请用户失败: ' + (error as Error).message)
+  }
+}
+
+// 选中用户相关方法
+const isUserSelected = (metaId: string): boolean => {
+  return selectedUsers.value.some(u => u.metaId === metaId)
+}
+
+const toggleUserSelection = (user: SearchUserItem, checked: boolean | string | number) => {
+  const isChecked = Boolean(checked)
+  if (isChecked) {
+    if (!isUserSelected(user.metaId)) {
+      // 获取用户的 chatPublicKey
+      const chatPublicKey = userChatPublicKeys.value.get(user.metaId) || ''
+      selectedUsers.value.push({ ...user, chatPublicKey } as any)
+    }
+  } else {
+    selectedUsers.value = selectedUsers.value.filter(u => u.metaId !== user.metaId)
+  }
+}
+
+const removeSelectedUser = (metaId: string) => {
+  selectedUsers.value = selectedUsers.value.filter(u => u.metaId !== metaId)
+}
+
+const clearSelectedUsers = () => {
+  selectedUsers.value = []
+}
+
+// 批量邀请用户
+const handleBatchInvite = async () => {
+  if (!currentChannelInfo.value || selectedUsers.value.length === 0) return
+
+  batchInviting.value = true
+
+  try {
+    const { batchInviteUsersToGroup } = await import('@/utils/talk')
+
+    const groupId = currentChannelInfo.value.id
+    const isPrivateGroup = currentChannelInfo.value.roomJoinType === '100'
+    const passwordKey = isPrivateGroup ? currentChannelInfo.value.passwordKey : undefined
+
+    // 准备用户列表
+    const userList = selectedUsers.value.map(user => ({
+      metaId: user.metaId,
+      chatPublicKey: userChatPublicKeys.value.get(user.metaId) || '',
+      userName: user.userName || user.metaId.slice(0, 8),
+    }))
+
+    console.log('🚀 开始批量邀请:', {
+      groupId,
+      userCount: userList.length,
+      isPrivateGroup,
+    })
+
+    const result = await batchInviteUsersToGroup({
+      groupId,
+      userList,
+      passwordKey,
+    })
+
+    console.log('📊 批量邀请结果:', result)
+
+    // 统计结果
+    const successCount = result.results.filter(r => r.status === 'success').length
+    const failedCount = result.results.filter(r => r.status === 'failed').length
+
+    if (result.status === 'success') {
+      ElMessage.success(`成功邀请 ${successCount} 位用户`)
+    } else if (result.status === 'partial') {
+      ElMessage.warning(`成功邀请 ${successCount} 位用户，${failedCount} 位失败`)
+    } else {
+      ElMessage.error(`邀请失败：${failedCount} 位用户`)
+    }
+
+    // 显示详细结果
+    result.results.forEach(r => {
+      if (r.status === 'success') {
+        console.log(`✅ ${r.userName} - 邀请链接:`, r.inviteUrl)
+        // TODO: 发送邀请链接给用户
+      } else {
+        console.error(`❌ ${r.userName} - 失败:`, r.error)
+      }
+    })
+
+    // 清空选中的用户
+    clearSelectedUsers()
+
+    // 如果全部成功，关闭弹窗
+    if (result.status === 'success') {
+      showInviteModal.value = false
+    }
+
+  } catch (error) {
+    console.error('批量邀请失败:', error)
+    ElMessage.error('批量邀请失败: ' + (error as Error).message)
+  } finally {
+    batchInviting.value = false
+  }
+}
+
+// 监听邀请弹窗关闭，清空搜索
+watch(() => showInviteModal.value, (newValue) => {
+  if (!newValue) {
+    inviteSearchQuery.value = ''
+    inviteUserList.value = []
+    clearSelectedUsers()
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -1246,5 +1628,27 @@ header {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 邀请弹窗样式 */
+.invite-modal-content {
+  .search-results {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .user-item {
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateX(4px);
+    }
+  }
 }
 </style>

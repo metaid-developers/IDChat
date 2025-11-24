@@ -193,6 +193,39 @@
               />
             </button>
           </div>
+          <div
+            class="w-full py-0.5 flex items-center"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isPrivateImage"
+          >
+            <div
+              class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200"
+              :class="[message.error && 'opacity-50']"
+              @click="previewImage2(decryptedImageMessage)"
+            >
+              <Image
+                :src="decryptedImageMessage"
+                :isPrivateChat="true"
+                :chatPasswordForDecrypt="simpleTalk.activeChannel?.passwordKey || ''"
+                customClass="rounded py-0.5 object-scale-down"
+              />
+            </div>
+            <button v-if="message.error" class="ml-3" :title="resendTitle" @click="tryResend">
+              <Icon
+                name="arrow_path"
+                class="w-4 h-4 text-dark-400 dark:text-gray-200 hover:animate-spin-once"
+              />
+            </button>
+            <Teleport to="body" v-if="isPrivateImage && showImagePreview">
+              <TalkImagePreview
+                v-if="showImagePreview"
+                :src="message.content"
+                :isPrivateChat="true"
+                :chatPasswordForDecrypt="simpleTalk.activeChannel?.passwordKey || ''"
+                @close="showImagePreview = false"
+              />
+            </Teleport>
+          </div>
 
           <div
             class="text-xs text-dark-400 dark:text-gray-200 my-0.5 capitalize"
@@ -259,28 +292,48 @@
             v-else-if="isChatGroupLink"
           >
             <div
-              class="lg:max-w-full max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
+              class="lg:max-w-full max-w-[300px] shadow rounded-xl transition-all duration-200 bg-white dark:bg-gray-700 group"
+              :class="[
+                isMyMessage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-md',
+              ]"
               @click="handleGroupLinkClick"
             >
               <div class="p-4 space-y-3">
                 <!-- 群头像和基本信息 -->
                 <div class="flex items-center space-x-3">
-                  <div class="">
+                  <div class="relative">
                     <ChatIcon
                       :src="groupLinkInfo.groupAvatar"
                       :alt="groupLinkInfo.groupName"
                       custom-class="w-12 h-12 min-w-12 min-h-12 rounded-full"
                       :size="48"
                     />
+                    <!-- 私密群标识 -->
+                    <div
+                      v-if="groupLinkInfo.isPrivate"
+                      class="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center"
+                      :title="$t('Talk.Channel.private_group')"
+                    >
+                      <Icon name="lock_closed" class="w-3 h-3 text-white" />
+                    </div>
                   </div>
 
                   <div class="flex-1 min-w-0">
-                    <div
-                      class="text-dark-800 dark:text-gray-100 font-medium text-base truncate max-w-[200px]"
-                    >
-                      {{ groupLinkInfo.groupName || 'Group Chat' }}
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="text-dark-800 dark:text-gray-100 font-medium text-base truncate max-w-[180px]"
+                      >
+                        {{ groupLinkInfo.groupName || 'Group Chat' }}
+                      </div>
+                      <!-- 私密群徽章 -->
+                      <div
+                        v-if="groupLinkInfo.isPrivate"
+                        class="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-xs rounded-full font-medium"
+                      >
+                        {{ $t('Talk.Channel.private') }}
+                      </div>
                     </div>
-                    <div class="text-dark-400 dark:text-gray-400 text-sm">
+                    <div class="text-dark-400 dark:text-gray-400 text-sm mt-1">
                       {{ props.message.userInfo?.name || 'Someone' }} invites you to join this group
                     </div>
                   </div>
@@ -300,9 +353,16 @@
                 <!-- 查看群组按钮 -->
                 <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
                   <div
+                    v-if="!isMyMessage"
                     class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
                   >
                     VIEW GROUP
+                  </div>
+                  <div
+                    v-else
+                    class="bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-center py-2 px-4 rounded-lg font-medium cursor-not-allowed"
+                  >
+                    {{ $t('Talk.Channel.invite_sent') }}
                   </div>
                 </div>
               </div>
@@ -646,6 +706,9 @@ import { UnifiedChatMessage } from '@/@types/simple-chat'
 import {openAppBrowser} from '@/wallet-adapters/metalet'
 import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 import { VideoPlay } from '@element-plus/icons-vue'
+import { isPrivate } from 'tiny-secp256k1'
+import { DB } from '@/utils/db'
+import TalkImagePreview from './ImagePreview.vue'
 
 const i18n = useI18n()
 
@@ -663,6 +726,7 @@ const visiableMenu = ref(false)
 // 群信息缓存
 const channelInfo = ref<any>(null)
 const subChannelInfo = ref<any>(null)
+const showImagePreview = ref(false)
 
 // 通用 PIN 信息缓存（包含所有类型：MetaApp, Buzz, SimpleNote 等）
 interface UniversalPinInfo {
@@ -899,6 +963,49 @@ const resendTitle = computed(() => {
 const redPackClaimOver = computed(() => {
   return props.message?.claimOver
 })
+
+const decryptedImageMessage = computed(() => {
+  console.log("props.message.content",props.message)
+
+  if (props.message.isMock) {
+    return props.message.content
+  }
+
+  // 私密图片（encryption === '1'）：返回加密的 metafile 链接，由 Image 组件使用 passwordKey 解密
+  // 公开图片（encryption !== '1'）：直接返回图片链接
+  if (props.message.encryption === '1') {
+    console.log("props.message.content encryption === '1'", props.message.content)
+    return props.message.data?.attachment || props.message?.content
+  }
+
+  if (props.message.encryption !== '1') {
+    console.log("props.message.content props.message.encryption !== '1'",props.message.content)
+    return props.message.data?.attachment || props.message?.content
+  }
+
+  return props.message.content
+})
+
+const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string): Promise<string | undefined> => {
+  try {
+    const res=await  DB.getMetaFileData(content, 235,true,'',chatPubkeyForDecrypt)
+    return URL.createObjectURL(res.data)
+  } catch (error) {
+    console.error('Failed to decrypt image:', error)
+    return undefined
+  }
+}
+
+const previewImage2 = async (image: string) => {
+  const _image = await decryptedImgMessage(image, simpleTalk.activeChannel?.passwordKey!)
+  if (_image) {
+    imagePreview.images = [_image]
+    imagePreview.index = 0
+    imagePreview.visibale = true
+  } else {
+    console.error('Failed to decrypt image for preview')
+  }
+}
 
 const openWindowTarget = () => {
   if(rootstore.isWebView){
@@ -1176,7 +1283,8 @@ const removeUserInfo = computed(() => {
   }
 })
 const isNftEmoji = computed(() => containsString(props.message.protocol, 'SimpleEmojiGroupChat'))
-const isImage = computed(() => containsString(props.message.protocol, NodeName.SimpleFileGroupChat))
+const isImage = computed(() =>simpleTalk.activeChannel?.roomJoinType!=='100' && containsString(props.message.protocol, NodeName.SimpleFileGroupChat))
+const isPrivateImage = computed(() =>simpleTalk.activeChannel?.roomJoinType==='100' && containsString(props.message.protocol, NodeName.SimpleFileGroupChat))
 const isGiveawayRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupLuckyBag)
 )
@@ -1188,9 +1296,9 @@ const isChatGroupLink = computed(() => {
     props.message.isMock
   )
 
-  // 检测群聊链接的正则表达式
-  const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
-  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
+  // 检测群聊链接的正则表达式（支持公开和私密群聊）
+  const groupLinkPattern = /\/channels\/(public|private)\/([a-f0-9]+)/i
+  const subChannelLinkPattern=/\/channels\/(public|private)\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
   const isGroupLink = groupLinkPattern.test(messageContent)
   const isSubChannelLink = subChannelLinkPattern.test(messageContent)
 
@@ -1199,7 +1307,7 @@ const isChatGroupLink = computed(() => {
         const match = messageContent.match(groupLinkPattern)
         if (match) {
 
-        const pinId = match[1]
+        const pinId = match[2]
         fetchChannelInfo(pinId+'i0')
         }
 
@@ -1208,7 +1316,7 @@ const isChatGroupLink = computed(() => {
          const subMatch = messageContent.match(subChannelLinkPattern)
      if (subMatch) {
 
-      const pinId = subMatch[1]
+      const pinId = subMatch[2]
       fetchSubChannelInfo(pinId)
     }
     }
@@ -1231,15 +1339,16 @@ const groupLinkInfo = computed(() => {
     props.message.isMock
   )
 
-  const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
-  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
+  const groupLinkPattern = /\/channels\/(public|private)\/([a-f0-9]+)/i
+  const subChannelLinkPattern=/\/channels\/(public|private)\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
 
   const match = messageContent.match(groupLinkPattern)
   const subChannleMatch= messageContent.match(subChannelLinkPattern)
 
-  if (match && !subChannleMatch[2]) {
+  if (match && (!subChannleMatch || !subChannleMatch[3])) {
 
-    const pinId = match[1] + 'i0'
+    const pinId = match[2] + 'i0'
+    const isPrivate = match[1] === 'private'
 
     return {
       pinId,
@@ -1248,11 +1357,14 @@ const groupLinkInfo = computed(() => {
       memberCount: channelInfo.value?.userCount || 0,
       fullUrl: messageContent,
       creator:channelInfo.value?.createUserInfo?.name || '',
+      isPrivate,
     }
-  }else if(subChannleMatch[2]){
+  }else if(subChannleMatch && subChannleMatch[3]){
     console.log("subChannleMatch",messageContent)
 
-    const pinId =subChannleMatch[2] + 'i0'
+    const pinId =subChannleMatch[3] + 'i0'
+    const isPrivate = subChannleMatch[1] === 'private'
+
       return {
       pinId,
       groupName: subChannelInfo.value?.channelName ,
@@ -1260,6 +1372,7 @@ const groupLinkInfo = computed(() => {
       memberCount: channelInfo.value?.userCount || 0,
       fullUrl: messageContent,
       creator:channelInfo.value?.createUserInfo?.name || '',
+      isPrivate,
     }
   }
 
@@ -1269,7 +1382,8 @@ const groupLinkInfo = computed(() => {
     groupAvatar: '',
     memberCount: 0,
     creator: '',
-    fullUrl: messageContent
+    fullUrl: messageContent,
+    isPrivate: false,
   }
 })
 
@@ -1535,11 +1649,17 @@ const handleBuzzOrNoteLinkClick = () => {
 
 
 // 处理群链接点击
+// 处理群链接点击
 const handleGroupLinkClick = () => {
+  // 如果是自己发送的消息，不允许点击
+  if (isMyMessage.value) {
+    console.log('发送人本人不可点击邀请链接')
+    return
+  }
+
   const linkInfo = groupLinkInfo.value
   if (linkInfo.fullUrl) {
     // 在新窗口打开群链接
-
     window.open(linkInfo.fullUrl, '_self')
   }
 }

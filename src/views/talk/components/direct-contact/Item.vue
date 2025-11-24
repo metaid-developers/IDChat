@@ -17,8 +17,13 @@
         <div class="flex items-center justify-center">
           <Icon
             name="group_chat_1"
-            v-show="session?.type === ChannelType.Group"
+            v-show="session?.type === ChannelType.Group && session.roomJoinType !== '100'"
             class="w-[20PX] h-[15PX] mr-1 shrink-0 text-gray-500 dark:text-white"
+          />
+          <Icon
+            name="priv_chat"
+            v-show="session?.type === ChannelType.Group && session.roomJoinType === '100'"
+            class="w-[25px] h-[30px] mr-1 shrink-0 text-gray-500 dark:text-white"
           />
           <div class=" font-medium dark:text-gray-100 max-w-[150px] truncate">
             {{ session?.name }}
@@ -127,7 +132,8 @@ const computeDecryptedMsg = (session: SimpleChannel) => {
     }
     let content
     if (session.type === 'group') {
-      let secretKeyStr = session.id?.substring(0, 16) || ''
+      let secretKeyStr = session.passwordKey?.substring(0, 16) || ''
+      console.log('group decryptedMessage secretKeyStr', secretKeyStr)
       switch (session.lastMessage.type) {
         case MessageType.msg:
           return decrypt(session.lastMessage.content, secretKeyStr)
@@ -178,7 +184,11 @@ const switchChannel = () => {
   simpleTalkStore.setActiveChannel(props.session?.id || '')
 
   if (props.session?.type === ChannelType.Group) {
-    router.push(`/talk/channels/public/${props.session?.id}`)
+    router.push(
+      `/talk/channels/${props.session?.roomJoinType !== '100' ? 'public' : 'private'}/${
+        props.session?.id
+      }`
+    )
   } else {
     router.push(`/talk/@me/${props.session?.id}`)
   }

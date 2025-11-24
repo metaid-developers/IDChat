@@ -1,7 +1,7 @@
 import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth,SubChannel,MemberListRes } from '@/@types/talk'
 
-import type { GroupChannel, GroupChannelListResponse,GroupUserRoleInfo } from '@/@types/simple-chat.d'
+import type { GroupChannel, GroupChannelListResponse,GroupUserRoleInfo, SearchGroupsAndUsersResponse, SearchUserItem } from '@/@types/simple-chat.d'
 import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
@@ -715,6 +715,17 @@ export const getCommunityMembers = (communityId: string): Promise<any> => {
   })
 }
 
+export const getPrivateChatPaths = (metaId: string): Promise<any> => {
+  const params = {
+    metaId
+  }
+  const query = new URLSearchParams(params).toString()
+  return TalkApi.get(`/private-group-paths?${query}`).then(res => {
+    const data = res.data.list??[]
+    return data
+  })
+}
+
 // 红包相关
 
 export const getOneRedPacket = async (params: any): Promise<any> => {
@@ -887,4 +898,45 @@ export const getGroupChannelList = async (params: {
 }): Promise<GroupChannelListResponse> => {
   const query = new URLSearchParams(params).toString()
   return TalkApi.get(`/group-channel-list?${query}`)
+}
+
+// 获取群组加入控制列表（白名单和黑名单）
+export const getGroupJoinControlList = async (params: {
+  groupId: string
+}): Promise<{
+  code: number
+  data: {
+    groupId: string
+    joinBlockMetaIds: string[] | null
+    joinWhitelistMetaIds: string[] | null
+  }
+  message: string
+  processingTime: number
+}> => {
+  const query = new URLSearchParams(params).toString()
+  return TalkApi.get(`/group-join-control-list?${query}`)
+}
+
+// 搜索群组和用户
+export const searchGroupsAndUsers = async ({
+  query,
+  size = '20',
+}: {
+  query: string
+  size?: string
+}): Promise<{ users: SearchUserItem[], groups: any[] }> => {
+  const _query = new URLSearchParams({
+    query,
+    size,
+  }).toString()
+  return TalkApi.get(`/search-groups-and-users?${_query}`).then(async (res: SearchGroupsAndUsersResponse) => {
+    if (res.code === 0 && res.data && res.data.list) {
+      // 分离用户和群组
+      const users = res.data.list.filter((item): item is SearchUserItem => item.type === 'user')
+      const groups = res.data.list.filter(item => item.type === 'group')
+      
+      return { users, groups }
+    }
+    return { users: [], groups: [] }
+  })
 }

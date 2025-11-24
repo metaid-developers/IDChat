@@ -199,6 +199,12 @@ export interface SimpleChannel {
   // 群聊权限信息
   memberPermissions?: MemberListRes // 存储群成员权限信息
   permissionsLastUpdated?: number // 权限信息最后更新时间
+  // 群聊的加入类型（来自服务端 roomJoinType），例如 '1'、'100' 等
+  roomJoinType?: string
+  // 群聊路径（来自服务端 path）
+  path?: string
+  // 私密群聊的密码密钥（仅当 roomJoinType==='100' 且当前用户是创建者时存在）
+  passwordKey?: string
   // 保存原始服务端数据
   serverData?: any
   // 临时频道标识
@@ -354,3 +360,36 @@ export type PrivateChatResponseData = UnifiedChatResponseData
 export type GroupChatResponseData = UnifiedChatResponseData
 export type PrivateChatApiResponse = UnifiedChatApiResponse
 export type GroupChatApiResponse = UnifiedChatApiResponse
+
+// 搜索结果类型定义
+export interface SearchUserItem {
+  type: 'user'
+  metaId: string
+  address: string
+  userName: string
+  avatar: string
+  avatarId: string
+  timestamp: number
+}
+
+export interface SearchGroupItem {
+  type: 'group'
+  groupId: string
+  groupName: string
+  groupIcon?: string
+  pinId: string
+  memberCount: number
+  timestamp: number
+}
+
+export type SearchResultItem = SearchUserItem | SearchGroupItem
+
+export interface SearchGroupsAndUsersResponse {
+  code: number
+  data: {
+    total: number
+    list: SearchResultItem[]
+  }
+  message: string
+  processingTime: number
+}

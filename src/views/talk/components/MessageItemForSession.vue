@@ -387,28 +387,48 @@
           v-else-if="isChatGroupLink"
         >
           <div
-            class="lg:max-w-full max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group"
+            class="lg:max-w-full max-w-[300px] shadow rounded-xl transition-all duration-200 bg-white dark:bg-gray-700 group"
+            :class="[
+              isMyMessage ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-md',
+            ]"
             @click="handleGroupLinkClick"
           >
             <div class="p-4 space-y-3">
               <!-- 群头像和基本信息 -->
               <div class="flex items-center space-x-3">
-                <div class="">
+                <div class="relative">
                   <ChatIcon
                     :src="groupLinkInfo.groupAvatar"
                     :alt="groupLinkInfo.groupName"
                     custom-class="w-12 h-12 min-w-12 min-h-12 rounded-full"
                     :size="48"
                   />
+                  <!-- 私密群标识 -->
+                  <div
+                    v-if="groupLinkInfo.isPrivate"
+                    class="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center"
+                    :title="$t('Talk.Channel.private_group')"
+                  >
+                    <Icon name="lock_closed" class="w-3 h-3 text-white" />
+                  </div>
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <div
-                    class="text-dark-800 dark:text-gray-100 font-medium text-base truncate max-w-[200px]"
-                  >
-                    {{ groupLinkInfo.groupName || 'Group Chat' }}
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="text-dark-800 dark:text-gray-100 font-medium text-base truncate max-w-[180px]"
+                    >
+                      {{ groupLinkInfo.groupName || 'Group Chat' }}
+                    </div>
+                    <!-- 私密群徽章 -->
+                    <div
+                      v-if="groupLinkInfo.isPrivate"
+                      class="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-xs rounded-full font-medium"
+                    >
+                      {{ $t('Talk.Channel.private') }}
+                    </div>
                   </div>
-                  <div class="text-dark-400 dark:text-gray-400 text-sm">
+                  <div class="text-dark-400 dark:text-gray-400 text-sm mt-1">
                     {{ props.message.userInfo?.name || 'Someone' }} {{ $t('share_group_invites') }}
                   </div>
                 </div>
@@ -428,9 +448,16 @@
               <!-- 查看群组按钮 -->
               <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
                 <div
+                  v-if="!isMyMessage"
                   class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium"
                 >
                   {{ $t('share_group_view') }}
+                </div>
+                <div
+                  v-else
+                  class="bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-center py-2 px-4 rounded-lg font-medium cursor-not-allowed"
+                >
+                  {{ $t('Talk.Channel.invite_sent') }}
                 </div>
               </div>
             </div>
@@ -910,9 +937,9 @@ const isChatGroupLink = computed(() => {
     true
   )
 
-  // 检测群聊链接的正则表达式
-  const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
-  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
+  // 检测群聊链接的正则表达式（支持公开和私密群聊）
+  const groupLinkPattern = /\/channels\/(public|private)\/([a-f0-9]+)/i
+  const subChannelLinkPattern=/\/channels\/(public|private)\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
   const isGroupLink = groupLinkPattern.test(messageContent)
   const isSubChannelLink = subChannelLinkPattern.test(messageContent)
 
@@ -921,7 +948,7 @@ const isChatGroupLink = computed(() => {
         const match = messageContent.match(groupLinkPattern)
         if (match) {
 
-        const pinId = match[1]
+        const pinId = match[2]
         fetchChannelInfo(pinId+'i0')
         }
 
@@ -930,7 +957,7 @@ const isChatGroupLink = computed(() => {
          const subMatch = messageContent.match(subChannelLinkPattern)
      if (subMatch) {
 
-      const pinId = subMatch[1]
+      const pinId = subMatch[2]
       fetchSubChannelInfo(pinId)
     }
     }
@@ -1220,6 +1247,12 @@ const handleBuzzOrNoteLinkClick = () => {
 
 // 处理群链接点击
 const handleGroupLinkClick = () => {
+  // 如果是自己发送的消息，不允许点击
+  if (isMyMessage.value) {
+    console.log('发送人本人不可点击邀请链接')
+    return
+  }
+
   const linkInfo = groupLinkInfo.value
   if (linkInfo.fullUrl) {
     // 在新窗口打开群链接
@@ -1237,15 +1270,16 @@ const groupLinkInfo = computed(() => {
     true
   )
 
-  const groupLinkPattern = /\/channels\/public\/([a-f0-9]+)/i
-  const subChannelLinkPattern=/\/channels\/public\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
+  const groupLinkPattern = /\/channels\/(public|private)\/([a-f0-9]+)/i
+  const subChannelLinkPattern=/\/channels\/(public|private)\/([a-f0-9]+i0)(?:\/([a-f0-9]+))?/i
 
   const match = messageContent.match(groupLinkPattern)
   const subChannleMatch= messageContent.match(subChannelLinkPattern)
 
-  if (match && !subChannleMatch[2]) {
+  if (match && (!subChannleMatch || !subChannleMatch[3])) {
 
-    const pinId = match[1] + 'i0'
+    const pinId = match[2] + 'i0'
+    const isPrivate = match[1] === 'private'
 
     return {
       pinId,
@@ -1254,11 +1288,14 @@ const groupLinkInfo = computed(() => {
       memberCount: channelInfo.value?.userCount || 0,
       fullUrl: messageContent,
       creator:channelInfo.value?.createUserInfo?.name || '',
+      isPrivate,
     }
-  }else if(subChannleMatch[2]){
+  }else if(subChannleMatch && subChannleMatch[3]){
     console.log("subChannleMatch",messageContent)
 
-    const pinId =subChannleMatch[2] + 'i0'
+    const pinId =subChannleMatch[3] + 'i0'
+    const isPrivate = subChannleMatch[1] === 'private'
+
       return {
       pinId,
       groupName: subChannelInfo.value?.channelName ,
@@ -1266,6 +1303,7 @@ const groupLinkInfo = computed(() => {
       memberCount: channelInfo.value?.userCount || 0,
       fullUrl: messageContent,
       creator:channelInfo.value?.createUserInfo?.name || '',
+      isPrivate,
     }
   }
 
@@ -1275,7 +1313,8 @@ const groupLinkInfo = computed(() => {
     groupAvatar: '',
     memberCount: 0,
     creator: '',
-    fullUrl: messageContent
+    fullUrl: messageContent,
+    isPrivate: false,
   }
 })
 

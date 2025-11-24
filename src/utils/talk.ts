@@ -45,7 +45,7 @@ import { Red_Packet_Min, Red_Packet_Max } from '@/data/constants'
 import { useEcdhsStore } from '@/stores/ecdh'
 import { buildOpReturnV2, createPin } from './userInfo'
 import { createPinWithBtc } from './pin'
-import { generateLuckyBagCode } from '@/api/talk'
+import { generateLuckyBagCode, getPrivateChatPaths } from '@/api/talk'
 import { BTC_MIN_PER_PACKET_SATS } from '@/stores/forms'
 import { useLayoutStore } from '@/stores/layout'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
@@ -729,6 +729,7 @@ export const createChannel = async (
     groupType,
     status,
     type,
+    path: '',
     tickId: '',
     collectionId: '',
     // codehash,
@@ -737,6 +738,40 @@ export const createChannel = async (
     chatSettingType,
     deleteStatus: 0,
     timestamp: getTimestampInSeconds(),
+  }
+
+  if (form.type === GroupChannelType.Password) {
+    const simpleTalk = useSimpleTalkStore()
+    const paths = await getPrivateChatPaths(simpleTalk.selfMetaId)
+
+    // paths 格式示例: [{ path: '100/0', groupId: '...', pinId: '...' }, ...]
+    // 我们需要找到 '100/xxxx' 中 xxxx 的最大值，然后设置 dataCarrier.path = `100/${max+1}`
+    let newPath = '100/0'
+
+    if (Array.isArray(paths) && paths.length > 0) {
+      try {
+        const numbers = paths
+          .map((p: any) => {
+            if (!p || !p.path) return null
+            const parts = String(p.path).split('/')
+            if (parts.length < 2) return null
+            const prefix = parts[0]
+            const idx = parseInt(parts[1], 10)
+            if (isNaN(idx)) return null
+            return { prefix, idx }
+          })
+          .filter((x: any) => x && x.prefix === '100')
+
+        if (numbers.length > 0) {
+          const max = numbers.reduce((m: number, cur: any) => Math.max(m, cur.idx), -1)
+          newPath = `100/${max + 1}`
+        }
+      } catch (err) {
+        console.error('parse private chat paths failed', err)
+      }
+    }
+
+    dataCarrier.path = newPath
   }
 
   if (!communityId) {
@@ -1076,9 +1111,9 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
       break
 
     case GroupChannelType.Password:
-      groupType = '2'
-      status = encrypt(selfMetaId.substring(0, 16), MD5Hash(form.password).substring(0, 16))
-      type = '1'
+      groupType = '1'
+      status = '1'
+      type = '100'
       break
 
     case GroupChannelType.NFT:
@@ -1136,13 +1171,14 @@ const _getChannelTypeInfo = (form: any, selfMetaId: string) => {
   return { groupType, status, type, codehash, genesis, limitAmount }
 }
 
-export const joinChannel = async (groupId: string, referrer?: string) => {
+export const joinChannel = async (groupId: string, referrer?: string, passcode?: string) => {
   try {
     const buildTx = useBulidTx()
     const dataCarrier = {
       groupId: groupId || '',
       state: CommunityJoinAction.Join,
       referrer: referrer || '',
+      k: passcode || '',
     }
 
     // 2. 构建节点参数
@@ -1273,11 +1309,12 @@ export const tryCreateNode = async (
     fileEncryption?: '0' | '2' | '2'
     attachments?: AttachmentItem[]
   },
-  mockId: string
+  mockId?: string
 ) => {
   const jobs = useJobsStore()
   const simpleTalk = useSimpleTalkStore()
   const buildTx = useBulidTx()
+  console.log('tryCreateNode node:', node)
   const {
     protocol,
     body,
@@ -1300,16 +1337,18 @@ export const tryCreateNode = async (
     // 取消支付的情况下，删除mock消息
     console.log({ nodeRes })
     const txId = nodeRes?.txids ? nodeRes.txids[0] : nodeRes?.revealTxIds[0]
-    if (nodeRes === null) {
+    if (nodeRes === null && mockId) {
       simpleTalk.removeMessage(mockId)
     }
-    if (txId) {
+    if (txId && mockId) {
       simpleTalk.updateMessageMockId(mockId, txId)
     }
   } catch (error) {
     const timestamp = timeStamp
     jobs?.node && jobs?.nodes.push({ node, timestamp })
-    simpleTalk.setMessageError(mockId, (error as any).message || 'Send failed')
+    if (mockId) {
+      simpleTalk.setMessageError(mockId, (error as any).message || 'Send failed')
+    }
   }
 }
 
@@ -1968,6 +2007,11 @@ export function decryptedMessage(
       throw new Error((error as any).toString())
     }
   } else {
+    // 群聊解密：优先使用 passwordKey，否则使用 channelId
+    if (!secretKeyStr && simpleTalk.activeChannel?.passwordKey) {
+      secretKeyStr = simpleTalk.activeChannel.passwordKey
+    }
+    console.log('decryptedMessage secretKeyStr', secretKeyStr)
     return decrypt(content, secretKeyStr || simpleTalk.activeChannelId.substring(0, 16))
   }
 }
@@ -2025,5 +2069,281 @@ export const createBroadcastChannel = async (
     console.log(err)
     ElMessage.error(`${i18n.global.t('create_broadcast_fail')}`)
     return { status: 'failed' }
+  }
+}
+
+/**
+ * 发送邀请链接私聊消息给用户
+ * @param toMetaId 接收方 MetaId
+ * @param inviteUrl 邀请链接
+ * @param sharedSecret ECDH 协商的共享密钥（用于加密邀请链接）
+ */
+const sendInviteMessage = async (toMetaId: string, inviteUrl: string, sharedSecret?: string) => {
+  const userStore = useUserStore()
+  const simpleTalkStore = useSimpleTalkStore()
+  const chainStore = useChainStore()
+
+  // 1. 构建消息内容
+  const timestamp = Date.now()
+  let content = inviteUrl
+
+  // 如果有共享密钥，则加密邀请链接
+  if (sharedSecret) {
+    const CryptoJS = await import('crypto-js')
+    content = CryptoJS.AES.encrypt(inviteUrl, sharedSecret).toString()
+    console.log('🔒 邀请链接已加密, 密文长度:', content.length)
+  }
+
+  const contentType = 'text/plain'
+  const encrypt = 'ecdh'
+  const externalEncryption = '0' as const
+
+  const dataCarrier = {
+    to: toMetaId,
+    timestamp,
+    content,
+    contentType,
+    encrypt,
+    replyPin: '',
+  }
+
+  const node = {
+    protocol: NodeName.SimpleMsg,
+    body: dataCarrier,
+    timestamp,
+    externalEncryption,
+  }
+
+  // 2. 创建 mock 消息
+  const mockId = realRandomString(12)
+  const mockMessage: any = {
+    mockId,
+    txId: '',
+    pinId: '',
+    metaId: userStore.last?.metaid || '',
+    address: userStore.last?.address || '',
+    userInfo: userStore.last || {},
+    nickName: userStore.last?.name || '',
+    protocol: NodeName.SimpleMsg,
+    content,
+    contentType,
+    encryption: encrypt,
+    version: '1.0.0',
+    chatType: ChatType.msg,
+    data: dataCarrier,
+    replyPin: '',
+    replyInfo: null,
+    replyMetaId: '',
+    timestamp,
+    params: '',
+    chain: chainStore.state.currentChain == 'btc' ? 'btc' : 'mvc',
+    blockHeight: 0,
+    index: 0,
+    mention: [],
+    // 私聊特有字段
+    from: userStore.last?.metaid,
+    fromUserInfo: userStore.last || {},
+    to: toMetaId,
+    toUserInfo: {},
+  }
+
+  simpleTalkStore.addMessage(mockMessage)
+
+  // 3. 发送消息
+  console.log(`🚀 发送私聊消息到: ${toMetaId}`)
+  await tryCreateNode(node, mockId)
+}
+
+/**
+ * 批量邀请用户到私密群聊
+ * @param groupId 群组ID
+ * @param userList 用户列表，需包含 metaId 和 chatPublicKey
+ * @param passwordKey 群组密码密钥（仅私密群聊需要）
+ * @returns 邀请结果，包含每个用户的邀请链接和状态
+ */
+export const batchInviteUsersToGroup = async (params: {
+  groupId: string
+  userList: Array<{ metaId: string; chatPublicKey: string; userName?: string }>
+  passwordKey?: string
+}): Promise<{
+  status: 'success' | 'failed' | 'partial'
+  results: Array<{
+    metaId: string
+    userName?: string
+    status: 'success' | 'failed'
+    inviteUrl?: string
+    error?: string
+  }>
+}> => {
+  const { groupId, userList, passwordKey } = params
+  const buildTx = useBulidTx()
+  const chainStore = useChainStore()
+  const userStore = useUserStore()
+
+  // 导入 API 函数
+  const { getGroupJoinControlList } = await import('@/api/talk')
+  const CryptoJS = await import('crypto-js')
+
+  console.log('🚀 开始批量邀请:', {
+    groupId,
+    userCount: userList.length,
+    hasPasswordKey: !!passwordKey,
+  })
+
+  try {
+    // 1. 查询群组白名单列表
+    console.log('📋 查询群组白名单列表...')
+    const controlListRes = await getGroupJoinControlList({ groupId })
+
+    if (controlListRes.code !== 0) {
+      throw new Error('获取群组白名单列表失败')
+    }
+
+    const existingWhitelist = controlListRes.data.joinWhitelistMetaIds || []
+    console.log('✅ 当前白名单用户数:', existingWhitelist.length)
+
+    // 2. 筛选出不在白名单中的用户
+    const usersToAdd = userList.filter(user => !existingWhitelist.includes(user.metaId))
+    console.log('➕ 需要添加到白名单的用户数:', usersToAdd.length)
+
+    // 3. 如果有用户需要添加到白名单，发送 pin
+    if (usersToAdd.length > 0) {
+      console.log('📤 添加用户到白名单...')
+
+      const newWhitelist = [...existingWhitelist, ...usersToAdd.map(u => u.metaId)]
+
+      const dataCarrier = {
+        groupId,
+        users: newWhitelist,
+      }
+
+      const node = {
+        protocol: NodeName.SimpleGroupJoinWhitelist,
+        body: dataCarrier,
+      }
+
+      try {
+        const { protocol, body } = node
+        const res = await buildTx.setChannelWhiteList({
+          protocol,
+          body,
+          isBroadcast: true,
+        })
+
+        if (res === null) {
+          throw new Error('用户取消了添加白名单操作')
+        }
+
+        const txid =
+          chainStore.state.currentChain == ChatChain.btc ? res?.revealTxIds[0] : res?.txids[0]
+
+        console.log('✅ 白名单更新成功, txid:', txid)
+      } catch (err) {
+        console.error('❌ 添加白名单失败:', err)
+        throw new Error('添加白名单失败: ' + (err as Error).message)
+      }
+    }
+
+    // 4. 为每个用户生成邀请链接
+    console.log('🔗 生成邀请链接...')
+    const results = []
+    const isPrivateGroup = !!passwordKey
+
+    for (const user of userList) {
+      try {
+        let inviteUrl = ''
+        let sharedSecret: string | undefined = undefined
+
+        if (isPrivateGroup && user.chatPublicKey) {
+          // 私密群聊：使用 ECDH 协商密钥加密 passwordKey
+          console.log(`🔐 为用户 ${user.metaId.slice(0, 8)}... 生成加密邀请链接`)
+
+          try {
+            // 使用 ECDH 协商密钥
+            const ecdhResult = await window.metaidwallet.common.ecdh({
+              externalPubKey: user.chatPublicKey,
+            })
+            sharedSecret = ecdhResult.sharedSecret
+
+            console.log('🔑 ECDH 协商密钥成功:', sharedSecret.slice(0, 16) + '...')
+
+            // 使用 AES 加密 passwordKey
+            const encryptedPasscode = CryptoJS.AES.encrypt(passwordKey, sharedSecret).toString()
+
+            console.log('🔒 AES 加密成功, passcode 长度:', encryptedPasscode.length)
+
+            // URL 编码
+            const encodedPasscode = encodeURIComponent(encryptedPasscode)
+
+            // 添加发送者的 metaId,以便接收者可以获取发送者的公钥来解密 passcode
+            const senderMetaId = userStore.last?.metaid
+            inviteUrl = `${window.location.origin}/channels/private/${groupId}?passcode=${encodedPasscode}&from=${senderMetaId}`
+
+            console.log(`✅ 用户 ${user.metaId.slice(0, 8)}... 邀请链接生成成功`, inviteUrl)
+          } catch (ecdhError) {
+            console.error(`❌ ECDH 加密失败:`, ecdhError)
+            throw new Error('ECDH 协商密钥失败: ' + (ecdhError as Error).message)
+          }
+        } else {
+          // 公开群聊：生成普通邀请链接
+          inviteUrl = `${window.location.origin}/channels/public/${groupId}`
+          console.log(`✅ 用户 ${user.metaId.slice(0, 8)}... 公开群聊邀请链接生成成功`)
+        }
+
+        results.push({
+          metaId: user.metaId,
+          userName: user.userName,
+          status: 'success' as const,
+          inviteUrl,
+        })
+
+        // 发送邀请链接给用户
+        try {
+          await sendInviteMessage(user.metaId, inviteUrl, sharedSecret)
+          console.log(`📨 邀请消息已发送给用户 ${user.metaId.slice(0, 8)}...`)
+        } catch (sendError) {
+          console.error(`⚠️ 发送邀请消息失败（链接已生成）:`, sendError)
+          // 即使发送失败，邀请链接已生成，仍然标记为成功
+        }
+      } catch (err) {
+        console.error(`❌ 为用户 ${user.metaId} 生成邀请链接失败:`, err)
+        results.push({
+          metaId: user.metaId,
+          userName: user.userName,
+          status: 'failed' as const,
+          error: (err as Error).message,
+        })
+      }
+    }
+
+    // 5. 统计结果
+    const successCount = results.filter(r => r.status === 'success').length
+    const failedCount = results.filter(r => r.status === 'failed').length
+
+    console.log('📊 批量邀请完成:', {
+      total: results.length,
+      success: successCount,
+      failed: failedCount,
+    })
+
+    const overallStatus = failedCount === 0 ? 'success' : successCount === 0 ? 'failed' : 'partial'
+
+    return {
+      status: overallStatus,
+      results,
+    }
+  } catch (err) {
+    console.error('❌ 批量邀请失败:', err)
+
+    // 返回所有用户都失败的结果
+    return {
+      status: 'failed',
+      results: userList.map(user => ({
+        metaId: user.metaId,
+        userName: user.userName,
+        status: 'failed' as const,
+        error: (err as Error).message,
+      })),
+    }
   }
 }

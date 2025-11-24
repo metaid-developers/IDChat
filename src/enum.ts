@@ -1,35 +1,32 @@
 const POLYGON_CHAIN = import.meta.env.VITE_POLYGON_CHAIN
 
-export enum MemberRule{
-  Owner=0,
-  Admin=1,
-  Speaker=2,
-  Normal=3,
-  Block= -1,
-  Leave= -2
+export enum MemberRule {
+  Owner = 0,
+  Admin = 1,
+  Speaker = 2,
+  Normal = 3,
+  Block = -1,
+  Leave = -2,
 }
 
-
-
-
-export enum RuleOp{
-  CanSpeak=0,
-  SetAdmin=1,
-  RemoveAdmin=2,
-  SetSpeaker=3,
-  RemoveSpeaker=4,
-  DeleteMember=5,
-  Normal=6
+export enum RuleOp {
+  CanSpeak = 0,
+  SetAdmin = 1,
+  RemoveAdmin = 2,
+  SetSpeaker = 3,
+  RemoveSpeaker = 4,
+  DeleteMember = 5,
+  Normal = 6,
 }
 
-export enum ChannelMode{
+export enum ChannelMode {
   public = 0,
-  broadcast = 1
+  broadcast = 1,
 }
 
-export enum CreateGroupType{
-  public='public',
-  broadcast='broadcast',
+export enum CreateGroupType {
+  public = 'public',
+  broadcast = 'broadcast',
 }
 
 export enum ChatChain {
@@ -41,7 +38,7 @@ export enum ChatType {
   msg = 0,
   red = 1,
   img = 3,
-  groupRed = 23
+  groupRed = 23,
 }
 
 export enum GrabStatus {
@@ -361,8 +358,8 @@ export enum NodeName {
   SimpleGroupRemoveUser = 'simplegroupremoveuser',
   SimpleGroupCreate = 'simplegroupcreate',
   ShowMsg = 'showmsg',
-  SimpleMsg='simplemsg',
-  SimpleEmojiGroupChat='simpleemojigroupchat',
+  SimpleMsg = 'simplemsg',
+  SimpleEmojiGroupChat = 'simpleemojigroupchat',
   NftIssue = 'NftIssue',
   NftGenesis = 'NftGenesis',
   NftSell = 'NftSell',
@@ -372,10 +369,11 @@ export enum NodeName {
   FtIssue = 'FtIssue',
   FtTransfer = 'FtTransfer',
   FtMerge = 'merge',
-  SimpleGroupChannel='simplegroupchannel',
-  SimpleGroupAdmin='simplegroupadmin',
-  SimpleGroupBlock='simplegroupblock',
-  SimpleGroupWhitelist='simplegroupwhitelist',
+  SimpleGroupChannel = 'simplegroupchannel',
+  SimpleGroupAdmin = 'simplegroupadmin',
+  SimpleGroupBlock = 'simplegroupblock',
+  SimpleGroupWhitelist = 'simplegroupwhitelist',
+  SimpleGroupJoinWhitelist = 'simplegroupjoinwhitelist',
   SimpleRedEnvelope = 'Simpleredenvelope',
   SimpleGroupLuckyBag = 'simplegroupluckybag',
   OpenRedenvelope = 'openredenvelope',
@@ -403,9 +401,9 @@ export const enum GetInitAmountType {
   metalet = 'metalet',
 }
 
-export const enum GroupMessageType{
-  Group=0,
-  SubChannel=1
+export const enum GroupMessageType {
+  Group = 0,
+  SubChannel = 1,
 }
 
 export const enum BindStatus {
@@ -445,8 +443,9 @@ export enum MessageType {
 
 export enum ChannelType {
   Group = 'group',
-  Broadcast='broadcast',
+  Broadcast = 'broadcast',
   Session = 'session',
+  PrivateGroup = 'privateGroup',
 }
 
 export enum GroupChannelType {
@@ -465,7 +464,7 @@ export enum GroupChannelType {
 export enum ShowControl {
   isShowCreateCommunityModal = 'isShowCreateCommunityModal',
   isShowCreatePublicChannelModal = 'isShowCreatePublicChannelModal',
-  isShowCreateBroadcastChannelModal='isShowCreateBroadcastChannelModal',
+  isShowCreateBroadcastChannelModal = 'isShowCreateBroadcastChannelModal',
   isShowCreateGroupTypeModal = 'isShowCreateGroupTypeModal',
   isShowCreateConsensualChannelModal = 'isShowCreateConsensualChannelModal',
   isShowCreateGeneralChannelModal = 'isShowCreateGeneralChannelModal',

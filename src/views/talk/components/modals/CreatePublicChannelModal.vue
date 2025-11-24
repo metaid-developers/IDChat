@@ -6,29 +6,60 @@
     <template #title>
       {{
         form.publicKey
-          ? $t('Talk.Community.edit_public_channel')
-          : $t('Talk.Community.create_public_channel')
+          ? $t('Talk.Community.edit_group_chat')
+          : $t('Talk.Community.create_group_chat')
       }}
     </template>
 
     <template #body>
       <div class="flex flex-col h-full">
-        <p class="mt-4.5 text-base text-dark-400 dark:text-gray-200 leading-relaxed text-center">
-          {{ $t('Talk.Community.create_public_channel_tip') }}
-        </p>
-
         <div class="mt-7.5 w-full">
-          <h4 class="text-lg  capitalize">
-            {{ $t('Talk.Community.channel_name') }}
-          </h4>
-
           <div class="mt-2">
-            <input
-              type="text"
-              class="outline-0 main-border faded-switch !bg-white dark:!bg-gray-700 still w-full px-4 py-3 text-base leading-[24PX] font-bold placeholder:font-normal"
-              :placeholder="$t('Talk.Community.channel_name')"
-              v-model="form.name"
-            />
+            <div class="flex items-center justify-center gap-6 mb-4">
+              <label class="inline-flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="channel_type"
+                  class="mr-2"
+                  :value="GroupChannelType.PublicText"
+                  v-model="form.type"
+                />
+                <span>{{ $t('Talk.Community.public_channel') }}</span>
+              </label>
+
+              <label class="inline-flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="channel_type"
+                  class="mr-2"
+                  :value="GroupChannelType.Password"
+                  v-model="form.type"
+                />
+                <span>{{ $t('Talk.Community.private_channel') }}</span>
+              </label>
+            </div>
+
+            <h4 class="text-lg  capitalize">
+              {{ $t('Talk.Community.channel_name') }}
+            </h4>
+
+            <div class="mt-2">
+              <input
+                type="text"
+                class="outline-0 main-border faded-switch !bg-white dark:!bg-gray-700 still w-full px-4 py-3 text-base leading-[24PX] font-bold placeholder:font-normal"
+                :placeholder="$t('Talk.Community.channel_name')"
+                v-model="form.name"
+              />
+            </div>
+
+            <p class="mt-3 text-sm text-dark-400 dark:text-gray-300">
+              <span v-if="form.type === GroupChannelType.PublicText">
+                {{ $t('Talk.Community.public_channel_hint') }}
+              </span>
+              <span v-else>
+                {{ $t('Talk.Community.private_channel_hint') }}
+              </span>
+            </p>
           </div>
 
           <!-- <div class="mt-6">
@@ -93,6 +124,20 @@ const form = useChannelFormStore()
 const router = useRouter()
 form.type = GroupChannelType.PublicText
 
+// when user chooses private channel, generate a random password so the channel will be created as type=1 on-chain
+watch(
+  () => form.type,
+  val => {
+    if (val === GroupChannelType.Password) {
+      // ensure a password exists so createChannel will set type='1'
+      if (!form.password) form.password = realRandomString(12)
+    } else {
+      // clear password for public/broadcast to avoid accidental private behaviour
+      form.password = ''
+    }
+  }
+)
+
 const userStore = useUserStore()
 const layout = useLayoutStore()
 const simpleTalk = useSimpleTalkStore()
@@ -109,9 +154,6 @@ const tryCreateChannel = async () => {
 
   // 添加占位頻道
   if (res.status === 'success') {
-    
-    
-    
     // const newChannel = {
     //   id: 'placeholder_' + realRandomString(8),
     //   name: form.name,
@@ -122,12 +164,10 @@ const tryCreateChannel = async () => {
     //   chatSettingType: form.adminOnly ? 1 : 0,
     //   txId:`${res.channelId}i0`//form.txId,
     // }
-
     // // 将占位頻道添加到頻道列表最前面
     // if (res.channelId) {
     //   console.log("talk.activeCommunityChannels",talk.activeCommunityChannels)
     //   const index = talk.activeCommunityChannels.findIndex(item => item.txId === `${res.channelId}i0`)
-
     //   if (index !== -1) {
     //     talk.activeCommunityChannels[index] = newChannel
     //   }
@@ -138,11 +178,11 @@ const tryCreateChannel = async () => {
 
   layout.isShowLoading = false
 
-  sleep(1000).then(async() => {
+  sleep(1000).then(async () => {
     await simpleTalk.syncFromServer()
     // 跳转刷新
     //
-    
+
     router.push(`/talk/channels/public/${res.channelId}i0`)
     //  talk.refetchChannels()
     //window.location.reload()

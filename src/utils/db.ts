@@ -49,7 +49,8 @@ export class DBClass extends Dexie {
     metafile: string,
     width = 235,
     isPrivateChat: boolean = false,
-    chatPubkeyForDecrypt: string = ''
+    chatPubkeyForDecrypt: string = '',
+    chatPasswordForDecrypt: string = ''
   ) {
     return new Promise<{
       txId: string
@@ -62,7 +63,23 @@ export class DBClass extends Dexie {
           width !== -1
             ? tranformMetafile(metafile, width)
             : `${VITE_FILE_API() || import.meta.env.VITE_FILE_API}/content/${txId}`
+        if (isPrivateChat && chatPasswordForDecrypt) {
+          const result = await getFileDataFromUrl(fileUrl)
+          const decryptRes = decryptToBlob(result, chatPasswordForDecrypt)
 
+          if (decryptRes) {
+            console.log('图片解密成功', txId)
+            resolve({
+              txId,
+              data: decryptRes,
+            })
+            return
+          } else {
+            console.error('图片解密失败')
+            reject(new Error('图片解密失败'))
+            return
+          }
+        }
         if (isPrivateChat && chatPubkeyForDecrypt) {
           const ecdhsStore = useEcdhsStore()
           const result = await getFileDataFromUrl(fileUrl)
@@ -112,14 +129,16 @@ export class DBClass extends Dexie {
     metafile: string,
     width: number,
     isPrivateChat?: boolean,
-    chatPubkeyForDecrypt?: string
+    chatPubkeyForDecrypt?: string,
+    chatPasswordForDecrypt?: string
   ) {
     return new Promise<string>(async resolve => {
       const result = await this.getMetaFileData(
         metafile,
         width,
         isPrivateChat,
-        chatPubkeyForDecrypt
+        chatPubkeyForDecrypt,
+        chatPasswordForDecrypt
       ).catch(() => {
         resolve('')
       })
@@ -146,7 +165,8 @@ export class DBClass extends Dexie {
     width = 235,
     type: 'metafile' | 'metaId' = 'metafile',
     isPrivateChat = false,
-    chatPubkeyForDecrypt = ''
+    chatPubkeyForDecrypt = '',
+    chatPasswordForDecrypt = ''
   ) {
     return new Promise<string>(async resolve => {
       if (!metafileTxId) {
@@ -164,7 +184,7 @@ export class DBClass extends Dexie {
         // 普通txId
         const txId = this.getMetaFileTxId(metafileTxId)
         const file = await this.metafiles.get(txId)
-
+        console.log('file', file, txId)
         if (file) {
           this.metafiles.update(txId, { latestTime: new Date().getTime() })
           // 存在数据库
@@ -176,11 +196,13 @@ export class DBClass extends Dexie {
               resolve(URL.createObjectURL(file.data))
             } else {
               // 不存在原图， 则存原图且先去获取图片
+              console.log('getMetaFileData 获取原图', txId)
               const res = await this.updateMetaFileData(
                 txId,
                 width,
                 isPrivateChat,
-                chatPubkeyForDecrypt
+                chatPubkeyForDecrypt,
+                chatPasswordForDecrypt
               )
               if (res) {
                 resolve(res)
@@ -199,7 +221,8 @@ export class DBClass extends Dexie {
                 txId,
                 width,
                 isPrivateChat,
-                chatPubkeyForDecrypt
+                chatPubkeyForDecrypt,
+                chatPasswordForDecrypt
               )
               if (res) {
                 resolve(res)
@@ -223,7 +246,13 @@ export class DBClass extends Dexie {
           }
         } else {
           // 不存在数据库
-          const res = await this.addMetaFileData(txId, width, isPrivateChat, chatPubkeyForDecrypt)
+          const res = await this.addMetaFileData(
+            txId,
+            width,
+            isPrivateChat,
+            chatPubkeyForDecrypt,
+            chatPasswordForDecrypt
+          )
           resolve(res)
         }
       }
@@ -234,14 +263,16 @@ export class DBClass extends Dexie {
     metafile: string,
     width = 235,
     isPrivateChat: boolean = false,
-    chatPubkeyForDecrypt: string = ''
+    chatPubkeyForDecrypt: string = '',
+    chatPasswordForDecrypt: string = ''
   ) {
     return new Promise<string>(async resolve => {
       const result = await this.getMetaFileData(
         metafile,
         width,
         isPrivateChat,
-        chatPubkeyForDecrypt
+        chatPubkeyForDecrypt,
+        chatPasswordForDecrypt
       )
       const params: MetafileSchems = {
         txId: result.txId,

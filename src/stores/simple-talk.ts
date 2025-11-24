@@ -382,6 +382,12 @@ class SimpleChatDB {
         lastReadIndex: channel.lastReadIndex||0, // 保留已读索引
         targetMetaId: channel.targetMetaId,
         publicKeyStr: channel.publicKeyStr,
+  // 保留群聊的加入类型（来自服务端 roomJoinType），方便本地判断和展示
+  roomJoinType: (channel as any).roomJoinType || undefined,
+  // 保留服务端返回的 path 字段
+  path: (channel as any).path || undefined,
+  // 保留私密群聊的密码密钥（如果存在）
+  passwordKey: (channel as any).passwordKey || undefined,
         // 群聊特有字段
         roomNote: channel.roomNote,
         userCount: channel.userCount,
@@ -440,7 +446,10 @@ class SimpleChatDB {
         createdBy: channel.createdBy,
         createdAt: channel.createdAt || Date.now(),
         unreadCount: channel.unreadCount || 0,
-        lastReadIndex: channel.lastReadIndex || 0 // 保留已读索引
+        lastReadIndex: channel.lastReadIndex || 0, // 保留已读索引
+        roomJoinType: (channel as any).roomJoinType || undefined,
+        path: (channel as any).path || undefined,
+        passwordKey: (channel as any).passwordKey || undefined
       }
     }
   }
@@ -2374,6 +2383,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             createdBy: channel.createUserMetaId || '',
             createdAt: channel.timestamp || Date.now(),
             unreadCount: 0, // 未读数由本地管理
+            // 保留服务端返回的 roomJoinType（默认为 '1' 表示公开）
+            roomJoinType: channel.roomJoinType || '1',
+            // 保留服务端返回的 path 字段（若有）
+            path: channel.path || undefined,
             // 群聊特有字段
             roomNote: channel.roomNote||'', // 群聊公告
             userCount: channel.userCount, // 群聊用户数量
@@ -2412,6 +2425,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             // 保留本地的权限信息和缓存时间
             memberPermissions: existing.memberPermissions,
             permissionsLastUpdated: existing.permissionsLastUpdated,
+            // 保留本地的 passwordKey（服务端不返回此字段）
+            passwordKey: existing.passwordKey,
             // 使用更新的消息
             lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage)
           }
@@ -2448,11 +2463,116 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
       this.channels = mergedChannels
 
+      // 异步为私密群聊（创建者是当前用户）获取 passwordKey
+      this.fetchPasswordKeysForPrivateGroups(mergedChannels)
+
       // 异步加载群聊的子频道列表
       // this.loadSubChannelsForGroups(mergedChannels)
 
       // 同步更新所有频道的未读@提及数量
       await this.syncUnreadMentionCounts()
+    },
+
+    /**
+     * 为所有群聊设置 passwordKey
+     * - roomJoinType === '100' 且是创建者：通过钱包获取 pkh 派生
+     * - 其他情况：使用 channelId.substring(0, 16)
+     */
+    async fetchPasswordKeysForPrivateGroups(channels: SimpleChannel[]): Promise<void> {
+      // 筛选出需要设置 passwordKey 的频道（所有群聊且尚未设置 passwordKey）
+      // 注意：如果用户通过邀请链接加入私密群聊，passwordKey 已经被解密并保存，这里会跳过
+      const needPasswordKeyChannels = channels.filter(channel => 
+        channel.type === 'group' && !channel.passwordKey
+      )
+
+      if (needPasswordKeyChannels.length === 0) {
+        console.log('✅ 所有群聊的 passwordKey 均已设置，无需处理')
+        return
+      }
+
+      console.log(`🔑 开始为 ${needPasswordKeyChannels.length} 个群聊设置 passwordKey...`)
+
+      // 分为三组：
+      // 1. 私密群聊创建者（roomJoinType==='100' && createdBy===selfMetaId）- 从钱包获取
+      // 2. 私密群聊成员（roomJoinType==='100' && createdBy!==selfMetaId）- 跳过，等待通过邀请链接获取
+      // 3. 公开群聊及其他 - 使用 channelId.substring(0, 16)
+      const privateCreatorChannels = needPasswordKeyChannels.filter(
+        channel => channel.roomJoinType === '100' && channel.createdBy === this.selfMetaId
+      )
+      const privateMemberChannels = needPasswordKeyChannels.filter(
+        channel => channel.roomJoinType === '100' && channel.createdBy !== this.selfMetaId
+      )
+      const otherChannels = needPasswordKeyChannels.filter(
+        channel => channel.roomJoinType !== '100'
+      )
+
+      // 为私密群聊创建者通过钱包获取 passwordKey
+      if (privateCreatorChannels.length > 0) {
+        // 检查钱包是否可用
+        if (!window.metaidwallet || typeof (window.metaidwallet as any).getPKHByPath !== 'function') {
+          console.warn('⚠️ 钱包不可用，私密群聊创建者无法获取 passwordKey')
+        } else {
+          await Promise.allSettled(
+            privateCreatorChannels.map(async (channel) => {
+              try {
+                const path = `m/${channel.path || '100/0'}`
+                const pkh = await (window.metaidwallet as any).getPKHByPath({ path })
+                const passwordKey = pkh.substring(0, 16)
+
+                // 更新频道的 passwordKey
+                channel.passwordKey = passwordKey
+
+                // 保存到数据库
+                await this.db.saveChannel(channel)
+
+                console.log(`✅ 私密群聊 ${channel.name} 的 passwordKey 已设置（来自钱包）`)
+              } catch (error) {
+                console.error(`❌ 获取私密群聊 ${channel.name} 的 passwordKey 失败:`, error)
+              }
+            })
+          )
+        }
+      }
+
+      // 私密群聊成员：不设置 passwordKey
+      // 这些用户应该通过邀请链接加入群组，在 ChannelInvite.vue 中解密 passcode 并保存 passwordKey
+      // 如果这里有频道，说明用户可能是通过其他方式加入的（不推荐）
+      if (privateMemberChannels.length > 0) {
+        console.warn(
+          `⚠️ 发现 ${privateMemberChannels.length} 个私密群聊（成员身份）没有 passwordKey:`,
+          privateMemberChannels.map(c => ({ name: c.name, id: c.id }))
+        )
+        console.warn(
+          '💡 提示：私密群聊成员应通过邀请链接加入以获取正确的 passwordKey。' +
+          '如果您是通过邀请链接加入的，passwordKey 应该已经被保存。' +
+          '如果仍然缺失，请联系群主重新发送邀请链接。'
+        )
+        // 不再设置临时的 passwordKey，保持为 undefined
+        // 用户发送消息时会提示 "无法获取群组密钥，请重新加入群组"
+      }
+
+      // 为其他群聊使用 channelId.substring(0, 16)
+      if (otherChannels.length > 0) {
+        await Promise.allSettled(
+          otherChannels.map(async (channel) => {
+            try {
+              const passwordKey = channel.id.substring(0, 16)
+
+              // 更新频道的 passwordKey
+              channel.passwordKey = passwordKey
+
+              // 保存到数据库
+              await this.db.saveChannel(channel)
+
+              console.log(`✅ 群聊 ${channel.name} 的 passwordKey 已设置（来自 channelId）`)
+            } catch (error) {
+              console.error(`❌ 设置群聊 ${channel.name} 的 passwordKey 失败:`, error)
+            }
+          })
+        )
+      }
+
+      console.log(`✅ passwordKey 设置完成`)
     },
 
     /**
@@ -2513,6 +2633,13 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         channel = temporaryChannel
         // 将临时频道添加到频道列表中
         this.channels.unshift(channel)
+        
+        // 将临时频道保存到数据库以持久化 passwordKey
+        if (channel.passwordKey) {
+          await this.db.saveChannel(channel)
+          console.log(`💾 临时频道已保存到数据库，包括 passwordKey`)
+        }
+        
         if(temporaryChannel.type==='group'){
           await this.loadGroupChannels(temporaryChannel.id)
         }
@@ -2612,6 +2739,19 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               return null
             }
 
+            // 检查数据库中是否有该频道的 passwordKey
+            let passwordKeyFromDB: string | undefined
+            try {
+              const dbChannels = await this.db.getChannels()
+              const existingChannel = dbChannels.find(ch => ch.id === channelId)
+              if (existingChannel?.passwordKey) {
+                passwordKeyFromDB = existingChannel.passwordKey
+                console.log('✅ 从数据库中恢复 passwordKey:', passwordKeyFromDB)
+              }
+            } catch (dbError) {
+              console.warn('⚠️ 无法从数据库获取 passwordKey:', dbError)
+            }
+
             const groupChannel: SimpleChannel = {
               id: channelInfo.groupId || channelId,
               type: 'group',
@@ -2622,11 +2762,13 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               roomNote: channelInfo.roomNote,
               userCount: channelInfo.userCount,
               unreadCount: 0,
+              roomJoinType: channelInfo.roomJoinType || '1', // 保留群聊类型
+              passwordKey: passwordKeyFromDB, // 从数据库恢复 passwordKey
               isTemporary: true, // 标记为临时频道
               serverData: channelInfo
             }
 
-            console.log(`✅ 创建临时群聊频道: ${groupChannel.name}`)
+            console.log(`✅ 创建临时群聊频道: ${groupChannel.name}, passwordKey: ${passwordKeyFromDB ? '已恢复' : '未设置'}`)
             return groupChannel
           } catch (error) {
             console.error(`❌ 获取群聊信息失败 ${channelId}:`, error)
@@ -3856,6 +3998,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       reply: any,
       mentions?: Array<{ metaId: string; name: string }>
     ): Promise<UnifiedChatMessage | null> {
+      console.log(`✉️ 发送消息到频道 ${channelId}`, { content, messageType, reply, mentions })
       try {
         const chainStore = useChainStore()
         const userStore = useUserStore()
@@ -3972,7 +4115,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           console.log(`🚀 发送群聊消息:`, {
             groupID: dataCarrier.groupID,
             channelID: dataCarrier.channelID,
-            isSubGroupChat
+            isSubGroupChat,
+            content,
+            node
           })
           
           await tryCreateNode(node, mockId)
