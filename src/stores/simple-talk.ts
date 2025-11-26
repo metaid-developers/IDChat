@@ -1703,6 +1703,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     /**
      * 智能加载频道历史消息
      * 检查本地消息连续性，只加载缺失部分
+     * 加载方向：从最新往历史方向加载
      */
     async loadChannelHistoryMessagesIntelligent(channelId: string, threeMonthsAgo: number): Promise<void> {
       const channel = this.channels.find(c => c.id === channelId)
@@ -1715,129 +1716,127 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
 
       const latestIndex = channel.lastMessage.index
-      const latestTimestamp = channel.lastMessage.timestamp
 
       // 从数据库加载已有消息
       const localMessages = await this.db.getMessages(channelId, 10000)
       
       if (localMessages.length === 0) {
-        // 本地没有消息，从最新消息开始加载
-        console.log(`📥 频道 ${channel.name} 本地无消息，开始加载...`)
-        await this.loadChannelHistoryMessages(channelId, undefined, threeMonthsAgo)
+        // 本地没有消息，从最新位置开始往前翻页加载
+        console.log(`📥 频道 ${channel.name} 本地无消息，从最新位置开始加载...`)
+        await this.loadChannelHistoryMessages(channelId, latestIndex, threeMonthsAgo)
         return
       }
 
-      // 按 index 排序
-      localMessages.sort((a, b) => a.index - b.index)
+      // 检查消息连续性，找出所有缺失的消息段
+      const missingRanges = this.findMissingMessageRanges(localMessages, latestIndex)
       
-      // 检查消息连续性
-      let needLoad = false
-      let loadFromTimestamp = latestTimestamp
+      if (missingRanges.length === 0) {
+        console.log(`✅ 频道 ${channel.name} 消息完整，无需加载`)
+        return
+      }
+
+      // 检查缺失的消息是否都比较旧（超过3个月），如果是则跳过
+      const sortedLocal = localMessages.sort((a, b) => a.index - b.index)
+      const oldestLocal = sortedLocal[0]
       
-      // 从最新消息往前检查
-      for (let i = localMessages.length - 1; i > 0; i--) {
-        const current = localMessages[i]
-        const prev = localMessages[i - 1]
+      if (oldestLocal && oldestLocal.timestamp < threeMonthsAgo) {
+        // 最早的本地消息已经超过3个月，检查缺失段是否都在这之前
+        const hasRecentMissing = missingRanges.some(range => {
+          // 如果缺失段的 endIndex 大于或等于最早本地消息的 index，说明有最近的缺失
+          return range.endIndex >= oldestLocal.index
+        })
         
-        // 检查是否有间隙
-        if (current.index - prev.index > 1) {
-          needLoad = true
-          loadFromTimestamp = prev.timestamp
-          console.log(`🔍 频道 ${channel.name} 发现消息间隙: index ${prev.index} -> ${current.index}`)
-          break
+        if (!hasRecentMissing) {
+          console.log(`⏭️ 频道 ${channel.name} 的缺失消息都超过3个月，跳过加载`)
+          return
         }
       }
 
-      // 检查最早的消息
-      const oldestMessage = localMessages[0]
-      const oldestIndex = oldestMessage.index
-      const oldestTimestamp = oldestMessage.timestamp
-
-      // 如果最早的消息 index > 1 且时间戳大于三个月前，继续加载
-      if (oldestIndex > 1 && oldestTimestamp > threeMonthsAgo) {
-        needLoad = true
-        loadFromTimestamp = oldestTimestamp
-        console.log(`🔍 频道 ${channel.name} 需要加载更早消息: 最早 index=${oldestIndex}, timestamp=${oldestTimestamp}`)
+      console.log(`📥 频道 ${channel.name} 发现 ${missingRanges.length} 个缺失段，开始补全...`)
+      
+      // 从最新的缺失段开始补全（优先补全最新的消息）
+      // missingRanges 已经是从旧到新排序的，需要反转
+      const reversedRanges = [...missingRanges].reverse()
+      
+      for (const range of reversedRanges) {
+        const rangeSize = range.endIndex - range.startIndex + 1
+        console.log(`📥 补全缺失段 [${range.startIndex}, ${range.endIndex}]，共 ${rangeSize} 条消息`)
+        
+        // 检查这个缺失段是否超过三个月前
+        // 如果 range.endIndex 对应的消息时间戳可以判断，就跳过
+        // 这里简化处理：继续加载，在 loadChannelHistoryMessages 中处理时间戳
+        
+        await this.loadChannelHistoryMessages(channelId, range.endIndex, threeMonthsAgo)
+        
+        // 每个缺失段补全后稍作延迟
+        await sleep(300)
       }
-
-      if (needLoad) {
-        console.log(`📥 频道 ${channel.name} 开始加载历史消息，从 timestamp=${loadFromTimestamp}`)
-        await this.loadChannelHistoryMessages(channelId, loadFromTimestamp, threeMonthsAgo)
-      } else {
-        console.log(`✅ 频道 ${channel.name} 消息完整，无需加载`)
-      }
+      
+      console.log(`✅ 频道 ${channel.name} 历史消息补全完成`)
     },
 
     /**
-     * 加载指定频道的历史消息
+     * 加载指定频道的历史消息（从最新往历史方向分页加载）
      * @param channelId 频道ID
-     * @param sinceTimestamp 从此时间戳开始加载（默认使用频道最新消息时间）
-     * @param stopTimestamp 停止时间戳（三个月前）
+     * @param fromIndex 从这个 index 开始往前加载（通常是 lastMessage.index 或缺失段的 endIndex）
+     * @param stopTimestamp 停止时间戳（三个月前），防止加载过旧的消息
      */
     async loadChannelHistoryMessages(
       channelId: string, 
-      sinceTimestamp?: number, 
+      fromIndex: number,
       stopTimestamp?: number
     ): Promise<void> {
       const channel = this.channels.find(c => c.id === channelId)
       if (!channel) return
 
-      // 默认使用频道最新消息的时间戳
-      const startTimestamp = sinceTimestamp || '0'
       const threeMonthsAgo = stopTimestamp || Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000)
-
-      const isPrivateChat = channel.type === 'private'
-      const isSubGroupChat = channel.type === 'sub-group'
+      const batchSize = 30 // 每批加载30条
 
       try {
-        let allMessages: UnifiedChatMessage[] = []
-        let hasMore = true
-        let currentTimestamp = startTimestamp
+        let currentEndIndex = fromIndex // 当前批次的结束位置
         let batchCount = 0
         const maxBatches = 30 // 最多加载30批，防止无限循环
 
-        while (hasMore && batchCount < maxBatches) {
-          let messages: UnifiedChatMessage[] = []
-
-          if (isPrivateChat) {
-            const response = await getPrivateChatMessages({
-              metaId: this.selfMetaId,
-              otherMetaId: channelId,
-              cursor: '0',
-              size: '100',
-              timestamp: String(currentTimestamp)+'000000'
-            })
-            messages = response.list || []
-          } else if (isSubGroupChat) {
-            const response = await getSubChannelMessages({
-              channelId,
-              metaId: this.selfMetaId,
-              cursor: '0',
-              size: '100',
-              timestamp: String(currentTimestamp)
-            })
-            messages = response.list || []
-          } else {
-            const response = await getChannelMessages({
-              groupId: channelId,
-              metaId: this.selfMetaId,
-              cursor: '0',
-              size: '100',
-              timestamp: String(currentTimestamp)
-            })
-            messages = response.list || []
-          }
-
+        while (batchCount < maxBatches && currentEndIndex > 0) {
+          // 计算这批的 startIndex：向前推 batchSize 条
+          const currentStartIndex = Math.max(1, currentEndIndex - batchSize + 1)
+          const expectedCount = currentEndIndex - currentStartIndex + 1
+          
+          console.log(`📥 频道 ${channel.name} 第 ${batchCount + 1} 批，加载 [${currentStartIndex}, ${currentEndIndex}]，预期 ${expectedCount} 条`)
+          
+          // 使用 fetchServerNewsterMessages 按 index 分页获取消息
+          const messages = await this.fetchServerNewsterMessages(channelId, channel, currentStartIndex)
+          
           if (messages.length === 0) {
-            hasMore = false
+            console.log(`⏹️ 频道 ${channel.name} 没有更多消息，已到达边界`)
             break
           }
 
+          console.log(`📡 获取到 ${messages.length} 条消息`)
+
+          // 按 index 排序
+          const sortedMessages = messages.sort((a, b) => a.index - b.index)
+
+          // 检查是否到达边界条件
+          let reachedBoundary = false
+
           // 保存消息并处理@提及
-          for (const message of messages) {
+          for (const message of sortedMessages) {
+            // 边界条件1: 检查是否超过三个月
+            if (message.timestamp < threeMonthsAgo) {
+              console.log(`⏹️ 消息 index=${message.index} 已超过三个月，停止加载`)
+              reachedBoundary = true
+              break
+            }
+
+            // 边界条件2: 检查是否到达最早消息 (index=1)
+            if (message.index === 1) {
+              console.log(`⏹️ 已到达最早消息 (index=1)，停止加载`)
+              reachedBoundary = true
+            }
+
             // 保存消息到数据库
             await this.db.saveMessage(message)
-            allMessages.push(message)
 
             // 检查是否有@提及当前用户
             if (message.mention && 
@@ -1855,7 +1854,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                 senderMetaId: message.metaId,
                 senderName: message.userInfo?.name || message.nickName || 'Unknown',
                 content: message.content.substring(0, 100),
-                isRead: message.index <= (channel.lastReadIndex || 0) ? 1 : 0, // 根据已读索引判断
+                isRead: message.index <= (channel.lastReadIndex || 0) ? 1 : 0,
                 createdAt: Date.now()
               }
               
@@ -1864,34 +1863,42 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             }
           }
 
-          // 检查是否到达停止条件
-          const oldestMessage = messages[messages.length - 1]
-          if (!oldestMessage) break
-
-          // 如果最早的消息 index < 1，停止加载
-          if (oldestMessage.index <= 1) {
-            console.log(`⏹️ 频道 ${channel.name} 已到达最早消息 (index=${oldestMessage.index})`)
-            hasMore = false
+          if (reachedBoundary) {
+            console.log(`✅ 频道 ${channel.name} 到达边界条件，停止加载`)
             break
           }
 
-          // 如果已经超过三个月，停止加载
-          if (oldestMessage.timestamp < threeMonthsAgo) {
-            console.log(`⏹️ 频道 ${channel.name} 已加载到三个月前`)
-            hasMore = false
-            break
+          // 检查本地消息连续性（只检查已加载的部分）
+          const localMessages = await this.db.getMessages(channelId, 10000)
+          const sortedLocal = localMessages.sort((a, b) => a.index - b.index)
+          
+          // 检查从 currentStartIndex 到 fromIndex 这个范围内是否连续
+          const rangeMessages = sortedLocal.filter(msg => msg.index >= currentStartIndex && msg.index <= fromIndex)
+          const isRangeContinuous = this.checkMessageRangeContinuity(rangeMessages, currentStartIndex, fromIndex)
+          
+          if (isRangeContinuous) {
+            console.log(`✅ 当前范围 [${currentStartIndex}, ${fromIndex}] 消息已连续`)
+            
+            // 如果已经到达 index=1，完全停止
+            if (currentStartIndex === 1) {
+              console.log(`✅ 已到达最早消息 (index=1)，停止加载`)
+              break
+            }
+            
+            // 继续往前加载
+            currentEndIndex = currentStartIndex - 1
+          } else {
+            console.log(`⚠️ 当前范围 [${currentStartIndex}, ${fromIndex}] 消息不连续，继续补全`)
+            // 不更新 currentEndIndex，继续尝试补全同一范围
           }
 
-          // 更新时间戳，准备下一批
-          currentTimestamp = oldestMessage.timestamp
           batchCount++
-
-          console.log(`📥 频道 ${channel.name} 第 ${batchCount} 批加载了 ${messages.length} 条消息`)
+          
+          // 每批之间稍作延迟
+          await sleep(300)
         }
 
-        if (allMessages.length > 0) {
-          console.log(`✅ 频道 ${channel.name} 共加载了 ${allMessages.length} 条历史消息`)
-        }
+        console.log(`✅ 频道 ${channel.name} 历史消息加载完成，共 ${batchCount} 批`)
       } catch (error) {
         console.error(`❌ 加载频道 ${channelId} 历史消息失败:`, error)
       }
@@ -2912,7 +2919,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (localMessages.length >= 20 && messagesAreContinuous) {
           console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
           this.messageCache.set(channelId, localMessages)
-          return
+          return // 直接返回，不再请求服务器
         } else if (localMessages.length >= 20) {
           console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
         } else {
@@ -2920,7 +2927,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
        
         // 4. 本地消息不足或不连续，需要从服务器获取
-        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, null, [],lastReadTimestamp)
+        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages, lastReadTimestamp)
         
       } catch (error) {
         console.error('❌ 加载消息失败:', error)
@@ -3758,6 +3765,81 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
       
       return true
+    },
+
+    /**
+     * 检查指定范围内的消息是否连续
+     * @param messages 消息列表（应该已按 index 排序）
+     * @param startIndex 范围起始 index
+     * @param endIndex 范围结束 index
+     * @returns 是否连续
+     */
+    checkMessageRangeContinuity(messages: UnifiedChatMessage[], startIndex: number, endIndex: number): boolean {
+      const expectedCount = endIndex - startIndex + 1
+      
+      if (messages.length !== expectedCount) {
+        console.log(`⚠️ 消息数量不匹配: 期望 ${expectedCount} 条，实际 ${messages.length} 条`)
+        return false
+      }
+
+      for (let i = 0; i < messages.length; i++) {
+        const expectedIndex = startIndex + i
+        const actualIndex = messages[i].index
+        
+        if (actualIndex !== expectedIndex) {
+          console.log(`⚠️ Index 不连续: 期望 ${expectedIndex}, 实际 ${actualIndex}`)
+          return false
+        }
+      }
+
+      return true
+    },
+
+    /**
+     * 检查本地消息的连续性，找出所有缺失的消息段
+     * @param messages 本地消息列表
+     * @param maxIndex 频道最新消息的 index
+     * @returns 缺失的消息段数组 [{startIndex, endIndex}]
+     */
+    findMissingMessageRanges(messages: UnifiedChatMessage[], maxIndex: number): Array<{startIndex: number, endIndex: number}> {
+      if (messages.length === 0) {
+        // 如果本地没有消息，且有最新消息，返回整个范围
+        if (maxIndex > 0) {
+          return [{startIndex: 1, endIndex: maxIndex}]
+        }
+        return []
+      }
+
+      // 按 index 排序
+      const sortedMessages = [...messages].sort((a, b) => a.index - b.index)
+      const missingRanges: Array<{startIndex: number, endIndex: number}> = []
+
+      // 检查第一条消息之前是否有缺失
+      const firstIndex = sortedMessages[0].index
+      if (firstIndex > 1) {
+        missingRanges.push({startIndex: 1, endIndex: firstIndex - 1})
+        console.log(`🔍 发现缺失段: [1, ${firstIndex - 1}]`)
+      }
+
+      // 检查消息之间的间隙
+      for (let i = 0; i < sortedMessages.length - 1; i++) {
+        const currentIndex = sortedMessages[i].index
+        const nextIndex = sortedMessages[i + 1].index
+        
+        if (nextIndex - currentIndex > 1) {
+          missingRanges.push({startIndex: currentIndex + 1, endIndex: nextIndex - 1})
+          console.log(`🔍 发现缺失段: [${currentIndex + 1}, ${nextIndex - 1}]`)
+        }
+      }
+
+      // 检查最后一条消息之后是否有缺失
+      const lastIndex = sortedMessages[sortedMessages.length - 1].index
+      if (lastIndex < maxIndex) {
+        missingRanges.push({startIndex: lastIndex + 1, endIndex: maxIndex})
+        console.log(`🔍 发现缺失段: [${lastIndex + 1}, ${maxIndex}]`)
+      }
+
+      return missingRanges
     },
 
     /**

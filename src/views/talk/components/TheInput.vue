@@ -185,7 +185,7 @@
           type="file"
           id="imageUploader"
           ref="imageUploader"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/*"
           @change="handleImageChange"
           class="hidden"
         />
@@ -539,12 +539,25 @@ const activeChannel = computed(() => {
 
 const openImageUploader = (close: Function) => {
   rootStore.checkWebViewBridge()
-  if (rootStore.isWebView) {
-    needWebRefresh({ isNeed: false })
-  }
 
-  imageUploader.value?.click()
+  // 先关闭弹窗，避免影响文件选择
   close()
+
+  // 延迟触发文件选择，确保弹窗完全关闭
+  setTimeout(() => {
+    if (rootStore.isWebView) {
+      needWebRefresh({ isNeed: false })
+    }
+
+    // 重置 input 的值，确保可以重复选择同一文件
+    if (imageUploader.value) {
+      imageUploader.value.value = ''
+      imageUploader.value.click()
+      console.log('🔘 触发文件选择器')
+    } else {
+      console.error('❌ imageUploader ref 为空')
+    }
+  }, 100)
 }
 
 const openRedPackDialog = () => {
@@ -563,15 +576,32 @@ const closeActionSheet = () => {
 }
 
 const handleImageChange = (e: Event) => {
+  console.log('📸 handleImageChange triggered')
+
   rootStore.checkWebViewBridge()
   if (rootStore.isWebView) {
-    needWebRefresh({ isNeed: true })
+    needWebRefresh({ isNeed: false })
   }
+
   const target = e.target as HTMLInputElement
-  const file = target.files?.[0]
+  console.log('📸 target.files:', target.files)
+
+  // 检查是否有文件
+  if (!target.files || target.files.length === 0) {
+    console.warn('⚠️ 没有选择文件或文件列表为空')
+    return
+  }
+
+  const file = target.files[0]
+  console.log('📸 选择的文件:', {
+    name: file.name,
+    type: file.type,
+    size: file.size,
+  })
 
   if (file) {
     if (!isImage(file)) {
+      console.error('❌ 文件不是图片类型:', file.type)
       talk.$patch({
         error: {
           type: 'image_only',
@@ -583,6 +613,7 @@ const handleImageChange = (e: Event) => {
     }
 
     if (isFileTooLarge(file)) {
+      console.error('❌ 文件太大:', file.size)
       talk.$patch({
         error: {
           type: 'image_too_large',
@@ -593,7 +624,10 @@ const handleImageChange = (e: Event) => {
       return
     }
 
+    console.log('✅ 图片验证通过，设置预览')
     imageFile.value = file
+  } else {
+    console.warn('⚠️ file 为空')
   }
 }
 

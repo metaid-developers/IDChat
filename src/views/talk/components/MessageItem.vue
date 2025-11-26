@@ -171,7 +171,16 @@
           >
             <div
               class="w-fit max-w-[90%] md:max-w-[50%] lg:max-w-[235PX] max-h-[600PX] overflow-y-hidden rounded bg-transparent cursor-pointer transition-all duration-200 relative"
-              @click="previewImage(message.content)"
+              @click="
+                previewPublicImage(
+                  decryptedMessage(
+                    message?.content,
+                    message?.encryption,
+                    message?.protocol,
+                    message?.isMock
+                  )
+                )
+              "
             >
               <ChatImage
                 :src="
@@ -182,6 +191,8 @@
                     message?.isMock
                   )
                 "
+                :useThumbnail="true"
+                :isPublicGroupChat="true"
                 customClass="rounded-xl py-0.5 object-scale-down max-w-full max-h-full"
               />
             </div>
@@ -948,6 +959,16 @@ onUnmounted(() => {
 
 const previewImage = (image: string) => {
   imagePreview.images = [image]
+  imagePreview.index = 0
+  imagePreview.visibale = true
+}
+
+// 预览公开群聊图片（使用大图）
+const previewPublicImage = (image: string) => {
+  // 构建公开群聊大图 URL
+  const cleanSrc = image.replace('metafile://', '')
+  const fullImageUrl = `https://file.metaid.io/metafile-indexer/api/v1/files/accelerate/content/${cleanSrc}?process=`
+  imagePreview.images = [fullImageUrl]
   imagePreview.index = 0
   imagePreview.visibale = true
 }

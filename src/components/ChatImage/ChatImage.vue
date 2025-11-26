@@ -75,6 +75,8 @@ interface Props {
   customClass?: string
   wrapperClass?: string
   maxRetries?: number
+  useThumbnail?: boolean // 是否使用缩略图
+  isPublicGroupChat?: boolean // 是否是公开群聊图片
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -82,6 +84,8 @@ const props = withDefaults(defineProps<Props>(), {
   customClass: '',
   maxRetries: 3,
   wrapperClass: '',
+  useThumbnail: false,
+  isPublicGroupChat: false,
 })
 
 // 状态管理
@@ -96,11 +100,24 @@ const isFirstLoad = ref(true) // 标记是否是第一次加载
 const currentSrc = computed(() => {
   if (!props.src) return ''
 
-  // 使用metafile函数直接转换URL
-  let httpUrl = metafile(props.src, 235, 'metafile').replace(
-    /\.(png|jpg|jpeg|gif|webp|bmp|svg)/,
-    ''
-  )
+  let httpUrl = ''
+
+  // 公开群聊使用特定的 URL 路径
+  if (props.isPublicGroupChat) {
+    // 移除 metafile:// 前缀
+    const cleanSrc = props.src.replace('metafile://', '')
+    httpUrl = `https://file.metaid.io/metafile-indexer/api/v1/files/accelerate/content/${cleanSrc}`
+
+    // 如果启用缩略图，添加缩略图参数
+    if (props.useThumbnail) {
+      httpUrl += '?process=thumbnail'
+    } else {
+      httpUrl += '?process='
+    }
+  } else {
+    // 其他情况使用默认的 metafile 函数
+    httpUrl = metafile(props.src, 235, 'metafile').replace(/\.(png|jpg|jpeg|gif|webp|bmp|svg)/, '')
+  }
 
   // 为了防止缓存问题，在重试时添加时间戳
   if (retryCount.value > 0) {
