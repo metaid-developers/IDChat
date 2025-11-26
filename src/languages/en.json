@@ -216,6 +216,8 @@
       "invite_processing_failed": "Failed to process invite link",
       "unknown_group": "Unknown Group",
       "private_group_notice": "This is a private group, invitation required to join",
+      "private_group_password_missing": "Cannot Access Private Group",
+      "private_group_password_missing_hint": "You are missing the key to access this private group. Please contact the group owner to resend the invitation link",
       "private_group": "Private Group",
       "private": "Private",
       "invite_sent": "Invite Sent",

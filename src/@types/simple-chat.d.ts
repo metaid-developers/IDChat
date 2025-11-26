@@ -363,12 +363,14 @@ export type GroupChatApiResponse = UnifiedChatApiResponse
 
 // 搜索结果类型定义
 export interface SearchUserItem {
-  type: 'user'
+  type?: 'user'
   metaId: string
   address: string
   userName: string
   avatar: string
   avatarId: string
+  chatPublicKey: string
+  chatPublicKeyId: string
   timestamp: number
 }
 

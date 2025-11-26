@@ -129,8 +129,41 @@ onMounted(async () => {
     // 确保 store 已初始化
     await simpleTalkStore.autoInit()
 
+    // 如果是私密群聊，先解密 passcode
+    if (isPrivateGroup.value && passcode.value && fromMetaId.value) {
+      try {
+        console.log('🔓 解密 passcode...')
+        // 获取发送者的公钥
+        const senderInfo = await getUserInfoByMetaId(fromMetaId.value)
+        if (!senderInfo.chatpubkey) {
+          throw new Error(t('Talk.Channel.sender_pubkey_not_found'))
+        }
+
+        // 使用 ECDH 协商密钥
+        const ecdhResult = await window.metaidwallet.common.ecdh({
+          externalPubKey: senderInfo.chatpubkey,
+        })
+        const sharedSecret = ecdhResult.sharedSecret
+
+        // URL 解码 passcode
+        const decodedPasscode = decodeURIComponent(passcode.value)
+
+        // 使用 AES 解密 passcode 得到 passwordKey
+        decryptedPasswordKey.value = ecdhDecrypt(decodedPasscode, sharedSecret)
+
+        if (!decryptedPasswordKey.value) {
+          throw new Error(t('Talk.Channel.passcode_decrypt_failed'))
+        }
+
+        console.log('🔓 Passcode 解密成功')
+      } catch (decryptError) {
+        console.error('❌ 解密 passcode 失败:', decryptError)
+        // 不阻断流程，但记录错误
+      }
+    }
+
     // 获取群聊信息
-    const channel = simpleTalkStore.channels.find(ch => ch.id === groupId.value)
+    const channel = undefined
 
     if (channel) {
       // 用户已经在群中
@@ -141,17 +174,51 @@ onMounted(async () => {
       // 用户不在群中，获取群聊信息
       try {
         const channelData = await getOneChannel(groupId.value)
+        let decryptedGroupName = channelData.roomName || t('Talk.Channel.unknown_group')
+        let decryptedGroupNote = channelData.roomNote || ''
+
+        // 如果是私密群聊且已解密 passwordKey，尝试解密群名称和群公告
+        if (isPrivateGroup.value && decryptedPasswordKey.value && channelData) {
+          try {
+            const CryptoJS = await import('crypto-js')
+
+            // 解密群名称
+            if (channelData.roomName && /^[A-Za-z0-9+/=]+$/.test(channelData.roomName) && channelData.roomName.length > 20) {
+              const decrypted = CryptoJS.AES.decrypt(channelData.roomName, decryptedPasswordKey.value)
+              const decryptedName = decrypted.toString(CryptoJS.enc.Utf8)
+
+              if (decryptedName) {
+                console.log(`🔓 群名称已解密: "${channelData.roomName.substring(0, 20)}..." -> "${decryptedName}"`)
+                decryptedGroupName = decryptedName
+              }
+            }
+
+            // 解密群公告
+            if (channelData.roomNote && /^[A-Za-z0-9+/=]+$/.test(channelData.roomNote) && channelData.roomNote.length > 20) {
+              const decrypted = CryptoJS.AES.decrypt(channelData.roomNote, decryptedPasswordKey.value)
+              const decryptedNote = decrypted.toString(CryptoJS.enc.Utf8)
+
+              if (decryptedNote) {
+                console.log(`🔓 群公告已解密: "${channelData.roomNote.substring(0, 20)}..." -> "${decryptedNote}"`)
+                decryptedGroupNote = decryptedNote
+              }
+            }
+          } catch (decryptError) {
+            console.warn('⚠️ 解密群信息失败，使用原信息:', decryptError)
+          }
+        }
+
         groupInfo.value = {
           id: groupId.value,
           type: 'group',
-          name: channelData.roomName || t('Talk.Channel.unknown_group'),
+          name: decryptedGroupName,
           avatar: channelData.roomAvatarUrl,
           createdBy: channelData.createUserMetaId || '',
           createdAt: Date.now(),
           unreadCount: 0,
           roomJoinType: isPrivateGroup.value ? '100' : '1',
           userCount: channelData.userCount,
-          roomNote: channelData.roomNote,
+          roomNote: decryptedGroupNote,
         }
       } catch (err) {
         console.error('获取群聊信息失败:', err)
@@ -210,8 +277,8 @@ const handleJoinGroup = async () => {
       console.log('✅ 白名单检查通过')
     }
 
-    // 2. 解密 passcode（私密群聊）
-    if (isPrivateGroup.value && passcode.value && fromMetaId.value) {
+    // 2. 解密 passcode（私密群聊）- 如果在 onMounted 中还未解密
+    if (isPrivateGroup.value && passcode.value && fromMetaId.value && !decryptedPasswordKey.value) {
       console.log('🔓 解密 passcode...')
       try {
         // 获取发送者的公钥
@@ -262,19 +329,56 @@ const handleJoinGroup = async () => {
     // 4. 更新或创建本地频道记录
     const passwordKey = decryptedPasswordKey.value || groupId.value.substring(0, 16)
 
+    // 尝试解密群名称和群公告（如果是私密群聊且看起来是加密的）
+    let decryptedGroupName = groupInfo.value?.name || t('Talk.Channel.unknown_group')
+    let decryptedGroupNote = groupInfo.value?.roomNote || ''
+
+    if (isPrivateGroup.value && passwordKey && groupInfo.value) {
+      try {
+        const CryptoJS = await import('crypto-js')
+
+        // 解密群名称
+        if (groupInfo.value.name && /^[A-Za-z0-9+/=]+$/.test(groupInfo.value.name) && groupInfo.value.name.length > 20) {
+          const decrypted = CryptoJS.AES.decrypt(groupInfo.value.name, passwordKey)
+          const decryptedName = decrypted.toString(CryptoJS.enc.Utf8)
+
+          if (decryptedName) {
+            console.log(`🔓 群名称已解密: "${groupInfo.value.name.substring(0, 20)}..." -> "${decryptedName}"`)
+            decryptedGroupName = decryptedName
+          }
+        }
+
+        // 解密群公告
+        if (groupInfo.value.roomNote && /^[A-Za-z0-9+/=]+$/.test(groupInfo.value.roomNote) && groupInfo.value.roomNote.length > 20) {
+          const decrypted = CryptoJS.AES.decrypt(groupInfo.value.roomNote, passwordKey)
+          const decryptedNote = decrypted.toString(CryptoJS.enc.Utf8)
+
+          if (decryptedNote) {
+            console.log(`🔓 群公告已解密: "${groupInfo.value.roomNote.substring(0, 20)}..." -> "${decryptedNote}"`)
+            decryptedGroupNote = decryptedNote
+          }
+        }
+      } catch (decryptError) {
+        console.warn('⚠️ 解密群信息失败，使用原信息:', decryptError)
+        // 解密失败不影响加群流程
+      }
+    }
+
     if (isMember.value && isPrivateGroup.value) {
-      // 已是成员，更新 passwordKey
+      // 已是成员，更新 passwordKey、群名称和群公告
       const existingChannel = simpleTalkStore.channels.find(ch => ch.id === groupId.value)
       if (existingChannel) {
         existingChannel.passwordKey = passwordKey
+        existingChannel.name = decryptedGroupName
+        existingChannel.roomNote = decryptedGroupNote
         await simpleTalkStore.db.saveChannel(existingChannel)
-        console.log('💾 私密群聊 passwordKey 已更新', passwordKey)
+        console.log('💾 私密群聊 passwordKey、群名称和群公告已更新', passwordKey, decryptedGroupName, decryptedGroupNote)
       } else {
         // 频道不在本地列表中,创建频道记录
         const newChannel: SimpleChannel = {
           id: groupId.value,
           type: 'group',
-          name: groupInfo.value?.name || t('Talk.Channel.unknown_group'),
+          name: decryptedGroupName,
           avatar: groupInfo.value?.avatar,
           createdBy: groupInfo.value?.createdBy || '',
           createdAt: Date.now(),
@@ -282,7 +386,7 @@ const handleJoinGroup = async () => {
           roomJoinType: '100',
           passwordKey,
           userCount: groupInfo.value?.userCount,
-          roomNote: groupInfo.value?.roomNote,
+          roomNote: decryptedGroupNote,
         }
 
         await simpleTalkStore.db.saveChannel(newChannel)
@@ -294,7 +398,7 @@ const handleJoinGroup = async () => {
       const newChannel: SimpleChannel = {
         id: groupId.value,
         type: 'group',
-        name: groupInfo.value?.name || t('talk.unknown_group'),
+        name: decryptedGroupName,
         avatar: groupInfo.value?.avatar,
         createdBy: groupInfo.value?.createdBy || '',
         createdAt: Date.now(),
@@ -302,7 +406,7 @@ const handleJoinGroup = async () => {
         roomJoinType: isPrivateGroup.value ? '100' : '1',
         passwordKey,
         userCount: groupInfo.value?.userCount,
-        roomNote: groupInfo.value?.roomNote,
+        roomNote: decryptedGroupNote,
       }
 
       await simpleTalkStore.db.saveChannel(newChannel)

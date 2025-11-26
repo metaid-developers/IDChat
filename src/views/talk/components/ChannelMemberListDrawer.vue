@@ -15,7 +15,9 @@
           <a class="back" @click="emit('update:modelValue', false)">
             <el-icon :size="16"><CloseBold /></el-icon>
           </a>
-          <span class="title truncate max-w-6xl">{{ currentChannelInfo?.name || '' }}</span>
+          <span class="title truncate max-w-6xl">{{
+            currentChannelInfo?.name.substring(0, 10) || ''
+          }}</span>
         </div>
 
         <el-icon
@@ -66,14 +68,6 @@
               :class="[hasSubChannelList.length ? 'cursor-not-allowed' : 'cursor-pointer']"
               @click="openBroadcastDialog"
               >{{ $t('broadcast_channel_create') }}</el-button
-            >
-            <el-button
-              v-if="isCurrentUserCreator"
-              color="#ffffff"
-              size="default"
-              :icon="UserPlus"
-              @click="showInviteModal = true"
-              >{{ $t('Talk.Channel.invite_members') }}</el-button
             >
             <el-button color="#ffffff" size="default" :icon="Search" @click="showSearch = true">{{
               $t('Talk.Channel.search')
@@ -162,23 +156,30 @@
             /></el-icon>
           </div>
           <div class="mt-2 text-dark-300 dark:text-gray-400">
-            {{ currentChannelInfo?.roomNote || '-' }}
+            {{ displayRoomNote }}
           </div>
         </div>
 
-        <div class="mt-3  bg-white dark:bg-gray-800 px-4 py-5" @click="copyLink">
+        <div
+          v-if="isCurrentUserCreator"
+          class="mt-3  bg-white dark:bg-gray-800 px-4 py-5"
+          @click="isPrivateGroup ? (showInviteModal = true) : copyLink()"
+        >
           <div class="flex items-center justify-between text-md font-medium">
-            {{ $t('Talk.Channel.ShareLink') }}
+            {{ isPrivateGroup ? $t('Talk.Channel.invite_members') : $t('Talk.Channel.ShareLink') }}
           </div>
           <div
             class="mt-2 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between"
           >
-            <div class="word-break break-all">
+            <div class="word-break break-all" v-if="!isPrivateGroup">
               {{ $filters.ellipsisMiddle(currentLink) }}
+            </div>
+            <div class="text-dark-300 dark:text-gray-400" v-else>
+              {{ $t('Talk.Channel.invite_members') }}
             </div>
             <el-icon
               class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-gray-400"
-              ><Link
+              ><component :is="isPrivateGroup ? UserPlus : Link"
             /></el-icon>
           </div>
         </div>
@@ -479,7 +480,7 @@ import InfiniteScroll from '@/components/InfiniteScroll/InfiniteScroll.vue'
 import UserAvatar from '@/components/UserAvatar/UserAvatar.vue'
 import ChatIcon from '@/components/ChatIcon/ChatIcon.vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getChannelMembers, searchChannelMembers, getUserGroupRole, searchGroupsAndUsers, BatchGetUsersEcdhPubkeyForPrivateChat } from '@/api/talk'
+import { getChannelMembers, searchChannelMembers, getUserGroupRole, searchGroupsAndUsers } from '@/api/talk'
 import { ElMessage, ElDialog } from 'element-plus'
 import copy from 'copy-to-clipboard'
 import { addMyBlockChatList, removeMyBlockChat } from '@/api/chat-notify'
@@ -579,6 +580,26 @@ const currentChannelInfo = computed(() => {
   return simpleTalkStore.activeChannel?.type === 'sub-group'
     ? simpleTalkStore.getParentGroupChannel(simpleTalkStore.activeChannel.id) || null
     : simpleTalkStore.activeChannel || null
+})
+
+// 显示的群公告（确保是解密后的）
+const displayRoomNote = computed(() => {
+  if (!currentChannelInfo.value) return '-'
+
+  const note = currentChannelInfo.value.roomNote
+  if (!note) return '-'
+
+  // 如果是私密群聊且公告看起来是加密的，显示占位符
+  // 正常情况下 store 已经解密，但如果还是加密状态，显示提示
+  if (currentChannelInfo.value.roomJoinType === '100') {
+    // 检查是否看起来还是加密的
+    if (/^[A-Za-z0-9+/=]+$/.test(note) && note.length > 20) {
+      // 还是加密状态，可能解密失败或正在加载
+      return '🔒 [Encrypted]'
+    }
+  }
+
+  return note
 })
 
 
@@ -1201,7 +1222,7 @@ const handleInviteSearch = async () => {
 
   if (!query) {
     inviteUserList.value = []
-    userChatPublicKeys.value.clear()
+    // 不清空 userChatPublicKeys，保留已选中用户的 chatPublicKey
     return
   }
 
@@ -1209,39 +1230,29 @@ const handleInviteSearch = async () => {
   try {
     const result = await searchGroupsAndUsers({ query, size: '20' })
 
-    // 过滤掉群组，只保留用户
+    // 新接口直接返回用户列表，每个用户已包含 chatPublicKey
     if (result && result.users && result.users.length > 0) {
-      inviteUserList.value = result.users
+      // 过滤掉没有 chatPublicKey 的用户
+      const usersWithChatPublicKey = result.users.filter(user => user.chatPublicKey)
 
-      // 批量获取用户的 chatPublicKey
-      const metaIds = result.users.map(user => user.metaId)
+      inviteUserList.value = usersWithChatPublicKey
 
-      try {
-        const userInfos = await BatchGetUsersEcdhPubkeyForPrivateChat({ metaIds })
-
-        // 存储到 Map 中
-        userChatPublicKeys.value.clear()
-        if (userInfos && userInfos.length > 0) {
-          userInfos.forEach(userInfo => {
-            if (userInfo.chatPublicKey) {
-              userChatPublicKeys.value.set(userInfo.metaid, userInfo.chatPublicKey)
-            }
-          })
+      // 直接从搜索结果中提取 chatPublicKey（不清空，保留之前选中用户的数据）
+      usersWithChatPublicKey.forEach(user => {
+        if (user.chatPublicKey) {
+          userChatPublicKeys.value.set(user.metaId, user.chatPublicKey)
         }
+      })
 
-        console.log('获取到的用户 chatPublicKey:', userChatPublicKeys.value)
-      } catch (error) {
-        console.warn('获取用户 chatPublicKey 失败:', error)
-        // 即使失败也继续显示用户列表，但邀请按钮会被禁用
-      }
+      console.log('获取到的用户 chatPublicKey:', userChatPublicKeys.value)
     } else {
       inviteUserList.value = []
-      userChatPublicKeys.value.clear()
+      // 不清空 userChatPublicKeys，保留已选中用户的数据
     }
   } catch (error) {
     console.error('搜索用户失败:', error)
     inviteUserList.value = []
-    userChatPublicKeys.value.clear()
+    // 不清空 userChatPublicKeys，保留已选中用户的数据
     ElMessage.error('搜索失败')
   } finally {
     inviteSearching.value = false
@@ -1318,6 +1329,12 @@ const toggleUserSelection = (user: SearchUserItem, checked: boolean | string | n
   const isChecked = Boolean(checked)
   if (isChecked) {
     if (!isUserSelected(user.metaId)) {
+      // 对于私密群聊，检查是否可以邀请该用户
+      if (!canInviteUser(user)) {
+        ElMessage.warning(i18n.t('talk.user_chat_not_enabled'))
+        return
+      }
+
       // 获取用户的 chatPublicKey
       const chatPublicKey = userChatPublicKeys.value.get(user.metaId) || ''
       selectedUsers.value.push({ ...user, chatPublicKey } as any)
@@ -1335,6 +1352,17 @@ const clearSelectedUsers = () => {
   selectedUsers.value = []
 }
 
+// 监听邀请弹窗关闭，清理数据
+watch(showInviteModal, (newVal) => {
+  if (!newVal) {
+    // 弹窗关闭时清理所有邀请相关数据
+    inviteSearchQuery.value = ''
+    inviteUserList.value = []
+    selectedUsers.value = []
+    userChatPublicKeys.value.clear()
+  }
+})
+
 // 批量邀请用户
 const handleBatchInvite = async () => {
   if (!currentChannelInfo.value || selectedUsers.value.length === 0) return
@@ -1348,12 +1376,29 @@ const handleBatchInvite = async () => {
     const isPrivateGroup = currentChannelInfo.value.roomJoinType === '100'
     const passwordKey = isPrivateGroup ? currentChannelInfo.value.passwordKey : undefined
 
-    // 准备用户列表
-    const userList = selectedUsers.value.map(user => ({
+    // 准备用户列表，对于私密群聊需要过滤掉没有 chatPublicKey 的用户
+    let userList = selectedUsers.value.map(user => ({
       metaId: user.metaId,
       chatPublicKey: userChatPublicKeys.value.get(user.metaId) || '',
       userName: user.userName || user.metaId.slice(0, 8),
     }))
+
+    // 私密群聊：过滤掉没有 chatPublicKey 的用户
+    if (isPrivateGroup) {
+      const usersWithoutKey = userList.filter(u => !u.chatPublicKey)
+      if (usersWithoutKey.length > 0) {
+        console.warn('以下用户没有 chatPublicKey，将被跳过:', usersWithoutKey.map(u => u.userName))
+        userList = userList.filter(u => u.chatPublicKey)
+
+        if (userList.length === 0) {
+          ElMessage.error('所选用户均未开通私聊，无法邀请')
+          batchInviting.value = false
+          return
+        }
+
+        ElMessage.warning(`${usersWithoutKey.length} 位用户未开通私聊，已跳过`)
+      }
+    }
 
     console.log('🚀 开始批量邀请:', {
       groupId,
@@ -1363,6 +1408,7 @@ const handleBatchInvite = async () => {
 
     const result = await batchInviteUsersToGroup({
       groupId,
+      groupName: currentChannelInfo.value.name,
       userList,
       passwordKey,
     })

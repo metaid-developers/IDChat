@@ -772,6 +772,42 @@ export const createChannel = async (
     }
 
     dataCarrier.path = newPath
+
+    // 私密群聊：使用 getPKHByPath 获取 passwordKey 并加密群名称
+    try {
+      // 检查是否支持 getPKHByPath 方法
+      if (!window.metaidwallet || typeof (window.metaidwallet as any).getPKHByPath !== 'function') {
+        ElMessage.error('钱包版本过低，请升级钱包以支持私密群聊功能')
+        throw new Error('钱包不支持 getPKHByPath 方法，请升级钱包')
+      }
+
+      // 使用 path 获取 passwordKey（getPKHByPath 直接返回字符串）
+      const pkh = await (window.metaidwallet as any).getPKHByPath({ path: newPath })
+
+      if (!pkh) {
+        throw new Error('获取 passwordKey 失败')
+      }
+
+      // 使用 pkh 的前16位作为 passwordKey（与消息加密保持一致）
+      const passwordKey = pkh.substring(0, 16)
+      console.log('🔐 私密群聊 passwordKey 已生成:', passwordKey.substring(0, 8) + '...')
+
+      // 使用 passwordKey 加密群名称
+      const CryptoJS = await import('crypto-js')
+      const encryptedGroupName = CryptoJS.AES.encrypt(groupName, passwordKey).toString()
+
+      // 替换为加密后的群名称
+      dataCarrier.groupName = encryptedGroupName
+
+      console.log('🔐 群名称已加密:', {
+        original: groupName,
+        encrypted: encryptedGroupName.substring(0, 20) + '...',
+        path: newPath,
+      })
+    } catch (error) {
+      console.error('❌ 私密群聊加密失败:', error)
+      throw error // 抛出错误，中断创建流程
+    }
   }
 
   if (!communityId) {
@@ -1042,7 +1078,7 @@ export const updateGroupChannel = async (
 
   const metaidData = {
     body: JSON.stringify(data),
-    path: `${VITE_ADDRESS_HOST || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${
+    path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${
       NodeName.SimpleGroupCreate
     }`,
     flag: MetaFlag.metaid,
@@ -2163,6 +2199,7 @@ const sendInviteMessage = async (toMetaId: string, inviteUrl: string, sharedSecr
  */
 export const batchInviteUsersToGroup = async (params: {
   groupId: string
+  groupName?: string
   userList: Array<{ metaId: string; chatPublicKey: string; userName?: string }>
   passwordKey?: string
 }): Promise<{
@@ -2175,7 +2212,7 @@ export const batchInviteUsersToGroup = async (params: {
     error?: string
   }>
 }> => {
-  const { groupId, userList, passwordKey } = params
+  const { groupId, groupName, userList, passwordKey } = params
   const buildTx = useBulidTx()
   const chainStore = useChainStore()
   const userStore = useUserStore()
@@ -2184,11 +2221,15 @@ export const batchInviteUsersToGroup = async (params: {
   const { getGroupJoinControlList } = await import('@/api/talk')
   const CryptoJS = await import('crypto-js')
 
-  console.log('🚀 开始批量邀请:', {
-    groupId,
-    userCount: userList.length,
-    hasPasswordKey: !!passwordKey,
-  })
+  console.log(
+    '🚀 开始批量邀请:',
+    {
+      groupId,
+      userCount: userList.length,
+      hasPasswordKey: !!passwordKey,
+    },
+    userList
+  )
 
   try {
     // 1. 查询群组白名单列表
@@ -2244,11 +2285,12 @@ export const batchInviteUsersToGroup = async (params: {
       }
     }
 
-    // 4. 为每个用户生成邀请链接
-    console.log('🔗 生成邀请链接...')
+    // 4. 为每个用户生成邀请链接并发送消息
+    console.log('🔗 生成邀请链接并发送消息...')
     const results = []
     const isPrivateGroup = !!passwordKey
 
+    // 按顺序处理每个用户，避免并发发送消息导致的问题
     for (const user of userList) {
       try {
         let inviteUrl = ''
@@ -2278,8 +2320,12 @@ export const batchInviteUsersToGroup = async (params: {
             // 添加发送者的 metaId,以便接收者可以获取发送者的公钥来解密 passcode
             const senderMetaId = userStore.last?.metaid
             inviteUrl = `${window.location.origin}/channels/private/${groupId}?passcode=${encodedPasscode}&from=${senderMetaId}`
+            // 如果有群名，添加到 URL 中
+            if (groupName) {
+              inviteUrl += `&groupName=${encodeURIComponent(groupName)}`
+            }
 
-            console.log(`✅ 用户 ${user.metaId.slice(0, 8)}... 邀请链接生成成功`, inviteUrl)
+            console.log(`✅ 用户 ${user.metaId.slice(0, 8)}... 邀请链接生成成功`)
           } catch (ecdhError) {
             console.error(`❌ ECDH 加密失败:`, ecdhError)
             throw new Error('ECDH 协商密钥失败: ' + (ecdhError as Error).message)
@@ -2287,23 +2333,34 @@ export const batchInviteUsersToGroup = async (params: {
         } else {
           // 公开群聊：生成普通邀请链接
           inviteUrl = `${window.location.origin}/channels/public/${groupId}`
+          // 如果有群名，添加到 URL 中
+          if (groupName) {
+            inviteUrl += `?groupName=${encodeURIComponent(groupName)}`
+          }
           console.log(`✅ 用户 ${user.metaId.slice(0, 8)}... 公开群聊邀请链接生成成功`)
         }
 
-        results.push({
-          metaId: user.metaId,
-          userName: user.userName,
-          status: 'success' as const,
-          inviteUrl,
-        })
-
-        // 发送邀请链接给用户
+        // 发送邀请链接给用户（等待发送完成后再处理下一个用户）
         try {
+          console.log(`📨 开始发送邀请消息给用户 ${user.metaId.slice(0, 8)}...`)
           await sendInviteMessage(user.metaId, inviteUrl, sharedSecret)
-          console.log(`📨 邀请消息已发送给用户 ${user.metaId.slice(0, 8)}...`)
+          console.log(`✅ 邀请消息已发送给用户 ${user.metaId.slice(0, 8)}...`)
+
+          results.push({
+            metaId: user.metaId,
+            userName: user.userName,
+            status: 'success' as const,
+            inviteUrl,
+          })
         } catch (sendError) {
-          console.error(`⚠️ 发送邀请消息失败（链接已生成）:`, sendError)
-          // 即使发送失败，邀请链接已生成，仍然标记为成功
+          console.error(`❌ 发送邀请消息失败:`, sendError)
+          // 发送失败，标记为失败
+          results.push({
+            metaId: user.metaId,
+            userName: user.userName,
+            status: 'failed' as const,
+            error: '发送邀请消息失败: ' + (sendError as Error).message,
+          })
         }
       } catch (err) {
         console.error(`❌ 为用户 ${user.metaId} 生成邀请链接失败:`, err)

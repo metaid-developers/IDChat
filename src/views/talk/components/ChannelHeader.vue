@@ -48,7 +48,11 @@
             <div
               class="text-base leading-tight no-wrap grow whitespace-nowrap text-dark-300 dark:text-gray-400 px-2 hidden lg:block capitalize"
             >
-              {{ $t('Talk.Channel.public_channel') }}
+              {{
+                isPrivateGroup
+                  ? $t('Talk.Channel.private_group')
+                  : $t('Talk.Channel.public_channel')
+              }}
             </div>
           </template>
         </template>
@@ -84,7 +88,7 @@
 
         <button
           class="mr-5 w-8 h-8 flex items-center justify-center rounded-3xl text-dark-400 cursor-pointer hover:text-dark-800 hover:border-solid hover:border-dark-300 hover:bg-primary transition-all duration-300"
-          @click.stop="popInvite"
+          @click.stop="handleInviteClick"
         >
           <Icon name="user_plus" class="w-4 h-4" />
         </button>
@@ -129,6 +133,10 @@ const activeChannel = computed(() => {
   return simpleTalkActiveChannel.value?.type === 'sub-group'
     ? useSimpleTalkStore().getParentGroupChannel(simpleTalkActiveChannel.value.id!)
     : simpleTalkActiveChannel.value
+})
+
+const isPrivateGroup = computed(() => {
+  return activeChannel.value?.roomJoinType === '100'
 })
 
 const isWelcomePage = computed(() => {
@@ -182,6 +190,16 @@ const shortenMetaId = (id: string) => {
 const popInvite = () => {
   layout.inviteLink = window.location.href
   layout.isShowInviteModal = true
+}
+
+const handleInviteClick = () => {
+  if (isPrivateGroup.value) {
+    // 私密群聊：打开成员列表抽屉，用户可以在里面点击邀请
+    layout.isShowMemberListDrawer = true
+  } else {
+    // 公开群聊：显示邀请链接弹窗
+    popInvite()
+  }
 }
 
 const goCheckTxId = (txId: string, chain: ChatChain) => {

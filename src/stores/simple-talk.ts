@@ -2427,6 +2427,14 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             permissionsLastUpdated: existing.permissionsLastUpdated,
             // 保留本地的 passwordKey（服务端不返回此字段）
             passwordKey: existing.passwordKey,
+            // 私密群聊保留本地已解密的名称，避免显示加密内容
+            name: (serverChannel.roomJoinType === '100' && existing.passwordKey) 
+              ? existing.name 
+              : serverChannel.name,
+            // 私密群聊保留本地已解密的公告，避免显示加密内容
+            roomNote: (serverChannel.roomJoinType === '100' && existing.passwordKey && existing.roomNote) 
+              ? existing.roomNote 
+              : serverChannel.roomNote,
             // 使用更新的消息
             lastMessage: this.getNewerMessage(existing.lastMessage, serverChannel.lastMessage)
           }
@@ -2463,8 +2471,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
       this.channels = mergedChannels
 
-      // 异步为私密群聊（创建者是当前用户）获取 passwordKey
-      this.fetchPasswordKeysForPrivateGroups(mergedChannels)
+      // 异步为私密群聊（创建者是当前用户）获取 passwordKey 并解密
+      await this.fetchPasswordKeysForPrivateGroups(mergedChannels)
 
       // 异步加载群聊的子频道列表
       // this.loadSubChannelsForGroups(mergedChannels)
@@ -2479,7 +2487,62 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * - 其他情况：使用 channelId.substring(0, 16)
      */
     async fetchPasswordKeysForPrivateGroups(channels: SimpleChannel[]): Promise<void> {
-      // 筛选出需要设置 passwordKey 的频道（所有群聊且尚未设置 passwordKey）
+      // 动态导入 CryptoJS
+      const CryptoJS = await import('crypto-js')
+      
+      // 第一步：为已有 passwordKey 但名称仍加密的私密群聊解密名称
+      const channelsWithEncryptedNames = channels.filter(channel => 
+        channel.type === 'group' && 
+        channel.roomJoinType === '100' && 
+        channel.passwordKey &&
+        channel.name && 
+        /^[A-Za-z0-9+/=]+$/.test(channel.name) && 
+        channel.name.length > 20
+      )
+
+      if (channelsWithEncryptedNames.length > 0) {
+        console.log(`🔓 发现 ${channelsWithEncryptedNames.length} 个私密群聊名称需要解密...`)
+        
+        for (const channel of channelsWithEncryptedNames) {
+          let hasChanges = false
+          
+          // 解密群名称
+          try {
+            const decrypted = CryptoJS.AES.decrypt(channel.name, channel.passwordKey!)
+            const decryptedName = decrypted.toString(CryptoJS.enc.Utf8)
+            
+            if (decryptedName) {
+              console.log(`🔓 群聊名称已解密: "${channel.name.substring(0, 20)}..." -> "${decryptedName}"`)
+              channel.name = decryptedName
+              hasChanges = true
+            }
+          } catch (error) {
+            console.warn(`⚠️ 解密群名称失败:`, channel.id, error)
+          }
+          
+          // 解密群公告
+          if (channel.roomNote && /^[A-Za-z0-9+/=]+$/.test(channel.roomNote) && channel.roomNote.length > 20) {
+            try {
+              const decrypted = CryptoJS.AES.decrypt(channel.roomNote, channel.passwordKey!)
+              const decryptedNote = decrypted.toString(CryptoJS.enc.Utf8)
+              
+              if (decryptedNote) {
+                console.log(`🔓 群公告已解密: "${channel.roomNote.substring(0, 20)}..." -> "${decryptedNote}"`)
+                channel.roomNote = decryptedNote
+                hasChanges = true
+              }
+            } catch (error) {
+              console.warn(`⚠️ 解密群公告失败:`, channel.id, error)
+            }
+          }
+          
+          if (hasChanges) {
+            await this.db.saveChannel(channel)
+          }
+        }
+      }
+      
+      // 第二步：筛选出需要设置 passwordKey 的频道（所有群聊且尚未设置 passwordKey）
       // 注意：如果用户通过邀请链接加入私密群聊，passwordKey 已经被解密并保存，这里会跳过
       const needPasswordKeyChannels = channels.filter(channel => 
         channel.type === 'group' && !channel.passwordKey
@@ -2516,11 +2579,47 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             privateCreatorChannels.map(async (channel) => {
               try {
                 const path = `m/${channel.path || '100/0'}`
+                // getPKHByPath 直接返回字符串
                 const pkh = await (window.metaidwallet as any).getPKHByPath({ path })
+                
+                // 使用 pkh 的前16位作为 passwordKey（与消息加密保持一致）
                 const passwordKey = pkh.substring(0, 16)
 
                 // 更新频道的 passwordKey
                 channel.passwordKey = passwordKey
+
+                // 尝试解密群名称（如果是加密的）
+                try {
+                  // 检查群名称是否看起来像加密的（通常包含 Base64 字符）
+                  if (channel.name && /^[A-Za-z0-9+/=]+$/.test(channel.name) && channel.name.length > 20) {
+                    const decrypted = CryptoJS.AES.decrypt(channel.name, passwordKey)
+                    const decryptedName = decrypted.toString(CryptoJS.enc.Utf8)
+                    
+                    if (decryptedName) {
+                      console.log(`🔓 私密群聊名称已解密: "${channel.name.substring(0, 20)}..." -> "${decryptedName}"`)
+                      channel.name = decryptedName
+                    }
+                  }
+                } catch (decryptError) {
+                  console.warn(`⚠️ 解密群名称失败，使用原名称:`, channel.name)
+                  // 解密失败不影响整体流程，保留原名称
+                }
+                
+                // 尝试解密群公告（如果是加密的）
+                try {
+                  if (channel.roomNote && /^[A-Za-z0-9+/=]+$/.test(channel.roomNote) && channel.roomNote.length > 20) {
+                    const decrypted = CryptoJS.AES.decrypt(channel.roomNote, passwordKey)
+                    const decryptedNote = decrypted.toString(CryptoJS.enc.Utf8)
+                    
+                    if (decryptedNote) {
+                      console.log(`🔓 私密群聊公告已解密: "${channel.roomNote.substring(0, 20)}..." -> "${decryptedNote}"`)
+                      channel.roomNote = decryptedNote
+                    }
+                  }
+                } catch (decryptError) {
+                  console.warn(`⚠️ 解密群公告失败，使用原公告:`, channel.roomNote)
+                  // 解密失败不影响整体流程，保留原公告
+                }
 
                 // 保存到数据库
                 await this.db.saveChannel(channel)
@@ -2573,6 +2672,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
 
       console.log(`✅ passwordKey 设置完成`)
+      
+      // 强制触发响应式更新，确保解密后的名称显示在 UI 上
+      // 通过重新赋值 channels 数组来触发 Vue 的响应式系统
+      this.channels = [...this.channels]
     },
 
     /**

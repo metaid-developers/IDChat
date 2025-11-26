@@ -927,15 +927,13 @@ export const searchGroupsAndUsers = async ({
 }): Promise<{ users: SearchUserItem[], groups: any[] }> => {
   const _query = new URLSearchParams({
     query,
-    size,
   }).toString()
-  return TalkApi.get(`/search-groups-and-users?${_query}`).then(async (res: SearchGroupsAndUsersResponse) => {
+  return TalkApi.get(`/search-users?${_query}`).then(async (res: any) => {
     if (res.code === 0 && res.data && res.data.list) {
-      // 分离用户和群组
-      const users = res.data.list.filter((item): item is SearchUserItem => item.type === 'user')
-      const groups = res.data.list.filter(item => item.type === 'group')
+      // 新接口直接返回用户列表，每个用户已包含 chatPublicKey
+      const users = res.data.list as SearchUserItem[]
       
-      return { users, groups }
+      return { users, groups: [] }
     }
     return { users: [], groups: [] }
   })

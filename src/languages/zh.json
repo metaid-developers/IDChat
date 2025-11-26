@@ -250,6 +250,8 @@
       "invite_processing_failed": "处理邀请链接失败",
       "unknown_group": "未知群组",
       "private_group_notice": "这是一个私密群聊，需要邀请才能加入",
+      "private_group_password_missing": "无法访问私密群聊",
+      "private_group_password_missing_hint": "您缺少访问此私密群聊的密钥，请联系群主重新发送邀请链接",
       "private_group": "私密群聊",
       "private": "私密",
       "invite_sent": "邀请已发送",

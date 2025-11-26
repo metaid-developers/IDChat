@@ -63,6 +63,7 @@ import { ElMessage } from 'element-plus'
 import { SimpleGroup, updateGroupChannel } from '@/utils/talk'
 import { SimpleChannel } from '@/@types/simple-chat.d'
 import { getOneChannel } from '@/api/talk'
+import CryptoJS from 'crypto-js'
 
 interface ChannelInfo {
   groupId: string
@@ -132,18 +133,32 @@ const saveAnnouncement = async () => {
       timestamp: Date.now(),
       groupType: cur.roomType,
       status: cur.roomStatus,
-      type: cur.roomType,
+      type: cur.roomJoinType,
       tickId: cur.tickId || '',
       collectionId: cur.collectionId || '',
       limitAmount: cur.limitAmount || 0,
       chatSettingType: cur.chatSettingType,
       deleteStatus: cur.deleteStatus,
     }
-    // 模拟 API 调用 - 实际项目中需要实现真正的 API
-    const ret = await updateGroupChannel(group, { groupNote: announcementText.value.trim() })
+    // 如果是私密群聊，需要加密公告内容
+    let encryptedNote = announcementText.value.trim()
+    if (props.channelInfo?.roomJoinType === '100') {
+      const passwordKey = props.channelInfo.passwordKey || props.channelInfo.id.substring(0, 16)
+      if (passwordKey) {
+        encryptedNote = CryptoJS.AES.encrypt(announcementText.value.trim(), passwordKey).toString()
+        console.log(
+          '🔒 公告已加密:',
+          announcementText.value.trim(),
+          '->',
+          encryptedNote.substring(0, 20) + '...'
+        )
+      }
+    }
+
+    const ret = await updateGroupChannel(group, { groupNote: encryptedNote })
 
     ElMessage.success('Success')
-    emit('updated', announcementText.value.trim())
+    emit('updated', announcementText.value.trim()) // 传递未加密的公告给父组件，用于本地显示
     emit('update:modelValue', false)
   } catch (error) {
     console.error('更新公告失败:', error)

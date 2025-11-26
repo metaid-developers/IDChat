@@ -22,6 +22,18 @@
       v-if="activeChannel?.type === 'private' && !activeChannel.publicKeyStr"
     />
 
+    <!-- 私密群聊缺少 passwordKey 提示 -->
+    <el-alert type="warning" show-icon :closable="false" v-if="isPrivateGroupWithoutPasswordKey">
+      <template #title>
+        <div class="flex flex-col gap-2">
+          <span>{{ $t('Talk.Channel.private_group_password_missing') }}</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            {{ $t('Talk.Channel.private_group_password_missing_hint') }}
+          </span>
+        </div>
+      </template>
+    </el-alert>
+
     <div class="app-container">
       <BroadcastChatHeader />
       <BroadcastChatHeaderBack />
@@ -40,7 +52,7 @@
 
         <!-- 列表项将被渲染到这里 -->
         <!-- ref 用于在代码中直接访问这个 DOM 元素 -->
-        <div ref="listWrapper">
+        <div ref="listWrapper" v-if="!isPrivateGroupWithoutPasswordKey">
           <!-- 使用 v-for 循环渲染列表项 -->
           <template v-if="currentChannelType === 'group' || currentChannelType === 'sub-group'">
             <MessageItem
@@ -207,6 +219,29 @@ const currentMentionIndex = ref(0)
 const { activeChannel } = storeToRefs(useSimpleTalkStore())
 const props = defineProps({
   isSendRedPacketinProgress: Boolean,
+})
+
+// 检查是否为私密群聊且缺少 passwordKey
+const isPrivateGroupWithoutPasswordKey = computed(() => {
+  const channel = simpleTalk.activeChannel
+  if (!channel || channel.type !== 'group') {
+    return false
+  }
+
+  // 是私密群聊
+  const isPrivateGroup = channel.roomJoinType === '100'
+  if (!isPrivateGroup) {
+    return false
+  }
+
+  // 不是创建者
+  const isCreator = channel.createdBy === simpleTalk.selfMetaId
+  if (isCreator) {
+    return false
+  }
+
+  // 缺少 passwordKey
+  return !channel.passwordKey
 })
 
 // 计算未读@提及数量

@@ -1276,14 +1276,86 @@ const groupLinkInfo = computed(() => {
   const match = messageContent.match(groupLinkPattern)
   const subChannleMatch= messageContent.match(subChannelLinkPattern)
 
+  // 从 URL 中提取群名的辅助函数
+  const extractGroupNameFromUrl = (fullUrl: string): string | null => {
+    try {
+      const urlObj = new URL(fullUrl, window.location.origin)
+      const groupName = urlObj.searchParams.get('groupName')
+      return groupName ? decodeURIComponent(groupName) : null
+    } catch (error) {
+      console.error('解析 URL 失败:', error)
+      return null
+    }
+  }
+
+  // 解密群名称的辅助函数
+  const decryptGroupName = (encryptedName: string, fullUrl?: string, isPrivate?: boolean): string => {
+    if (!isPrivate || !encryptedName) {
+      return encryptedName
+    }
+
+    try {
+      // 从 URL 中提取 passcode 参数
+      if (!fullUrl) {
+        return encryptedName
+      }
+
+      const urlObj = new URL(fullUrl, window.location.origin)
+      const encodedPasscode = urlObj.searchParams.get('passcode')
+
+      if (!encodedPasscode) {
+        console.warn('私密群聊链接缺少 passcode 参数')
+        return encryptedName
+      }
+
+      // URL 解码 passcode
+      const decodedPasscode = decodeURIComponent(encodedPasscode)
+
+      // 获取发送者的 metaId (from 参数)
+      const fromMetaId = urlObj.searchParams.get('from')
+      if (!fromMetaId) {
+        console.warn('私密群聊链接缺少 from 参数')
+        return encryptedName
+      }
+
+      // 这里需要使用 ECDH 解密 passcode 得到 passwordKey
+      // 但在消息列表中，我们无法异步获取发送者的公钥
+      // 所以我们直接检查名称是否看起来像加密的，如果是则标记需要解密
+      const looksEncrypted = /^[A-Za-z0-9+/=]+$/.test(encryptedName) && encryptedName.length > 20
+
+      if (looksEncrypted) {
+        // 返回一个占位符，表示这是加密的名称
+        return '🔒 ' + (encryptedName.substring(0, 10) + '...')
+      }
+
+      return encryptedName
+    } catch (error) {
+      console.error('解析群链接失败:', error)
+      return encryptedName
+    }
+  }
+
   if (match && (!subChannleMatch || !subChannleMatch[3])) {
 
     const pinId = match[2] + 'i0'
     const isPrivate = match[1] === 'private'
 
+    // 优先从 URL 参数中获取群名
+    const urlGroupName = messageContent ? extractGroupNameFromUrl(messageContent) : null
+    let groupName: string
+
+    if (urlGroupName) {
+      // 如果 URL 中有群名参数，直接使用
+      groupName = urlGroupName
+    } else {
+      // 否则从频道信息中获取并解密
+      const rawGroupName = channelInfo.value?.roomName || 'Group Chat'
+      groupName = decryptGroupName(rawGroupName || '', messageContent, isPrivate)
+    }
+
     return {
       pinId,
-      groupName: channelInfo.value?.roomName ,
+      groupName,
       groupAvatar: channelInfo.value?.roomIcon || '',
       memberCount: channelInfo.value?.userCount || 0,
       fullUrl: messageContent,
@@ -1296,9 +1368,22 @@ const groupLinkInfo = computed(() => {
     const pinId =subChannleMatch[3] + 'i0'
     const isPrivate = subChannleMatch[1] === 'private'
 
+    // 优先从 URL 参数中获取群名
+    const urlGroupName = messageContent ? extractGroupNameFromUrl(messageContent) : null
+    let groupName: string
+
+    if (urlGroupName) {
+      // 如果 URL 中有群名参数，直接使用
+      groupName = urlGroupName
+    } else {
+      // 否则从频道信息中获取并解密
+      const rawGroupName = subChannelInfo.value?.channelName || 'Group Chat'
+      groupName = decryptGroupName(rawGroupName || '', messageContent, isPrivate)
+    }
+
       return {
       pinId,
-      groupName: subChannelInfo.value?.channelName ,
+      groupName,
       groupAvatar: subChannelInfo.value?.channelIcon || '',
       memberCount: channelInfo.value?.userCount || 0,
       fullUrl: messageContent,

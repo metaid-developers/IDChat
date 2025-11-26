@@ -88,6 +88,7 @@ import { createPin } from '@/utils/userInfo'
 import { SimpleGroup, updateGroupChannel } from '@/utils/talk'
 import { SimpleChannel } from '@/@types/simple-chat.d'
 import { getOneChannel } from '@/api/talk'
+import CryptoJS from 'crypto-js'
 
 interface ChannelInfo {
   groupId: string
@@ -254,7 +255,7 @@ const saveChannelInfo = async () => {
       timestamp: Date.now(),
       groupType: cur.roomType,
       status: cur.roomStatus,
-      type: cur.roomType,
+      type: cur.roomJoinType,
       tickId: cur.tickId || '',
       collectionId: cur.collectionId || '',
       limitAmount: cur.limitAmount || 0,
@@ -268,11 +269,26 @@ const saveChannelInfo = async () => {
       groupIcon = cur.roomIcon
     }
     if (groupIcon !== cur.roomIcon || groupName !== cur.roomName) {
-      const ret = await updateGroupChannel(group, { groupIcon, groupName })
+      // 如果是私密群聊且群名称有变化，需要加密
+      let encryptedGroupName = groupName
+      if (props.channelInfo?.roomJoinType === '100' && groupName !== cur.roomName) {
+        const passwordKey = props.channelInfo.passwordKey || props.channelInfo.id.substring(0, 16)
+        if (passwordKey) {
+          encryptedGroupName = CryptoJS.AES.encrypt(groupName, passwordKey).toString()
+          console.log(
+            '🔒 群名称已加密:',
+            groupName,
+            '->',
+            encryptedGroupName.substring(0, 20) + '...'
+          )
+        }
+      }
+
+      const ret = await updateGroupChannel(group, { groupIcon, groupName: encryptedGroupName })
     }
 
     emit('updated', {
-      name: groupName,
+      name: groupName, // 传递未加密的名称给父组件，用于本地显示
       avatar: groupIcon,
     })
     emit('update:modelValue', false)
