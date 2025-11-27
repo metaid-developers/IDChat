@@ -181,8 +181,8 @@ export async function loadRuntimeConfig(): Promise<AppRuntimeConfig> {
   try {
     const response = await fetch(
       import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso'
-        ? '/chat/app-config.json?t=' + Date.now()
-        : '/chat/app-config.json?t=' + Date.now()
+        ? '/app-config.json?t=' + Date.now()
+        : '/app-config.json?t=' + Date.now()
     )
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)

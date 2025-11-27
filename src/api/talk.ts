@@ -938,3 +938,39 @@ export const searchGroupsAndUsers = async ({
     return { users: [], groups: [] }
   })
 }
+
+// 获取用户的群聊加入列表（用于私密群聊获取 passcode）
+export const getGroupMetaidJoinList = async ({
+  metaId,
+  groupId,
+}: {
+  metaId: string
+  groupId: string
+}): Promise<{
+  code: number
+  data: {
+    metaId: string
+    items: Array<{
+      joinPinId: string
+      joinType: string
+      joinTimestamp: number
+      groupState: number
+      address: string
+      referrer: string
+      k: string  // encrypted passcode
+      blockHeight: number
+      chain: string
+      byMetaId: string
+      byAddress: string
+    }>
+  }
+  message: string
+  processingTime: number
+}> => {
+  const _query = new URLSearchParams({
+    metaId,
+    groupId,
+  }).toString()
+  return TalkApi.get(`/group-metaid-join-list?${_query}`)
+}
+

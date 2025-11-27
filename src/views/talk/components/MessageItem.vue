@@ -699,7 +699,7 @@ import { useModalsStore } from '@/stores/modals'
 import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
-import { getUserInfoByAddress } from '@/api/man'
+import { getUserInfoByAddress, getUserInfoByMetaId } from '@/api/man'
 import { useImagePreview } from '@/stores/imagePreview'
 import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
@@ -821,6 +821,15 @@ interface UserInfoCache {
 
 const pinInfo = ref<PinInfo | null>(null)
 const pinUserInfo = ref<UserInfoCache>({})
+
+// Mention 用户信息缓存
+interface MentionedUser {
+  metaId: string
+  name: string
+  avatar?: string
+}
+
+const mentionedUsers = ref<Map<string, MentionedUser>>(new Map())
 
 const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
 
@@ -944,7 +953,8 @@ router.push({
 }
 // 在组件挂载和卸载时处理事件监听器和定时器清理
 onMounted(() => {
-  // 移除全局点击监听器，改为在更高级别处理
+  // 初始化被提及用户信息
+  initMentionedUsers()
 })
 
 onUnmounted(() => {
@@ -1132,26 +1142,70 @@ const parseTextMessage = (text: string) => {
     return `<a onClick="window.open('http://${text}','${openWindowTarget()}')" style="text-decoration: underline;cursor: pointer;word-break: break-all;" target="${openWindowTarget()}">${text}</a>`
   })
 
-  // 处理 @ 提及：将 @用户名 高亮显示
-  text = text.replace(/@(\S+)/g, function(match, username) {
-    return `<span class="mention" style="color: #fc457b; font-weight: 600; cursor: pointer;">@${username}</span>`
-  })
+  // 处理 @ 提及：使用 message.mention 字段精确匹配
+  if (props.message.mention && props.message.mention.length > 0) {
+    // 为每个被提及的用户进行替换
+    mentionedUsers.value.forEach((user, metaId) => {
+      const username = user.name
+      // 使用边界匹配确保完整匹配用户名，支持用户名中的空格
+      // 匹配 @username 的格式，username 可以包含空格，但必须是完整的用户名
+      const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const mentionRegex = new RegExp(`@${escapedUsername}(?=\\s|$|<|\\.|,|!|\\?|;)`, 'g')
+
+      text = text.replace(mentionRegex, function(match) {
+        return `<span class="mention" data-metaid="${metaId}" style="color: #fc457b; font-weight: 600; cursor: pointer;">${match}</span>`
+      })
+    })
+  }
 
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')
 }
 
-// 处理 webview 链接点击的事件委托
+// 处理 webview 链接和 mention 点击的事件委托
 const handleMessageClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement
+
+  // 处理 webview 链接点击
   if (target.tagName === 'A' && target.classList.contains('webview-link')) {
     event.preventDefault()
     const url = target.getAttribute('data-webview-url')
     if (url) {
-
       openAppBrowser({ url })
     }
+    return
   }
+
+  // 处理 mention 点击
+  if (target.classList.contains('mention')) {
+    event.preventDefault()
+    const metaId = target.getAttribute('data-metaid')
+    if (metaId) {
+      handleMentionClick(metaId)
+    }
+  }
+}
+
+// 处理 mention 点击跳转到私聊
+const handleMentionClick = async (metaId: string) => {
+  // 如果是自己，不跳转
+  if (metaId === userStore.last?.metaid) {
+    return
+  }
+
+  // 检查自己是否支持私聊
+  if (!userStore.last?.chatpubkey) {
+    return ElMessage.error(`${i18n.t('self_private_chat_unsupport')}`)
+  }
+
+  // 跳转到私聊页面
+  router.push({
+    name: 'talkAtMe',
+    params: {
+      channelId: metaId,
+    }
+  })
+  simpleTalk.setActiveChannel(metaId)
 }
 
 
@@ -1601,6 +1655,45 @@ const fetchPinUserInfo = async (address: string) => {
       metaid: ''
     }
   }
+}
+
+// 获取被提及用户的信息
+const fetchMentionedUserInfo = async (metaId: string) => {
+  if (mentionedUsers.value.has(metaId)) {
+    return mentionedUsers.value.get(metaId)!
+  }
+
+  try {
+    // 通过 API 查询用户信息
+    const userInfo = await getUserInfoByMetaId(metaId)
+    const mentionedUser: MentionedUser = {
+      metaId,
+      name: userInfo.name || metaId.slice(0, 8),
+      avatar: userInfo.avatar
+    }
+    mentionedUsers.value.set(metaId, mentionedUser)
+    return mentionedUser
+  } catch (error) {
+    console.error('Failed to fetch mentioned user info:', error)
+    const defaultUser: MentionedUser = {
+      metaId,
+      name: metaId.slice(0, 8)
+    }
+    mentionedUsers.value.set(metaId, defaultUser)
+    return defaultUser
+  }
+}
+
+// 初始化 mention 用户信息
+const initMentionedUsers = async () => {
+  if (!props.message.mention || props.message.mention.length === 0) {
+    return
+  }
+
+  // 批量获取被提及用户的信息
+  await Promise.all(
+    props.message.mention.map(metaId => fetchMentionedUserInfo(metaId))
+  )
 }
 
 // 判断附件是否为图片

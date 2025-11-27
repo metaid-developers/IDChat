@@ -2640,21 +2640,117 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
       }
 
-      // 私密群聊成员：不设置 passwordKey
+      // 私密群聊成员：尝试通过 API 获取最新的 passcode
       // 这些用户应该通过邀请链接加入群组，在 ChannelInvite.vue 中解密 passcode 并保存 passwordKey
-      // 如果这里有频道，说明用户可能是通过其他方式加入的（不推荐）
+      // 如果这里有频道，说明用户可能是通过其他方式加入的或者本地 passwordKey 丢失
       if (privateMemberChannels.length > 0) {
-        console.warn(
-          `⚠️ 发现 ${privateMemberChannels.length} 个私密群聊（成员身份）没有 passwordKey:`,
-          privateMemberChannels.map(c => ({ name: c.name, id: c.id }))
+        console.log(
+          `🔍 发现 ${privateMemberChannels.length} 个私密群聊（成员身份）没有 passwordKey，尝试从服务器获取...`
         )
-        console.warn(
-          '💡 提示：私密群聊成员应通过邀请链接加入以获取正确的 passwordKey。' +
-          '如果您是通过邀请链接加入的，passwordKey 应该已经被保存。' +
-          '如果仍然缺失，请联系群主重新发送邀请链接。'
-        )
-        // 不再设置临时的 passwordKey，保持为 undefined
-        // 用户发送消息时会提示 "无法获取群组密钥，请重新加入群组"
+        
+        // 检查钱包是否可用（需要用来解密 passcode）
+        if (!window.metaidwallet || typeof (window.metaidwallet as any).common?.ecdh !== 'function') {
+          console.warn('⚠️ 钱包不可用，无法解密 passcode')
+        } else {
+          // 动态导入 API
+          const { getGroupMetaidJoinList } = await import('@/api/talk')
+          
+          await Promise.allSettled(
+            privateMemberChannels.map(async (channel) => {
+              try {
+                // 调用接口获取加入信息
+                const response = await getGroupMetaidJoinList({
+                  metaId: this.selfMetaId,
+                  groupId: channel.id
+                })
+                
+                if (response.code === 0 && response.data.items && response.data.items.length > 0) {
+                  // 获取最新的加入记录（通常是最后一条）
+                  const joinItem = response.data.items[response.data.items.length - 1]
+                  const encryptedPasscode = joinItem.k
+                  
+                  if (!encryptedPasscode) {
+                    console.warn(`⚠️ 群聊 ${channel.name} 的加入记录中没有 passcode`)
+                    return
+                  }
+                  
+                  // 获取群主的 chatPublicKey
+                  const creatorChatPublicKey = channel.serverData?.createUserInfo?.chatPublicKey
+                  
+                  if (!creatorChatPublicKey) {
+                    console.warn(`⚠️ 无法获取群聊 ${channel.name} 的群主 chatPublicKey`)
+                    return
+                  }
+                  
+                  console.log(`🔑 开始解密群聊 ${channel.name} 的 passcode...`)
+                  
+                  // 使用 ECDH 解密 passcode
+                  try {
+                    const ecdhResult = await (window.metaidwallet as any).common.ecdh({
+                      externalPubKey: creatorChatPublicKey
+                    })
+                    const sharedSecret = ecdhResult.sharedSecret
+                    
+                    // 使用共享密钥解密 passcode 得到 passwordKey
+                    const decrypted = CryptoJS.AES.decrypt(encryptedPasscode, sharedSecret)
+                    const passwordKey = decrypted.toString(CryptoJS.enc.Utf8)
+                    
+                    if (!passwordKey) {
+                      console.warn(`⚠️ 解密 passcode 失败，群聊: ${channel.name}`)
+                      return
+                    }
+                    
+                    console.log(`✅ 成功解密 passwordKey，群聊: ${channel.name}`)
+                    
+                    // 更新频道的 passwordKey
+                    channel.passwordKey = passwordKey
+                    
+                    // 尝试解密群名称
+                    try {
+                      if (channel.name && /^[A-Za-z0-9+/=]+$/.test(channel.name) && channel.name.length > 20) {
+                        const decryptedName = CryptoJS.AES.decrypt(channel.name, passwordKey)
+                        const nameText = decryptedName.toString(CryptoJS.enc.Utf8)
+                        
+                        if (nameText) {
+                          console.log(`🔓 群聊名称已解密: "${channel.name.substring(0, 20)}..." -> "${nameText}"`)
+                          channel.name = nameText
+                        }
+                      }
+                    } catch (decryptError) {
+                      console.warn(`⚠️ 解密群名称失败:`, channel.name, decryptError)
+                    }
+                    
+                    // 尝试解密群公告
+                    try {
+                      if (channel.roomNote && /^[A-Za-z0-9+/=]+$/.test(channel.roomNote) && channel.roomNote.length > 20) {
+                        const decryptedNote = CryptoJS.AES.decrypt(channel.roomNote, passwordKey)
+                        const noteText = decryptedNote.toString(CryptoJS.enc.Utf8)
+                        
+                        if (noteText) {
+                          console.log(`🔓 群公告已解密: "${channel.roomNote.substring(0, 20)}..." -> "${noteText}"`)
+                          channel.roomNote = noteText
+                        }
+                      }
+                    } catch (decryptError) {
+                      console.warn(`⚠️ 解密群公告失败:`, channel.roomNote, decryptError)
+                    }
+                    
+                    // 保存到数据库
+                    await this.db.saveChannel(channel)
+                    
+                    console.log(`✅ 私密群聊 ${channel.name} 的 passwordKey 已设置（来自服务器 passcode）`)
+                  } catch (ecdhError) {
+                    console.error(`❌ ECDH 解密失败，群聊: ${channel.name}`, ecdhError)
+                  }
+                } else {
+                  console.warn(`⚠️ 未找到群聊 ${channel.name} 的加入记录`)
+                }
+              } catch (error) {
+                console.error(`❌ 获取群聊 ${channel.name} 的加入信息失败:`, error)
+              }
+            })
+          )
+        }
       }
 
       // 为其他群聊使用 channelId.substring(0, 16)

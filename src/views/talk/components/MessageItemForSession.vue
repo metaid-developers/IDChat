@@ -755,6 +755,7 @@ import redEnvelopeImg from '@/assets/images/red-envelope.svg?url'
 import TalkImagePreview from './ImagePreview.vue'
 import { computed, ref, toRaw, Ref, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { formatTimestamp, decryptedMessage } from '@/utils/talk'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
@@ -889,6 +890,7 @@ function handlerScrollIndex(index:number){
 const userStore = useUserStore()
 const rootstore=useRootStore()
 const simpleTalkStore = useSimpleTalkStore()
+const router = useRouter()
 const activeChannel = computed(() => simpleTalkStore.activeChannel)
 const jobs = useJobsStore()
 const imagePreview = useImagePreview()
@@ -1254,9 +1256,38 @@ const handleGroupLinkClick = () => {
   }
 
   const linkInfo = groupLinkInfo.value
-  if (linkInfo.fullUrl) {
-    // 在新窗口打开群链接
-    window.open(linkInfo.fullUrl, '_self')
+  if (!linkInfo.fullUrl) return
+
+  try {
+    // 解析 URL
+    const urlObj = new URL(linkInfo.fullUrl, window.location.origin)
+    const pathname = urlObj.pathname
+
+    // 提取 groupType 和 groupId
+    // 支持 /channels/private/xxx 和 /talk/channels/private/xxx 两种格式
+    const match = pathname.match(/\/channels\/(public|private)\/([a-f0-9]+i0)/)
+    if (!match) {
+      console.warn('无法解析群链接格式:', linkInfo.fullUrl)
+      return
+    }
+
+    const groupType = match[1] as 'public' | 'private'
+    const groupId = match[2]
+
+    // 提取查询参数
+    const query: Record<string, string> = {}
+    urlObj.searchParams.forEach((value, key) => {
+      query[key] = value
+    })
+
+    // 使用 router 跳转
+    router.push({
+      name: 'channelInvite',
+      params: { groupType, groupId },
+      query
+    })
+  } catch (error) {
+    console.error('解析群链接失败:', error)
   }
 }
 
