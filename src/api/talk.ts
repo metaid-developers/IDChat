@@ -755,14 +755,28 @@ export const getOneRedPacket = async (params: any): Promise<any> => {
 export const getRedPacketRemains = async (params: {
   groupId: string
   pinId: string
+  domain?: string
 }): Promise<any> => {
+  const { domain, ...queryParams } = params
   const path = params.groupId===TESTGROUPID?'/lucky-bag-unused-info-v2':'/lucky-bag-unused-info'
-  const query = new URLSearchParams(params).toString()
-  // return axios.get(`http://47.83.198.218:7568/group-chat/lucky-bag-unused-info?${query}`).then((res)=>{
-  //   console.log("res",res)
-  //   
-  //   return res.data.data
-  // })
+  const query = new URLSearchParams(queryParams as any).toString()
+  
+  // 如果提供了 domain，使用自定义 domain 请求
+  if (domain) {
+    const config = getRuntimeConfig()
+    return axios.get(`${domain}/group-chat${path}?${query}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }).then(res => {
+      if (res.data?.code === 0) {
+        return res.data.data
+      }
+      throw new Error(res.data?.message || 'Request failed')
+    })
+  }
+  
+  // 使用默认 API
   return TalkApi.get(`${path}?${query}`).then(res => {
     return res.data
   })
@@ -773,18 +787,32 @@ export const grabRedPacket = async (params: {
   pinId: string
   metaId: string
   address: string
+  domain?: string
 }): Promise<any> => {
   params = params || {}
-
-  //const query = new URLSearchParams(params).toString()
-
-  //   return axios.post(`http://47.83.198.218:7568/group-chat/grab-lucky-bag`,params).then((res)=>{
-  //   console.log("res",res)
-  //   
-  //   return res.data.data
-  // })
+  const { domain, ...requestParams } = params
   const path = params.groupId===TESTGROUPID?'/grab-lucky-bag-v2':'/grab-lucky-bag'
-  return TalkApi.post(`${path}`, params)
+  
+  // 如果提供了 domain，使用自定义 domain 请求
+  if (domain) {
+    const config = getRuntimeConfig()
+    return axios.post(`${domain}/group-chat${path}`, requestParams, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }).then(res => {
+      if (res.data?.code === 0) {
+        return res.data.data
+      } else {
+        throw new Error(res.data?.message || res.data)
+      }
+    }).catch(e => {
+      throw new Error(e.message)
+    })
+  }
+  
+  // 使用默认 API
+  return TalkApi.post(`${path}`, requestParams)
     .then(res => {
       if (res?.code == 0) {
        

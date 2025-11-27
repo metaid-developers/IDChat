@@ -1,10 +1,6 @@
 <template>
   <TransitionRoot :show="layout.isShowRedPacketOpenModal" :unmount="true">
-    <Dialog
-      @close="closeModal"
-      class="relative z-50"
-     
-    >
+    <Dialog @close="closeModal" class="relative z-50">
       <TransitionChild
         as="template"
         enter="duration-300 ease-out"
@@ -241,9 +237,14 @@ const tryOpenRedPacket = async () => {
       //params.address = user.user?.evmAddress
     }
 
+    // 如果红包信息中包含 domain 字段，传递给 grabRedPacket
+    if (redPacket.value?.domain) {
+      params.domain = redPacket.value.domain
+    }
+
     await grabRedPacket(params)
     await sleep(1000)
-    
+
     layout.isShowLoading = false
     await viewDetails()
   } catch (error) {
@@ -254,26 +255,21 @@ const tryOpenRedPacket = async () => {
 }
 
 const viewDetails = async () => {
- try {
-   simpleTalk.addReceivedRedPacketId(message?.txId)
-  
-  const redPacketInfo = await getOneRedPacket({
-    groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannel?.id,
-    pinId: `${message?.txId}i0`,
-  })
-  modals.redPacketResult = redPacketInfo
- } catch (error) {
-  
-  throw new Error(error as any)
-  
- }finally{
-  
+  try {
+    simpleTalk.addReceivedRedPacketId(message?.txId)
 
-  modals.openRedPacket = null
-  layout.isShowRedPacketOpenModal = false
-  layout.isShowRedPacketResultModal = true
- }
-
+    const redPacketInfo = await getOneRedPacket({
+      groupId: simpleTalk.activeChannel?.parentGroupId || simpleTalk.activeChannel?.id,
+      pinId: `${message?.txId}i0`,
+    })
+    modals.redPacketResult = redPacketInfo
+  } catch (error) {
+    throw new Error(error as any)
+  } finally {
+    modals.openRedPacket = null
+    layout.isShowRedPacketOpenModal = false
+    layout.isShowRedPacketResultModal = true
+  }
 }
 
 const closeModal = () => {
@@ -294,6 +290,12 @@ onMounted(async () => {
   } else if (redPacketType === '2001' || redPacketType === '2002') {
     // params.address = user.user?.evmAddress
   }
+
+  // 如果红包信息中包含 domain 字段，传递给 getRedPacketRemains
+  if (redPacket.value?.domain) {
+    params.domain = redPacket.value.domain
+  }
+
   getRedPacketRemains(params).then(res => {
     remains.value = res.unused
     console.log('remains', remains.value)

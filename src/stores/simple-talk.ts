@@ -1672,8 +1672,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 遍历所有频道，检查并加载缺失消息
         const loadPromises = this.channels.map(async (channel) => {
           try {
-           
+            
 await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
+            
+           
+
             
             
           } catch (error) {
@@ -1718,7 +1721,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const latestIndex = channel.lastMessage.index
 
       // 从数据库加载已有消息
-      const localMessages = await this.db.getMessages(channelId, 10000)
+      const localMessages = await this.db.getMessages(channelId, 100000)
       
       if (localMessages.length === 0) {
         // 本地没有消息，从最新位置开始往前翻页加载
@@ -1736,7 +1739,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
 
       // 检查缺失的消息是否都比较旧（超过3个月），如果是则跳过
-      const sortedLocal = localMessages.sort((a, b) => a.index - b.index)
+      const sortedLocal = localMessages.filter(msg => msg.timestamp < threeMonthsAgo).sort((a, b) => b.index - a.index)
       const oldestLocal = sortedLocal[0]
       
       if (oldestLocal && oldestLocal.timestamp < threeMonthsAgo) {
@@ -1760,13 +1763,13 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       
       for (const range of reversedRanges) {
         const rangeSize = range.endIndex - range.startIndex + 1
-        console.log(`📥 补全缺失段 [${range.startIndex}, ${range.endIndex}]，共 ${rangeSize} 条消息`)
+        console.log(`📥  频道 ${channel.name} 补全缺失段 [${range.startIndex}, ${range.endIndex}]，共 ${rangeSize} 条消息`)
         
         // 检查这个缺失段是否超过三个月前
         // 如果 range.endIndex 对应的消息时间戳可以判断，就跳过
         // 这里简化处理：继续加载，在 loadChannelHistoryMessages 中处理时间戳
         
-        await this.loadChannelHistoryMessages(channelId, range.endIndex, threeMonthsAgo)
+        await this.loadChannelHistoryMessages(channelId, range.endIndex, threeMonthsAgo,range.startIndex)
         
         // 每个缺失段补全后稍作延迟
         await sleep(300)
@@ -1784,20 +1787,21 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     async loadChannelHistoryMessages(
       channelId: string, 
       fromIndex: number,
-      stopTimestamp?: number
+      stopTimestamp?: number,
+      endIndex: number = 1
     ): Promise<void> {
       const channel = this.channels.find(c => c.id === channelId)
       if (!channel) return
 
       const threeMonthsAgo = stopTimestamp || Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000)
-      const batchSize = 30 // 每批加载30条
+      const batchSize = 50 // 每批加载30条
 
       try {
         let currentEndIndex = fromIndex // 当前批次的结束位置
         let batchCount = 0
         const maxBatches = 30 // 最多加载30批，防止无限循环
 
-        while (batchCount < maxBatches && currentEndIndex > 0) {
+        while (batchCount < maxBatches && currentEndIndex > 0 &&currentEndIndex>=endIndex) {
           // 计算这批的 startIndex：向前推 batchSize 条
           const currentStartIndex = Math.max(1, currentEndIndex - batchSize + 1)
           const expectedCount = currentEndIndex - currentStartIndex + 1
@@ -1805,7 +1809,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           console.log(`📥 频道 ${channel.name} 第 ${batchCount + 1} 批，加载 [${currentStartIndex}, ${currentEndIndex}]，预期 ${expectedCount} 条`)
           
           // 使用 fetchServerNewsterMessages 按 index 分页获取消息
-          const messages = await this.fetchServerNewsterMessages(channelId, channel, currentStartIndex)
+          const messages = await this.fetchServerNewsterMessages(channelId, channel, currentStartIndex,batchSize)
           
           if (messages.length === 0) {
             console.log(`⏹️ 频道 ${channel.name} 没有更多消息，已到达边界`)
@@ -1826,7 +1830,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             if (message.timestamp < threeMonthsAgo) {
               console.log(`⏹️ 消息 index=${message.index} 已超过三个月，停止加载`)
               reachedBoundary = true
-              break
             }
 
             // 边界条件2: 检查是否到达最早消息 (index=1)
@@ -1869,7 +1872,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           }
 
           // 检查本地消息连续性（只检查已加载的部分）
-          const localMessages = await this.db.getMessages(channelId, 10000)
+          const localMessages = await this.db.getMessages(channelId, 100000)
           const sortedLocal = localMessages.sort((a, b) => a.index - b.index)
           
           // 检查从 currentStartIndex 到 fromIndex 这个范围内是否连续
@@ -1890,6 +1893,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           } else {
             console.log(`⚠️ 当前范围 [${currentStartIndex}, ${fromIndex}] 消息不连续，继续补全`)
             // 不更新 currentEndIndex，继续尝试补全同一范围
+            currentEndIndex = currentStartIndex - 1
           }
 
           batchCount++
@@ -3798,43 +3802,36 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       /**
      * 获取服务器消息
      */
-    async fetchServerNewsterMessages(channelId: string, channel: SimpleChannel,startIndex:number): Promise<UnifiedChatMessage[]> {
+    async fetchServerNewsterMessages(channelId: string, channel: SimpleChannel,startIndex:number,size:number=30): Promise<UnifiedChatMessage[]> {
       let serverMessages: any[] = []
       
       try {
         if (channel.type === 'group') {
           // 群聊消息
-          console.log(`🌐 获取群聊 ${channelId} 的服务端消息...`)
           const { getChannelNewestMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getChannelNewestMessages({
             groupId: channelId,
             startIndex: String(startIndex),
-            size: '30' 
+            size: String(size)
           })
           serverMessages = result.list || []
-          console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'sub-group') {
           // 子群聊消息 - 使用 channelId 而不是 parentGroupId
-          console.log(`🌐 获取子群聊 ${channelId} 的服务端消息...`)
           const { getSubChannelNewestMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getSubChannelNewestMessages({
             channelId: channelId, // 子群聊使用自己的channelId作为groupId
             startIndex: String(startIndex),
-            size: '30'
+            size: String(size)
           })
           serverMessages = result.list || []
-          console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'private') {
-          //TODO  私聊消息 
           const result: UnifiedChatResponseData = await getNewstPrivateChatMessages({
-             metaId: this.selfMetaId,
+            metaId: this.selfMetaId,
             otherMetaId: channelId,
             startIndex: String(startIndex),
-            size: '30'
+            size:  String(size)
           })
-          serverMessages = result.list || []
-          console.log(`📡 私聊API返回 ${serverMessages.length} 条消息`)
-          
+          serverMessages = result.list || [] 
         }
       } catch (apiError) {
         console.error(`❌ API调用失败:`, apiError)
