@@ -269,15 +269,16 @@
 
   <!-- 无法识别的协议类型，显示为可点击链接 -->
   <div v-else class="protocol-card-fallback whitespace-pre-wrap break-all">
-    <a 
+    <a
       v-if="cardInfo.fullUrl"
-      :href="cardInfo.fullUrl" 
-      target="_blank" 
+      :href="cardInfo.fullUrl"
+      target="_blank"
       rel="noopener noreferrer"
       class="url underline cursor-pointer"
       style="word-break: break-all;"
       @click.stop
-    >{{ content }}</a>
+      >{{ content }}</a
+    >
     <span v-else>{{ content }}</span>
   </div>
 </template>
