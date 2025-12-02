@@ -1,11 +1,11 @@
 <template>
   <div
     class="broadcast-chat-header bg-white dark:bg-gray-700 text-dark-800 dark:text-white"
-    v-show="subchannels.length > 0 && showChannelHeader"
+    v-show="visibleSubchannels.length > 0"
   >
     <div
       class="broadcast-chat-container"
-      v-for="channel in subchannels"
+      v-for="channel in visibleSubchannels"
       :key="channel.id"
       @click="goToSubChannel(channel.id)"
     >
@@ -32,27 +32,29 @@
         </div>
       </div>
       <div class="flex flex-row items-center gap-7">
+        <el-badge
+          :value="getUnreadCount(channel)"
+          class="item"
+          :max="9999"
+          :show-zero="false"
+          v-if="getUnreadCount(channel) > 0"
+        >
+          <div :class="['main-border', 'primary']">
+            <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700  w-8 h-8" />
+          </div>
+        </el-badge>
 
-      <el-badge
-        :value="getUnreadCount(channel)"
-        class="item"
-        :max="9999"
-        :show-zero="false"
-        v-if="getUnreadCount(channel) > 0"
-      >
-        <div :class="['main-border', 'primary']">
-          <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700  w-8 h-8" />
+        <div v-else :class="['main-border', 'primary']">
+          <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
         </div>
-      </el-badge>
 
-      <div v-else :class="['main-border', 'primary']">
-        <Icon name="arrow_right" class="cursor-pointer hover:text-gray-700 w-8 h-8" />
+        <div
+          @click.stop="closeSubChannelHeader($event, channel)"
+          class="flex z-[999] w-7 h-7 cursor-pointer hover:scale-105 items-center justify-center"
+        >
+          <el-icon :size="28"><CircleClose /></el-icon>
+        </div>
       </div>
-
-      <div @click="closeSubChannelHeader" class="flex z-[999] w-7 h-7 cursor-pointer hover:scale-105 items-center justify-center">
-       <el-icon :size="28"><CircleClose /></el-icon>
-      </div>
-</div>
     </div>
   </div>
 </template>
@@ -72,23 +74,34 @@ const simpleTalkStore = useSimpleTalkStore()
 const router=useRouter()
 const i18n=useI18n()
 const hasUnreadAmount=ref(false)
-// 计算属性：是否显示广播聊天区域（只在群聊且有子群聊时显示提示）
+// 计算属性：获取所有子频道
 const subchannels = computed(() => {
   return simpleTalkStore.currSubChannels
 })
 
-const showChannelHeader=computed(()=>{
-  return simpleTalkStore.activeChannel?.type === 'sub-group' ? simpleTalkStore.getOneChannelMuteStatus(simpleTalkStore.activeChannel?.parentGroupId) :
-  simpleTalkStore.getOneChannelSubHeaderShowStatus(simpleTalkStore.activeChannel?.id)
-
+// 计算属性：过滤出未被隐藏的子频道
+const visibleSubchannels = computed(() => {
+  return subchannels.value.filter(channel => {
+    // 检查该子频道是否被隐藏
+    return simpleTalkStore.getOneChannelSubHeaderShowStatus(channel.id)
+  })
 })
 
-function closeSubChannelHeader(e:Event){
+function closeSubChannelHeader(e: Event, channel: SimpleChannel){
   e.stopPropagation()
-  simpleTalkStore.updateShowSubChannelHeader({
-    groupId:simpleTalkStore.activeChannel!.id,
-    status:false
-  })
+  e.preventDefault()
+
+  // 使用子频道自己的 ID 来保存隐藏状态
+  const subChannelId = channel.id
+
+  console.log('🔴 关闭子频道头部, subChannelId:', subChannelId, 'channel name:', channel.name)
+
+  if (subChannelId) {
+    simpleTalkStore.updateShowSubChannelHeader({
+      groupId: subChannelId,
+      status: false
+    })
+  }
 }
 
 const lastMsgContentType = (type: MessageType, content: string, channelId: string) => {
@@ -128,7 +141,7 @@ const getUnreadCount = (channel: SimpleChannel) => {
     return 0
   }
 simpleTalkStore.getLastReadIndex(channel.id).then((lastReadIndex)=>{
- 
+
     const unreadCount = +channel.lastMessage.index - (+lastReadIndex)
     if(unreadCount > 0 && channel.lastMessage?.sender == channel.createdBy){
       hasUnreadAmount.value=true
@@ -139,14 +152,14 @@ simpleTalkStore.getLastReadIndex(channel.id).then((lastReadIndex)=>{
   }).catch(()=>{
     return 0
   })
-  
+
 }
 
 
 watch(()=>hasUnreadAmount.value,(newVal:boolean)=>{
 if(newVal){
   if(simpleTalkStore.activeChannel?.type !== 'sub-group'){
-    
+
     simpleTalkStore.updateShowSubChannelHeader({
     groupId:simpleTalkStore.activeChannel?.id!,
     status:true

@@ -1,6 +1,9 @@
 import Request from 'request-sdk'
 import i18n from './i18n'
 
+// 默认超时时间：60秒
+const DEFAULT_TIMEOUT = 120000
+
 export default class HttpRequest {
   request
   constructor(
@@ -14,6 +17,7 @@ export default class HttpRequest {
     }
   ) {
     this.request = new Request(baseUrl, {
+      timeout: DEFAULT_TIMEOUT,
       // @ts-ignore
       timeoutErrorMessage: i18n.global.t('Request Timeout'),
       ...params,

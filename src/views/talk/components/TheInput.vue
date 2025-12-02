@@ -674,14 +674,39 @@ const trySendImage = async () => {
     const sharedSecret = ecdh?.sharedSecret //atobToHex(credential!.signature)
     attachments[0].data = ecdhEncryptForPrivateImg(attachments[0].data, sharedSecret)
   }
+
+  // 处理群聊和子群聊的图片加密
   if (
-    simpleTalk.activeChannel?.type === 'group' &&
-    simpleTalk.activeChannel.roomJoinType === '100'
+    simpleTalk.activeChannel?.type === 'group' ||
+    simpleTalk.activeChannel?.type === 'sub-group'
   ) {
-    attachments[0].data = ecdhEncryptForPrivateImg(
-      attachments[0].data,
-      simpleTalk.activeChannel.passwordKey!
-    )
+    // 判断是否需要使用私密群聊加密
+    let isPrivateGroup = simpleTalk.activeChannel.roomJoinType === '100'
+    let parentChannel: any = null
+
+    // 如果是子群聊，获取父群聊信息
+    if (simpleTalk.activeChannel.type === 'sub-group' && simpleTalk.activeChannel.parentGroupId) {
+      parentChannel = simpleTalk.getParentGroupChannel(simpleTalk.activeChannel.parentGroupId)
+      if (parentChannel?.roomJoinType === '100') {
+        isPrivateGroup = true
+      }
+    }
+
+    if (isPrivateGroup) {
+      // 子群聊使用父群聊的 passwordKey
+      const secretKey =
+        simpleTalk.activeChannel.type === 'sub-group' && parentChannel
+          ? parentChannel.passwordKey
+          : simpleTalk.activeChannel.passwordKey
+
+      if (secretKey) {
+        attachments[0].data = ecdhEncryptForPrivateImg(attachments[0].data, secretKey)
+        console.log(
+          '🔐 私密群聊图片已加密',
+          simpleTalk.activeChannel.type === 'sub-group' ? '(使用父群聊密钥)' : ''
+        )
+      }
+    }
   }
 
   // clone，用于填充mock信息
@@ -995,21 +1020,43 @@ const trySendText = async (e: any) => {
     simpleTalk.activeChannel?.type === 'group' ||
     simpleTalk.activeChannel?.type === 'sub-group'
   ) {
-    if (simpleTalk.activeChannel.roomJoinType !== '100') {
+    // 判断是否需要使用私密群聊加密
+    // 1. 如果是主群聊，检查 roomJoinType === '100'
+    // 2. 如果是子群聊，检查父群聊的 roomJoinType === '100'
+    let isPrivateGroup = simpleTalk.activeChannel.roomJoinType === '100'
+    let parentChannel: any = null
+
+    // 如果是子群聊，获取父群聊信息
+    if (simpleTalk.activeChannel.type === 'sub-group' && simpleTalk.activeChannel.parentGroupId) {
+      parentChannel = simpleTalk.getParentGroupChannel(simpleTalk.activeChannel.parentGroupId)
+      if (parentChannel?.roomJoinType === '100') {
+        isPrivateGroup = true
+      }
+    }
+
+    if (!isPrivateGroup) {
       content = encrypt(chatInput.value, simpleTalk.activeChannel.id.substring(0, 16))
     } else {
-      // 私密群聊加密
-      let secretKey = simpleTalk.activeChannel.passwordKey
+      // 私密群聊加密：子群聊使用父群聊的 passwordKey
+      let secretKey =
+        simpleTalk.activeChannel.type === 'sub-group' && parentChannel
+          ? parentChannel.passwordKey
+          : simpleTalk.activeChannel.passwordKey
 
       // 如果是创建者且没有缓存的 passwordKey，从钱包获取
-      if (!secretKey && simpleTalk.activeChannel.createdBy === simpleTalk.selfMetaId) {
+      const targetChannel =
+        simpleTalk.activeChannel.type === 'sub-group' && parentChannel
+          ? parentChannel
+          : simpleTalk.activeChannel
+
+      if (!secretKey && targetChannel.createdBy === simpleTalk.selfMetaId) {
         const pkh = await (window.metaidwallet as any).getPKHByPath({
-          path: `m/${simpleTalk.activeChannel.path || '100/0'}`,
+          path: `m/${targetChannel.path || '100/0'}`,
         })
         secretKey = pkh.substring(0, 16)
 
-        // 更新缓存
-        simpleTalk.activeChannel.passwordKey = secretKey
+        // 更新缓存到主群聊
+        targetChannel.passwordKey = secretKey
       }
 
       if (!secretKey) {
@@ -1018,7 +1065,11 @@ const trySendText = async (e: any) => {
       }
 
       content = encrypt(chatInput.value, secretKey)
-      console.log('🔐 私密群聊消息已加密, passwordKey:', secretKey.substring(0, 8) + '...')
+      console.log(
+        '🔐 私密群聊消息已加密, passwordKey:',
+        secretKey.substring(0, 8) + '...',
+        simpleTalk.activeChannel.type === 'sub-group' ? '(使用父群聊密钥)' : ''
+      )
     }
 
     console.log('sub-group chat content:', content, simpleTalk.activeChannel.id.substring(0, 16))

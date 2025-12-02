@@ -782,7 +782,9 @@ export const createChannel = async (
       }
 
       // 使用 path 获取 passwordKey（getPKHByPath 直接返回字符串）
-      const pkh = await (window.metaidwallet as any).getPKHByPath({ path: newPath })
+      // 路径格式需要以 m/ 开头
+      const fullPath = `m/${newPath}`
+      const pkh = await (window.metaidwallet as any).getPKHByPath({ path: fullPath })
 
       if (!pkh) {
         throw new Error('获取 passwordKey 失败')
@@ -2043,9 +2045,24 @@ export function decryptedMessage(
       throw new Error((error as any).toString())
     }
   } else {
-    // 群聊解密：优先使用 passwordKey，否则使用 channelId
-    if (!secretKeyStr && simpleTalk.activeChannel?.passwordKey) {
-      secretKeyStr = simpleTalk.activeChannel.passwordKey
+    // 群聊解密：
+    // 1. 如果是子群聊，检查父群聊是否为私密群聊，使用父群聊的 passwordKey
+    // 2. 如果是主群聊，优先使用 passwordKey，否则使用 channelId
+    if (!secretKeyStr) {
+      const activeChannel = simpleTalk.activeChannel
+
+      // 如果是子群聊，检查父群聊
+      if (activeChannel?.type === 'sub-group' && activeChannel.parentGroupId) {
+        const parentChannel = simpleTalk.getParentGroupChannel(activeChannel.id)
+        if (parentChannel?.roomJoinType === '100' && parentChannel.passwordKey) {
+          // 父群聊是私密群聊，使用父群聊的 passwordKey
+          secretKeyStr = parentChannel.passwordKey
+          console.log('🔓 子群聊消息解密使用父群聊 passwordKey')
+        }
+      } else if (activeChannel?.passwordKey) {
+        // 主群聊使用自己的 passwordKey
+        secretKeyStr = activeChannel.passwordKey
+      }
     }
     console.log('decryptedMessage secretKeyStr', secretKeyStr)
     return decrypt(content, secretKeyStr || simpleTalk.activeChannelId.substring(0, 16))

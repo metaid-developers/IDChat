@@ -34,6 +34,48 @@
           </div>
         </div>
 
+        <!-- 图片裁切对话框 -->
+        <ElDialog
+          v-model="cropperDialogVisible"
+          :title="$t('ProfileEditModal.cropTitle') || '裁切头像'"
+          width="400px"
+          :close-on-click-modal="false"
+          :append-to-body="true"
+          class="cropper-dialog"
+        >
+          <div class="cropper-container">
+            <VueCropper
+              ref="cropperRef"
+              :img="cropperImage"
+              :output-size="1"
+              :output-type="'png'"
+              :info="true"
+              :full="false"
+              :can-move="true"
+              :can-move-box="true"
+              :fixed="true"
+              :fixed-number="[1, 1]"
+              :can-scale="true"
+              :auto-crop="true"
+              :auto-crop-width="200"
+              :auto-crop-height="200"
+              :center-box="true"
+              :high="true"
+              :max-img-size="2000"
+            />
+          </div>
+          <template #footer>
+            <div class="dialog-footer">
+              <el-button @click="cropperDialogVisible = false">{{
+                $t('common.cancel') || '取消'
+              }}</el-button>
+              <el-button type="primary" @click="confirmCrop">{{
+                $t('common.confirm') || '确认'
+              }}</el-button>
+            </div>
+          </template>
+        </ElDialog>
+
         <div class="username-section mb-6 mt-6">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {{ $t('ProfileEditModal.username') }}
@@ -87,18 +129,19 @@ import { image2Attach, compressImage } from '@/lib/file'
 import { createOrUpdateUserInfo, getMVCRewards } from '@/utils/userInfo'
 import { useRoute, useRouter } from 'vue-router'
 import { Camera } from '@element-plus/icons-vue'
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
+import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
 import { useLayoutStore } from '@/stores/layout'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { VueCropper } from 'vue-cropper'
 const props = defineProps<{
   modelValue: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
 const router = useRouter()
-const route=useRoute()
-const ecdhsStore=useEcdhsStore()
+const route = useRoute()
+const ecdhsStore = useEcdhsStore()
 const userStore = useUserStore()
 const avatarPreview = ref<string>('')
 const username = ref<string>('')
@@ -107,8 +150,14 @@ const imageUrl = ref('')
 const currentAvatar = ref<string>(DefaultAvatar)
 const imgRaw = ref<File | null>(null)
 const loading = ref(false)
-const layoutStore=useLayoutStore()
-const simpleTalk=useSimpleTalkStore()
+const layoutStore = useLayoutStore()
+const simpleTalk = useSimpleTalkStore()
+
+// 裁切相关状态
+const cropperDialogVisible = ref(false)
+const cropperImage = ref('')
+const cropperRef = ref<any>(null)
+const originalFile = ref<File | null>(null)
 
 watch(
   () => userStore.last?.avatar,
@@ -169,16 +218,110 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = async rawFile => {
   }
 
   try {
-    // 压缩图片
+    // 保存原始文件并打开裁切对话框
+    originalFile.value = rawFile as File
     getBase64(rawFile, url => {
-      imageUrl.value = url
+      cropperImage.value = url
+      cropperDialogVisible.value = true
     })
-    imgRaw.value = rawFile as File
     return false
   } catch (error) {
-    ElMessage.error('Failed to compress image. Please try another image.')
+    ElMessage.error('Failed to load image. Please try another image.')
     return false
   }
+}
+
+// 确认裁切
+const confirmCrop = () => {
+  if (!cropperRef.value) return
+
+  cropperRef.value.getCropBlob(async (blob: Blob) => {
+    try {
+      // 压缩图片
+      const compressedBlob = await compressImageBlob(blob, 0.8, 500)
+
+      // 转换为 File 对象
+      const fileName = originalFile.value?.name || 'avatar.png'
+      const file = new File([compressedBlob], fileName, { type: 'image/png' })
+
+      // 设置预览
+      const reader = new FileReader()
+      reader.onload = e => {
+        imageUrl.value = e.target?.result as string
+      }
+      reader.readAsDataURL(compressedBlob)
+
+      // 保存裁切后的文件
+      imgRaw.value = file
+      cropperDialogVisible.value = false
+
+      ElMessage.success('图片裁切成功')
+    } catch (error) {
+      console.error('Crop failed:', error)
+      ElMessage.error('裁切失败，请重试')
+    }
+  })
+}
+
+// 压缩图片 Blob
+const compressImageBlob = (
+  blob: Blob,
+  quality: number = 0.8,
+  maxSize: number = 500
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(blob)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+
+      const canvas = document.createElement('canvas')
+      let width = img.width
+      let height = img.height
+
+      // 限制最大尺寸
+      if (width > maxSize || height > maxSize) {
+        if (width > height) {
+          height = (height / width) * maxSize
+          width = maxSize
+        } else {
+          width = (width / height) * maxSize
+          height = maxSize
+        }
+      }
+
+      canvas.width = width
+      canvas.height = height
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'))
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      canvas.toBlob(
+        result => {
+          if (result) {
+            resolve(result)
+          } else {
+            reject(new Error('Failed to compress image'))
+          }
+        },
+        'image/png',
+        quality
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load image'))
+    }
+
+    img.src = url
+  })
 }
 
 const save = async () => {
@@ -200,14 +343,12 @@ const save = async () => {
     if (profile.value !== userStore.last?.bio) {
       values.bio = profile.value
     }
-    if(!userStore.last?.chatpubkey){
-      
-      const ecdh=await getEcdhPublickey()
-      if(ecdh){
-         values.chatpubkey=ecdh?.ecdhPubKey
+    if (!userStore.last?.chatpubkey) {
+      const ecdh = await getEcdhPublickey()
+      if (ecdh) {
+        values.chatpubkey = ecdh?.ecdhPubKey
         //  ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
       }
-      
     }
     //   export const ASSIST_ENDPOINT =
     // curNetwork === "testnet"
@@ -219,7 +360,7 @@ const save = async () => {
         nameId: userStore.last?.nameId || '',
         bioId: userStore.last?.bioId || '',
         avatarId: userStore.last?.avatarId || '',
-        chatpubkey:userStore.last?.chatpubkey || ''
+        chatpubkey: userStore.last?.chatpubkey || '',
       },
       options: {
         feeRate: 1,
@@ -241,23 +382,21 @@ const save = async () => {
         }
       )
     }
-    
+
     await userStore.setUserInfo(userStore.last!.address)
     console.log('Saving profile changes:', values)
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
-    setTimeout(async() => {
-      
+    setTimeout(async () => {
       await simpleTalk.init()
-       if(route.params.channelId && route.params.channelId !=='welcome'){
+      if (route.params.channelId && route.params.channelId !== 'welcome') {
         window.location.reload()
-      
-       }
+      }
       //layoutStore.$patch({showJoinView:true})
-      
+
       // if(route.name !== 'talkAtMe'){
       //   //const channelId=route.params?.channelId
-       
+
       // //  if(channelId && channelId !=='welcome'){
       // //   window.location.reload()
       // //  }else{
@@ -269,10 +408,8 @@ const save = async () => {
       // // //   },
       // // // })
       // //  }
-     
-      // }
 
-     
+      // }
     }, 1000)
   } catch (error) {
     console.error('Failed to save profile changes:', error)
@@ -398,4 +535,22 @@ const save = async () => {
     }
   }
 }
+
+// 裁切对话框样式
+.cropper-dialog {
+  .cropper-container {
+    width: 100%;
+    height: 300px;
+  }
+
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+}
+</style>
+
+<style>
+@import 'vue-cropper/dist/index.css';
 </style>

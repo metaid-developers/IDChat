@@ -217,7 +217,7 @@
               <Image
                 :src="decryptedImageMessage"
                 :isPrivateChat="true"
-                :chatPasswordForDecrypt="simpleTalk.activeChannel?.passwordKey || ''"
+                :chatPasswordForDecrypt="chatPasswordKeyForDecrypt"
                 customClass="rounded py-0.5 object-scale-down"
               />
             </div>
@@ -232,7 +232,7 @@
                 v-if="showImagePreview"
                 :src="message.content"
                 :isPrivateChat="true"
-                :chatPasswordForDecrypt="simpleTalk.activeChannel?.passwordKey || ''"
+                :chatPasswordForDecrypt="chatPasswordKeyForDecrypt"
                 @close="showImagePreview = false"
               />
             </Teleport>
@@ -380,218 +380,17 @@
             </div>
           </div>
 
-          <!-- MetaApp 应用链接卡片 -->
+          <!-- 协议卡片（MetaApp、Buzz、SimpleNote、MetaFile 等） -->
           <div
-            class="w-full py-0.5 flex"
+            class="my-1.5 max-w-full flex"
             :class="[isMyMessage ? 'flex-row-reverse' : '']"
-            v-else-if="isMetaAppLink && metaAppInfo"
+            v-else-if="shouldUseProtocolCard"
           >
-            <div
-              class="lg:max-w-full max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md group overflow-hidden"
-              @click="handleMetaAppLinkClick"
-            >
-              <!-- 顶部：icon | appName version | Made by creator -->
-              <div
-                class="p-4 pb-2 flex items-center gap-3 border-b border-gray-200 dark:border-gray-600"
-              >
-                <!-- Icon -->
-                <div class="w-12 h-12 shrink-0">
-                  <ChatImage
-                    v-if="metaAppLinkInfo.icon"
-                    :src="metaAppLinkInfo.icon"
-                    customClass="w-12 h-12 rounded-lg object-cover "
-                  />
-                  <div
-                    v-else
-                    class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-                  >
-                    <Icon name="cube" class="w-6 h-6 text-gray-400" />
-                  </div>
-                </div>
-
-                <!-- AppName & Version -->
-                <div class="flex-1 min-w-0">
-                  <div class="text-dark-800 dark:text-gray-100 font-medium text-sm truncate">
-                    {{ metaAppLinkInfo.appName || 'MetaApp' }}
-                  </div>
-                  <div class="text-dark-400 dark:text-gray-400 text-xs mt-0.5">
-                    {{ metaAppLinkInfo.version }}
-                  </div>
-                </div>
-
-                <!-- Made by Creator -->
-                <div class="flex flex-col">
-                  <div class="text-dark-400 dark:text-gray-400 font-medium text-sm">
-                    Made by
-                  </div>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                    <UserAvatar
-                      :image="pinUserInfo[metaAppLinkInfo.creator]?.avatar || ''"
-                      :name="
-                        pinUserInfo[metaAppLinkInfo.creator]?.name ||
-                          metaAppLinkInfo.creator.slice(0, 8)
-                      "
-                      :meta-id="pinUserInfo[metaAppLinkInfo.creator]?.metaid || ''"
-                      :meta-name="''"
-                      class="w-6 h-6"
-                      :disabled="true"
-                    />
-                    <div class="text-dark-800 dark:text-gray-100 text-xs">
-                      {{
-                        pinUserInfo[metaAppLinkInfo.creator]?.name ||
-                          metaAppLinkInfo.creator.slice(0, 8)
-                      }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Title -->
-              <div class="px-4 py-3">
-                <div class="text-dark-800 dark:text-gray-100 font-medium text-base line-clamp-2">
-                  {{ metaAppLinkInfo.title }}
-                </div>
-              </div>
-
-              <!-- Cover Image -->
-              <div v-if="metaAppLinkInfo.coverImg" class="w-full h-40  p-4 ">
-                <ChatImage
-                  :src="metaAppLinkInfo.coverImg"
-                  customClass="w-full h-full object-cover rounded-none"
-                  wrapperClass="w-full h-full"
-                />
-              </div>
-
-              <!-- OPEN APP 按钮 -->
-              <div class="p-4 pt-3 border-t border-gray-200 dark:border-gray-600">
-                <div
-                  class="main-border bg-primary hover:bg-primary-dark text-black text-center py-2 px-4 rounded-lg transition-colors duration-200 font-medium text-sm"
-                >
-                  OPEN APP
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Buzz 卡片 -->
-          <div
-            class="w-full py-0.5 flex"
-            :class="[isMyMessage ? 'flex-row-reverse' : '']"
-            v-else-if="isBuzzLink && pinInfo"
-          >
-            <div
-              class=" max-w-[300px]  min-w-[300px] lg:max-w-[420px]   shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md overflow-hidden"
-              @click="handleBuzzOrNoteLinkClick"
-            >
-              <div class="p-4 space-y-3">
-                <!-- 用户信息和时间 -->
-                <div class="flex items-center space-x-2">
-                  <UserAvatar
-                    :image="pinUserInfo[pinInfo.creator]?.avatar || ''"
-                    :name="pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8)"
-                    :meta-id="pinUserInfo[pinInfo.creator]?.metaid || ''"
-                    :meta-name="''"
-                    class="w-10 h-10 shrink-0"
-                    :disabled="true"
-                  />
-                  <div class="flex-1 min-w-0">
-                    <div class="text-dark-800 dark:text-gray-100 font-medium text-sm truncate">
-                      {{ pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8) }}
-                    </div>
-                    <div class="text-dark-400 dark:text-gray-400 text-xs">
-                      {{ formatTimestamp(pinInfo.timestamp * 1000, i18n) }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 内容布局：图片 + 文本 -->
-                <div class="flex gap-3">
-                  <!-- 图片或视频图标 -->
-                  <div
-                    v-if="buzzHasVideo || buzzFirstImage"
-                    class="w-20 h-20 shrink-0 overflow-hidden rounded relative"
-                  >
-                    <!-- 视频图标 -->
-                    <div
-                      v-if="buzzHasVideo"
-                      class="w-20 h-20 bg-gray-100 dark:bg-gray-800 flex items-center justify-center rounded text-lg"
-                    >
-                      <el-icon><VideoPlay /></el-icon>
-                    </div>
-                    <!-- 图片 -->
-                    <ChatImage
-                      v-else-if="buzzFirstImage"
-                      :src="buzzFirstImage"
-                      customClass="w-20 h-20 object-cover rounded-none"
-                    />
-                  </div>
-
-                  <!-- 文本内容 -->
-                  <div class="flex-1 min-w-0">
-                    <div class="text-dark-800 dark:text-gray-100 text-sm line-clamp-3">
-                      {{ pinInfo.parsedSummary?.content || '' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- SimpleNote 卡片 -->
-          <div
-            class="w-full py-0.5 flex"
-            :class="[isMyMessage ? 'flex-row-reverse' : '']"
-            v-else-if="isSimpleNoteLink && pinInfo"
-          >
-            <div
-              class="lg:max-w-full max-w-[300px] shadow rounded-xl cursor-pointer transition-all duration-200 bg-white dark:bg-gray-700 hover:shadow-md overflow-hidden"
-              @click="handleBuzzOrNoteLinkClick"
-            >
-              <!-- 用户信息和时间 -->
-              <div class="p-4 pb-2 flex items-center space-x-2">
-                <UserAvatar
-                  :image="pinUserInfo[pinInfo.creator]?.avatar || ''"
-                  :name="pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8)"
-                  :meta-id="pinUserInfo[pinInfo.creator]?.metaid || ''"
-                  :meta-name="''"
-                  class="w-8 h-8 shrink-0"
-                  :disabled="true"
-                />
-                <div class="flex-1 min-w-0">
-                  <div class="text-dark-800 dark:text-gray-100 font-medium text-xs truncate">
-                    {{ pinUserInfo[pinInfo.creator]?.name || pinInfo.creator.slice(0, 8) }}
-                  </div>
-                  <div class="text-dark-400 dark:text-gray-400 text-xxs">
-                    {{ formatTimestamp(pinInfo.timestamp * 1000, i18n) }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- 封面图 -->
-              <div
-                v-if="noteCoverImage"
-                class="w-full h-30 bg-gray-100 dark:bg-gray-800 overflow-hidden"
-              >
-                <ChatImage
-                  :src="noteCoverImage"
-                  customClass="w-full h-full object-cover"
-                  wrapperClass="w-full h-full"
-                />
-              </div>
-              <div
-                v-else
-                class=" min-w-[300px] w-full h-30 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center"
-              >
-                <Icon name="document_text" class="w-16 h-16 text-gray-400" />
-              </div>
-
-              <!-- 标题 -->
-              <div class="p-4 pt-3">
-                <div class="text-dark-800 dark:text-gray-100 font-medium text-base line-clamp-2">
-                  {{ pinInfo.parsedSummary?.title || 'Untitled Note' }}
-                </div>
-              </div>
-            </div>
+            <ProtocolCard
+              ref="protocolCardRef"
+              :content="decryptedContentForProtocolCard"
+              :is-my-message="isMyMessage"
+            />
           </div>
 
           <div
@@ -720,6 +519,7 @@ import { VideoPlay } from '@element-plus/icons-vue'
 import { isPrivate } from 'tiny-secp256k1'
 import { DB } from '@/utils/db'
 import TalkImagePreview from './ImagePreview.vue'
+import ProtocolCard from '@/components/ProtocolCard/index.vue'
 
 const i18n = useI18n()
 
@@ -733,6 +533,23 @@ const reply: any = inject('Reply')
 const router=useRouter()
 const imagePreview = useImagePreview()
 const visiableMenu = ref(false)
+
+// 获取用于图片解密的 passwordKey（处理子群聊的情况）
+const chatPasswordKeyForDecrypt = computed(() => {
+  const activeChannel = simpleTalk.activeChannel
+  if (!activeChannel) return ''
+
+  // 如果是子群聊，获取父群聊的 passwordKey
+  if (activeChannel.type === 'sub-group' && activeChannel.parentGroupId) {
+    const parentChannel = simpleTalk.getParentGroupChannel(activeChannel.parentGroupId)
+    if (parentChannel?.roomJoinType === '100' && parentChannel.passwordKey) {
+      return parentChannel.passwordKey
+    }
+  }
+
+  // 主群聊或非私密群聊，使用自己的 passwordKey
+  return activeChannel.passwordKey || ''
+})
 
 // 群信息缓存
 const channelInfo = ref<any>(null)
@@ -1028,7 +845,7 @@ const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string): Pr
 }
 
 const previewImage2 = async (image: string) => {
-  const _image = await decryptedImgMessage(image, simpleTalk.activeChannel?.passwordKey!)
+  const _image = await decryptedImgMessage(image, chatPasswordKeyForDecrypt.value)
   if (_image) {
     imagePreview.images = [_image]
     imagePreview.index = 0
@@ -1498,6 +1315,45 @@ const extractPinId = (url: string): string | null => {
   const match = url.match(pinPattern)
   return match ? match[1] : null
 }
+
+// ProtocolCard 用的解密消息内容
+const decryptedContentForProtocolCard = computed(() => {
+  return decryptedMessage(
+    props.message.content,
+    props.message.encryption,
+    props.message.protocol,
+    false
+  ) || ''
+})
+
+// ProtocolCard 组件的引用
+const protocolCardRef = ref<InstanceType<typeof ProtocolCard> | null>(null)
+
+// 是否应该使用 ProtocolCard 渲染（由 ProtocolCard 组件内部判断）
+const shouldUseProtocolCard = computed(() => {
+  // 如果是群聊邀请链接，不使用 ProtocolCard
+  if (isChatGroupLink.value) return false
+
+  // 检查消息内容是否包含协议链接
+  const content = decryptedContentForProtocolCard.value
+  if (!content) return false
+
+  // 检测 metafile:// 和 metaapp:// 协议
+  const hasMetafile = /metafile:\/\/([a-f0-9]{64}i\d+)/i.test(content)
+  const hasMetaapp = /metaapp:\/\/([a-f0-9]{64}i\d+)/i.test(content)
+
+  // 如果是 metafile 或 metaapp 协议，直接返回 true
+  if (hasMetafile || hasMetaapp) return true
+
+  // 对于 https:// URL，只有包含 PIN ID 才渲染卡片
+  const urlMatch = content.match(/(https?:\/\/[^\s]+)/i)
+  if (urlMatch) {
+    const pinPattern = /([a-f0-9]{64}i\d+)/i
+    return pinPattern.test(urlMatch[1])
+  }
+
+  return false
+})
 
 // 检测消息是否包含 PIN 链接
 const hasPinLink = computed(() => {

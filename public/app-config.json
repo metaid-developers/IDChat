@@ -12,12 +12,12 @@
     "mvcBaseApi": "https://api.mvcscan.com/browser",
     "manApi": "https://man.metaid.io",
     "fileApi": "https://man.metaid.io",
-    "chatApi": "https://www.show.now/chat-api-test",
+    "chatApi": "https://api.idchat.io/chat-api",
     "chatNotify": "https://api.idchat.io",
     "metasoUrl": "https://www.metaso.network",
     "showNowHost": "https://www.show.now",
-    "showNowWs": "https://www.show.now",
-    "idchatPathWs": "/socket-test"
+    "showNowWs": "https://api.idchat.io",
+    "idchatPathWs": "/socket"
   },
 
   "blockchain": {

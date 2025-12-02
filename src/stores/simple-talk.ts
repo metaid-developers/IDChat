@@ -28,7 +28,7 @@ import { useRootStore } from './root'
 class SimpleChatDB {
   private db: IDBDatabase | null = null
   private readonly DB_NAME = 'SimpleChatDB'
-  private readonly DB_VERSION = 6 // 增加版本号以添加 mentions 表
+  private readonly DB_VERSION = 7 // 增加版本号以添加 settings 表
   private userPrefix = 'default_' // 用户数据前缀
 
   constructor(userMetaId?: string) {
@@ -211,6 +211,14 @@ class SimpleChatDB {
               console.log('✅ 添加 mentions 表 channelRead 联合索引')
             }
           }
+        }
+
+        // 创建 settings 表（版本7新增）- 用于存储用户设置如子频道显示状态
+        if (!this.db.objectStoreNames.contains('settings')) {
+          const settingsStore = this.db.createObjectStore('settings', { keyPath: 'id' })
+          settingsStore.createIndex('userPrefix', 'userPrefix')
+          settingsStore.createIndex('key', 'key')
+          console.log('✅ 创建 settings 表')
         }
       }
 
@@ -929,6 +937,117 @@ class SimpleChatDB {
 
   // ==================== End Mention 方法 ====================
 
+  // ==================== Settings 方法 ====================
+
+  /**
+   * 保存子频道头部显示状态
+   */
+  async saveSubChannelHeaderStatus(groupId: string, status: boolean): Promise<void> {
+    if (!this.db) return
+    
+    const record = {
+      id: `${this.userPrefix}subChannelHeader_${groupId}`,
+      key: 'subChannelHeader',
+      groupId,
+      status,
+      userPrefix: this.userPrefix,
+      updatedAt: Date.now()
+    }
+    
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction(['settings'], 'readwrite')
+        const store = transaction.objectStore('settings')
+        const request = store.put(record)
+        
+        request.onsuccess = () => {
+          console.log(`✅ 子频道头部状态已保存: ${groupId} = ${status}`)
+          resolve()
+        }
+        request.onerror = () => {
+          console.error('❌ 保存子频道头部状态失败:', request.error)
+          reject(request.error)
+        }
+      } catch (error) {
+        console.error('❌ 创建设置事务失败:', error)
+        reject(error)
+      }
+    })
+  }
+
+  /**
+   * 获取子频道头部显示状态
+   */
+  async getSubChannelHeaderStatus(groupId: string): Promise<boolean | null> {
+    if (!this.db) return null
+    
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction(['settings'], 'readonly')
+        const store = transaction.objectStore('settings')
+        const request = store.get(`${this.userPrefix}subChannelHeader_${groupId}`)
+        
+        request.onsuccess = () => {
+          if (request.result) {
+            resolve(request.result.status)
+          } else {
+            resolve(null) // 没有记录，返回 null 表示使用默认值
+          }
+        }
+        request.onerror = () => {
+          console.error('❌ 获取子频道头部状态失败:', request.error)
+          reject(request.error)
+        }
+      } catch (error) {
+        console.error('❌ 创建设置读取事务失败:', error)
+        reject(error)
+      }
+    })
+  }
+
+  /**
+   * 获取所有子频道头部显示状态
+   */
+  async getAllSubChannelHeaderStatus(): Promise<Array<{groupId: string, status: boolean}>> {
+    if (!this.db) return []
+    
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction(['settings'], 'readonly')
+        const store = transaction.objectStore('settings')
+        const index = store.index('userPrefix')
+        const request = index.openCursor(IDBKeyRange.only(this.userPrefix))
+        
+        const results: Array<{groupId: string, status: boolean}> = []
+        
+        request.onsuccess = () => {
+          const cursor = request.result
+          if (cursor) {
+            const record = cursor.value
+            if (record.key === 'subChannelHeader') {
+              results.push({
+                groupId: record.groupId,
+                status: record.status
+              })
+            }
+            cursor.continue()
+          } else {
+            resolve(results)
+          }
+        }
+        request.onerror = () => {
+          console.error('❌ 获取所有子频道头部状态失败:', request.error)
+          reject(request.error)
+        }
+      } catch (error) {
+        console.error('❌ 创建设置读取事务失败:', error)
+        reject(error)
+      }
+    })
+  }
+
+  // ==================== End Settings 方法 ====================
+
 
   async clearAllData(): Promise<void> {
     if (!this.db) return
@@ -1244,14 +1363,19 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
      getOneChannelSubHeaderShowStatus():(channelId: string) => boolean {
       return (channelId: string) => {
+        console.log('🟢 getOneChannelSubHeaderShowStatus 查询, channelId:', channelId)
+        console.log('🟢 showSubChannelHeader 数组:', JSON.stringify(this.showSubChannelHeader))
         if(this.showSubChannelHeader.length){
             const show:ShowSubChannleHeaderItem= this.showSubChannelHeader.find((c:ShowSubChannleHeaderItem) => c.groupId === channelId)
         if(show){
+          console.log('🟢 找到记录, status:', show.status)
           return show.status
         }else{
+          console.log('🟢 未找到记录, 返回 true')
           return true
         }
         }else{  
+          console.log('🟢 数组为空, 返回 true')
           return true
         }
       }
@@ -1552,6 +1676,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 加载已读索引到内存（向后兼容）
         await this.loadLastReadIndexes()
         console.log('✅ 服务端数据同步完成')
+
+        // 从 IndexedDB 加载子频道头部显示状态
+        await this.loadSubChannelHeaderStatusFromDB()
+        console.log('✅ 子频道头部状态加载完成')
 
         // 4. 恢复上次的激活频道（异步）
         // await this.restoreLastActiveChannel()
@@ -2287,8 +2415,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         // 尝试解密内容获取真实的频道信息
         
+        // 获取父群聊信息，继承 roomJoinType
+        const parentChannel = this.channels.find(c => c.id === parentGroupId && c.type === 'group')
+        const parentRoomJoinType = parentChannel?.roomJoinType || '1' // 默认为公开群聊
         
-        console.log(`📝 为群聊 ${parentGroupId} 创建子群聊频道: ${channelName}`)
+        console.log(`📝 为群聊 ${parentGroupId} 创建子群聊频道: ${channelName}, 继承 roomJoinType: ${parentRoomJoinType}`)
         
         // 创建子群聊作为独立频道，和群聊、私聊同一层级
         const subChannel: SimpleChannel = {
@@ -2304,6 +2435,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           roomNote: channelData.channelNote, // 使用解析出的频道描述
           // 子群聊特有字段
           parentGroupId: channelData.groupId, // 指向父群聊ID
+          roomJoinType: parentRoomJoinType, // 继承父群聊的 roomJoinType
           serverData: channelData,
           
           lastMessage:  {
@@ -2486,7 +2618,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       await this.fetchPasswordKeysForPrivateGroups(mergedChannels)
 
       // 异步加载群聊的子频道列表
-      // this.loadSubChannelsForGroups(mergedChannels)
+      this.loadSubChannelsForGroups(mergedChannels)
 
       // 同步更新所有频道的未读@提及数量
       await this.syncUnreadMentionCounts()
@@ -5091,7 +5223,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       localStorage.setItem('muteNotifyList',JSON.stringify(this.muteNotifyList))
     },
 
-      updateShowSubChannelHeader(payload:ShowSubChannleHeaderItem){
+      async updateShowSubChannelHeader(payload:ShowSubChannleHeaderItem){
+      console.log('🔵 updateShowSubChannelHeader 被调用, payload:', payload)
+      console.log('🔵 当前 showSubChannelHeader:', JSON.stringify(this.showSubChannelHeader))
        
       const hasRecord=this.showSubChannelHeader.length && this.showSubChannelHeader.find((item:ShowSubChannleHeaderItem)=>item.groupId == payload.groupId)
 
@@ -5105,8 +5239,40 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }else{
         this.showSubChannelHeader.push(payload)
       }
+      
+      console.log('🔵 更新后 showSubChannelHeader:', JSON.stringify(this.showSubChannelHeader))
   
       localStorage.setItem('showSubChannelHeaderList',JSON.stringify(this.showSubChannelHeader))
+      
+      // 同时保存到 IndexedDB
+      try {
+        await this.db.saveSubChannelHeaderStatus(payload.groupId, payload.status)
+      } catch (error) {
+        console.error('❌ 保存子频道头部状态到 IndexedDB 失败:', error)
+      }
+    },
+
+    /**
+     * 从 IndexedDB 加载子频道头部显示状态
+     */
+    async loadSubChannelHeaderStatusFromDB() {
+      try {
+        const statuses = await this.db.getAllSubChannelHeaderStatus()
+        if (statuses.length > 0) {
+          console.log('📦 从 IndexedDB 加载子频道头部状态:', statuses.length, '条')
+          // 合并到内存中的状态
+          statuses.forEach(({ groupId, status }) => {
+            const existing = this.showSubChannelHeader.find((item: ShowSubChannleHeaderItem) => item.groupId === groupId)
+            if (existing) {
+              existing.status = status
+            } else {
+              this.showSubChannelHeader.push({ groupId, status })
+            }
+          })
+        }
+      } catch (error) {
+        console.error('❌ 从 IndexedDB 加载子频道头部状态失败:', error)
+      }
     },
 
     clearMuteNotifyList(){
