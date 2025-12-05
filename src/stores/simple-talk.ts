@@ -2207,10 +2207,20 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         console.log('🔄 开始同步服务端数据...')
         
         // 使用统一的 latest-chat-info-list 接口获取所有聊天数据
-        const allChannelsData = await this.fetchLatestChatInfo().catch(e => {
-          console.warn('获取聊天列表失败:', e)
-          return []
-        })
+        let allChannelsData: any[] = []
+        try {
+          allChannelsData = await this.fetchLatestChatInfo()
+        } catch (e) {
+          console.warn('获取聊天列表失败，使用本地数据:', e)
+          // 接口报错时不清空本地数据，直接返回
+          return
+        }
+
+        // 如果返回空数组且本地有数据，也不覆盖本地数据
+        if ((!allChannelsData || allChannelsData.length === 0) && this.channels.length > 0) {
+          console.warn('⚠️ 服务端返回空数据，保留本地数据')
+          return
+        }
 
         // 转换数据格式
         const serverChannels = this.transformLatestChatInfo(allChannelsData)
@@ -3008,7 +3018,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // this.markAsRead(channelId)
 
       // 保存到本地存储
-      localStorage.setItem(`lastActiveChannel-${this.selfMetaId}`, channelId)
+      // localStorage.setItem(`lastActiveChannel-${this.selfMetaId}`, channelId)
       // this.isSetActiveChannelIdInProgress = false
     },
 
@@ -3223,7 +3233,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       readMessage: UnifiedChatMessage | null
     }> {
       // 获取所有本地消息
-      const allLocalMessages = await this.db.getMessages(channelId, 1000) // 获取更多消息用于查找
+      const allLocalMessages = await this.db.getMessages(channelId, 100000) // 获取更多消息用于查找
       
       if (allLocalMessages.length === 0) {
         return { messages: [], readMessage: null }
@@ -3246,20 +3256,52 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
       }
 
-      
-      if (!readMessage) {
-        return { messages: [], readMessage: null }
-      }
-
-
       // 计算要显示的消息范围：以已读消息为中心，向上取更多历史消息
       let startIndex: number
       let endIndex: number
+      
+      // 获取本地消息的最大 index
+      const maxLocalIndex = sortedMessages[sortedMessages.length - 1].index
+      const minLocalIndex = sortedMessages[0].index
       
       if (readMessage && readMessageArrayIndex >= 0) {
         // 从已读消息位置向上取20条消息（包含已读消息本身）
         startIndex = Math.max(0, readMessageArrayIndex - 19) // 向上19条 + 已读消息 = 20条
         endIndex = readMessageArrayIndex
+      } else if (lastReadIndex !== 0 && sortedMessages.length > 0) {
+        // 本地消息有数据但找不到精确匹配的 readMessage
+        // 参考 loadServerMessagesAroundReadIndex 的逻辑计算 startIndex
+        console.log(`📖 未找到精确匹配的已读消息 (lastReadIndex: ${lastReadIndex})，从本地消息中计算位置`)
+        
+        // 计算目标起始 index（参考 loadServerMessagesAroundReadIndex 的逻辑）
+        const targetStartIndex = maxLocalIndex - lastReadIndex > 20 
+          ? Math.max(0, lastReadIndex - 1) 
+          : maxLocalIndex - 22
+        
+        // 在本地消息数组中找到最接近 targetStartIndex 的位置
+        let nearestArrayIndex = 0
+        for (let i = 0; i < sortedMessages.length; i++) {
+          if (sortedMessages[i].index >= targetStartIndex) {
+            nearestArrayIndex = i
+            break
+          }
+          // 如果遍历完还没找到，说明所有消息的 index 都小于 targetStartIndex
+          nearestArrayIndex = sortedMessages.length - 1
+        }
+        
+        // 同时查找最接近 lastReadIndex 的消息作为 readMessage
+        for (let i = 0; i < sortedMessages.length; i++) {
+          if (sortedMessages[i].index >= lastReadIndex) {
+            readMessage = sortedMessages[i]
+            readMessageArrayIndex = i
+            console.log(`📖 找到最接近的已读消息 (msg.index: ${sortedMessages[i].index}, 目标 lastReadIndex: ${lastReadIndex})`)
+            break
+          }
+        }
+        
+        startIndex = nearestArrayIndex
+        endIndex = Math.min(sortedMessages.length - 1, nearestArrayIndex + 19)
+        console.log(`📖 计算出的消息范围: 数组位置 [${startIndex}-${endIndex}], index范围 [${sortedMessages[startIndex]?.index}-${sortedMessages[endIndex]?.index}]`)
       } else {
          return { messages: [], readMessage: null }
       }

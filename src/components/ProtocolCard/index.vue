@@ -267,19 +267,26 @@
     </div>
   </div>
 
-  <!-- 无法识别的协议类型，显示为可点击链接 -->
-  <div v-else class="protocol-card-fallback whitespace-pre-wrap break-all">
+  <!-- 无法识别的协议类型，显示为带气泡的可点击链接 -->
+  <div
+    v-else
+    class="protocol-card-fallback text-sm text-dark-800 dark:text-gray-100 font-normal p-3 rounded-xl transition-all duration-200"
+    :class="[
+      isMyMessage
+        ? 'bg-primary dark:text-gray-800 rounded-tr'
+        : 'bg-white dark:bg-gray-700 rounded-tl',
+    ]"
+  >
     <a
       v-if="cardInfo.fullUrl"
       :href="cardInfo.fullUrl"
       target="_blank"
       rel="noopener noreferrer"
-      class="url underline cursor-pointer"
-      style="word-break: break-all;"
+      class="url underline cursor-pointer whitespace-pre-wrap break-all"
       @click.stop
       >{{ content }}</a
     >
-    <span v-else>{{ content }}</span>
+    <span v-else class="whitespace-pre-wrap break-all">{{ content }}</span>
   </div>
 </template>
 
@@ -493,19 +500,21 @@ const parseCardInfo = async () => {
     return
   }
 
+  // 检测协议类型（先提取 fullUrl，即使后续不渲染也可以用于 fallback）
+  const { type: protocolType, pinId, fullUrl } = detectProtocolType(content)
+
   // 检查是否有多个链接
   if (hasMultipleLinks(content)) {
     isLoading.value = false
-    cardInfo.value = { shouldRender: false, type: 'none', pinId: '', fullUrl: '', clickUrl: '' }
+    // 多链接时保留 fullUrl 用于 fallback 显示
+    cardInfo.value = { shouldRender: false, type: 'none', pinId: '', fullUrl, clickUrl: fullUrl }
     return
   }
 
-  // 检测协议类型
-  const { type: protocolType, pinId, fullUrl } = detectProtocolType(content)
-
   if (!pinId) {
     isLoading.value = false
-    cardInfo.value = { shouldRender: false, type: 'none', pinId: '', fullUrl: '', clickUrl: '' }
+    // 无 pinId 时也保留 fullUrl 用于 fallback 显示
+    cardInfo.value = { shouldRender: false, type: 'none', pinId: '', fullUrl, clickUrl: fullUrl }
     return
   }
 

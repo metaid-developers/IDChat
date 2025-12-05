@@ -2336,7 +2336,9 @@ export const batchInviteUsersToGroup = async (params: {
 
             // 添加发送者的 metaId,以便接收者可以获取发送者的公钥来解密 passcode
             const senderMetaId = userStore.last?.metaid
-            inviteUrl = `${window.location.origin}/channels/private/${groupId}?passcode=${encodedPasscode}&from=${senderMetaId}`
+            inviteUrl = `${window.location.origin}${
+              window.location.pathname.startsWith('/chat') ? '/chat' : ''
+            }/channels/private/${groupId}?passcode=${encodedPasscode}&from=${senderMetaId}`
             // 如果有群名，添加到 URL 中
             if (groupName) {
               inviteUrl += `&groupName=${encodeURIComponent(groupName)}`

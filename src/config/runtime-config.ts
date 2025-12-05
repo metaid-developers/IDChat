@@ -104,15 +104,15 @@ function getDefaultConfig(): AppRuntimeConfig {
       fileApi: 'https://man.metaid.io',
       daoApi: 'https://api.mvcswap.com/stake',
       dashbroadApi: 'https://api.show3.io/tool/api',
-      chatApi: 'https://www.show.now/chat-api-test',
+      chatApi: 'https://api.idchat.io/chat-api',
       chatNotify: 'https://api.idchat.io',
       metanoteUrl: 'https://gray.metanote.app',
       metasoUrl: 'https://www.metaso.network',
       showMoneyApp: 'https://www.visionmoney.space',
-      showNowHost: 'https://www.show.now',
+      showNowHost: 'https://api.idchat.io',
       showNowWs: 'https://www.show.now',
       idchatHost: 'https://idchat.io/chat',
-      idchatPathWs: '/socket-test',
+      idchatPathWs: '/socket',
     },
     blockchain: {
       network: 'mainnet',
@@ -180,8 +180,8 @@ export async function loadRuntimeConfig(): Promise<AppRuntimeConfig> {
 
   try {
     const response = await fetch(
-      import.meta.env.MODE == 'mainnet' || import.meta.env.MODE == 'metaso'
-        ? '/app-config.json?t=' + Date.now()
+      window.location.pathname.startsWith('/chat')
+        ? '/chat/app-config.json?t=' + Date.now()
         : '/app-config.json?t=' + Date.now()
     )
     if (!response.ok) {
