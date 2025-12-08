@@ -21,6 +21,26 @@ const manApi = createLazyApiClient(() => `${getRuntimeConfig().api.manApi}/api`,
   },
 })
 
+// 新的 metafile-indexer API 客户端
+const metafileIndexerApi = createLazyApiClient(() => getRuntimeConfig().api.metafileIndexerApi, {
+  responseHandel: response => {
+    return new Promise((resolve, reject) => {
+      if (response?.data && typeof response.data?.code === 'number') {
+        if (response.data.code === 1) {
+          resolve(response.data.data)
+        } else {
+          reject({
+            code: response.data.code,
+            message: response.data.message,
+          })
+        }
+      } else {
+        resolve(response.data.data)
+      }
+    })
+  },
+})
+
 export interface ChatUserInfo {
   address: string
   avatar: string
@@ -31,55 +51,74 @@ export interface ChatUserInfo {
   name: string
 }
 
+// 新版 metafile-indexer API 返回的用户信息接口
+export interface MetafileUserInfo {
+  metaid: string
+  name: string
+  address: string
+  avatar: string
+  avatarId: string
+  chatpubkey: string
+  chatpubkeyId: string
+}
+
+// 旧版 man API 返回的用户信息接口（保留兼容性）
 export interface UserInfo {
   address: string
   avatar: string
   avatarId: string
-  background: string
-  bio: string
-  bioId: string
-  blocked: boolean
-  chainName: string
-  fdv: number
-  followCount: number
-  isInit: boolean
+  background?: string
+  bio?: string
+  bioId?: string
+  blocked?: boolean
+  chainName?: string
+  fdv?: number
+  followCount?: number
+  isInit?: boolean
   metaid: string
   name: string
-  nameId: string
-  nftAvatar: string
-  nftAvatarId: string
-  number: number
-  pdv: number
-  pinId: string
-  soulbondToken: string
-  unconfirmed: string
+  nameId?: string
+  nftAvatar?: string
+  nftAvatarId?: string
+  number?: number
+  pdv?: number
+  pinId?: string
+  soulbondToken?: string
+  unconfirmed?: string
   chatpubkey?: string
+  chatpubkeyId?: string
 }
 
 export const getUserInfoByAddress = async (address: string): Promise<UserInfo> => {
-  // const res=await manApi.get(`/info/address/${address}`)
-
-  // if(res && !res?.name){
-  //   res.name = res.metaid.slice(0,6)
-  // }
-
-  // return res
-
-  return manApi.get(`/info/address/${address}`).then(res => {
-    if (res && !res?.name) {
-      // res.name = res.metaid.slice(0,6)
+  // 使用新的 metafile-indexer API
+  return metafileIndexerApi.get(`/info/address/${address}`).then((res: MetafileUserInfo) => {
+    // 将新 API 返回结构转换为兼容旧结构的 UserInfo
+    const userInfo: UserInfo = {
+      metaid: res.metaid,
+      name: res.name,
+      address: res.address,
+      avatar: res.avatar,
+      avatarId: res.avatarId,
+      chatpubkey: res.chatpubkey,
+      chatpubkeyId: res.chatpubkeyId,
     }
-
-    return res
+    return userInfo
   })
 }
 
 export const getUserInfoByMetaId = async (metaid: string): Promise<UserInfo> => {
-  const res = await manApi.get(`/info/metaid/${metaid}`)
+  // 使用新的 metafile-indexer API
+  const res: MetafileUserInfo = await metafileIndexerApi.get(`/info/metaid/${metaid}`)
 
-  if (res && !res?.name) {
-    // res.name = res.metaid.slice(0, 6)
+  // 将新 API 返回结构转换为兼容旧结构的 UserInfo
+  const userInfo: UserInfo = {
+    metaid: res.metaid,
+    name: res.name,
+    address: res.address,
+    avatar: res.avatar,
+    avatarId: res.avatarId,
+    chatpubkey: res.chatpubkey,
+    chatpubkeyId: res.chatpubkeyId,
   }
-
-  return res
+  return userInfo
 }

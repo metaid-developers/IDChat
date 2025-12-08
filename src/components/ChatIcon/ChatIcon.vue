@@ -376,7 +376,6 @@ const handleLoad = () => {
 
 // 图片加载失败
 const handleError = () => {
-  console.log('🔴 ChatImage 加载失败，重试次数:', retryCount.value)
   hasStartedLoading.value = true
   isLoaded.value = false
 
@@ -441,4 +440,3 @@ watch(
   display: inline-block;
 }
 </style>
-

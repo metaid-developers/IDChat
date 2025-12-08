@@ -72,7 +72,7 @@ async function getImageUrl() {
     const res = await DB.getMetaFile(
       src,
       props.width,
-      'metafile',
+      props.type,
       props.isPrivateChat,
       props.chatPubkeyForDecrypt,
       props.chatPasswordForDecrypt

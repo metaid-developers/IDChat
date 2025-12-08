@@ -19,6 +19,8 @@ export interface AppRuntimeConfig {
     cyber3Api: string
     manApi: string
     fileApi: string
+    avatarContentApi: string
+    metafileIndexerApi: string
     daoApi: string
     dashbroadApi: string
     chatApi: string
@@ -101,7 +103,9 @@ function getDefaultConfig(): AppRuntimeConfig {
       mvcBaseApi: 'https://api.mvcscan.com/browser',
       cyber3Api: 'https://api.microvisionchain.com/open-api',
       manApi: 'https://man.metaid.io',
-      fileApi: 'https://man.metaid.io',
+      fileApi: 'https://file.metaid.io/metafile-indexer/api/v1/files',
+      avatarContentApi: 'https://file.metaid.io/metafile-indexer/content',
+      metafileIndexerApi: 'https://file.metaid.io/metafile-indexer/api',
       daoApi: 'https://api.mvcswap.com/stake',
       dashbroadApi: 'https://api.show3.io/tool/api',
       chatApi: 'https://api.idchat.io/chat-api',
@@ -110,7 +114,7 @@ function getDefaultConfig(): AppRuntimeConfig {
       metasoUrl: 'https://www.metaso.network',
       showMoneyApp: 'https://www.visionmoney.space',
       showNowHost: 'https://api.idchat.io',
-      showNowWs: 'https://www.show.now',
+      showNowWs: 'https://api.idchat.io',
       idchatHost: 'https://idchat.io/chat',
       idchatPathWs: '/socket',
     },

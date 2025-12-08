@@ -116,15 +116,28 @@ export const getEcdhPublickey = async (
     }
   | any
 > => {
+  console.log('getEcdhPublickey called with pubkey:', pubkey)
   checkMetalet()
-
+  console.log('getEcdhPublickey called with pubkey2:', pubkey)
   try {
-    const ecdh = await window.metaidwallet.common.ecdh({
-      externalPubKey: pubkey ? pubkey : MAN_PUB_KEY, //'048add0a6298f10a97785f7dd069eedb83d279a6f03e73deec0549e7d6fcaac4eef2c279cf7608be907a73c89eb44c28db084c27b588f1bd869321a6f104ec642d'//pubkey
+    // 添加 5 秒超时保护
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('ECDH 请求超时（5秒），请重试'))
+      }, 5000)
     })
 
+    const ecdhPromise = window.metaidwallet.common.ecdh({
+      externalPubKey: pubkey ? pubkey : MAN_PUB_KEY,
+    })
+
+    const ecdh = await Promise.race([ecdhPromise, timeoutPromise])
+
     return ecdh
-  } catch (error) {}
+  } catch (error) {
+    console.log('getEcdhPublickey error:', error)
+    throw error
+  }
 }
 
 export const getAddress = async () => {

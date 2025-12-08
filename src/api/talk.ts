@@ -337,28 +337,20 @@ export const getChannels = async ({
       
      if(res.data.list){
       const list=[]
-      
       for(let channel of res.data.list){
          channel.id = channel.groupId
         channel.name = channel.roomName
         channel.uuid = channel.id // 用于key,不修改
-        
         //channel.lastChatUser=
-        if(Number(channel.type) == 2){
-          if(channel?.userInfo){
+        if(Number(channel.type) == 2 ){
+          if(channel?.userInfo&& channel.userInfo.chatPublicKey){
                if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
-                
-                const ecdh=await getEcdhPublickey(channel.userInfo.chatPublicKey)
-                
+                console.log(`🔑 获取私聊用户 ${channel.userInfo.chatPublicKey} 的 ECDH 公钥中...`)
+                const ecdh = await getEcdhPublickey(channel.userInfo.chatPublicKey)
+                console.log(`✅ 获取到私聊用户 ${channel.userInfo.chatPublicKey} 的 ECDH 公钥`, ecdh)
                 if(ecdh){
-                  
                       ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
-                }
-                
-                // getEcdhPublickey(channel.userInfo.chatPublicKey).then((ecdh)=>{
-                  
-                //     ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
-                // })
+                }               
               
           }
           }else{
@@ -748,6 +740,25 @@ export const getOneRedPacket = async (params: any): Promise<any> => {
     //   }
     //  const userInfo=await getUserInfoByAddress(res.data?.address)
     //   res.data.userInfo=userInfo
+    
+    // 如果返回的 domain 与当前 TalkApi 的 domain 不同，使用返回的 domain 重新请求
+    if (res.data?.domain) {
+      const config = getRuntimeConfig()
+      const currentDomain = config.api.chatApi
+      if (res.data.domain !== currentDomain) {
+        // 使用返回的 domain 重新请求
+        const newDomainRes = await axios.get(`${res.data.domain}/group-chat${path}?${query}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        if (newDomainRes.data?.code === 0) {
+          return newDomainRes.data.data
+        }
+        throw new Error(newDomainRes.data?.message || 'Request failed')
+      }
+    }
+    
     return res.data
   })
 }

@@ -15,6 +15,7 @@ import { NodeName } from '@/enum'
 import { getMyBlockChatList} from "@/api/chat-notify";
 import { SubChannel } from '@/@types/talk'
 import { useRootStore } from './root'
+import { VITE_AVATAR_CONTENT_API, VITE_FILE_API } from '@/config/app-config'
 
 
 
@@ -42,8 +43,21 @@ class SimpleChatDB {
     }
     
     return new Promise((resolve, reject) => {
+      // 添加超时保护（15秒）
+      const timeoutId = setTimeout(() => {
+        console.error('❌ IndexedDB 初始化超时（15秒）')
+        reject(new Error('IndexedDB initialization timeout'))
+      }, 15000)
+
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION)
       
+      // 处理数据库被阻塞的情况（其他标签页占用）
+      request.onblocked = () => {
+        console.warn('⚠️ IndexedDB 被其他连接阻塞，请关闭其他标签页后重试')
+        clearTimeout(timeoutId)
+        // 不拒绝，而是继续等待，但记录警告
+      }
+
       request.onupgradeneeded = (event) => {
         this.db = (event.target as IDBOpenDBRequest).result
         const oldVersion = event.oldVersion
@@ -223,11 +237,15 @@ class SimpleChatDB {
       }
 
       request.onsuccess = () => {
+        clearTimeout(timeoutId)
         this.db = request.result
         resolve()
       }
 
-      request.onerror = () => reject(request.error)
+      request.onerror = () => {
+        clearTimeout(timeoutId)
+        reject(request.error)
+      }
     })
   }
 
@@ -466,20 +484,29 @@ class SimpleChatDB {
     if (!this.db) return []
     
     return new Promise((resolve) => {
+      // 添加超时保护（5秒）
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ getChannels 超时（5秒），返回空数组')
+        resolve([])
+      }, 5000)
+
       const transaction = this.db!.transaction(['channels'], 'readonly')
       const store = transaction.objectStore('channels')
       const index = store.index('userPrefix')
       const request = index.getAll(this.userPrefix)
       
       request.onsuccess = () => {
-        
+        clearTimeout(timeoutId)
         const channels = (request.result || []).map(({ userPrefix, ...channel }) => channel)
 
         
         resolve(channels)
       }
       
-      request.onerror = () => resolve([])
+      request.onerror = () => {
+        clearTimeout(timeoutId)
+        resolve([])
+      }
     })
   }
 
@@ -690,6 +717,12 @@ class SimpleChatDB {
     if (!this.db) return []
     
     return new Promise((resolve) => {
+      // 添加超时保护（5秒）
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ getMessages 超时（5秒），返回空数组')
+        resolve([])
+      }, 5000)
+
       const transaction = this.db!.transaction(['messages'], 'readonly')
       const store = transaction.objectStore('messages')
 
@@ -703,6 +736,7 @@ class SimpleChatDB {
       }
       
       request.onsuccess = () => {
+        clearTimeout(timeoutId)
         const allMessages = request.result || []
         const userMessages = allMessages.filter((msg: any) => msg.userPrefix === this.userPrefix && String(msg.channelId) === String(channelId))
         const messages = userMessages
@@ -712,6 +746,7 @@ class SimpleChatDB {
         resolve(messages)
       }
       request.onerror = () => {
+        clearTimeout(timeoutId)
         console.error('❌ 获取消息失败:', request.error)
         resolve([])
       }
@@ -1714,6 +1749,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
       } catch (error) {
         console.error('❌ 聊天系统初始化失败:', error)
+        // 即使初始化失败，也标记为已初始化，避免卡在 loading 页面
+        // 用户可以看到界面，只是可能没有数据
+        this.isInitialized = true
+        console.warn('⚠️ 初始化失败但仍标记为已初始化，用户可以看到界面')
         throw error
       }
       finally {
@@ -2210,6 +2249,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         let allChannelsData: any[] = []
         try {
           allChannelsData = await this.fetchLatestChatInfo()
+          console.log(`✅ 获取到 ${allChannelsData.length} 条聊天数据`)
         } catch (e) {
           console.warn('获取聊天列表失败，使用本地数据:', e)
           // 接口报错时不清空本地数据，直接返回
@@ -2224,9 +2264,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
         // 转换数据格式
         const serverChannels = this.transformLatestChatInfo(allChannelsData)
+        console.log(`✅ 转换为 ${serverChannels.length} 个频道数据`)
 
         // 合并到本地
         await this.mergeChannels(serverChannels)
+        console.log(`✅ 合并到本地完成，共 ${this.channels.length} 个频道`)
         
         this.lastSyncTime = Date.now()
         console.log(`✅ 同步完成，共 ${serverChannels.length} 个频道`)
@@ -2507,7 +2549,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             id: channel.metaId,
             type: 'private' as ChatType,
             name: userInfo?.name || '未知用户',
-            avatar: userInfo?.avatarImage,
+            avatar: userInfo?.avatarImage.length>64?userInfo?.avatarImage:'',
             members: [this.selfMetaId, channel.metaId],
             createdBy: this.selfMetaId,
             createdAt: channel.timestamp || Date.now(),
@@ -2531,7 +2573,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             id: channel.groupId,
             type: 'group' as ChatType,
             name: channel.roomName || '未命名群聊',
-            avatar: channel.roomIcon ? `https://man.metaid.io${channel.roomIcon.replace('metafile://', '/content/')}` : undefined,
+            avatar: channel.roomIcon ? `${VITE_FILE_API()}/content/${channel.roomIcon.replace('metafile://', '')}` : undefined,
             members: [], // 群成员需要单独获取
             createdBy: channel.createUserMetaId || '',
             createdAt: channel.timestamp || Date.now(),
@@ -3001,9 +3043,15 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       this.activeChannelId = channelId
 
       // 总是重新加载消息以确保数据最新
-      await this.loadMessages(channelId)
-      console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
-      if(this.activeChannelMessages.length===0){
+      try {
+        await this.loadMessages(channelId)
+        console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
+        if(this.activeChannelMessages.length === 0){
+          this.isSetActiveChannelIdInProgress = false
+        }
+      } catch (error) {
+        console.error(`❌ 加载消息失败:`, error)
+        // 消息加载失败时也要重置状态，避免卡住
         this.isSetActiveChannelIdInProgress = false
       }
       // 如果是群聊，获取权限信息
@@ -3137,46 +3185,62 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 加载频道消息
      */
     async loadMessages(channelId: string): Promise<void> {
+      // 添加整体超时保护（30秒）
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`loadMessages 超时（30秒）: ${channelId}`))
+        }, 30000)
+      })
+
       try {
-        console.log(`📝 开始加载频道 ${channelId} 的消息...`)
-        
-        // 1. 查找频道信息
-        const channel = this.channels.find(c => c.id === channelId)
-        if (!channel) {
-          console.warn(`⚠️ 未找到频道 ${channelId}`)
-          this.messageCache.set(channelId, [])
-          return
-        }
-
-        const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
-        console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
-
-        // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
-        const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
-        console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
-        
-        // 3. 检查本地消息是否充足且连续
-        console.log(`🔍 检查本地消息连续性...`)
-        const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
-        if (localMessages.length >= 20 && messagesAreContinuous) {
-          console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
-          this.messageCache.set(channelId, localMessages)
-          return // 直接返回，不再请求服务器
-        } else if (localMessages.length >= 20) {
-          console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
-        } else {
-          console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
-        }
-       
-        // 4. 本地消息不足或不连续，需要从服务器获取
-        await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages, lastReadTimestamp)
-        
+        await Promise.race([
+          this._loadMessagesInternal(channelId),
+          timeoutPromise
+        ])
       } catch (error) {
         console.error('❌ 加载消息失败:', error)
         // 出错时至少设置本地消息或空数组
         const fallbackMessages = await this.db.getMessages(channelId).catch(() => [])
         this.messageCache.set(channelId, fallbackMessages)
       }
+    },
+
+    /**
+     * 加载频道消息的内部实现
+     */
+    async _loadMessagesInternal(channelId: string): Promise<void> {
+      console.log(`📝 开始加载频道 ${channelId} 的消息...`)
+      
+      // 1. 查找频道信息
+      const channel = this.channels.find(c => c.id === channelId)
+      if (!channel) {
+        console.warn(`⚠️ 未找到频道 ${channelId}`)
+        this.messageCache.set(channelId, [])
+        return
+      }
+
+      const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
+      console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
+
+      // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
+      const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
+      console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
+      
+      // 3. 检查本地消息是否充足且连续
+      console.log(`🔍 检查本地消息连续性...`)
+      const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
+      if (localMessages.length >= 20 && messagesAreContinuous) {
+        console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
+        this.messageCache.set(channelId, localMessages)
+        return // 直接返回，不再请求服务器
+      } else if (localMessages.length >= 20) {
+        console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
+      } else {
+        console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
+      }
+     
+      // 4. 本地消息不足或不连续，需要从服务器获取
+      await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages, lastReadTimestamp)
     },
 
     async loadMessageByIndex(index:number){
@@ -4410,7 +4474,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
         if (updates.avatar !== undefined && updates.avatar !== channel.avatar) {
           if(updates.avatar && updates.avatar.startsWith('metafile://')){
-            updates.avatar = `https://man.metaid.io${updates.avatar.replace('metafile://', '/content/')}`
+            updates.avatar = `${VITE_FILE_API()}/content/${updates.avatar.replace('metafile://', '')}`
           }
           channel.avatar = updates.avatar
           hasChanges = true

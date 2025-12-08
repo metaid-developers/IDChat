@@ -627,6 +627,38 @@ const handleGlobalClick = (event: MouseEvent) => {
   // 如果需要，可以通过 simpleTalk 或其他方式实现
 }
 
+// 超时保护：防止 isSetActiveChannelIdInProgress 卡住
+let progressTimeoutId: ReturnType<typeof setTimeout> | null = null
+const setupProgressTimeout = () => {
+  // 清除之前的超时
+  if (progressTimeoutId) {
+    clearTimeout(progressTimeoutId)
+  }
+  // 设置新的超时保护（10秒后强制重置状态）
+  if (simpleTalk.isSetActiveChannelIdInProgress) {
+    progressTimeoutId = setTimeout(() => {
+      if (simpleTalk.isSetActiveChannelIdInProgress) {
+        console.warn('⚠️ isSetActiveChannelIdInProgress 超时，强制重置状态')
+        simpleTalk.setActiveChannelIdInProgress(false)
+      }
+    }, 10000)
+  }
+}
+
+// 监听状态变化，设置超时保护
+watch(
+  () => simpleTalk.isSetActiveChannelIdInProgress,
+  isInProgress => {
+    if (isInProgress) {
+      setupProgressTimeout()
+    } else if (progressTimeoutId) {
+      clearTimeout(progressTimeoutId)
+      progressTimeoutId = null
+    }
+  },
+  { immediate: true }
+)
+
 // 添加和移除全局点击监听器
 onMounted(async () => {
   // 自动初始化 simple-talk
@@ -660,27 +692,25 @@ watch(
 watch(
   [() => simpleTalk.isSetActiveChannelIdInProgress, () => simpleTalk.activeChannelMessages.length],
   async ([isInProgress, messagesLength]) => {
-    if (
-      isInProgress &&
-      messagesLength > 0 &&
-      simpleTalk.activeChannel?.lastReadIndex !== undefined
-    ) {
+    // 如果不在切换中，直接返回
+    if (!isInProgress) {
+      return
+    }
+
+    // 有消息且有 lastReadIndex，执行滚动逻辑
+    if (messagesLength > 0 && simpleTalk.activeChannel?.lastReadIndex !== undefined) {
       console.log(
         '🎯 频道切换中且有消息，准备滚动到最后已读位置:',
         simpleTalk.activeChannel.lastReadIndex
       )
       try {
-        lastReadIndex.value =
-          simpleTalk.activeChannel.lastMessage?.index - simpleTalk.activeChannel.lastReadIndex <= 5
-            ? -1
-            : simpleTalk.activeChannel.lastReadIndex
+        const lastMsgIndex = simpleTalk.activeChannel.lastMessage?.index ?? 0
+        const lastRead = simpleTalk.activeChannel.lastReadIndex ?? 0
+        lastReadIndex.value = lastMsgIndex - lastRead <= 5 ? -1 : lastRead
       } catch (e) {
         console.error('设置 lastReadIndex 失败:', e)
         lastReadIndex.value = 0
       }
-
-      // 检查是否有未读消息
-      // observeMessages()
 
       await nextTick()
 
@@ -709,8 +739,20 @@ watch(
         simpleTalk.setActiveChannelIdInProgress(false)
         observeMessages()
       }, 200) // 等待200ms确保DOM渲染完成
+    } else if (messagesLength > 0) {
+      // 有消息但 lastReadIndex 未定义，滚动到底部并重置状态
+      console.log('🎯 频道切换中有消息，但 lastReadIndex 未定义，滚动到底部')
+      await nextTick()
+      setTimeout(() => {
+        if (listContainer.value) {
+          listContainer.value.scrollTop = 0
+        }
+        simpleTalk.setActiveChannelIdInProgress(false)
+        observeMessages()
+      }, 200)
     } else {
-      console.log('🎯 频道切换中但无消息，或 lastReadIndex 未定义，跳过滚动')
+      // 没有消息的情况，store 中已经处理了状态重置
+      console.log('🎯 频道切换中但无消息，等待消息加载')
     }
   },
   { immediate: true }
@@ -752,6 +794,12 @@ watch(
 onUnmounted(() => {
   if (isMobile) {
     document.removeEventListener('click', handleGlobalClick)
+  }
+
+  // 清理超时保护
+  if (progressTimeoutId) {
+    clearTimeout(progressTimeoutId)
+    progressTimeoutId = null
   }
 
   // 清理 Intersection Observer

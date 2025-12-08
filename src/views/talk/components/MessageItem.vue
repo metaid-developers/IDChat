@@ -649,7 +649,7 @@ interface MentionedUser {
 const mentionedUsers = ref<Map<string, MentionedUser>>(new Map())
 
 const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
-
+// console.log("props.message",props.message)
 // 触摸状态管理
 const touchStartTime = ref(0)
 const touchStartPosition = ref({ x: 0, y: 0 })

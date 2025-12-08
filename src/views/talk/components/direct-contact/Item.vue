@@ -133,7 +133,6 @@ const computeDecryptedMsg = (session: SimpleChannel) => {
     let content
     if (session.type === 'group') {
       let secretKeyStr = session.passwordKey?.substring(0, 16) || ''
-      console.log('group decryptedMessage secretKeyStr', secretKeyStr)
       switch (session.lastMessage.type) {
         case MessageType.msg:
           return decrypt(session.lastMessage.content, secretKeyStr)

@@ -47,6 +47,22 @@ import { useRoute, useRouter } from 'vue-router'
 import { useRootStore } from '@/stores/root'
 import { useUserStore } from '@/stores/user'
 
+// VConsole 调试工具 - 针对特定地址显示
+const DEBUG_ADDRESSES = ['195gtuVbW9DsKPnSZLrt9kdJrQmvrAt7e3']
+let vConsoleInstance: any = null
+
+const initVConsoleForDebug = async (address: string) => {
+  if (DEBUG_ADDRESSES.includes(address) && !vConsoleInstance) {
+    try {
+      const VConsole = (await import('vconsole')).default
+      vConsoleInstance = new VConsole()
+      console.log('🔧 VConsole 已为调试地址启用:', address)
+    } catch (error) {
+      console.error('加载 VConsole 失败:', error)
+    }
+  }
+}
+
 import ConnectWalletModalVue from './components/ConnectWalletModal/ConnectWalletModal.vue'
 import LeftNavigationVue from './components/LeftNavigation/LeftNavigation.vue'
 import DragonBall from './views/talk/components/DragonBall.vue'
@@ -176,7 +192,7 @@ const appLoginSuccessHandler= async (data: any) => {
             //       })
             //     }
             //   }
-  
+
             // setTimeout(() => {
             //    return window.location.reload()
             // }, 1000);
@@ -185,7 +201,7 @@ const appLoginSuccessHandler= async (data: any) => {
 
             if (!userStore.isAuthorized) {
 
-                 
+
               await connectMetalet()
               //  ElMessage.success('调用LoginSuccess成功')
               if (!userStore.last.chatpubkey) {
@@ -204,7 +220,7 @@ const appLoginSuccessHandler= async (data: any) => {
               // }, 5000);
 
             }
-             
+
           } catch (error) {
             ElMessage.error(error as any)
             console.error('Error in LoginSuccess handler:', error)
@@ -213,7 +229,7 @@ const appLoginSuccessHandler= async (data: any) => {
 
 
 const appLangChangeHandler= async (lang: string) => {
-    
+
           try {
           if (i18n.locale.value === lang) return
               i18n.locale.value = lang
@@ -228,7 +244,7 @@ const appAccountSwitchHandler= async(data:any)=>{
             //ElMessage.success('调用onAccountSwitch')
           try {
             if(rootStore.isWebView){
-              
+
               await connectionStore.disconnect(router)
               simpleTalkStore.$patch({isInitialized:false})
               await connectMetalet()
@@ -244,11 +260,11 @@ const appAccountSwitchHandler= async(data:any)=>{
                   rootStore.updateShowCreatePubkey(true)
                 }
               }
-  
+
             // setTimeout(() => {
             //     window.location.reload()
             // }, 5000);
-            
+
           }
           } catch (error) {
             throw new Error(error)
@@ -290,7 +306,7 @@ const appRreshHandler=()=>{
               //  })
 
             }catch{
-            
+
             }
 
           }
@@ -316,7 +332,7 @@ async function connectMetalet() {
 
     const channelId=route.params.channelId
     const communityId=route.params.communityId
-      
+
 
     if(channelId && channelId !== 'welcome'){
       router.push({
@@ -332,7 +348,7 @@ async function connectMetalet() {
     }else{
      setTimeout(async() => {
          await simpleTalkStore.init()
-       
+
      }, 1000);
 
       simpleTalkStore.initMuteNotify().then().catch((e)=>{
@@ -367,18 +383,18 @@ async function connectMetalet() {
     ElMessage.error(error)
   }
 
-    
+
 
 }
 
 
 
 onMounted(async () => {
-   
+
   let retryCount = 0
   let timeoutId: NodeJS.Timeout | undefined
   //document.addEventListener('visibilitychange', handleVisibilityChange);
- 
+
       accountInterval.value = setInterval(async () => {
     try {
        rootStore.checkWebViewBridge()
@@ -398,7 +414,7 @@ onMounted(async () => {
       console.error('Error checking account status:', error)
     }
   }, 5 * 1000)
-  
+
 
 
 
@@ -409,24 +425,24 @@ onMounted(async () => {
   const checkMetalet =  () => {
     rootStore.checkWebViewBridge()
     if (window.metaidwallet) {
-      
+
       try {
-          
+
            ;(window.metaidwallet as any)?.on('accountsChanged',metaletAccountsChangedHandler)
               ;(window.metaidwallet as any)?.on('networkChanged',metaletNetworkChangedHandler)
 
           ;(window.metaidwallet as any)?.on('LoginSuccess',appLoginSuccessHandler)
         // debugger
-      
 
-    
+
+
            ;(window.metaidwallet as any)?.on('onAccountSwitch',appAccountSwitchHandler)
          ;(window.metaidwallet as any)?.on('onLanguageChange',appLangChangeHandler)
-           
 
-      
 
-      
+
+
+
 
   //         window.metaidwallet?.on('LoginSuccess',async()=>{
 
@@ -490,15 +506,15 @@ onMounted(async () => {
 
 
       } catch (err) {
-        
+
         console.error('Failed to setup Metalet listeners:', err)
       }
     } else if (retryCount * RETRY_INTERVAL < MAX_RETRY_TIME) {
-      
+
       retryCount++
       timeoutId = setTimeout(checkMetalet, RETRY_INTERVAL)
     } else {
-      
+
       console.warn('Metalet wallet not detected after timeout')
     }
   }
@@ -506,6 +522,10 @@ onMounted(async () => {
   // 初始检查
   checkMetalet()
 
+  // 检查是否需要为调试地址启用 VConsole
+  if (userStore.last?.address) {
+    initVConsoleForDebug(userStore.last.address)
+  }
 
   if(window.metaidwallet && connectionStore.last.status == 'connected' && userStore.isAuthorized){
       rootStore.checkBtcAddressSameAsMvc().then().catch((err)=>{
@@ -532,7 +552,16 @@ onMounted(async () => {
   })
 })
 
-
+// 监听用户地址变化，为调试地址启用 VConsole
+watch(
+  () => userStore.last?.address,
+  (newAddress) => {
+    if (newAddress) {
+      initVConsoleForDebug(newAddress)
+    }
+  },
+  { immediate: true }
+)
 
 onBeforeUnmount(async () => {
   // remove event listener
