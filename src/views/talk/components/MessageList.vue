@@ -57,9 +57,9 @@
           <template v-if="currentChannelType === 'group' || currentChannelType === 'sub-group'">
             <MessageItem
               v-for="item in simpleTalk.activeChannelMessages"
-              :key="item.timestamp"
+              :key="item.txId"
               :message="item"
-              :id="item.timestamp"
+              :id="item.txId"
               :data-message-index="item.index"
               :data-message-mockId="item.mockId || ''"
               :data-message-txid="item.txId || ''"
@@ -73,13 +73,13 @@
           <template v-else>
             <MessageItemForSession
               v-for="item in simpleTalk.activeChannelMessages"
-              :key="item.timestamp"
+              :key="item.txId"
               :message="item"
               :data-message-mockId="item.mockId || ''"
               :data-message-index="item.index"
               :ref="el => setMessageRef(el, item)"
               @quote="message => emit('quote', message)"
-              :id="item.timestamp"
+              :id="item.txId"
               @toBuzz="onToBuzz"
               @to-time-stamp="scrollToIndex"
               :lastReadIndex="lastReadIndex"
@@ -488,10 +488,10 @@ const loadItems = async (isPrepending = false) => {
   }
 
   // 更新加载状态
-  isLoadingTop.value = false
-  isLoadingBottom.value = false
 
   setTimeout(() => {
+    isLoadingTop.value = false
+    isLoadingBottom.value = false
     isNoMoreBottom.value = false
   }, 1000)
 }
@@ -529,7 +529,6 @@ const handleScroll = (event: Event) => {
         return
       }
     }
-    console.log('container.scrollTop', container.scrollTop)
 
     if (Math.abs(container.scrollTop) > 500) {
       showScrollToBottom.value = true
@@ -543,7 +542,12 @@ const handleScroll = (event: Event) => {
       container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
       threshold
     ) {
-      console.log('滚动到顶部，准备加载更多数据...')
+      console.log(
+        '滚动到顶部，准备加载更多数据...',
+        container.scrollHeight,
+        container.scrollTop,
+        container.clientHeight
+      )
       loadItems(false).catch(error => {
         console.error('加载更多数据失败:', error)
       })

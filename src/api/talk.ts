@@ -346,11 +346,18 @@ export const getChannels = async ({
           if(channel?.userInfo&& channel.userInfo.chatPublicKey){
                if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
                 console.log(`🔑 获取私聊用户 ${channel.userInfo.chatPublicKey} 的 ECDH 公钥中...`)
-                const ecdh = await getEcdhPublickey(channel.userInfo.chatPublicKey)
+                try{
+                  const ecdh = await getEcdhPublickey(channel.userInfo.chatPublicKey)
                 console.log(`✅ 获取到私聊用户 ${channel.userInfo.chatPublicKey} 的 ECDH 公钥`, ecdh)
-                if(ecdh){
+                 if(ecdh){
                       ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
-                }               
+                } 
+                }catch(e){
+                  console.error(`❌ 获取私聊用户 ${channel.userInfo.chatPublicKey} 的 ECDH 公钥失败`, e)
+                  
+                }
+               
+                             
               
           }
           }else{

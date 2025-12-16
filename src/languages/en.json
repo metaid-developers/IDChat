@@ -461,6 +461,9 @@
     "help": "Help",
     "logout": "Logout",
     "editProfile": "Edit Profile",
+    "clearCache": "Clear Chat Cache",
+    "clearCacheSuccess": "Chat cache cleared",
+    "clearCacheConfirm": "Are you sure you want to clear all chat cache? This action cannot be undone.",
     "About MetaSo": "About MetaSo",
     "wallet": "Wallet",
     "metaName": "MetaName"

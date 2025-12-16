@@ -170,7 +170,8 @@
 import { isMobile, useRootStore } from '@/stores/root'
 import { useUserStore } from '@/stores/user'
 import { useChainStore } from '@/stores/chain'
-import { ElDropdown } from 'element-plus'
+import { useSimpleTalkStore } from '@/stores/simple-talk'
+import { ElDropdown, ElMessageBox, ElMessage } from 'element-plus'
 import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SettingsModalVue from '@/components/Settings/SettingsModal.vue'
@@ -188,15 +189,15 @@ import mvcIcon from '@/assets/images/mvc.png'
 import { CaretRight } from '@element-plus/icons-vue'
 import { isAndroid, isIOS } from '@/stores/root'
 
-
 const { openConnectionModal } = useConnectionModal()
 
 const connectionStore = useConnectionStore()
 const credentialsStore = useCredentialsStore()
-const rootStore=useRootStore()
+const rootStore = useRootStore()
 const i18n = useI18n()
 const userStore = useUserStore()
 const chainStore = useChainStore()
+const simpleTalkStore = useSimpleTalkStore()
 const layout = useLayoutStore()
 const router = useRouter()
 
@@ -291,17 +292,48 @@ const userOperates = computed(() => {
       },
     })
 
-    if(!rootStore.isWebView){
-        result.push({
-      name: i18n.t('UserOperate.logout'),
-      icon: 'logout',
+    result.push({
+      name: i18n.t('UserOperate.clearCache'),
+      icon: 'trash',
       func: async () => {
-        await connectionStore.disconnect(router)
+        try {
+          await ElMessageBox.confirm(
+            i18n.t('UserOperate.clearCacheConfirm'),
+            i18n.t('UserOperate.clearCache'),
+            {
+              confirmButtonText: i18n.t('Confirm'),
+              cancelButtonText: i18n.t('Cancel'),
+              type: 'warning',
+              customClass: 'clear-cache-confirm-dialog',
+            }
+          )
+          // 清除数据库数据
+          if (simpleTalkStore.db) {
+            await simpleTalkStore.db.clearAllData()
+          }
+          // 重置内存状态
+          await simpleTalkStore.reset()
+          // 重新初始化
+          await simpleTalkStore.init()
+          ElMessage.success(i18n.t('UserOperate.clearCacheSuccess'))
+        } catch (error) {
+          // 用户取消操作，不做任何处理
+          if (error !== 'cancel') {
+            console.error('清除缓存失败:', error)
+          }
+        }
       },
     })
+
+    if (!rootStore.isWebView) {
+      result.push({
+        name: i18n.t('UserOperate.logout'),
+        icon: 'logout',
+        func: async () => {
+          await connectionStore.disconnect(router)
+        },
+      })
     }
-    
-  
   }
 
   return result

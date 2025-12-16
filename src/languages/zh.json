@@ -506,6 +506,9 @@
     "help": "幫助",
     "logout": "退出",
     "editProfile": "編輯個人資料",
+    "clearCache": "清除聊天緩存",
+    "clearCacheSuccess": "聊天緩存已清除",
+    "clearCacheConfirm": "確定要清除所有聊天緩存嗎？此操作不可恢復。",
     "About MetaSo": "關於 MetaSo",
     "wallet": "錢包",
     "metaName": "MetaName"

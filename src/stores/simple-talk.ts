@@ -809,6 +809,43 @@ class SimpleChatDB {
     })
   }
 
+  /**
+   * 删除指定频道的所有消息
+   * 用于服务端数据源切换时清除本地过期消息
+   */
+  async deleteChannelMessages(channelId: string): Promise<void> {
+    if (!this.db) return
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['messages'], 'readwrite')
+      const store = transaction.objectStore('messages')
+      const index = store.index('channelId')
+      const request = index.openCursor(IDBKeyRange.only(channelId))
+      
+      let deletedCount = 0
+      
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result
+        if (cursor) {
+          // 只删除当前用户的消息
+          if (cursor.value.userPrefix === this.userPrefix) {
+            cursor.delete()
+            deletedCount++
+          }
+          cursor.continue()
+        } else {
+          console.log(`🗑️ 成功删除频道 ${channelId} 的 ${deletedCount} 条消息`)
+          resolve()
+        }
+      }
+      
+      request.onerror = () => {
+        console.error(`❌ 删除频道消息失败: ${channelId}`, request.error)
+        reject(request.error)
+      }
+    })
+  }
+
   // ==================== Mention 相关方法 ====================
   
   /**
@@ -1087,7 +1124,7 @@ class SimpleChatDB {
   async clearAllData(): Promise<void> {
     if (!this.db) return
     
-    const stores = ['channels', 'messages', 'users', 'redPacketIds']
+    const stores = ['channels', 'messages', 'users', 'redPacketIds', 'lastReadIndexes', 'mentions', 'settings']
     
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(stores, 'readwrite')
@@ -1704,11 +1741,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         console.log('✅ 本地数据加载完成')
         // 3. 异步同步服务端数据
         console.log('🚀 开始后台同步服务端数据...')
-        await this.syncFromServer().catch(error => {
-          console.warn('⚠️ 后台同步失败:', error)
-        })
-
-        // 加载已读索引到内存（向后兼容）
+         this.syncFromServer().then(async ()=>{
+ // 加载已读索引到内存（向后兼容）
         await this.loadLastReadIndexes()
         console.log('✅ 服务端数据同步完成')
 
@@ -1716,6 +1750,18 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         await this.loadSubChannelHeaderStatusFromDB()
         console.log('✅ 子频道头部状态加载完成')
 
+         }).catch(error => {
+          console.warn('⚠️ 后台同步失败:', error)
+        }).finally(() => {
+           // 5. 异步加载最近三个月的历史消息（后台执行，不阻塞界面）
+        setTimeout(() => {
+          this.loadRecentHistoryMessages().catch(error => {
+            console.warn('⚠️ 后台加载历史消息失败:', error)
+          })
+        }, 5000)
+        })
+
+       
         // 4. 恢复上次的激活频道（异步）
         // await this.restoreLastActiveChannel()
 
@@ -1725,12 +1771,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 通知 IDChat app 未读消息数量
         this.notifyIDChatAppBadge()
 
-        // 5. 异步加载最近三个月的历史消息（后台执行，不阻塞界面）
-        setTimeout(() => {
-          this.loadRecentHistoryMessages().catch(error => {
-            console.warn('⚠️ 后台加载历史消息失败:', error)
-          })
-        }, 5000)
+       
         
          if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
           
@@ -2549,7 +2590,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             id: channel.metaId,
             type: 'private' as ChatType,
             name: userInfo?.name || '未知用户',
-            avatar: userInfo?.avatarImage.length>64?userInfo?.avatarImage:'',
+            avatar: userInfo?.avatarImage.length>64?userInfo?.avatarImage.replace('/content','/thumbnail'):'',
             members: [this.selfMetaId, channel.metaId],
             createdBy: this.selfMetaId,
             createdAt: channel.timestamp || Date.now(),
@@ -3229,6 +3270,27 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 3. 检查本地消息是否充足且连续
       console.log(`🔍 检查本地消息连续性...`)
       const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
+      
+      // 4. 检测服务端数据源是否切换（本地消息 index 远大于服务端 lastMessage.index）
+      const serverLastIndex = channel.lastMessage?.index || 0
+      const localMaxIndex = localMessages.length > 0 
+        ? Math.max(...localMessages.map(m => m.index || 0)) 
+        : 0
+      
+      // 如果本地最大索引比服务端最新索引大超过10，且本地消息数量超过5条，说明服务端数据源可能切换了
+      // 增加本地消息数量阈值，避免因本地消息过少导致误判
+      const isServerDataSourceChanged = serverLastIndex > 0 && localMaxIndex > serverLastIndex + 10 && localMessages.length > 5
+      
+      if (isServerDataSourceChanged) {
+        console.log(`⚠️ 检测到服务端数据源切换: 本地最大index=${localMaxIndex}, 服务端lastIndex=${serverLastIndex}, 本地消息数=${localMessages.length}`)
+        console.log(`🔄 清除本地缓存消息，从服务端重新拉取...`)
+        // 清除该频道的本地消息缓存
+        await this.db.deleteChannelMessages(channelId)
+        // 从服务端重新获取消息
+        await this.loadServerMessagesAroundReadIndex(channelId, channel, 0, null, [], null)
+        return
+      }
+      
       if (localMessages.length >= 20 && messagesAreContinuous) {
         console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
         this.messageCache.set(channelId, localMessages)
@@ -3239,7 +3301,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
       }
      
-      // 4. 本地消息不足或不连续，需要从服务器获取
+      // 5. 本地消息不足或不连续，需要从服务器获取
       await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages, lastReadTimestamp)
     },
 

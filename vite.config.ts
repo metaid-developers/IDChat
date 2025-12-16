@@ -301,7 +301,7 @@ export default ({ mode, command }) => {
       // },
     },
     esbuild: {
-      drop: isProduction ? [ 'debugger'] : [],
+      drop: isProduction ? ['console', 'debugger'] : [],
       
 
     },

@@ -805,3 +805,25 @@ html.dark {
 .el-affix--fixed {
     position: fixed;
 }
+
+// 清除缓存确认对话框样式
+.clear-cache-confirm-dialog {
+    background-color: var(--themeBgColor, #fff) !important;
+    border-radius: 16px !important;
+    
+    .el-message-box__header {
+        padding: 20px 20px 10px;
+    }
+    
+    .el-message-box__title {
+        font-weight: 600;
+    }
+    
+    .el-message-box__content {
+        padding: 10px 20px 20px;
+    }
+    
+    .el-message-box__btns {
+        padding: 10px 20px 20px;
+    }
+}

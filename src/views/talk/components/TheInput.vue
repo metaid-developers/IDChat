@@ -1028,7 +1028,7 @@ const trySendText = async (e: any) => {
 
     // 如果是子群聊，获取父群聊信息
     if (simpleTalk.activeChannel.type === 'sub-group' && simpleTalk.activeChannel.parentGroupId) {
-      parentChannel = simpleTalk.getParentGroupChannel(simpleTalk.activeChannel.parentGroupId)
+      parentChannel = simpleTalk.getParentGroupChannel(simpleTalk.activeChannel.id)
       if (parentChannel?.roomJoinType === '100') {
         isPrivateGroup = true
       }
