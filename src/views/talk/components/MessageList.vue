@@ -212,6 +212,12 @@ const showScrollToBottom = ref(false)
 
 const lastReadIndex = ref(-1)
 
+// 自动滚动相关状态
+const isNearBottom = ref(true) // 用户是否在查看最新消息区域
+const previousMessageCount = ref(0) // 之前的消息数量，用于检测新消息
+const AUTO_SCROLL_THRESHOLD = 150 // 距离底部多少像素以内视为"在底部"
+const UNREAD_AUTO_SCROLL_THRESHOLD = 5 // 未读消息数量在此范围内时自动滚动到最新
+
 // 未读@提及相关
 const unreadMentions = ref<any[]>([])
 const currentMentionIndex = ref(0)
@@ -276,13 +282,28 @@ const jumpToNextUnreadMention = async () => {
   const mention = unreadMentions.value[currentMentionIndex.value]
   if (!mention) return
 
-  console.log(`📍 跳转到@提及: index=${mention.messageIndex}`)
+  console.log(`📍 跳转到@提及: index=${mention.messageIndex}, id=${mention.id}`)
 
   // 使用 scrollToIndex 跳转
   scrollToIndex(mention.messageIndex)
 
-  // 移动到下一个提及（循环）
-  currentMentionIndex.value = (currentMentionIndex.value + 1) % unreadMentions.value.length
+  // 标记该提及为已读
+  try {
+    await simpleTalk.markMentionRead(mention.messageIndex)
+    console.log(`✅ @提及 index=${mention.messageIndex} 已标记为已读`)
+
+    // 从本地列表中移除已读的提及
+    unreadMentions.value = unreadMentions.value.filter(m => m.id !== mention.id)
+
+    // 重置索引（如果已经是最后一个，回到第一个）
+    if (currentMentionIndex.value >= unreadMentions.value.length) {
+      currentMentionIndex.value = 0
+    }
+  } catch (error) {
+    console.error('标记@提及已读失败:', error)
+    // 即使标记失败，也移动到下一个提及
+    currentMentionIndex.value = (currentMentionIndex.value + 1) % unreadMentions.value.length
+  }
 }
 
 // 消息元素引用和观察器
@@ -363,9 +384,21 @@ const initMessageObserver = () => {
             // 查找对应的消息对象来获取时间戳
             const message = simpleTalk.activeChannelMessages.find(msg => msg.index === messageIndex)
             const messageTimestamp = message?.timestamp
+
+            // 检查是否是 @ 提及消息，如果是则标记已读
             if (message?.mention && message.mention.includes(simpleTalk.selfMetaId)) {
-              console.log('包含提及，跳过已读更新', messageIndex)
-              simpleTalk.markMentionRead(message.index)
+              console.log('包含提及，标记为已读', messageIndex)
+              simpleTalk
+                .markMentionRead(message.index)
+                .then(() => {
+                  // 从本地未读列表中移除
+                  unreadMentions.value = unreadMentions.value.filter(
+                    m => m.messageIndex !== messageIndex
+                  )
+                })
+                .catch(err => {
+                  console.error('标记@提及已读失败:', err)
+                })
             }
 
             console.log(
@@ -529,6 +562,10 @@ const handleScroll = (event: Event) => {
         return
       }
     }
+
+    // 更新是否在底部的状态（用于自动滚动判断）
+    // 由于使用 flex-direction: column-reverse，scrollTop=0 表示在底部
+    isNearBottom.value = Math.abs(container.scrollTop) < AUTO_SCROLL_THRESHOLD
 
     if (Math.abs(container.scrollTop) > 500) {
       showScrollToBottom.value = true
@@ -701,16 +738,42 @@ watch(
       return
     }
 
+    // 重置 isNearBottom 状态，因为切换了频道
+    isNearBottom.value = true
+    previousMessageCount.value = messagesLength
+
     // 有消息且有 lastReadIndex，执行滚动逻辑
     if (messagesLength > 0 && simpleTalk.activeChannel?.lastReadIndex !== undefined) {
+      const lastMsgIndex = simpleTalk.activeChannel.lastMessage?.index ?? 0
+      const lastRead = simpleTalk.activeChannel.lastReadIndex ?? 0
+      const unreadCount = lastMsgIndex - lastRead
+
       console.log(
-        '🎯 频道切换中且有消息，准备滚动到最后已读位置:',
-        simpleTalk.activeChannel.lastReadIndex
+        '🎯 频道切换中且有消息，未读数量:',
+        unreadCount,
+        '阈值:',
+        UNREAD_AUTO_SCROLL_THRESHOLD
       )
+
+      // 如果未读消息数量在阈值范围内（1-5条），直接滚动到最新
+      if (unreadCount >= 0 && unreadCount <= UNREAD_AUTO_SCROLL_THRESHOLD) {
+        console.log('📜 未读消息数量在阈值内，直接滚动到最新消息')
+        lastReadIndex.value = -1 // 不显示未读分隔线
+
+        await nextTick()
+        setTimeout(() => {
+          if (listContainer.value) {
+            listContainer.value.scrollTop = 0
+          }
+          simpleTalk.setActiveChannelIdInProgress(false)
+          observeMessages()
+        }, 200)
+        return
+      }
+
+      // 未读消息超过阈值，滚动到最后已读位置
       try {
-        const lastMsgIndex = simpleTalk.activeChannel.lastMessage?.index ?? 0
-        const lastRead = simpleTalk.activeChannel.lastReadIndex ?? 0
-        lastReadIndex.value = lastMsgIndex - lastRead <= 5 ? -1 : lastRead
+        lastReadIndex.value = lastRead
       } catch (e) {
         console.error('设置 lastReadIndex 失败:', e)
         lastReadIndex.value = 0
@@ -724,7 +787,7 @@ watch(
         const targetElement = messageRefs.value.get(lastReadIndex.value + 1)
         console.log('targetElement for lastReadIndex', targetElement, lastReadIndex.value)
         if (lastReadIndex.value !== 0 && targetElement && listContainer.value) {
-          console.log('📍 找到最后已读消息元素，滚动到位置:', lastReadIndex)
+          console.log('📍 找到最后已读消息元素，滚动到位置:', lastReadIndex.value)
 
           // 计算目标元素相对于容器的位置
           const containerRect = listContainer.value.getBoundingClientRect()
@@ -746,6 +809,7 @@ watch(
     } else if (messagesLength > 0) {
       // 有消息但 lastReadIndex 未定义，滚动到底部并重置状态
       console.log('🎯 频道切换中有消息，但 lastReadIndex 未定义，滚动到底部')
+      lastReadIndex.value = -1
       await nextTick()
       setTimeout(() => {
         if (listContainer.value) {
@@ -768,13 +832,29 @@ watch(
   ([simpleMessages]) => {
     // 如果有消息显示，重新观察消息元素
     const hasMessages = simpleMessages && simpleMessages.length > 0
+    const currentMessageCount = simpleMessages?.length || 0
+    const isNewMessageAdded = currentMessageCount > previousMessageCount.value
+
+    // 更新之前的消息数量
+    previousMessageCount.value = currentMessageCount
 
     if (hasMessages) {
-      console.log('📝 检测到消息变化，重新设置观察器')
+      console.log('📝 检测到消息变化，重新设置观察器', {
+        isNewMessageAdded,
+        isNearBottom: isNearBottom.value,
+        currentCount: currentMessageCount,
+      })
+
       nextTick(() => {
         // 延迟执行，确保DOM已更新
         setTimeout(() => {
           observeMessages()
+
+          // 如果有新消息且用户在查看最新区域，自动滚动到最新
+          if (isNewMessageAdded && isNearBottom.value && listContainer.value) {
+            console.log('📜 检测到新消息且用户在底部，自动滚动到最新')
+            listContainer.value.scrollTop = 0
+          }
         }, 100)
       })
     }

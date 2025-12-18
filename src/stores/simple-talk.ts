@@ -938,7 +938,10 @@ class SimpleChatDB {
    * 标记@提及为已读
    */
   async markMentionAsRead(mentionId: string): Promise<void> {
-    if (!this.db) return
+    if (!this.db) {
+      console.warn('❌ 数据库未初始化，无法标记@提及已读')
+      return
+    }
     
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['mentions'], 'readwrite')
@@ -948,16 +951,32 @@ class SimpleChatDB {
       getRequest.onsuccess = () => {
         const mention = getRequest.result
         if (mention) {
-          mention.isRead = true
+          console.log(`📌 找到@提及记录:`, { id: mentionId, isRead: mention.isRead })
+          if (mention.isRead === 1 || mention.isRead === true) {
+            console.log(`📌 @提及 ${mentionId} 已经是已读状态`)
+            resolve()
+            return
+          }
+          mention.isRead = 1 // 使用数字 1 而不是 true，保持一致性
           const putRequest = store.put(mention)
-          putRequest.onsuccess = () => resolve()
-          putRequest.onerror = () => reject(putRequest.error)
+          putRequest.onsuccess = () => {
+            console.log(`✅ @提及 ${mentionId} 状态已更新为已读`)
+            resolve()
+          }
+          putRequest.onerror = () => {
+            console.error(`❌ 更新@提及状态失败:`, putRequest.error)
+            reject(putRequest.error)
+          }
         } else {
-          resolve()
+          console.warn(`⚠️ 未找到@提及记录: ${mentionId}`)
+          resolve() // 找不到记录也算成功，避免阻塞
         }
       }
       
-      getRequest.onerror = () => reject(getRequest.error)
+      getRequest.onerror = () => {
+        console.error(`❌ 获取@提及记录失败:`, getRequest.error)
+        reject(getRequest.error)
+      }
     })
   }
 
@@ -4853,6 +4872,102 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     },
 
     /**
+     * 重新发送失败的消息
+     * @param message 需要重发的消息对象
+     */
+    async tryResend(message: UnifiedChatMessage): Promise<boolean> {
+      console.log(`🔄 尝试重新发送消息: mockId=${message.mockId}`, message)
+      
+      if (!message.mockId) {
+        console.error('❌ 消息没有 mockId，无法重发')
+        return false
+      }
+
+      try {
+        const userStore = useUserStore()
+        
+        // 清除错误状态
+        message.error = undefined
+        
+        // 更新缓存中的消息状态
+        for (const [channelId, messages] of this.messageCache) {
+          const index = messages.findIndex(msg => msg.mockId === message.mockId)
+          if (index !== -1) {
+            messages[index] = { ...message }
+            break
+          }
+        }
+
+        // 判断消息类型
+        const isPrivateChat = message.from !== undefined && message.to !== undefined
+        const isSubGroupChat = !isPrivateChat && !!message.channelId && message.channelId !== ''
+        
+        if (!isPrivateChat) {
+          // 群聊消息重发
+          const timestamp = message.timestamp || getTimestampInSeconds()
+          const contentType = message.contentType || 'text/plain'
+          const encryption = 'aes'
+          const externalEncryption = '0' as const
+          
+          const dataCarrier = {
+            groupID: isSubGroupChat ? message.groupId : (message.groupId || message.metanetId),
+            channelID: isSubGroupChat ? message.channelId : undefined,
+            timestamp,
+            nickName: userStore.last?.name || '',
+            content: message.content,
+            contentType,
+            encryption,
+            replyPin: message.replyPin || '',
+            mention: message.mention || [],
+          }
+          
+          const node = {
+            protocol: NodeName.SimpleGroupChat,
+            body: dataCarrier,
+            timestamp: Date.now(),
+            externalEncryption,
+          }
+          
+          console.log(`🚀 重发群聊消息:`, { groupID: dataCarrier.groupID, channelID: dataCarrier.channelID })
+          await tryCreateNode(node, message.mockId)
+        } else {
+          // 私聊消息重发
+          const timestamp = message.timestamp || getTimestampInSeconds()
+          const contentType = message.contentType || 'text/plain'
+          const encrypt = 'ecdh'
+          const externalEncryption = '0' as const
+          
+          const dataCarrier = {
+            to: message.to,
+            timestamp,
+            content: message.content,
+            contentType,
+            encrypt,
+            replyPin: message.replyPin || '',
+          }
+
+          const node = {
+            protocol: NodeName.SimpleMsg,
+            body: dataCarrier,
+            timestamp,
+            externalEncryption,
+          }
+          
+          console.log(`🚀 重发私聊消息到: ${message.to}`)
+          await tryCreateNode(node, message.mockId)
+        }
+
+        console.log(`✅ 消息重发请求已发送: mockId=${message.mockId}`)
+        return true
+      } catch (error) {
+        console.error(`❌ 消息重发失败: mockId=${message.mockId}`, error)
+        // 重新设置错误状态
+        this.setMessageError(message.mockId, (error as any).message || '重发失败')
+        return false
+      }
+    },
+
+    /**
      * 添加消息到频道（本地）
      */
     async addMessage(message: UnifiedChatMessage): Promise<void> {
@@ -5608,21 +5723,26 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async markMentionRead(index: number, channelId?: string): Promise<void> {
       try {
-        if(!channelId)channelId=this.activeChannelId
+        if(!channelId) channelId = this.activeChannelId
         const mentionId = `${channelId}_${index}`
+        
+        console.log(`📌 尝试标记@提及为已读: mentionId=${mentionId}, channelId=${channelId}, index=${index}`)
+        
         await this.db.markMentionAsRead(mentionId)
         
         // 更新频道未读提及计数
         const channel = this.channels.find(c => c.id === channelId)
         if (channel) {
           const unreadCount = await this.db.countUnreadMentions(channelId)
+          const oldCount = channel.unreadMentionCount || 0
           channel.unreadMentionCount = unreadCount
           await this.db.saveChannel(channel)
+          console.log(`📌 频道 ${channel.name} 未读@提及: ${oldCount} -> ${unreadCount}`)
         }
         
         console.log(`✅ @提及 ${mentionId} 已标记为已读`)
       } catch (error) {
-        console.error('标记@提及已读失败:', error)
+        console.error('标记@提及已读失败:', error, { index, channelId })
       }
     }
   },

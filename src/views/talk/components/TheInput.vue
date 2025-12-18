@@ -755,7 +755,12 @@ const mentionUsers = ref<any[]>([])
 const mentionLoading = ref(false)
 const mentionQuery = ref('')
 const mentionStartPos = ref(0)
-const mentionDropdownPosition = ref<{ top?: number; bottom?: number; left: number }>({ left: 0 })
+const mentionDropdownPosition = ref<{
+  top?: number
+  bottom?: number
+  left: number
+  width?: number
+}>({ left: 0 })
 const mentionDropdownRef = ref<any>(null)
 const currentMentions = ref<Array<{ metaId: string; name: string }>>([])
 const defaultMembersCache = ref<any[]>([]) // 缓存默认成员列表
@@ -819,18 +824,20 @@ const syncMentionsWithText = () => {
   console.log('📝 同步后的 mentions:', currentMentions.value)
 }
 
-// 计算下拉框位置（显示在输入框上方，紧贴输入框）
+// 计算下拉框位置（直接定位在输入框上方）
 const updateMentionDropdownPosition = (textarea: HTMLTextAreaElement) => {
   const rect = textarea.getBoundingClientRect()
 
-  // 计算下拉框应该显示的位置
-  // 使用 bottom 定位，让下拉框紧贴在输入框上方
+  // 使用 bottom 定位，直接固定在输入框上方
+  // 计算从视口底部到输入框顶部的距离
+  const viewportHeight = window.visualViewport?.height || window.innerHeight
+  const bottomDistance = viewportHeight - rect.top + 8 // 8px 间距
+
   mentionDropdownPosition.value = {
-    // 使用 bottom 来实现自下而上的布局
-    // 这样无论列表有多少项，都会紧贴在输入框上方
-    bottom: window.innerHeight - rect.top - window.scrollY + 5, // 5px 间距
-    left: rect.left + window.scrollX + 50,
-    top: -1, // 设置为负数表示使用 bottom 定位
+    top: undefined,
+    bottom: bottomDistance,
+    left: rect.left + 10,
+    width: Math.min(rect.width - 20, 320), // 限制宽度
   }
 }
 

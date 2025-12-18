@@ -1,79 +1,79 @@
 <template>
-  <div
-    v-if="show"
-    class="mention-dropdown bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
-    :style="{
-      top: position.top !== undefined && position.top >= 0 ? `${position.top}px` : 'auto',
-      bottom: position.bottom !== undefined ? `${position.bottom}px` : 'auto',
-      left: `${position.left}px`,
-    }"
-  >
-    <!-- Loading 状态 -->
+  <Teleport to="body">
     <div
-      v-if="loading"
-      class="flex items-center justify-center py-8 text-sm text-dark-300 dark:text-gray-400"
+      v-if="show"
+      class="mention-dropdown bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
+      :style="dropdownStyle"
     >
-      <Icon name="loading" class="w-5 h-5 animate-spin mr-2" />
-      {{ $t('loading') }}...
-    </div>
-
-    <!-- 用户列表 -->
-    <div v-else-if="users.length > 0" class="max-h-60 overflow-y-auto">
+      <!-- Loading 状态 -->
       <div
-        v-for="(user, index) in users"
-        :key="user.metaId"
-        :class="[
-          'mention-item flex items-center px-4 py-2 cursor-pointer transition-colors',
-          index === selectedIndex
-            ? 'bg-primary bg-opacity-20'
-            : 'hover:bg-gray-100 dark:hover:bg-gray-600',
-        ]"
-        @click="selectUser(user)"
-        @mouseenter="selectedIndex = index"
+        v-if="loading"
+        class="flex items-center justify-center py-8 text-sm text-dark-300 dark:text-gray-400"
       >
-        <img
-          v-if="user.userInfo?.avatarImage"
-          :src="user.userInfo.avatarImage"
-          alt=""
-          class="w-8 h-8 rounded-full mr-3 object-cover"
-        />
+        <Icon name="loading" class="w-5 h-5 animate-spin mr-2" />
+        {{ $t('loading') }}...
+      </div>
+
+      <!-- 用户列表 -->
+      <div v-else-if="users.length > 0" class="max-h-60 overflow-y-auto">
         <div
-          v-else
-          class="w-8 h-8 rounded-full mr-3 bg-primary flex items-center justify-center text-dark-800 font-semibold"
+          v-for="(user, index) in users"
+          :key="user.metaId"
+          :class="[
+            'mention-item flex items-center px-4 py-2 cursor-pointer transition-colors',
+            index === selectedIndex
+              ? 'bg-primary bg-opacity-20'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-600',
+          ]"
+          @click="selectUser(user)"
+          @mouseenter="selectedIndex = index"
         >
-          {{ user.userInfo?.name?.charAt(0).toUpperCase() || 'U' }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium text-dark-800 dark:text-gray-100 truncate">
-            {{ user.userInfo?.name || 'Unknown' }}
+          <!-- 头像：优先显示图片，加载失败或无头像时显示默认头像 -->
+          <img
+            v-if="user.userInfo?.avatarImage && !avatarErrorMap[user.metaId]"
+            :src="user.userInfo.avatarImage"
+            alt=""
+            class="w-8 h-8 rounded-full mr-3 object-cover"
+            @error="handleAvatarError(user.metaId)"
+          />
+          <div
+            v-else
+            class="w-8 h-8 rounded-full mr-3 bg-primary flex items-center justify-center text-dark-800 font-semibold"
+          >
+            {{ user.userInfo?.name?.charAt(0).toUpperCase() || 'U' }}
           </div>
-          <div class="text-xs text-dark-300 dark:text-gray-400 truncate">
-            {{ formatAddress(user.address) }}
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-dark-800 dark:text-gray-100 truncate">
+              {{ user.userInfo?.name || 'Unknown' }}
+            </div>
+            <div class="text-xs text-dark-300 dark:text-gray-400 truncate">
+              {{ formatAddress(user.address) }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 无结果 -->
-    <div
-      v-else-if="!loading && query"
-      class="flex items-center justify-center py-6 text-sm text-dark-300 dark:text-gray-400"
-    >
-      {{ $t('no_results') }}
-    </div>
+      <!-- 无结果 -->
+      <div
+        v-else-if="!loading && query"
+        class="flex items-center justify-center py-6 text-sm text-dark-300 dark:text-gray-400"
+      >
+        {{ $t('no_results') }}
+      </div>
 
-    <!-- 空状态提示 -->
-    <div
-      v-else-if="!loading && !query"
-      class="flex items-center justify-center py-6 text-sm text-dark-300 dark:text-gray-400"
-    >
-      输入名称搜索成员
+      <!-- 空状态提示 -->
+      <div
+        v-else-if="!loading && !query"
+        class="flex items-center justify-center py-6 text-sm text-dark-300 dark:text-gray-400"
+      >
+        输入名称搜索成员
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 
 export interface MentionUser {
   metaId: string
@@ -93,7 +93,7 @@ export interface MentionUser {
 interface Props {
   show: boolean
   users: MentionUser[]
-  position: { top?: number; bottom?: number; left: number }
+  position: { top?: number; bottom?: number; left: number; width?: number }
   loading?: boolean
   query?: string
 }
@@ -107,11 +107,49 @@ const emit = defineEmits(['select', 'update:selectedIndex'])
 
 const selectedIndex = ref(0)
 
-// 监听用户列表变化，重置选中索引
+// 计算下拉框样式
+const dropdownStyle = computed(() => {
+  const style: Record<string, string> = {
+    position: 'fixed',
+    left: `${props.position.left}px`,
+    maxHeight: '280px',
+  }
+
+  // 使用 bottom 定位（推荐，更适合 iOS）
+  if (props.position.bottom !== undefined) {
+    style.bottom = `${props.position.bottom}px`
+    style.top = 'auto'
+  } else if (props.position.top !== undefined && props.position.top >= 0) {
+    style.top = `${props.position.top}px`
+    style.bottom = 'auto'
+  }
+
+  // 设置宽度
+  if (props.position.width) {
+    style.width = `${props.position.width}px`
+  } else {
+    style.minWidth = '200px'
+    style.maxWidth = '320px'
+  }
+
+  return style
+})
+
+// 头像加载错误记录
+const avatarErrorMap = ref<Record<string, boolean>>({})
+
+// 处理头像加载错误
+const handleAvatarError = (metaId: string) => {
+  avatarErrorMap.value[metaId] = true
+}
+
+// 监听用户列表变化，重置选中索引和头像错误记录
 watch(
   () => props.users,
   () => {
     selectedIndex.value = 0
+    // 清空头像错误记录，因为用户列表已更新
+    avatarErrorMap.value = {}
   }
 )
 
@@ -164,10 +202,8 @@ defineExpose({
 
 <style lang="scss" scoped>
 .mention-dropdown {
-  position: fixed;
-  z-index: 1000;
-  min-width: 260px;
-  max-width: 320px;
+  z-index: 10000; /* 提高 z-index 确保在 iOS 键盘上方 */
+  overflow-y: auto;
 }
 
 .mention-item {

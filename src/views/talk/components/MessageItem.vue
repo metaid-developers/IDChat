@@ -428,7 +428,24 @@
               v-else
               @click="handleMessageClick"
             >
+              <!-- Markdown 消息渲染 -->
               <div
+                v-if="isMarkdown"
+                class="markdown-content prose prose-sm max-w-none dark:prose-invert"
+                v-html="
+                  parseMarkdownMessage(
+                    decryptedMessage(
+                      message?.content,
+                      message?.encryption,
+                      message?.protocol,
+                      message?.isMock
+                    )
+                  )
+                "
+              ></div>
+              <!-- 普通文本消息渲染 -->
+              <div
+                v-else
                 class="whitespace-pre-wrap break-all"
                 v-html="
                   parseTextMessage(
@@ -504,6 +521,7 @@ import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
 import MessageItemQuote from './MessageItemQuote.vue'
 import { NodeName ,ChatChain} from '@/enum'
+import { marked } from 'marked'
 import { containsString } from '@/utils/util'
 import { ElMessage } from 'element-plus'
 import type { ChatMessageItem } from '@/@types/common'
@@ -649,6 +667,7 @@ interface MentionedUser {
 const mentionedUsers = ref<Map<string, MentionedUser>>(new Map())
 
 const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
+const isMarkdown = computed(() => props.message.contentType === 'text/markdown')
 // console.log("props.message",props.message)
 // 触摸状态管理
 const touchStartTime = ref(0)
@@ -907,7 +926,16 @@ const parseTextMessage = (text: string) => {
     return ''
   }
 
-  const HTML = /<\/?.+?>/gi
+  // HTML 转义函数，防止 XSS 攻击
+  const escapeHtml = (str: string) => {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+  }
+
   const COOKIE = /document\.cookie/gi
   const HTTP = /(http|https):\/\//gi
   const re = /(f|ht){1}(tp|tps):\/\/([\w-]+\S)+[\w-]+([\w-?%#&=]*)?(\/[\w- ./?%#&=]*)?/g
@@ -924,24 +952,26 @@ const parseTextMessage = (text: string) => {
   const isUrl = urlPattern.test(text)
   const hasPinId = pinPattern.test(text)
 
-  // 如果是 URL 且包含 PIN，说明是协议卡片链接，直接返回原文
+  // 如果是 URL 且包含 PIN，说明是协议卡片链接，直接返回原文（转义后）
   if (isUrl && hasPinId) {
-    return text.replace(/\\n/g, '\n').replace(/\n/g, '<br />')
+    return escapeHtml(text).replace(/\\n/g, '\n').replace(/\n/g, '<br />')
   }
 
-  // 如果消息匹配其他特殊协议，直接返回原文
+  // 如果消息匹配其他特殊协议，直接返回原文（转义后）
   for (const pattern of specialProtocolPatterns) {
     if (pattern.test(text)) {
-      return text.replace(/\\n/g, '\n').replace(/\n/g, '<br />')
+      return escapeHtml(text).replace(/\\n/g, '\n').replace(/\n/g, '<br />')
     }
   }
 
-  if (HTML.test(text)) {
-    return '无效输入,别耍花样!'
-  }
+  // 检测恶意脚本
   if (COOKIE.test(text)) {
-    return '无效输入,你想干嘛!'
+    return escapeHtml(text).replace(/\\n/g, '\n').replace(/\n/g, '<br />')
   }
+
+  // 先转义 HTML，防止 XSS 攻击
+  text = escapeHtml(text)
+
   text = text.replace(re, function(url) {
     if (HTTP.test(text)) {
       if(rootstore.isWebView){
@@ -977,6 +1007,27 @@ const parseTextMessage = (text: string) => {
 
   text = text.replace(/\\n/g, '\n')
   return text.replace(/\n/g, '<br />')
+}
+
+// 解析 markdown 消息
+const parseMarkdownMessage = (text: string) => {
+  if (typeof text === 'undefined' || text === '') {
+    return ''
+  }
+
+  try {
+    // 配置 marked 选项
+    marked.setOptions({
+      breaks: true, // 支持换行
+      gfm: true, // 启用 GitHub 风格的 Markdown
+    })
+
+    return marked.parse(text)
+  } catch (error) {
+    console.error('Markdown parse error:', error)
+    // 如果解析失败，回退到普通文本处理
+    return parseTextMessage(text)
+  }
 }
 
 // 处理 webview 链接和 mention 点击的事件委托
@@ -1104,25 +1155,7 @@ const hasRedPacketReceived = computed(() => {
 const redPacketCliamOver = computed(() => {})
 
 const tryResend = async() => {
-  // props.message.error = false
-  // const messageDto = talk.getRetryById(props.message.mockId)
-
-  // try {
-  //   if (messageDto) {
-  //     await sendMessage(messageDto)
-
-  //     talk.removeMessage(props.message.mockId)
-  //   } else {
-  //     return ElMessage.error(`${i18n.t('retry_msg_error')}`)
-  //   }
-  // } catch (error) {
-  //   return ElMessage.error((error as any).toString())
-  // }
-
-  //
-  // TODO
-
-
+  await simpleTalk.tryResend(props.message)
 }
 
 const isGroupJoinAction = computed(() =>
@@ -1669,5 +1702,122 @@ const isReceiveRedPacket = computed(() =>
 }
 .rounded-none {
   border-radius: 0 !important;
+}
+
+/* Markdown 内容样式 */
+.markdown-content {
+  word-break: break-word;
+
+  :deep(h1),
+  :deep(h2),
+  :deep(h3),
+  :deep(h4),
+  :deep(h5),
+  :deep(h6) {
+    margin-top: 0.5em;
+    margin-bottom: 0.25em;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  :deep(h1) {
+    font-size: 1.5em;
+  }
+  :deep(h2) {
+    font-size: 1.3em;
+  }
+  :deep(h3) {
+    font-size: 1.1em;
+  }
+
+  :deep(p) {
+    margin: 0.25em 0;
+  }
+
+  :deep(ul),
+  :deep(ol) {
+    margin: 0.25em 0;
+    padding-left: 1.5em;
+  }
+
+  :deep(li) {
+    margin: 0.1em 0;
+  }
+
+  :deep(code) {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.9em;
+  }
+
+  :deep(pre) {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 0.5em;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.5em 0;
+
+    code {
+      background-color: transparent;
+      padding: 0;
+    }
+  }
+
+  :deep(blockquote) {
+    border-left: 3px solid #fc457b;
+    padding-left: 0.75em;
+    margin: 0.5em 0;
+    opacity: 0.85;
+  }
+
+  :deep(a) {
+    color: #3b82f6;
+    text-decoration: underline;
+  }
+
+  :deep(table) {
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 0.9em;
+  }
+
+  :deep(th),
+  :deep(td) {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    padding: 0.25em 0.5em;
+  }
+
+  :deep(hr) {
+    border: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    margin: 0.5em 0;
+  }
+
+  :deep(img) {
+    max-width: 100%;
+    border-radius: 4px;
+  }
+}
+
+/* 暗色模式下的 Markdown 样式 */
+.dark .markdown-content {
+  :deep(code) {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  :deep(pre) {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  :deep(th),
+  :deep(td) {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  :deep(hr) {
+    border-top-color: rgba(255, 255, 255, 0.2);
+  }
 }
 </style>
