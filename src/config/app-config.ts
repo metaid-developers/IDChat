@@ -42,9 +42,9 @@ export function getAppConfig() {
     metasoUrl: config.api.metasoUrl,
     showMoneyApp: config.api.showMoneyApp,
     showNowHost: config.api.showNowHost,
-    showNowWs: config.api.showNowWs,
+    chatWs: config.api.chatWs,
     idchatHost: config.api.idchatHost,
-    idchatPathWs: config.api.idchatPathWs,
+    chatWsPath: config.api.chatWsPath,
 
     // 区块链配置
     network: config.blockchain.network,
@@ -121,9 +121,9 @@ export const VITE_METANOTE = () => getRuntimeConfig().api.metanoteUrl
 export const VITE_METASO_URL = () => getRuntimeConfig().api.metasoUrl
 export const VITE_SHOW_MONEY_APP = () => getRuntimeConfig().api.showMoneyApp
 export const VITE_SHOW_NOW_HOST = () => getRuntimeConfig().api.showNowHost
-export const VITE_SHOW_NOW_WS = () => getRuntimeConfig().api.showNowWs
+export const VITE_CHAT_WS = () => getRuntimeConfig().api.chatWs
 export const VITE_IDCHAT_HOST = () => getRuntimeConfig().api.idchatHost
-export const VITE_IDCHAT_PATH_WS = () => getRuntimeConfig().api.idchatPathWs
+export const VITE_CHAT_WS_PATH = () => getRuntimeConfig().api.chatWsPath
 
 export const VITE_NET_WORK = () => getRuntimeConfig().blockchain.network
 export const VITE_NET_WORK_NEW = () => getRuntimeConfig().blockchain.networkNew

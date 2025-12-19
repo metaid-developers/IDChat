@@ -29,9 +29,9 @@
     "metasoUrl": "https://www.metaso.network",
     "showMoneyApp": "https://gray2scale.showmoney.io",
     "showNowHost": "https://www.show.now",
-    "showNowWs": "https://api.idchat.io",
+    "chatWs": "https://api.idchat.io",
     "idchatHost": "https://idchat.io/chat",
-    "idchatPathWs": "/socket-test"
+    "chatWsPath": "/socket-test"
   },
   "blockchain": {
     "network": "testnet",

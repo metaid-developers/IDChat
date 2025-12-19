@@ -59,9 +59,9 @@
     "metasoUrl": "https://www.metaso.network",
     "showMoneyApp": "https://www.visionmoney.space",
     "showNowHost": "https://www.show.now",
-    "showNowWs": "https://www.show.now",
+    "chatWs": "https://www.show.now",
     "idchatHost": "https://idchat.io/chat",
-    "idchatPathWs": "/socket-test"
+    "chatWsPath": "/socket-test"
   }
 }
 ```

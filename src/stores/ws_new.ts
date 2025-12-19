@@ -5,7 +5,7 @@ import { SocketIOClient } from '@/lib/socket'
 import { disconnect } from 'process'
 import { useSimpleTalkStore } from './simple-talk'
 import { useRootStore, isIOS, isAndroid } from './root'
-import { VITE_IDCHAT_PATH_WS, VITE_SHOW_NOW_WS } from '@/config/app-config'
+import { VITE_CHAT_WS_PATH, VITE_CHAT_WS } from '@/config/app-config'
 
 interface MessageData {
   message: string
@@ -51,8 +51,8 @@ export const useWsStore = defineStore('ws', {
       rootStore.checkWebViewBridge()
       if (!selfMetaId) return
       const config: SocketConfig = {
-        url: `${VITE_SHOW_NOW_WS() || import.meta.env.VITE_SHOW_NOW_WS}`,
-        path: `${VITE_IDCHAT_PATH_WS()}/socket.io`,
+        url: `${VITE_CHAT_WS() || import.meta.env.VITE_CHAT_WS}`,
+        path: `${VITE_CHAT_WS_PATH()}/socket.io`,
         metaid: selfMetaId,
         type: rootStore.isWebView || isIOS || isAndroid ? 'app' : 'pc',
       }
@@ -71,7 +71,7 @@ export const useWsStore = defineStore('ws', {
       // const socket=client.getSocket()
 
       //
-      // const socket=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
+      // const socket=io(`${import.meta.env.VITE_CHAT_WS}`,{
       //       query:{
       //         metaid:selfMetaId,
 
@@ -161,7 +161,7 @@ export const useWsStore = defineStore('ws', {
     //       // this.ws = new WebSocket(wsUri)
     //        const selfMetaId = this.selfMetaId
     //     if (!selfMetaId) return
-    //       const socket=io(`${import.meta.env.VITE_SHOW_NOW_WS}/`,{
+    //       const socket=io(`${import.meta.env.VITE_CHAT_WS}/`,{
     //       query:{
     //           "metaid":selfMetaId,
 
@@ -182,7 +182,7 @@ export const useWsStore = defineStore('ws', {
     //   //     // this.ws = new WebSocket(wsUri)
     //   //      const selfMetaId = this.selfMetaId
     //   //   if (!selfMetaId) return
-    //   //     this.ws=io(`${import.meta.env.VITE_SHOW_NOW_WS}?metaid=${selfMetaId}`,{
+    //   //     this.ws=io(`${import.meta.env.VITE_CHAT_WS}?metaid=${selfMetaId}`,{
     //   //     reconnection: true,
     //   //     reconnectionAttempts: Infinity,
     //   //     reconnectionDelay: 1000,
@@ -198,7 +198,7 @@ export const useWsStore = defineStore('ws', {
     //       //this.ws = new WebSocket(wsUri)
     //     const selfMetaId = this.selfMetaId
     //     if (!selfMetaId) return
-    //       this.ws=io(`${import.meta.env.VITE_SHOW_NOW_WS}`,{
+    //       this.ws=io(`${import.meta.env.VITE_CHAT_WS}`,{
     //         query:{
     //           metaid:selfMetaId,
 

@@ -29,9 +29,9 @@ export interface AppRuntimeConfig {
     metasoUrl: string
     showMoneyApp: string
     showNowHost: string
-    showNowWs: string
+    chatWs: string
     idchatHost: string
-    idchatPathWs: string
+    chatWsPath: string
   }
   blockchain: {
     network: string
@@ -114,9 +114,9 @@ function getDefaultConfig(): AppRuntimeConfig {
       metasoUrl: 'https://www.metaso.network',
       showMoneyApp: 'https://www.visionmoney.space',
       showNowHost: 'https://api.idchat.io',
-      showNowWs: 'https://api.idchat.io',
+      chatWs: 'https://api.idchat.io',
       idchatHost: 'https://idchat.io/chat',
-      idchatPathWs: '/socket',
+      chatWsPath: '/socket',
     },
     blockchain: {
       network: 'mainnet',

@@ -103,8 +103,8 @@ export function getMinAmount() {
 
 ```typescript
 // src/stores/ws_new.ts
-const ws = io(`${import.meta.env.VITE_SHOW_NOW_WS}`, {
-  path: `${import.meta.env.VITE_IDCHAT_PATH_WS}/socket.io`,
+const ws = io(`${import.meta.env.VITE_CHAT_WS}`, {
+  path: `${import.meta.env.VITE_CHAT_WS_PATH}/socket.io`,
 })
 ```
 
@@ -115,8 +115,8 @@ const ws = io(`${import.meta.env.VITE_SHOW_NOW_WS}`, {
 import { getRuntimeConfig } from '@/config/runtime-config'
 
 const config = getRuntimeConfig()
-const ws = io(config.api.showNowWs, {
-  path: `${config.api.idchatPathWs}/socket.io`,
+const ws = io(config.api.chatWs, {
+  path: `${config.api.chatWsPath}/socket.io`,
 })
 ```
 
