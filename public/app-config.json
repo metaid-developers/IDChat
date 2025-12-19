@@ -4,35 +4,30 @@
     "description": "A Decentralized Messaging App Built on Bitcoin",
     "keywords": "IDChat | Decentralized Messenger Built on Bitcoin",
     "key": "IDChat | Decentralized Messenger Built on Bitcoin",
-    "logo": "/chat/logo.png",
-    "favicon": "/chat/favicon.ico",
+    "logo": "/logo.png",
+    "favicon": "/favicon.ico",
     "designSize": 1920
   },
   "api": {
     "mvcBaseApi": "https://api.mvcscan.com/browser",
-    "fileApi": "https://file.metaid.io/metafile-indexer/api/v1/files",
-    "avatarContentApi": "https://file.metaid.io/metafile-indexer/thumbnail",
-    "metafileIndexerApi": "https://file.metaid.io/metafile-indexer/api",
-    "chatApi": "https://api.idchat.io/chat-api",
-    "chatNotify": "https://api.idchat.io",
-    "chatWs": "https://api.idchat.io",
-    "chatWsPath": "/socket"
+    "metaSoBaseURL": "https://www.show.now",
+    "metaFSBaseURL": "https://file.metaid.io",
+    "paths": {
+      "fileApi": "/metafile-indexer/api/v1/files",
+      "avatarContentApi": "/metafile-indexer/thumbnail",
+      "metafileIndexerApi": "/metafile-indexer/api",
+      "chatApi": "/chat-api",
+      "chatNotify": "",
+      "chatWs": "",
+      "chatWsPath": "/socket"
+    }
   },
 
   "blockchain": {
     "network": "mainnet",
     "networkNew": "livenet",
     "metaidTag": "metaid",
-    "walletPath": "10001",
-    "changeAddress": "1By2LtxHQRwzhL2vYMNXuV2WQzkrXM4oS",
-    "serviceAddress": "115AxP3jECNa5XmnVHYtEJa2cqP6wYjSJV",
-    "serviceFee": 1999,
     "addressHost": "bc1p20k3x2c4mglfxr5wa5sgtgechwstpld80kru2cg4gmm4urvuaqqsvapxu0"
-  },
-  "features": {
-    "enableChat": true,
-    "enablePayment": true,
-    "stakeholderOnlyLimit": 1
   },
 
   "other": {}

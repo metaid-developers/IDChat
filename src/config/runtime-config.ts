@@ -18,6 +18,20 @@ export interface AppRuntimeConfig {
     mvcBaseApi: string
     cyber3Api: string
     manApi: string
+    // 新的基础URL配置
+    metaSoBaseURL: string
+    metaFSBaseURL: string
+    // 路径配置
+    paths: {
+      fileApi: string
+      avatarContentApi: string
+      metafileIndexerApi: string
+      chatApi: string
+      chatNotify: string
+      chatWs: string
+      chatWsPath: string
+    }
+    // 计算属性（向后兼容）
     fileApi: string
     avatarContentApi: string
     metafileIndexerApi: string
@@ -83,6 +97,18 @@ let runtimeConfig: AppRuntimeConfig | null = null
  * 获取默认配置
  */
 function getDefaultConfig(): AppRuntimeConfig {
+  const metaSoBaseURL = 'https://api.idchat.io'
+  const metaFSBaseURL = 'https://file.metaid.io'
+  const paths = {
+    fileApi: '/metafile-indexer/api/v1/files',
+    avatarContentApi: '/metafile-indexer/content',
+    metafileIndexerApi: '/metafile-indexer/api',
+    chatApi: '/chat-api',
+    chatNotify: '',
+    chatWs: '',
+    chatWsPath: '/socket',
+  }
+
   return {
     app: {
       name: 'IDChat | Decentralized Messenger Built on Bitcoin',
@@ -103,20 +129,25 @@ function getDefaultConfig(): AppRuntimeConfig {
       mvcBaseApi: 'https://api.mvcscan.com/browser',
       cyber3Api: 'https://api.microvisionchain.com/open-api',
       manApi: 'https://man.metaid.io',
-      fileApi: 'https://file.metaid.io/metafile-indexer/api/v1/files',
-      avatarContentApi: 'https://file.metaid.io/metafile-indexer/content',
-      metafileIndexerApi: 'https://file.metaid.io/metafile-indexer/api',
+      // 新的基础URL配置
+      metaSoBaseURL,
+      metaFSBaseURL,
+      paths,
+      // 计算属性（向后兼容）
+      fileApi: `${metaFSBaseURL}${paths.fileApi}`,
+      avatarContentApi: `${metaFSBaseURL}${paths.avatarContentApi}`,
+      metafileIndexerApi: `${metaFSBaseURL}${paths.metafileIndexerApi}`,
       daoApi: 'https://api.mvcswap.com/stake',
       dashbroadApi: 'https://api.show3.io/tool/api',
-      chatApi: 'https://api.idchat.io/chat-api',
-      chatNotify: 'https://api.idchat.io',
+      chatApi: `${metaSoBaseURL}${paths.chatApi}`,
+      chatNotify: `${metaSoBaseURL}${paths.chatNotify}`,
       metanoteUrl: 'https://gray.metanote.app',
       metasoUrl: 'https://www.metaso.network',
       showMoneyApp: 'https://www.visionmoney.space',
-      showNowHost: 'https://api.idchat.io',
-      chatWs: 'https://api.idchat.io',
+      showNowHost: metaSoBaseURL,
+      chatWs: `${metaSoBaseURL}${paths.chatWs}`,
       idchatHost: 'https://idchat.io/chat',
-      chatWsPath: '/socket',
+      chatWsPath: paths.chatWsPath,
     },
     blockchain: {
       network: 'mainnet',
@@ -200,7 +231,8 @@ export async function loadRuntimeConfig(): Promise<AppRuntimeConfig> {
     //   printValidationResult(config)
     // }
 
-    runtimeConfig = config
+    // 处理新的配置格式，计算完整URL
+    runtimeConfig = normalizeConfig(config)
     console.log('✅ Runtime config loaded successfully')
     return runtimeConfig!
   } catch (error) {
@@ -208,6 +240,50 @@ export async function loadRuntimeConfig(): Promise<AppRuntimeConfig> {
     // 返回默认配置
     runtimeConfig = getDefaultConfig()
     return runtimeConfig
+  }
+}
+
+/**
+ * 规范化配置，将新格式转换为向后兼容的格式
+ */
+function normalizeConfig(config: any): AppRuntimeConfig {
+  const defaultConfig = getDefaultConfig()
+
+  // 如果配置中有新的基础URL格式
+  if (config.api?.metaSoBaseURL && config.api?.metaFSBaseURL && config.api?.paths) {
+    const metaSoBaseURL = config.api.metaSoBaseURL
+    const metaFSBaseURL = config.api.metaFSBaseURL
+    const paths = config.api.paths
+
+    // 计算完整URL（向后兼容）
+    config.api = {
+      ...defaultConfig.api,
+      ...config.api,
+      metaSoBaseURL,
+      metaFSBaseURL,
+      paths,
+      fileApi: `${metaFSBaseURL}${paths.fileApi || ''}`,
+      avatarContentApi: `${metaFSBaseURL}${paths.avatarContentApi || ''}`,
+      metafileIndexerApi: `${metaFSBaseURL}${paths.metafileIndexerApi || ''}`,
+      chatApi: `${metaSoBaseURL}${paths.chatApi || ''}`,
+      chatNotify: `${metaSoBaseURL}${paths.chatNotify || ''}`,
+      chatWs: `${metaSoBaseURL}${paths.chatWs || ''}`,
+      chatWsPath: paths.chatWsPath || '/socket',
+      showNowHost: metaSoBaseURL,
+    }
+  }
+
+  return {
+    ...defaultConfig,
+    ...config,
+    app: { ...defaultConfig.app, ...config.app },
+    api: { ...defaultConfig.api, ...config.api },
+    blockchain: { ...defaultConfig.blockchain, ...config.blockchain },
+    features: { ...defaultConfig.features, ...config.features },
+    chat: { ...defaultConfig.chat, ...config.chat },
+    security: { ...defaultConfig.security, ...config.security },
+    sentry: { ...defaultConfig.sentry, ...config.sentry },
+    other: { ...defaultConfig.other, ...config.other },
   }
 }
 

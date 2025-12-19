@@ -27,3 +27,47 @@
 ## VSCode 设置
 
 安装推荐插件即可
+
+## API 配置说明
+
+应用的 API 配置位于 `public/app-config.json` 文件中，以下是各配置项的说明：
+
+```json
+{
+  "api": {
+    "mvcBaseApi": "https://api.mvcscan.com/browser",
+    "fileApi": "https://file.metaid.io/metafile-indexer/api/v1/files",
+    "avatarContentApi": "https://file.metaid.io/metafile-indexer/thumbnail",
+    "metafileIndexerApi": "https://file.metaid.io/metafile-indexer/api",
+    "chatApi": "https://www.show.now/chat-api",
+    "chatNotify": "https://api.idchat.io",
+    "chatWs": "https://www.show.now",
+    "chatWsPath": "/socket"
+  }
+}
+```
+
+| 配置项               | 说明                                                              |
+| -------------------- | ----------------------------------------------------------------- |
+| `mvcBaseApi`         | MVC 区块链浏览器 API 地址，用于查询区块链相关数据（交易、地址等） |
+| `fileApi`            | MetaFile 文件上传/下载 API 地址，用于处理文件的存储和获取         |
+| `avatarContentApi`   | 头像缩略图 API 地址，用于获取用户头像的缩略图资源                 |
+| `metafileIndexerApi` | MetaFile 索引器 API 地址，用于文件索引和查询服务                  |
+| `chatApi`            | 聊天服务 REST API 地址，用于处理聊天消息、群组管理等 HTTP 请求    |
+| `chatNotify`         | 聊天通知服务地址，用于处理推送通知相关功能                        |
+| `chatWs`             | WebSocket 服务器地址，用于实时消息通信的基础 URL                  |
+| `chatWsPath`         | WebSocket 连接路径，与 `chatWs` 组合形成完整的 WebSocket 连接地址 |
+
+### 环境配置文件
+
+- `public/app-config.json` - 生产环境配置
+- `public/app-config.dev.json` - 开发环境配置
+- `public/app-config-test.json` - 测试环境配置
+
+### WebSocket 连接示例
+
+WebSocket 完整连接地址由 `chatWs` + `chatWsPath` 组成：
+
+```
+wss://www.show.now/socket
+```

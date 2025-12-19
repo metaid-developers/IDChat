@@ -21,7 +21,12 @@ export function getAppConfig() {
     appFavicon: config.app.favicon,
     designSize: config.app.designSize,
 
-    // API 端点
+    // API 端点 - 基础URL
+    metaSoBaseURL: config.api.metaSoBaseURL,
+    metaFSBaseURL: config.api.metaFSBaseURL,
+    paths: config.api.paths,
+
+    // API 端点 - 计算后的完整URL（向后兼容）
     baseApi: config.api.baseApi,
     adminBaseApi: config.api.adminBaseApi,
     wxcoreApi: config.api.wxcoreApi,
@@ -63,10 +68,10 @@ export function getAppConfig() {
     payAmount: config.blockchain.payAmount,
     minAmount: config.blockchain.minAmount,
 
-    // 功能开关
-    enableChat: config.features.enableChat,
-    enablePayment: config.features.enablePayment,
-    stakeholderOnlyLimit: config.features.stakeholderOnlyLimit,
+    // 功能开关（硬编码）
+    enableChat: true,
+    enablePayment: true,
+    stakeholderOnlyLimit: 1,
 
     // 白名单
     whiteListCreateBroadcast: config.whiteListCreateBroadcast,
@@ -110,6 +115,10 @@ export const VITE_BSV_META_SV_API = () => getRuntimeConfig().api.bsvMetaSvApi
 export const VITE_MVC_BASEAPI = () => getRuntimeConfig().api.mvcBaseApi
 export const VITE_CYBER3_API = () => getRuntimeConfig().api.cyber3Api
 export const VITE_MAN_API = () => getRuntimeConfig().api.manApi
+// 新的基础URL访问器
+export const VITE_METASO_BASE_URL = () => getRuntimeConfig().api.metaSoBaseURL
+export const VITE_METAFS_BASE_URL = () => getRuntimeConfig().api.metaFSBaseURL
+// 完整URL访问器（向后兼容）
 export const VITE_FILE_API = () => getRuntimeConfig().api.fileApi
 export const VITE_AVATAR_CONTENT_API = () => getRuntimeConfig().api.avatarContentApi
 export const VITE_METAFILE_INDEXER_API = () => getRuntimeConfig().api.metafileIndexerApi
@@ -156,4 +165,5 @@ export const VITE_SiteConfigMetanetId = () => getRuntimeConfig().other.siteConfi
 export const VITE_MY_STAKE_SYMBOL = () => getRuntimeConfig().other.myStakeSymbol
 export const VITE_BAND_PROPOSAL_ID = () => getRuntimeConfig().other.bandProposalId
 
-export const VITE_STAKEHOLDER_ONLY_LIMIT = () => getRuntimeConfig().features.stakeholderOnlyLimit
+// 硬编码的功能配置（不再从配置文件读取）
+export const VITE_STAKEHOLDER_ONLY_LIMIT = () => 1

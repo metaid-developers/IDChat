@@ -229,8 +229,7 @@ function checkPermissionToDetail(proposal: ProposalItem) {
 
   if (
      (proposal.infos.stakeHolderOnly &&
-      new Decimal(userStake.val?.lockedTokenAmount ? userStake.val.lockedTokenAmount : 0).div(10 ** 8).toNumber() <
-      +import.meta.env.VITE_STAKEHOLDER_ONLY_LIMIT )
+      new Decimal(userStake.val?.lockedTokenAmount ? userStake.val.lockedTokenAmount : 0).div(10 ** 8).toNumber() < 1)
       ) {
       return  ElMessage.error(i18n.t('DAO.NOt Have Voting Quota_more_than_1_spaces'))
       } else {
@@ -267,7 +266,7 @@ function getDatas(isCover = false) {
           for (let i = 0; i < res!.length; i++) {
             if (typeof res[i].creator === 'string' && !users.some(item => item.address === res[i]!.creator)){
               getUserInfoByAddress(res[i]!.creator).then(user => {
-                
+
                 users.push(user)
               })
             }
