@@ -86,7 +86,11 @@
             class=" text-xs shrink-0 flex  whitespace-nowrap items-center"
             :class="[
               isMyMessage ? 'flex-row-reverse  justify-center' : 'gap-1 ',
-              msgChain == ChatChain.btc ? 'text-[#EBA51A]' : 'text-dark-300 dark:text-gray-400',
+              msgChain == ChatChain.btc
+                ? 'text-[#EBA51A]'
+                : msgChain == ChatChain.doge
+                ? 'text-[#C3A634]'
+                : 'text-dark-300 dark:text-gray-400',
             ]"
           >
             <span> {{ formatTimestamp(message.timestamp, i18n) }}</span>
@@ -94,6 +98,12 @@
               <Icon
                 name="btc"
                 v-if="msgChain == ChatChain.btc"
+                class="chain-icon-menu w-[16px] h-[16px]"
+                :class="isMyMessage ? 'mr-1' : ''"
+              ></Icon>
+              <Icon
+                name="doge"
+                v-if="msgChain == ChatChain.doge"
                 class="chain-icon-menu w-[16px] h-[16px]"
                 :class="isMyMessage ? 'mr-1' : ''"
               ></Icon>
@@ -503,6 +513,7 @@
             class="text-sm text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
+              msgChain == ChatChain.doge && 'doge-item',
               isMyMessage
                 ? 'bg-primary dark:text-gray-800 rounded-tr'
                 : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
@@ -522,6 +533,7 @@
             class="flex items-center gap-2 text-sm   text-dark-800 dark:text-gray-100 font-normal  p-3 rounded-xl  transition-all duration-200"
             :class="[
               msgChain == ChatChain.btc && 'btc-item',
+              msgChain == ChatChain.doge && 'doge-item',
               isMyMessage
                 ? 'bg-primary dark:text-gray-800 rounded-tr'
                 : 'not-mine bg-white dark:bg-gray-700 rounded-tl',
@@ -1668,6 +1680,10 @@ const isNftBuy = computed(() => containsString(props.message.protocol, NodeName.
   &.btc-item {
     background: linear-gradient(113deg, #fff6e6 -12%, #e5bc77 103%);
     color: #5a4015;
+  }
+  &.doge-item {
+    background: linear-gradient(113deg, #fff9e6 -12%, #d4b84a 103%);
+    color: #5a4a15;
   }
 }
 

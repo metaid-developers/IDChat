@@ -32,6 +32,7 @@ export enum CreateGroupType {
 export enum ChatChain {
   mvc = 'mvc',
   btc = 'btc',
+  doge = 'doge',
 }
 
 export enum ChatType {

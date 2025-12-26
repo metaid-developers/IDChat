@@ -61,6 +61,37 @@ export const getBtcAddress = async () => {
   return address
 }
 
+export const getDogeAddress = async () => {
+  checkMetalet()
+
+  const addressRes = await window.metaidwallet.doge.getAddress()
+  const address = checkMetaletStatus(addressRes, 'get doge address')
+  return address
+}
+
+export const getDogeBalance = async () => {
+  checkMetalet()
+
+  const balance = await window.metaidwallet.doge.getBalance()
+  return balance
+}
+
+export const getDogePublicKey = async () => {
+  checkMetalet()
+
+  const pubKey = await window.metaidwallet.doge.getPublicKey()
+  return checkMetaletStatus(pubKey, 'get doge public key')
+}
+
+export const getDogeUtxos = async () => {
+  checkMetalet()
+
+  const utxos = await window.metaidwallet.doge.getUtxos().catch(() => {
+    return []
+  })
+  return utxos
+}
+
 export const getMvcBalance = async () => {
   checkMetalet()
 

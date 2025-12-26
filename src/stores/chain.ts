@@ -30,11 +30,13 @@ export interface ChainFeeData {
 export interface ChainState {
   btc: ChainFeeData
   mvc: ChainFeeData
-  currentChain: 'btc' | 'mvc'
+  doge: ChainFeeData
+  currentChain: 'btc' | 'mvc' | 'doge'
 }
 
 const BTC_FEE_RATE_URL = 'https://api.mvcscan.com/browser/v1/fees/recommended?chain=btc'
 const MVC_FEE_RATE_URL = 'https://api.mvcscan.com/browser/v1/fees/recommended?net=livenet'
+const DOGE_FEE_RATE_URL = 'https://api.mvcscan.com/browser/v1/fees/recommended?chain=doge'
 const UPDATE_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
 export const useChainStore = defineStore('chain', () => {
@@ -59,8 +61,32 @@ export const useChainStore = defineStore('chain', () => {
       selectedFeeType: 'fastestFee',
       lastUpdated: 0,
     },
+    doge: {
+      fastestFee: 300000,
+      halfHourFee: 250000,
+      hourFee: 200000,
+      economyFee: 200000,
+      minimumFee: 200000,
+      customizeFee: 200000,
+      selectedFeeType: 'economyFee',
+      lastUpdated: 0,
+    },
     currentChain: 'mvc',
   } as ChainState)
+
+  // 确保 doge 字段存在（兼容旧的本地存储数据）
+  if (!state.value.doge) {
+    state.value.doge = {
+      fastestFee: 300000,
+      halfHourFee: 250000,
+      hourFee: 200000,
+      economyFee: 200000,
+      minimumFee: 200000,
+      customizeFee: 200000,
+      selectedFeeType: 'economyFee',
+      lastUpdated: 0,
+    }
+  }
 
   const updateInterval = ref<NodeJS.Timeout | null>(null)
 
@@ -106,8 +132,22 @@ export const useChainStore = defineStore('chain', () => {
     }
   }
 
+  const updateDogeFeeRate = async (): Promise<void> => {
+    try {
+      const feeRates = await fetchFeeRates(DOGE_FEE_RATE_URL)
+      state.value.doge.fastestFee = feeRates.fastestFee
+      state.value.doge.halfHourFee = feeRates.halfHourFee
+      state.value.doge.hourFee = feeRates.hourFee
+      state.value.doge.economyFee = feeRates.economyFee
+      state.value.doge.minimumFee = feeRates.minimumFee
+      state.value.doge.lastUpdated = Date.now()
+    } catch (error) {
+      console.error('Failed to update DOGE fee rates:', error)
+    }
+  }
+
   const updateAllFeeRates = async (): Promise<void> => {
-    await Promise.allSettled([updateBtcFeeRate(), updateMvcFeeRate()])
+    await Promise.allSettled([updateBtcFeeRate(), updateMvcFeeRate(), updateDogeFeeRate()])
   }
 
   const setBtcCustomizeFee = (feeRate: number): void => {
@@ -120,12 +160,21 @@ export const useChainStore = defineStore('chain', () => {
     state.value.mvc.lastUpdated = Date.now()
   }
 
+  const setDogeCustomizeFee = (feeRate: number): void => {
+    state.value.doge.customizeFee = feeRate
+    state.value.doge.lastUpdated = Date.now()
+  }
+
   const setBtcFeeType = (feeType: ChainFeeData['selectedFeeType']): void => {
     state.value.btc.selectedFeeType = feeType
   }
 
   const setMvcFeeType = (feeType: ChainFeeData['selectedFeeType']): void => {
     state.value.mvc.selectedFeeType = feeType
+  }
+
+  const setDogeFeeType = (feeType: ChainFeeData['selectedFeeType']): void => {
+    state.value.doge.selectedFeeType = feeType
   }
 
   const startAutoUpdate = (): void => {
@@ -165,7 +214,11 @@ export const useChainStore = defineStore('chain', () => {
     return state.value.mvc[state.value.mvc.selectedFeeType]
   }
 
-  const setCurrentChain = (chain: 'btc' | 'mvc'): void => {
+  const getCurrentDogeFeeRate = (): number => {
+    return state.value.doge[state.value.doge.selectedFeeType]
+  }
+
+  const setCurrentChain = (chain: 'btc' | 'mvc' | 'doge'): void => {
     state.value.currentChain = chain
   }
 
@@ -173,17 +226,22 @@ export const useChainStore = defineStore('chain', () => {
     state,
     btcFeeRate: getCurrentBtcFeeRate,
     mvcFeeRate: getCurrentMvcFeeRate,
+    dogeFeeRate: getCurrentDogeFeeRate,
     lastUpdated: () => ({
       btc: state.value.btc.lastUpdated,
       mvc: state.value.mvc.lastUpdated,
+      doge: state.value.doge.lastUpdated,
     }),
     updateBtcFeeRate,
     updateMvcFeeRate,
+    updateDogeFeeRate,
     updateAllFeeRates,
     setBtcCustomizeFee,
     setMvcCustomizeFee,
+    setDogeCustomizeFee,
     setBtcFeeType,
     setMvcFeeType,
+    setDogeFeeType,
     startAutoUpdate,
     stopAutoUpdate,
     setCurrentChain,

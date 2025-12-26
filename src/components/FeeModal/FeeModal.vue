@@ -1,10 +1,10 @@
 <template>
   <ElDialog
-    :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    :modelValue="modelValue"
+    @close="emit('update:modelValue', false)"
     title="Fee"
     :width="'560px'"
-    :close-on-click-modal="false"
+    :closeOnClickModal="false"
     class="fee-dialog"
   >
     <div class="fee-modal-content">
@@ -168,6 +168,82 @@
             </div>
           </div>
         </div>
+
+        <!-- DOGE Section -->
+        <div
+          class="chain-section main-border"
+          :class="{ faded: selectedChain !== 'doge', selected: selectedChain === 'doge' }"
+        >
+          <div class="chain-header " @click="selectChain('doge')">
+            <div class="chain-icon">
+              <Icon name="doge" class="w-[30px] h-[30px]" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="chain-info">
+                <div class="chain-name">DOGE</div>
+                <div class="chain-subtitle">Network</div>
+              </div>
+              <div class="rounded-full bg-[#C3A634]/20 text-[#C3A634] text-xs px-2 py-0">
+                Dogecoin
+              </div>
+            </div>
+          </div>
+
+          <div class="fee-options">
+            <div
+              class="fee-option "
+              :class="{
+                selected: selectedDOGEFeeType === 'economyFee',
+                disabled: selectedChain !== 'doge',
+              }"
+              @click="selectFeeType('economyFee', 'doge')"
+            >
+              <div class="fee-label">ECO</div>
+              <div class="flex items-center gap-1">
+                <div class="fee-value">{{ chainStore.state.doge.economyFee }}</div>
+                <div class="fee-time">sat/vB</div>
+              </div>
+            </div>
+
+            <div
+              class="fee-option "
+              :class="{
+                selected: selectedDOGEFeeType === 'halfHourFee',
+                disabled: selectedChain !== 'doge',
+              }"
+              @click="selectFeeType('halfHourFee', 'doge')"
+            >
+              <div class="fee-label">Normal</div>
+              <div class="flex items-center gap-1">
+                <div class="fee-value">{{ chainStore.state.doge.halfHourFee }}</div>
+                <div class="fee-time">sat/vB</div>
+              </div>
+            </div>
+
+            <div
+              class="fee-option"
+              :class="{
+                selected: selectedDOGEFeeType === 'customizeFee',
+                disabled: selectedChain !== 'doge',
+              }"
+              @click="selectFeeType('customizeFee', 'doge')"
+            >
+              <div class="fee-label">Customize</div>
+              <div class="flex items-center gap-1">
+                <input
+                  v-if="selectedChain === 'doge' && selectedDOGEFeeType === 'customizeFee'"
+                  v-model="customDOGEValue"
+                  type="number"
+                  class="fee-input"
+                  placeholder="Custom fee"
+                  @click.stop
+                />
+                <div v-else class="fee-value">{{ chainStore.state.doge.customizeFee }}</div>
+                <div class="fee-time">sat/vB</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- OK Button -->
@@ -181,6 +257,7 @@
 <script lang="ts" setup>
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import { ElDialog, ElMessage } from 'element-plus'
+import Icon from '@/components/Icon/Icon.vue'
 import { useChainStore, type ChainFeeData } from '@/stores/chain'
 
 const props = defineProps<{
@@ -192,25 +269,29 @@ const emit = defineEmits(['update:modelValue', 'confirm'])
 const chainStore = useChainStore()
 
 // Reactive states
-const selectedChain = ref<'btc' | 'mvc'>('btc')
+const selectedChain = ref<'btc' | 'mvc' | 'doge'>('btc')
 const selectedBTCFeeType = ref<ChainFeeData['selectedFeeType']>(chainStore.state.btc.selectedFeeType)
 const selectedMVCFeeType = ref<ChainFeeData['selectedFeeType']>(chainStore.state.mvc.selectedFeeType)
+const selectedDOGEFeeType = ref<ChainFeeData['selectedFeeType']>(chainStore.state.doge.selectedFeeType)
 
 const customBTCValue = ref<number>(chainStore.state.btc.customizeFee)
 const customMVCValue = ref<number>(chainStore.state.mvc.customizeFee)
+const customDOGEValue = ref<number>(chainStore.state.doge.customizeFee)
 
 // Computed
 // const isMobile = computed(() => window.innerWidth <= 1024)
 
 // Methods
-const selectChain = (chain: 'btc' | 'mvc') => {
+const selectChain = (chain: 'btc' | 'mvc' | 'doge') => {
   selectedChain.value = chain
 }
 
-const selectFeeType = (feeType: ChainFeeData['selectedFeeType'], chain:'btc'|'mvc') => {
+const selectFeeType = (feeType: ChainFeeData['selectedFeeType'], chain:'btc'|'mvc'|'doge') => {
   selectedChain.value = chain
   if (chain === 'btc') {
     selectedBTCFeeType.value = feeType
+  } else if (chain === 'doge') {
+    selectedDOGEFeeType.value = feeType
   } else {
     selectedMVCFeeType.value = feeType
   }
@@ -229,6 +310,15 @@ const handleConfirm = () => {
       chainStore.setBtcCustomizeFee(customBTCValue.value)
     }
     chainStore.setBtcFeeType(selectedBTCFeeType.value)
+  } else if (selectedChain.value === 'doge') {
+    chainStore.setDogeFeeType(selectedDOGEFeeType.value)
+    if (selectedDOGEFeeType.value === 'customizeFee') {
+      if(customDOGEValue.value < 100000){
+       ElMessage.error('DOGE custom fee must be at least 100000 sat/vB')
+       customDOGEValue.value=100000
+      }
+      chainStore.setDogeCustomizeFee(customDOGEValue.value)
+    }
   } else {
     chainStore.setMvcFeeType(selectedMVCFeeType.value)
     if (selectedMVCFeeType.value === 'customizeFee') {
@@ -257,6 +347,9 @@ watch(
       if (selectedChain.value === 'btc') {
         selectedBTCFeeType.value = chainStore.state.btc.selectedFeeType
         customBTCValue.value = chainStore.state.btc.customizeFee
+      } else if (selectedChain.value === 'doge') {
+        selectedDOGEFeeType.value = chainStore.state.doge.selectedFeeType
+        customDOGEValue.value = chainStore.state.doge.customizeFee
       } else {
         selectedMVCFeeType.value = chainStore.state.mvc.selectedFeeType
         customMVCValue.value = chainStore.state.mvc.customizeFee

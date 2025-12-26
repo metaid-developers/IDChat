@@ -146,6 +146,9 @@
         </div>
       </button> -->
 
+      <!-- 费率选择器 -->
+      <FeeSelector class="ml-2 my-2" />
+
       <div class="self-stretch lg:ml-2 py-2 pl-3 flex items-center grow">
         <textarea
           class=" w-full !outline-none placeholder:text-dark-250 placeholder:dark:text-gray-400 placeholder:text-sm placeholder:truncate text-dark-800 dark:text-gray-100 text-base caret-gray-600 dark:caret-gray-400 resize-none !h-fit text-base rounded-md transition-all duration-150 delay-100"
@@ -401,6 +404,7 @@ import { MessageType as SimpleMessageType, SimpleChannel } from '@/@types/simple
 import TalkImagePreview from './ImagePreview.vue'
 import StickerVue from '@/components/Sticker/Sticker.vue'
 import MentionDropdown from './MentionDropdown.vue'
+import FeeSelector from '@/components/FeeSelector/FeeSelector.vue'
 import Decimal from 'decimal.js-light'
 import { router } from '@/router'
 import { useChainStore } from '@/stores/chain'

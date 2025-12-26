@@ -99,7 +99,7 @@
   </template>
 
   <!-- 更多操作 -->
-  <ElDropdown trigger="click" @visible-change="handleVisibleChange">
+  <ElDropdown ref="dropdownRef" trigger="click" @visible-change="handleVisibleChange">
     <a
       class="more flex flex-align-center flex-pack-center user-warp-item"
       :class="{ active: isShowUserMenu }"
@@ -115,8 +115,14 @@
           @click.stop="handleFeeClick"
         >
           <img
+            v-if="chainStore.state.currentChain !== 'doge'"
             :src="currentChainIcon"
             :alt="chainStore.state.currentChain.toUpperCase()"
+            class="chain-icon-menu w-[24px] h-[24px]"
+          />
+          <Icon
+            v-else
+            name="doge"
             class="chain-icon-menu w-[24px] h-[24px]"
           />
           <div class="fee-info">
@@ -203,10 +209,12 @@ const router = useRouter()
 
 const isShowUserMenu = ref(false)
 const showFeeModal = ref(false)
+const dropdownRef = ref<InstanceType<typeof ElDropdown> | null>(null)
 
 // Fee badge computed properties
 const currentChainIcon = computed(() => {
-  return chainStore.state.currentChain === 'btc' ? btcIcon : mvcIcon
+  if (chainStore.state.currentChain === 'btc') return btcIcon
+  return mvcIcon
 })
 
 const currentFeeRate = computed(() => {
@@ -217,7 +225,11 @@ const currentFeeRate = computed(() => {
 })
 
 // Handle fee confirmation
-const handleFeeConfirm = (data: { chain: 'btc' | 'mvc'; feeType: string; customFee?: number }) => {
+const handleFeeConfirm = (data: {
+  chain: 'btc' | 'mvc' | 'doge'
+  feeType: string
+  customFee?: number
+}) => {
   console.log('Fee configuration updated:', data)
 }
 
@@ -231,12 +243,13 @@ const handleFeeClick = (event?: Event) => {
     event.stopPropagation()
     event.preventDefault()
   }
+  // 先关闭下拉菜单
+  dropdownRef.value?.handleClose()
   console.log('Current showFeeModal:', showFeeModal.value)
-  showFeeModal.value = true
-  console.log('Updated showFeeModal:', showFeeModal.value)
-  // 稍微延迟一下，确保下拉菜单关闭后再显示模态框
+  // 使用 nextTick 确保下拉菜单关闭后再显示模态框
   nextTick(() => {
-    console.log('NextTick - showFeeModal:', showFeeModal.value)
+    showFeeModal.value = true
+    console.log('Updated showFeeModal:', showFeeModal.value)
   })
 }
 const userOperates = computed(() => {

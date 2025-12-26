@@ -154,7 +154,7 @@ export const useCredentialsStore =defineStore('credentials', {
 
       // 2. get credential
       const credential = await this.sign()
-      
+      console.log('credential', credential)
       if (!credential) return false
 
       const userStore=useUserStore()

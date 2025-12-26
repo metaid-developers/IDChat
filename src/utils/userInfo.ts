@@ -59,6 +59,19 @@ declare global {
           options?: { noBroadcast: boolean }
         }): Promise<any>
       }
+      doge: {
+        getBalance: () => Promise<{ total: number; confirmed: number; unconfirmed: number }>
+        getAddress: () => Promise<string>
+        getPublicKey: () => Promise<string>
+        getUtxos: () => Promise<any[]>
+        inscribe({
+          data,
+          options,
+        }: {
+          data: InscriptionRequest
+          options?: { noBroadcast: boolean }
+        }): Promise<any>
+      }
       common: {
         ecdh: (params: {
           externalPubKey: string

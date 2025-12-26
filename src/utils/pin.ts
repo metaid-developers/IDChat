@@ -78,7 +78,7 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
   }
 }): Promise<InscribeResultForIfBroadcasting[T]> {
   const address = await window.metaidwallet.btc.getAddress()
-  
+
   const metaidDataList: MetaidData[] = inscribeDataArray.map(inp => {
     const contentType = inp?.contentType ?? 'text/plain'
     const encoding = inp?.encoding ?? 'utf-8'
@@ -121,8 +121,76 @@ export async function createPinWithBtc<T extends keyof InscribeResultForIfBroadc
       noBroadcast: options?.noBroadcast !== 'no',
     },
   })
-  
+
   console.log('inscrible res', res)
+
+  return res
+}
+
+export async function createPinWithDoge<T extends keyof InscribeResultForIfBroadcasting>({
+  inscribeDataArray,
+  options,
+}: {
+  inscribeDataArray: InscribeData[]
+  options: {
+    noBroadcast: T
+    feeRate?: number
+    network?: 'mainnet' | 'testnet' | 'regtest'
+    service?: {
+      address: string
+      satoshis: string
+    }
+    outputs?: {
+      address: string
+      satoshis: string
+    }[]
+  }
+}): Promise<InscribeResultForIfBroadcasting[T]> {
+  const address = await window.metaidwallet.doge.getAddress()
+
+  const metaidDataList: MetaidData[] = inscribeDataArray.map(inp => {
+    const contentType = inp?.contentType ?? 'text/plain'
+    const encoding = inp?.encoding ?? 'utf-8'
+    return {
+      operation: inp.operation,
+      revealAddr: address,
+      body: inp?.body,
+      path: inp?.path,
+      contentType: contentType,
+      encryption: inp?.encryption,
+      flag: inp?.flag,
+      version: '1.0.0',
+      encoding,
+      outputs: inp.outputs || [],
+    }
+  })
+
+  const request: InscriptionRequest = {
+    feeRate: options?.feeRate ?? 200000, // Doge 默认费率
+    revealOutValue: 100000, // Doge 最小输出值（1 DOGE = 100000000 satoshis）
+    metaidDataList,
+    changeAddress: address,
+    service: options?.service,
+    outputs: options?.outputs,
+  }
+
+  const data = {
+    data: request,
+    options: {
+      noBroadcast: options?.noBroadcast !== 'no',
+    },
+  }
+
+  console.log('doge inscribe data', JSON.stringify(data))
+
+  const res = await window.metaidwallet.doge.inscribe({
+    data: request,
+    options: {
+      noBroadcast: options?.noBroadcast !== 'no',
+    },
+  })
+
+  console.log('doge inscribe res', res)
 
   return res
 }
@@ -135,6 +203,22 @@ export async function createSinglePin(metaidData: InscribeData) {
   const feeRate = chainData[selectedFeeType]
   if (currentChain === ChatChain.btc) {
     const txIDs = await createPinWithBtc({
+      inscribeDataArray: [metaidData],
+      options: {
+        network: 'mainnet',
+        noBroadcast: 'no',
+        feeRate: feeRate,
+      },
+    })
+    if (txIDs.status) {
+      throw new Error(txIDs.status)
+    }
+    return {
+      status: 'success',
+      txIDs,
+    }
+  } else if (currentChain === ChatChain.doge) {
+    const txIDs = await createPinWithDoge({
       inscribeDataArray: [metaidData],
       options: {
         network: 'mainnet',

@@ -13,7 +13,7 @@ import {hexToUint8Array,hexToBase64} from '@/utils/util'
 import { getInitUtxo } from "@/api/metaso";
 import {useUtxosStore} from '@/stores/useable-utxo'
 import {createPinWithAsset} from '@/utils/userInfo'
-import { createPinWithBtc,InscribeResultForIfBroadcasting, InscribeResultForNoBroadcast } from "@/utils/pin";
+import { createPinWithBtc, createPinWithDoge, InscribeResultForIfBroadcasting, InscribeResultForNoBroadcast } from "@/utils/pin";
 import { useChainStore } from '@/stores/chain';
  import *  as bitcoin from 'bitcoinjs-lib'
  import * as ecc from 'tiny-secp256k1'
@@ -120,6 +120,44 @@ export const useBulidTx = createGlobalState(() => {
         //   revealTxsHex: txIDs.revealTxsHex,
         // }
          return txIDs
+      }else if(chainStore.state.currentChain === 'doge'){
+        // Doge 链处理逻辑，与 BTC 类似
+        if(payTo.length){
+           metaidData.outputs=[];
+          for(let item of payTo){
+            metaidData.outputs.push({
+              address:item.address,
+              value:item.amount,
+            })
+          }
+        }
+        const inscribeDataArray=[]
+        
+        if(SerialTransactions.length){
+          inscribeDataArray.push(...SerialTransactions)
+        }
+        inscribeDataArray.push(metaidData)
+        
+        const dogeChainData = chainStore.state.doge
+        const dogeFeeRate = dogeChainData[dogeChainData.selectedFeeType]
+        
+        const options={
+          noBroadcast:isBroadcast?'no':'yes',
+          feeRate: dogeFeeRate,
+          network:'mainnet',
+          outputs:[]
+        }
+
+        const txIDs= await createPinWithDoge({
+          inscribeDataArray,
+          options,
+        })
+        
+        if(txIDs.status == "canceled"){
+          return null
+        }
+        
+        return txIDs
       }else{
          const transactions=[] 
        const pinTxComposer = new TxComposer()

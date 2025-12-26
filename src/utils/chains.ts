@@ -4,6 +4,8 @@ import MVC from '@/assets/images/icon_mvc.png'
 import BSV from '@/assets/images/bsv.png'
 import BTC from '@/assets/images/btc.png'
 import POLYGON from '@/assets/svg/polygon.svg?url'
+// TODO: 添加 doge.png 图标到 assets/images 目录
+// import DOGE from '@/assets/images/doge.png'
 
 export default [
   {
@@ -60,5 +62,16 @@ export default [
     precision: 8,
     minUnit: 'sat',
     unit: 'bsv',
+  },
+  {
+    id: 6,
+    key: 'doge',
+    name: 'DOGE',
+    coinName: 'DOGE',
+    icon: BTC, // TODO: 替换为 DOGE 图标
+    value: 'doge' as Chains,
+    precision: 8,
+    minUnit: 'sat',
+    unit: 'doge',
   },
 ]
