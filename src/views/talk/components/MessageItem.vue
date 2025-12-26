@@ -380,6 +380,21 @@
             </div>
           </div>
 
+          <!-- 卡片消息（SimpleCardMsg） -->
+          <div
+            class="my-1.5 max-w-full flex"
+            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            v-else-if="isCardMsg"
+          >
+            <CardMsgCard
+              :content="decryptedContentForProtocolCard"
+              :message="message"
+              :is-my-message="isMyMessage"
+              @signed="handleCardMsgSigned"
+              @error="handleCardMsgError"
+            />
+          </div>
+
           <!-- 协议卡片（MetaApp、Buzz、SimpleNote、MetaFile 等） -->
           <div
             class="my-1.5 max-w-full flex"
@@ -538,6 +553,7 @@ import { isPrivate } from 'tiny-secp256k1'
 import { DB } from '@/utils/db'
 import TalkImagePreview from './ImagePreview.vue'
 import ProtocolCard from '@/components/ProtocolCard/index.vue'
+import CardMsgCard from '@/components/CardMsgCard/index.vue'
 
 const i18n = useI18n()
 
@@ -1105,6 +1121,16 @@ const isMyMessage = computed(() => {
   return userStore.last?.metaid === props.message.metaId
 })
 
+// 卡片消息签名成功处理
+const handleCardMsgSigned = (result: { txid: string; button: any }) => {
+  console.log('Card message signed successfully:', result)
+  // 可以在这里添加额外的处理逻辑，比如刷新消息等
+}
+
+// 卡片消息错误处理
+const handleCardMsgError = (error: Error) => {
+  console.error('Card message error:', error)
+}
 
 const handleOpenRedPacket = async() => {
   if(simpleTalk.activeChannel?.isTemporary){
@@ -1212,6 +1238,10 @@ const isImage = computed(() =>simpleTalk.activeChannel?.roomJoinType!=='100' && 
 const isPrivateImage = computed(() =>simpleTalk.activeChannel?.roomJoinType==='100' && containsString(props.message.protocol, NodeName.SimpleFileGroupChat))
 const isGiveawayRedPacket = computed(() =>
   containsString(props.message.protocol, NodeName.SimpleGroupLuckyBag)
+)
+// 卡片消息判断
+const isCardMsg = computed(() =>
+  containsString(props.message.protocol, NodeName.SimpleCardMsg)
 )
 const isChatGroupLink = computed(() => {
   const messageContent = decryptedMessage(

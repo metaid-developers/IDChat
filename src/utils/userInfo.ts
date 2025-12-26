@@ -23,9 +23,34 @@ declare global {
       getAddress: () => Promise<string>
       getUtxos: () => Promise<any[]>
       unlockP2PKHInput: (params: any) => Promise<any>
+      // pay method for signing and paying transactions
+      pay: (params: {
+        transactions: Array<{
+          txComposer: string
+          message: string
+        }>
+        hasMetaid: boolean
+        feeb?: number
+        useChunk?: boolean
+        chunkKey?: string
+      }) => Promise<{
+        payedTransactions: string[]
+        status: string
+        message: string
+      }>
+      // storageChunk for handling large data
+      storageChunk?: (params: {
+        chunk: string
+        index: number
+        total: number
+        key: string
+      }) => Promise<void>
+      // smallPay for auto-payment
+      smallPay?: (params: any) => Promise<any>
       // add other methods/properties as needed
       btc: {
         getAddress: () => Promise<string>
+        signMessage: (message: string) => Promise<string>
         inscribe({
           data,
           options,

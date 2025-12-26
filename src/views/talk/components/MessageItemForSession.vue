@@ -470,6 +470,21 @@
           </div>
         </div>
 
+        <!-- 卡片消息（SimpleCardMsg） -->
+        <div
+          class="my-1.5 max-w-full flex"
+          :class="[isMyMessage ? 'flex-row-reverse' : '']"
+          v-else-if="isCardMsg"
+        >
+          <CardMsgCard
+            :content="decryptedContentForProtocolCard"
+            :message="message"
+            :is-my-message="isMyMessage"
+            @signed="handleCardMsgSigned"
+            @error="handleCardMsgError"
+          />
+        </div>
+
         <!-- 协议卡片（MetaApp、Buzz、SimpleNote、MetaFile 等） -->
         <div
           class="my-1.5 max-w-full flex"
@@ -604,6 +619,7 @@ import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
 import { VideoPlay } from '@element-plus/icons-vue'
 import ProtocolCard from '@/components/ProtocolCard/index.vue'
+import CardMsgCard from '@/components/CardMsgCard/index.vue'
 const reply: any = inject('Reply')
 const i18n = useI18n()
 const rootStore=useRootStore()
@@ -1578,6 +1594,17 @@ const isMyMessage = computed(() => {
   return userStore.last?.metaid === props.message.from
 })
 
+// 卡片消息签名成功处理
+const handleCardMsgSigned = (result: { txid: string; button: any }) => {
+  console.log('Card message signed successfully:', result)
+  // 可以在这里添加额外的处理逻辑，比如刷新消息等
+}
+
+// 卡片消息错误处理
+const handleCardMsgError = (error: Error) => {
+  console.error('Card message error:', error)
+}
+
 const messageAvatarImage = computed(() => {
   if (props.message.from === userStore.last?.metaid) {
     return userStore.last?.avatar
@@ -1604,6 +1631,10 @@ const nftPrice = computed(() => {
 const isNftEmoji = computed(() =>containsString(props.message.protocol,NodeName.SimpleEmojiGroupChat))
 const isImage = computed(() =>containsString(props.message.protocol,NodeName.SimpleFileMsg))
 const isGiveawayRedEnvelope = computed(() =>containsString(props.message.protocol,NodeName.SimpleGroupLuckyBag))
+// 卡片消息判断
+const isCardMsg = computed(() =>
+  containsString(props.message.protocol, NodeName.SimpleCardMsg)
+)
 const isReceiveRedEnvelope = computed(() =>containsString(props.message.protocol ,NodeName.OpenRedenvelope))
 const isText = computed(() =>containsString(props.message.protocol, NodeName.SimpleMsg))
 const isMarkdown = computed(() => props.message.contentType === 'text/markdown')
