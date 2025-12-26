@@ -120,11 +120,7 @@
             :alt="chainStore.state.currentChain.toUpperCase()"
             class="chain-icon-menu w-[24px] h-[24px]"
           />
-          <Icon
-            v-else
-            name="doge"
-            class="chain-icon-menu w-[24px] h-[24px]"
-          />
+          <Icon v-else name="doge" class="chain-icon-menu w-[24px] h-[24px]" />
           <div class="fee-info">
             <span class="fee-rate-menu">{{ currentFeeRate }}</span>
             <span class="fee-unit-menu"

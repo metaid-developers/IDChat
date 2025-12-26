@@ -17,16 +17,14 @@
         alt="MVC"
         class="w-full h-full rounded-full"
       />
-      <Icon
-        v-else-if="currentChain === 'doge'"
-        name="doge"
-        class="w-full h-full"
-      />
+      <Icon v-else-if="currentChain === 'doge'" name="doge" class="w-full h-full" />
     </div>
 
     <!-- 费率信息 -->
     <div class="fee-info flex flex-col leading-tight">
-      <span class="fee-value text-sm font-medium text-dark-800 dark:text-gray-100">{{ currentFeeRate }}</span>
+      <span class="fee-value text-sm font-medium text-dark-800 dark:text-gray-100">{{
+        currentFeeRate
+      }}</span>
       <span class="fee-unit text-xs text-dark-400 dark:text-gray-400">{{ feeUnit }}</span>
     </div>
   </div>
