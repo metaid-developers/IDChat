@@ -394,8 +394,8 @@
           </div>
 
           <div
-            class="my-1.5 max-w-full flex"
-            :class="[isMyMessage ? 'flex-row-reverse' : '']"
+            class="my-1.5 max-w-[85%] lg:max-w-[70%] flex"
+            :class="[isMyMessage ? 'flex-row-reverse ml-auto' : '']"
             v-else
           >
             <div

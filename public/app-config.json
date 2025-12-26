@@ -4,13 +4,13 @@
     "description": "A Decentralized Messaging App Built on Bitcoin",
     "keywords": "IDChat | Decentralized Messenger Built on Bitcoin",
     "key": "IDChat | Decentralized Messenger Built on Bitcoin",
-    "logo": "/logo.png",
-    "favicon": "/favicon.ico",
+    "logo": "/chat/logo.png",
+    "favicon": "/chat/favicon.ico",
     "designSize": 1920
   },
   "api": {
     "mvcBaseApi": "https://api.mvcscan.com/browser",
-    "metaSoBaseURL": "https://www.show.now",
+    "metaSoBaseURL": "https://api.idchat.io",
     "metaFSBaseURL": "https://file.metaid.io",
     "paths": {
       "fileApi": "/metafile-indexer/api/v1/files",
