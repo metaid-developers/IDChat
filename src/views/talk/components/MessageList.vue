@@ -536,7 +536,12 @@ const unReadCount = computed(() => {
     typeof activeChannel.value.lastMessage.index === 'number' &&
     typeof activeChannel.value.lastReadIndex === 'number'
   ) {
-    return activeChannel.value.lastMessage.index - activeChannel.value.lastReadIndex
+    const count = activeChannel.value.lastMessage.index - activeChannel.value.lastReadIndex
+    // 如果未读消息数量在阈值范围内（<=5条），不显示未读数Badge，直接滚动到底部
+    if (count >= 0 && count <= UNREAD_AUTO_SCROLL_THRESHOLD) {
+      return 0
+    }
+    return count
   }
   return 0
 })

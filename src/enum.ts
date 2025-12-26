@@ -38,6 +38,7 @@ export enum ChatType {
   msg = 0,
   red = 1,
   img = 3,
+  cardMsg = 8,
   groupRed = 23,
 }
 

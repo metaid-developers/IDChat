@@ -61,14 +61,14 @@
             class="flex items-center justify-center gap-2"
           >
             <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></span>
-            {{ $t('Common.processing') || '处理中...' }}
+            处理中...
           </span>
           <span v-else>{{ btn.label }}</span>
         </button>
 
         <!-- 非目标用户的提示 -->
         <div v-if="!canInteract" class="text-center text-xs text-dark-400 dark:text-gray-400 mt-1">
-          {{ $t('Talk.CardMsg.only_recipient_can_click') || '仅被回复的用户可操作' }}
+          仅被回复的用户可操作
         </div>
       </div>
 
@@ -84,7 +84,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { TxComposer, mvc } from 'meta-contract'
 import { ElMessage } from 'element-plus'
 import ChatImage from '@/components/ChatImage/ChatImage.vue'
@@ -127,7 +126,6 @@ const emit = defineEmits<{
   (e: 'error', error: Error): void
 }>()
 
-const i18n = useI18n()
 const userStore = useUserStore()
 const chainStore = useChainStore()
 
@@ -394,7 +392,7 @@ const handleSignMethod = async (btn: SignButton) => {
 
   const finalTxid = results[results.length - 1]
 
-  ElMessage.success(i18n.t('Common.success') || '操作成功')
+  ElMessage.success('操作成功')
 
   emit('signed', {
     txid: finalTxid,

@@ -85,6 +85,7 @@ export enum MessageType {
   msg = 0,
   red = 23,
   img = 3,
+  cardMsg = 8,
 }
 
 // 群聊房间详细信息
@@ -186,6 +187,7 @@ export interface SimpleChannel {
     type: MessageType
     chatPublicKey?: string // 私聊加密公钥
     index?: number
+    protocol?: string // 消息协议类型
   }
   unreadCount: number // 注意: 这个字段现在通过 lastMessage.index - lastReadIndex 动态计算，而不是存储值
   lastReadIndex?: number

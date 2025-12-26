@@ -95,11 +95,11 @@
             </span>
           </div>
           <div
-            class="mt-4 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between"
+            class="mt-4 cursor-pointer text-dark-700 dark:text-white px-[12px] py-[10px] rounded-lg  bg-gray-100 dark:bg-gray-700 hover:bg-dark-200 hover:dark:bg-gray-900  flex items-center justify-between overflow-hidden"
           >
-            <div class="w-full word-break break-all flex items-center justify-between">
+            <div class="flex-1 min-w-0 flex items-center justify-between overflow-hidden">
               <div
-                class="broadcast-chat-container"
+                class="broadcast-chat-container flex-1 min-w-0 overflow-hidden"
                 v-for="channel in subchannels"
                 :key="channel.id"
               >
@@ -115,14 +115,14 @@
                     class="broadcast-description flex items-center "
                     v-if="channel.lastMessage?.sender"
                   >
-                    <span class="text-dark-300 dark:text-gray-400"
+                    <span class="text-dark-300 dark:text-gray-400 flex-shrink-0"
                       >{{
                         channel.lastMessage?.senderName ||
                           channel.lastMessage?.sender?.slice(0, 6) ||
                           ''
                       }}:</span
                     >
-                    <span class="text-dark-300 dark:text-gray-400 ">{{
+                    <span class="text-dark-300 dark:text-gray-400 truncate min-w-0">{{
                       lastMsgContentType(
                         channel.lastMessage?.type,
                         channel.lastMessage?.content,
@@ -132,7 +132,7 @@
                   </div>
                 </div>
               </div>
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between flex-shrink-0">
                 <el-icon
                   class="cursor-pointer min-w-[24px] min-h-[24px] text-dark-300 dark:text-white"
                   ><ArrowRight
@@ -1636,6 +1636,7 @@ header {
   //padding: 12px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .broadcast-icon {
@@ -1654,6 +1655,7 @@ header {
 .broadcast-content {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .broadcast-title {

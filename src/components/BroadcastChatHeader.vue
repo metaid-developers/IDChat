@@ -17,21 +17,12 @@
         <div class="broadcast-title text-base">
           {{ channel.name || '# Broadcast Chat' }}
         </div>
-        <div
-          class="broadcast-description text-xs flex items-center "
+        <p
+          class="broadcast-description text-xs text-dark-300 dark:text-gray-400"
           v-if="channel.lastMessage?.sender"
-        >
-          <span class="text-dark-300 dark:text-gray-400"
-            >{{
-              channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0, 6) || ''
-            }}:</span
-          >
-          <span class="text-dark-300 dark:text-gray-400 ">{{
-            lastMsgContentType(channel.lastMessage?.type, channel.lastMessage?.content, channel.id)
-          }}</span>
-        </div>
+        >{{ channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0, 6) || '' }}:{{ lastMsgContentType(channel.lastMessage?.type, channel.lastMessage?.content, channel.id) }}</p>
       </div>
-      <div class="flex flex-row items-center gap-7">
+      <div class="broadcast-actions">
         <el-badge
           :value="getUnreadCount(channel)"
           class="item"
@@ -175,6 +166,9 @@ if(newVal){
   position: sticky;
   top: 0px;
   z-index: 28;
+  flex-shrink: 0;
+  width: 100%;
+  overflow: hidden;
   /* background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px); */
@@ -186,6 +180,9 @@ if(newVal){
   padding: 12px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* .broadcast-chat-container:hover {
@@ -206,8 +203,10 @@ if(newVal){
 }
 
 .broadcast-content {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 .broadcast-title {
@@ -215,9 +214,10 @@ if(newVal){
   font-weight: 500;
 
   margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-all;
 }
 
 .channel-count {
@@ -230,12 +230,22 @@ if(newVal){
 
 .broadcast-description {
   font-size: 13px;
-
   line-height: 1.4;
-  margin-bottom: 4px;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: block;
+  word-break: break-all;
+}
+
+.broadcast-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 28px;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
 .broadcast-note {

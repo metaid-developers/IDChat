@@ -130,6 +130,12 @@ const computeDecryptedMsg = (session: SimpleChannel) => {
     if (!session.lastMessage || !session.lastMessage.content) {
       return ''
     }
+
+    // 检查是否为卡片消息（chatType = 8）
+    if (session.lastMessage.type === MessageType.cardMsg) {
+      return '[卡片消息]'
+    }
+
     let content
     if (session.type === 'group') {
       let secretKeyStr = session.passwordKey?.substring(0, 16) || ''

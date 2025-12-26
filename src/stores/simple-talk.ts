@@ -443,7 +443,8 @@ class SimpleChatDB {
           timestamp: Number(channel.lastMessage.timestamp || 0),
           type: channel.lastMessage.type,
           chatPublicKey: channel.lastMessage.chatPublicKey ? String(channel.lastMessage.chatPublicKey) : undefined,
-          index: Number(channel.lastMessage.index || 0) < 1 ? 0 : Number(channel.lastMessage.index || 0) // 保留消息索引
+          index: Number(channel.lastMessage.index || 0) < 1 ? 0 : Number(channel.lastMessage.index || 0), // 保留消息索引
+          protocol: channel.lastMessage.protocol ? String(channel.lastMessage.protocol) : undefined // 保存消息协议
         }
       }
 
@@ -5098,7 +5099,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         timestamp: message.timestamp,
         type: message.chatType,
         chatPublicKey: message.userInfo?.chatPublicKey || '',
-        index: message.index < 1 ? (channel.lastMessage?.index ?? 0) + 1 : message.index
+        index: message.index < 1 ? (channel.lastMessage?.index ?? 0) + 1 : message.index,
+        protocol: message.protocol // 保存消息协议
       }
 
       // 未读数现在通过 lastMessage.index - lastReadIndex 自动计算
