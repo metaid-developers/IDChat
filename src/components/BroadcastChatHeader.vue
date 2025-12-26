@@ -20,7 +20,11 @@
         <p
           class="broadcast-description text-xs text-dark-300 dark:text-gray-400"
           v-if="channel.lastMessage?.sender"
-        >{{ channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0, 6) || '' }}:{{ lastMsgContentType(channel.lastMessage?.type, channel.lastMessage?.content, channel.id) }}</p>
+        >
+          {{ channel.lastMessage?.senderName || channel.lastMessage?.sender?.slice(0, 6) || '' }}:{{
+            lastMsgContentType(channel.lastMessage?.type, channel.lastMessage?.content, channel.id)
+          }}
+        </p>
       </div>
       <div class="broadcast-actions">
         <el-badge
