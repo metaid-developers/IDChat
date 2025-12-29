@@ -8,13 +8,10 @@
     class="fee-dialog"
   >
     <div class="fee-modal-content">
-      <!-- Chain Options with Fee Types -->
+      <!-- Chain Options with Fee Types - Accordion Style -->
       <div class="chain-sections">
         <!-- BTC Section -->
-        <div
-          class="chain-section  main-border "
-          :class="{ faded: selectedChain !== 'btc', selected: selectedChain === 'btc' }"
-        >
+        <div class="chain-section main-border" :class="{ selected: selectedChain === 'btc' }">
           <div class="chain-header flex items-center" @click="selectChain('btc')">
             <div class="chain-icon">
               <img src="@/assets/images/btc.png" alt="BTC" class="w-[30px] h-[30px] rounded-full" />
@@ -23,82 +20,78 @@
               <div class="chain-name">BTC</div>
               <div class="chain-subtitle">Network</div>
             </div>
-          </div>
-
-          <div class="fee-options">
-            <div
-              class="fee-option "
-              :class="{
-                selected: selectedBTCFeeType === 'economyFee',
-                disabled: selectedChain !== 'btc',
-              }"
-              @click="selectFeeType('economyFee', 'btc')"
-            >
-              <div class="fee-label">ECO</div>
-              <div class="flex items-center gap-1">
-                <div class="fee-value">{{ chainStore.state.btc.economyFee }}</div>
-                <div class="fee-time">sat/vB</div>
-              </div>
-            </div>
-
-            <div
-              class="fee-option "
-              :class="{
-                selected: selectedBTCFeeType === 'halfHourFee',
-                disabled: selectedChain !== 'btc',
-              }"
-              @click="selectFeeType('halfHourFee', 'btc')"
-            >
-              <div class="fee-label">Normal</div>
-              <div class="flex items-center gap-1">
-                <div class="fee-value">{{ chainStore.state.btc.halfHourFee }}</div>
-                <div class="fee-time">sat/vB</div>
-              </div>
-            </div>
-
-            <div
-              class="fee-option "
-              :class="{
-                selected: selectedBTCFeeType === 'customizeFee',
-                disabled: selectedChain !== 'btc',
-              }"
-              @click="selectFeeType('customizeFee', 'btc')"
-            >
-              <div class="fee-label">Customize</div>
-              <div class="flex items-center gap-1">
-                <!-- <el-input-number
-                  v-if="selectedChain === 'btc' && selectedBTCFeeType === 'customizeFee'"
-                  class="fee-input"
-                  placeholder="Custom fee"
-                  @click.stop
-                  v-model="customBTCValue"
-                  :min="0.3"
-                  :max="10"
-                  :size="'small'"
-                  :controls="false"
-                /> -->
-                <input
-                  v-if="selectedChain === 'btc' && selectedBTCFeeType === 'customizeFee'"
-                  v-model="customBTCValue"
-                  type="number"
-                  class="fee-input"
-                  placeholder="Custom fee"
-                  @click.stop
-                  :min="0.3"
-                />
-                <div v-else class="fee-value">{{ chainStore.state.btc.customizeFee }}</div>
-                <div class="fee-time">sat/vB</div>
-              </div>
+            <div class="accordion-arrow" :class="{ expanded: selectedChain === 'btc' }">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
           </div>
+
+          <transition name="accordion">
+            <div v-show="selectedChain === 'btc'" class="fee-options-wrapper">
+              <div class="fee-options">
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedBTCFeeType === 'economyFee' }"
+                  @click="selectFeeType('economyFee', 'btc')"
+                >
+                  <div class="fee-label">ECO</div>
+                  <div class="flex items-center gap-1">
+                    <div class="fee-value">{{ chainStore.state.btc.economyFee }}</div>
+                    <div class="fee-time">sat/vB</div>
+                  </div>
+                </div>
+
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedBTCFeeType === 'halfHourFee' }"
+                  @click="selectFeeType('halfHourFee', 'btc')"
+                >
+                  <div class="fee-label">Normal</div>
+                  <div class="flex items-center gap-1">
+                    <div class="fee-value">{{ chainStore.state.btc.halfHourFee }}</div>
+                    <div class="fee-time">sat/vB</div>
+                  </div>
+                </div>
+
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedBTCFeeType === 'customizeFee' }"
+                  @click="selectFeeType('customizeFee', 'btc')"
+                >
+                  <div class="fee-label">Customize</div>
+                  <div class="flex items-center gap-1">
+                    <input
+                      v-if="selectedBTCFeeType === 'customizeFee'"
+                      v-model="customBTCValue"
+                      type="number"
+                      class="fee-input"
+                      placeholder="Custom fee"
+                      @click.stop
+                      :min="0.3"
+                    />
+                    <div v-else class="fee-value">{{ chainStore.state.btc.customizeFee }}</div>
+                    <div class="fee-time">sat/vB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
 
         <!-- MVC Section -->
-        <div
-          class="chain-section main-border"
-          :class="{ faded: selectedChain !== 'mvc', selected: selectedChain === 'mvc' }"
-        >
-          <div class="chain-header " @click="selectChain('mvc')">
+        <div class="chain-section main-border" :class="{ selected: selectedChain === 'mvc' }">
+          <div class="chain-header" @click="selectChain('mvc')">
             <div class="chain-icon">
               <img src="@/assets/images/mvc.png" alt="MVC" class="w-[30px] h-[30px] rounded-full" />
             </div>
@@ -107,74 +100,81 @@
                 <div class="chain-name">MVC</div>
                 <div class="chain-subtitle">Network</div>
               </div>
-              <div class=" rounded-full bg-[#F7931A]/20 text-[#F7931A] text-xs px-2 py-0">
+              <div class="rounded-full bg-[#F7931A]/20 text-[#F7931A] text-xs px-2 py-0">
                 Bitcoin sidechain
               </div>
             </div>
-          </div>
-
-          <div class="fee-options">
-            <div
-              class="fee-option "
-              :class="{
-                selected: selectedMVCFeeType === 'economyFee',
-                disabled: selectedChain !== 'mvc',
-              }"
-              @click="selectFeeType('economyFee', 'mvc')"
-            >
-              <div class="fee-label">ECO</div>
-              <div class="flex items-center gap-1">
-                <div class="fee-value">{{ chainStore.state.mvc.economyFee }}</div>
-                <div class="fee-time">sat/vB</div>
-              </div>
-            </div>
-
-            <div
-              class="fee-option "
-              :class="{
-                selected: selectedMVCFeeType === 'fastestFee',
-                disabled: selectedChain !== 'mvc',
-              }"
-              @click="selectFeeType('fastestFee', 'mvc')"
-            >
-              <div class="fee-label">High</div>
-              <div class="flex items-center gap-1">
-                <div class="fee-value">{{ chainStore.state.mvc.fastestFee }}</div>
-                <div class="fee-time">sat/vB</div>
-              </div>
-            </div>
-
-            <div
-              class="fee-option"
-              :class="{
-                selected: selectedMVCFeeType === 'customizeFee',
-                disabled: selectedChain !== 'mvc',
-              }"
-              @click="selectFeeType('customizeFee', 'mvc')"
-            >
-              <div class="fee-label">Customize</div>
-              <div class="flex items-center gap-1">
-                <input
-                  v-if="selectedChain === 'mvc' && selectedMVCFeeType === 'customizeFee'"
-                  v-model="customMVCValue"
-                  type="number"
-                  class="fee-input"
-                  placeholder="Custom fee"
-                  @click.stop
-                />
-                <div v-else class="fee-value">{{ chainStore.state.mvc.customizeFee }}</div>
-                <div class="fee-time">sat/vB</div>
-              </div>
+            <div class="accordion-arrow" :class="{ expanded: selectedChain === 'mvc' }">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
           </div>
+
+          <transition name="accordion">
+            <div v-show="selectedChain === 'mvc'" class="fee-options-wrapper">
+              <div class="fee-options">
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedMVCFeeType === 'economyFee' }"
+                  @click="selectFeeType('economyFee', 'mvc')"
+                >
+                  <div class="fee-label">ECO</div>
+                  <div class="flex items-center gap-1">
+                    <div class="fee-value">{{ chainStore.state.mvc.economyFee }}</div>
+                    <div class="fee-time">sat/vB</div>
+                  </div>
+                </div>
+
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedMVCFeeType === 'fastestFee' }"
+                  @click="selectFeeType('fastestFee', 'mvc')"
+                >
+                  <div class="fee-label">High</div>
+                  <div class="flex items-center gap-1">
+                    <div class="fee-value">{{ chainStore.state.mvc.fastestFee }}</div>
+                    <div class="fee-time">sat/vB</div>
+                  </div>
+                </div>
+
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedMVCFeeType === 'customizeFee' }"
+                  @click="selectFeeType('customizeFee', 'mvc')"
+                >
+                  <div class="fee-label">Customize</div>
+                  <div class="flex items-center gap-1">
+                    <input
+                      v-if="selectedMVCFeeType === 'customizeFee'"
+                      v-model="customMVCValue"
+                      type="number"
+                      class="fee-input"
+                      placeholder="Custom fee"
+                      @click.stop
+                    />
+                    <div v-else class="fee-value">{{ chainStore.state.mvc.customizeFee }}</div>
+                    <div class="fee-time">sat/vB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
 
         <!-- DOGE Section -->
-        <div
-          class="chain-section main-border"
-          :class="{ faded: selectedChain !== 'doge', selected: selectedChain === 'doge' }"
-        >
-          <div class="chain-header " @click="selectChain('doge')">
+        <div class="chain-section main-border" :class="{ selected: selectedChain === 'doge' }">
+          <div class="chain-header" @click="selectChain('doge')">
             <div class="chain-icon">
               <Icon name="doge" class="w-[30px] h-[30px]" />
             </div>
@@ -184,65 +184,81 @@
                 <div class="chain-subtitle">Network</div>
               </div>
               <div class="rounded-full bg-[#C3A634]/20 text-[#C3A634] text-xs px-2 py-0">
-                Dogecoin
+                Bitcoin sidechain
               </div>
+            </div>
+            <div class="accordion-arrow" :class="{ expanded: selectedChain === 'doge' }">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
           </div>
 
-          <div class="fee-options">
-            <div
-              class="fee-option "
-              :class="{
-                selected: selectedDOGEFeeType === 'economyFee',
-                disabled: selectedChain !== 'doge',
-              }"
-              @click="selectFeeType('economyFee', 'doge')"
-            >
-              <div class="fee-label">ECO</div>
-              <div class="flex items-center gap-1">
-                <div class="fee-value">{{ chainStore.state.doge.economyFee }}</div>
-                <div class="fee-time">sats/kB</div>
-              </div>
-            </div>
+          <transition name="accordion">
+            <div v-show="selectedChain === 'doge'" class="fee-options-wrapper">
+              <div class="fee-options">
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedDOGEFeeType === 'economyFee' }"
+                  @click="selectFeeType('economyFee', 'doge')"
+                >
+                  <div class="fee-label">ECO</div>
+                  <div class="fee-value-wrap">
+                    <span class="fee-value">{{
+                      formatDogeFee(chainStore.state.doge.economyFee)
+                    }}</span>
+                    <span class="fee-time">DOGE/KB</span>
+                  </div>
+                </div>
 
-            <div
-              class="fee-option "
-              :class="{
-                selected: selectedDOGEFeeType === 'halfHourFee',
-                disabled: selectedChain !== 'doge',
-              }"
-              @click="selectFeeType('halfHourFee', 'doge')"
-            >
-              <div class="fee-label">Normal</div>
-              <div class="flex items-center gap-1">
-                <div class="fee-value">{{ chainStore.state.doge.halfHourFee }}</div>
-                <div class="fee-time">sats/kB</div>
-              </div>
-            </div>
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedDOGEFeeType === 'halfHourFee' }"
+                  @click="selectFeeType('halfHourFee', 'doge')"
+                >
+                  <div class="fee-label">Normal</div>
+                  <div class="fee-value-wrap">
+                    <span class="fee-value">{{
+                      formatDogeFee(chainStore.state.doge.halfHourFee)
+                    }}</span>
+                    <span class="fee-time">DOGE/KB</span>
+                  </div>
+                </div>
 
-            <div
-              class="fee-option"
-              :class="{
-                selected: selectedDOGEFeeType === 'customizeFee',
-                disabled: selectedChain !== 'doge',
-              }"
-              @click="selectFeeType('customizeFee', 'doge')"
-            >
-              <div class="fee-label">Customize</div>
-              <div class="flex items-center gap-1">
-                <input
-                  v-if="selectedChain === 'doge' && selectedDOGEFeeType === 'customizeFee'"
-                  v-model="customDOGEValue"
-                  type="number"
-                  class="fee-input"
-                  placeholder="Custom fee"
-                  @click.stop
-                />
-                <div v-else class="fee-value">{{ chainStore.state.doge.customizeFee }}</div>
-                <div class="fee-time">sats/kB</div>
+                <div
+                  class="fee-option"
+                  :class="{ selected: selectedDOGEFeeType === 'customizeFee' }"
+                  @click="selectFeeType('customizeFee', 'doge')"
+                >
+                  <div class="fee-label">Customize</div>
+                  <div class="fee-value-wrap">
+                    <input
+                      v-if="selectedDOGEFeeType === 'customizeFee'"
+                      v-model="customDOGEValue"
+                      type="number"
+                      class="fee-input"
+                      placeholder="Custom fee"
+                      @click.stop
+                    />
+                    <span v-else class="fee-value">
+                      {{ formatDogeFee(chainStore.state.doge.customizeFee) }}
+                    </span>
+                    <span class="fee-time">DOGE/KB</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </transition>
         </div>
       </div>
 
@@ -280,6 +296,11 @@ const customDOGEValue = ref<number>(chainStore.state.doge.customizeFee)
 
 // Computed
 // const isMobile = computed(() => window.innerWidth <= 1024)
+
+// 将 DOGE 费率从 sats/kB 转换为 DOGE/KB
+const formatDogeFee = (satsFee: number) => {
+  return (satsFee / 100000000).toFixed(4)
+}
 
 // Methods
 const selectChain = (chain: 'btc' | 'mvc' | 'doge') => {
@@ -370,35 +391,48 @@ watch(
 .chain-sections {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    gap: 8px;
+  }
 }
 
 .chain-section {
   border-radius: 12px;
   overflow: hidden;
+  transition: all 0.2s ease;
 
-  //   &.selected {
-  //     border-color: var(--themeTextColor);
-  //   }
+  &.selected {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primaryRgb), 0.05);
+  }
 }
 
 .chain-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 20px;
+  padding: 16px 20px;
   cursor: pointer;
   border-radius: 12px;
   transition: all 0.15s ease;
 
-  &.selected {
-    border-color: var(--color-primary);
-    background: rgba(var(--color-primaryRgb), 0.1);
-  }
-
   &:hover {
-    border-color: var(--color-primary);
-    transform: translateY(-1px);
+    background: rgba(var(--color-primaryRgb), 0.05);
+  }
+}
+
+.accordion-arrow {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--themeFadedTextColor);
+  transition: transform 0.3s ease;
+
+  &.expanded {
+    transform: rotate(180deg);
   }
 }
 
@@ -434,6 +468,29 @@ watch(
   display: inline-block;
 }
 
+// Accordion transition
+.accordion-enter-active,
+.accordion-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.accordion-enter-from,
+.accordion-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+.accordion-enter-to,
+.accordion-leave-from {
+  opacity: 1;
+  max-height: 300px;
+}
+
+.fee-options-wrapper {
+  overflow: hidden;
+}
+
 .fee-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -443,6 +500,8 @@ watch(
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 0 16px 16px;
   }
 }
 
@@ -451,44 +510,37 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 14px 9px;
+  padding: 14px 12px;
   cursor: pointer;
   border-radius: 8px;
   background: var(--themeBgThreeColor);
   transition: all 0.15s ease;
+  min-width: 0;
 
-  //   &.selected {
-  //     border: 2px solid var(--themeTextColor);
-  //     background: var(--color-primary);
-  //   }
-}
-.chain-section {
+  @media (max-width: 768px) {
+    padding: 12px 10px;
+    flex-wrap: wrap;
+  }
+
   &.selected {
-    .fee-option {
-      &.selected {
-        border: 2px solid var(--themeTextColor);
-        background: var(--color-primary);
-      }
-    }
+    border: 2px solid var(--themeTextColor);
+    background: var(--color-primary);
   }
 }
+
 .dark {
-  .chain-section {
+  .fee-option {
     &.selected {
-      .fee-option {
-        &.selected {
-          border: 2px solid #000;
-          background: var(--color-primary);
-          .fee-label {
-            color: #000;
-          }
-          .fee-value {
-            color: #000;
-          }
-          .fee-time {
-            color: #000;
-          }
-        }
+      border: 2px solid #000;
+      background: var(--color-primary);
+      .fee-label {
+        color: #000;
+      }
+      .fee-value {
+        color: #000;
+      }
+      .fee-time {
+        color: #000;
       }
     }
   }
@@ -497,17 +549,41 @@ watch(
   font-size: 14px;
   font-weight: 500;
   color: var(--themeTextColor);
+  flex-shrink: 0;
+}
+
+.fee-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    gap: 2px;
+  }
 }
 
 .fee-value {
   font-size: 18px;
   color: var(--themeTextColor);
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    font-size: 15px;
+  }
 }
 
 .fee-time {
   font-size: 14px;
   color: var(--themeFadedTextColor);
   opacity: 0.8;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+  }
 }
 
 .fee-input {

@@ -215,13 +215,18 @@ const currentFeeRate = computed(() => {
   const currentChain = chainStore.state.currentChain
   const chainData = chainStore.state[currentChain]
   const selectedFeeType = chainData.selectedFeeType
-  return chainData[selectedFeeType]
+  const rawFee = chainData[selectedFeeType]
+  // DOGE: 将 sats/kB 转换为 DOGE/KB (1 DOGE = 100,000,000 sats)
+  if (currentChain === 'doge') {
+    return (rawFee / 100000000).toFixed(4)
+  }
+  return rawFee
 })
 
 const feeUnit = computed(() => {
   const chain = chainStore.state.currentChain
   if (chain === 'btc') return 'sat/vB'
-  if (chain === 'doge') return 'sats/kB'
+  if (chain === 'doge') return 'DOGE/KB'
   return 'sats/b'
 })
 

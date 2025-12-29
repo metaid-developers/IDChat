@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-white dark:bg-gray-700 rounded-lg"
+    class="bg-[#FFFFFF] dark:bg-gray-900 rounded-lg"
     v-if="
       simpleTalk.activeChannel?.type === 'private' ||
         simpleTalk.activeChannel?.type === 'group' ||
@@ -79,80 +79,17 @@
       </Teleport>
     </div>
 
+    <!-- 输入框区域（一行布局） -->
     <div :class="[rows > 1 ? 'items-start' : 'items-center', 'flex h-fit']">
-      <!-- <Popover class="relative flex items-center" v-slot="{ open }">
-        <PopoverButton
-          as="button"
-          class="w-14 flex items-center py-2 justify-center text-dark-800 dark:text-gray-100 outline-0"
-        >
-          <div
-            class="bg-primary w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
-          >
-            <Icon
-              name="plus_2"
-              :class="[open && 'rotate-45', 'w-3 h-3 text-dark-800 transition duration-200']"
-            />
-          </div>
-        </PopoverButton>
+      <!-- 左侧费率选择器 -->
+      <FeeSelector class="bg-[#F5F7FA] dark:bg-gray-800 shrink-0" />
 
-        <transition
-          enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0"
-          enter-to-class="opacity-100"
-          leave-active-class="transition duration-150 ease-in"
-          leave-from-class="opacity-100"
-          leave-to-class="opacity-0"
-        >
-          <PopoverPanel
-            class="absolute z-10 transform top-[-16PX] left-0 -translate-y-full"
-            v-slot="{ close }"
-          >
-            <div
-              class="bg-white dark:bg-gray-700 dark:text-gray-100 py-2 px-4 rounded-xl flex flex-col w-max justify-stretch divide-dark-100 dark:divide-gray-800 divide-y divide-solid"
-            >
-              <button
-                class="flex py-4 outline-none hover:bg-gray-100 dark:hover:bg-gray-800 px-4 -mx-4 space-x-3 items-center"
-                type="button"
-                v-for="command in moreCommands()"
-                :key="command.titleKey"
-                @click="command.action(close)"
-              >
-                <Icon
-                  :name="command.icon"
-                  class="w-6 h-6 text-dark-800 rounded-full bg-primary box-content p-1.5 shrink-0"
-                />
-
-                <div class="flex flex-col justify-start items-start">
-                  <h4 class="shrink-0 text-sm">{{ $t(command.titleKey) }}</h4>
-                  <p class="text-xs text-dark-300 dark:text-gray-400">
-                    {{ $t(command.descriptionKey) }}
-                  </p>
-                </div>
-              </button>
-            </div>
-          </PopoverPanel>
-        </transition>
-      </Popover> -->
-
-      <!-- <button
-        class="w-14 flex items-center py-2 justify-center text-dark-800 dark:text-gray-100"
-        type="button"
-        @click="showMoreCommandsBox = true"
+      <!-- 输入框容器 -->
+      <div
+        class="self-stretch flex items-center grow bg-[#F5F7FA] dark:bg-gray-800 px-3 py-2 mx-2 rounded-lg"
       >
-        <div
-          class="bg-primary w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
-        >
-          <Icon name="plus_2" class="w-3 h-3 text-dark-800 dark:text-gray-100" />
-        </div>
-      </button> -->
-
-      <!-- 费率选择器 -->
-      <FeeSelector class="ml-2 my-2" />
-
-      <div class="self-stretch lg:ml-2 py-2 pl-3 flex items-center grow">
         <textarea
-          class=" w-full !outline-none placeholder:text-dark-250 placeholder:dark:text-gray-400 placeholder:text-sm placeholder:truncate text-dark-800 dark:text-gray-100 text-base caret-gray-600 dark:caret-gray-400 resize-none !h-fit text-base rounded-md transition-all duration-150 delay-100"
-          :class="rows > 1 ? 'bg-gray-100 dark:bg-gray-800 p-1 -m-1' : 'bg-inherit'"
+          class="w-full !outline-none placeholder:text-dark-250 placeholder:dark:text-gray-400 placeholder:text-sm placeholder:truncate text-dark-800 dark:text-gray-100 text-base caret-gray-600 dark:caret-gray-400 resize-none !h-fit bg-transparent transition-all duration-150 delay-100"
           :rows="rows"
           ref="theTextBox"
           :placeholder="
@@ -170,6 +107,21 @@
           @compositionend="onCompositionEnd"
           @input="handleInput"
         />
+
+        <!-- 发送按钮（在输入框内） -->
+        <transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="opacity-0"
+          enter-to-class="opacity-100"
+        >
+          <div v-if="hasInput" class="shrink-0 ml-2">
+            <div class="cursor-pointer" @click="trySendText">
+              <div class="text-primary scale-110 -rotate-6">
+                <Icon name="send" class="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+        </transition>
       </div>
 
       <!-- @ 提及下拉菜单 -->
@@ -194,105 +146,89 @@
         />
       </Teleport>
 
-      <!-- 右侧按钮群 -->
-      <div class="flex h-full py-1 items-center shrink-0">
-        <div :class="[hasInput ? 'hidden lg:flex' : 'flex', 'items-center px-1 mr-2']">
-          <div
-            class="p-2 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer"
-            v-if="
-              (simpleTalk.activeChannel?.type === 'group' ||
-                simpleTalk.activeChannel?.type === 'sub-group') &&
-                !quote
-            "
-            @click="openRedPackDialog"
-          >
-            <Icon name="red_envelope" class="w-full h-full text-dark-800 dark:text-gray-100" />
-          </div>
-
-          <Popover class="relative flex items-center">
-            <PopoverButton as="div">
-              <div class="p-2 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer">
-                <Icon name="photo_3" class="w-full h-full text-dark-800 dark:text-gray-100" />
-              </div>
-            </PopoverButton>
-
-            <transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="opacity-0"
-              enter-to-class="opacity-100"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="opacity-100"
-              leave-to-class="opacity-0"
+      <!-- 右侧快捷按钮 -->
+      <div class="flex items-center shrink-0 gap-1">
+        <!-- 表情选择器 -->
+        <ElPopover placement="bottom-end" width="300px" trigger="click">
+          <StickerVue @input="params => (chatInput = chatInput + params.value)" />
+          <template #reference>
+            <div
+              class="w-7 h-7 flex items-center justify-center transition-all lg:hover:animate-wiggle cursor-pointer"
             >
-              <PopoverPanel
-                class="absolute z-10 transform top-[-16PX] right-0 -translate-y-full"
-                v-slot="{ close }"
+              <Icon
+                name="emoji_icon"
+                class="w-8 h-8 text-dark-800 dark:text-gray-100 transition-all ease-in-out duration-300"
+                :class="{ 'text-primary -rotate-6 scale-110': showStickersBox }"
+              />
+            </div>
+          </template>
+        </ElPopover>
+
+        <!-- 更多按钮（+号） -->
+        <Popover class="relative flex items-center" v-slot="{ open }">
+          <PopoverButton as="div">
+            <div
+              class="w-6 h-6 flex items-center justify-center rounded-full cursor-pointer border-2 border-dark-300 dark:border-gray-400 transition-all hover:border-dark-500 dark:hover:border-gray-300"
+            >
+              <Icon
+                name="plus_2"
+                :class="[
+                  open && 'rotate-45',
+                  'w-3 h-3 text-dark-800 dark:text-gray-100 transition duration-200',
+                ]"
+              />
+            </div>
+          </PopoverButton>
+
+          <transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
+          >
+            <PopoverPanel
+              class="absolute z-10 transform top-[-12px] right-0 -translate-y-full"
+              v-slot="{ close }"
+            >
+              <div
+                class="bg-white dark:bg-gray-800 py-2 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 min-w-[260px]"
               >
+                <!-- Photos 按钮 -->
                 <div
-                  class="bg-white dark:bg-gray-700 p-2 rounded-xl shadow-lg w-60 divide-y divide-dark-200 dark:divide-gray-600"
+                  class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  @click="openImageUploader(close)"
                 >
                   <div
-                    class="mx-2 py-4 flex items-center space-x-2 text-dark-800 dark:text-gray-100 rounded-sm lg:cursor-pointer lg:hover:underline cursor-pointer"
-                    @click="openImageUploader(close)"
+                    class="w-9 h-9 rounded-full bg-[#FFC107] flex items-center justify-center shrink-0"
                   >
-                    <div class="cursor-pointer">
-                      <Icon name="photo" class="w-5 h-5 rounded-full bg-primary p-2 box-content" />
-                    </div>
-                    <div class="">
-                      {{ $t('Talk.Channel.upload_image') }}
-                    </div>
+                    <Icon name="photo" class="w-5 h-5 text-dark-800" />
                   </div>
-                  <!-- <div
-                    class="mx-2 py-4 flex items-center space-x-2 text-dark-800 dark:text-gray-100 rounded-sm lg:cursor-pointer lg:hover:underline cursor-pointer"
-                  >
-                    <div class=" ">
-                      <Icon name="link" class="w-5 h-5 rounded-full bg-primary p-2 box-content" />
-                    </div>
-                    <div class="">
-                      {{ $t('Talk.Channel.use_onchain_image') }}
-                    </div>
-                  </div> -->
+                  <span class="text-sm text-dark-800 dark:text-gray-100">Photos</span>
                 </div>
-              </PopoverPanel>
-            </transition>
-          </Popover>
 
-          <ElPopover placement="bottom-start" width="300px" trigger="click">
-            <StickerVue @input="params => (chatInput = chatInput + params.value)" />
-            <template #reference>
-              <div class="p-1 w-9 h-9 transition-all lg:hover:animate-wiggle cursor-pointer">
-                <Icon
-                  name="face_smile"
-                  class="w-full h-full text-dark-800 dark:text-gray-100 transition-all ease-in-out duration-300"
-                  :class="{ 'text-primary -rotate-6 scale-110': showStickersBox }"
-                />
+                <!-- Red Bag 按钮 -->
+                <div
+                  v-if="
+                    (simpleTalk.activeChannel?.type === 'group' ||
+                      simpleTalk.activeChannel?.type === 'sub-group') &&
+                      !quote
+                  "
+                  class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  @click="handleRedPackClick(close)"
+                >
+                  <div
+                    class="w-9 h-9 rounded-full bg-[#FFC107] flex items-center justify-center shrink-0"
+                  >
+                    <Icon name="red_envelope" class="w-5 h-5 text-dark-800" />
+                  </div>
+                  <span class="text-sm text-dark-800 dark:text-gray-100">Red Bag</span>
+                </div>
               </div>
-            </template>
-          </ElPopover>
-        </div>
-
-        <!-- 发送按钮 -->
-        <transition
-          enter-active-class="transition duration-150 ease-out"
-          enter-from-class="opacity-0"
-          enter-to-class="opacity-100"
-        >
-          <div v-if="hasInput" :class="['lg:hidden transition-all ease-in-out duration-500']">
-            <div class="py-2 px-3" @click="trySendText">
-              <!-- <div
-              class="transition-all ease-in-out duration-500"
-              :class="[
-                hasInput ? 'text-primary scale-110 -rotate-6' : 'text-dark-250 dark:text-gray-400',
-              ]"
-            >
-              <Icon name="send" class="w-5 h-5" />
-            </div> -->
-              <div class="text-primary scale-110 -rotate-6">
-                <Icon name="send" class="w-5 h-5" />
-              </div>
-            </div>
-          </div>
-        </transition>
+            </PopoverPanel>
+          </transition>
+        </Popover>
       </div>
     </div>
   </div>
@@ -566,6 +502,12 @@ const openImageUploader = (close: Function) => {
 
 const openRedPackDialog = () => {
   showRedPacketActionSheet.value = true
+}
+
+// 包装函数：用于弹窗中的红包按钮点击
+const handleRedPackClick = (closePopover: () => void) => {
+  openRedPackDialog()
+  closePopover()
 }
 
 const selectRedPacketType = (type: 'btc' | 'mvc' | 'token') => {

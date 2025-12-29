@@ -3,7 +3,7 @@
     <MessageList @quote="val => (quote.val = val)" ref="MessageListRef" />
   </div>
 
-  <div class="fixed bottom-0 left-0 right-0 px-4 lg:absolute">
+  <div class="fixed bottom-0 left-0 right-0 px-4 pt-4 lg:absolute bg-[#FFFFFF] dark:bg-gray-900">
     <TheInput
       v-if="type === 'allowed'"
       v-model:quote="quote.val"

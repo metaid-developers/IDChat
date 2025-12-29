@@ -54,9 +54,9 @@ let vConsoleInstance: any = null
 const initVConsoleForDebug = async (address: string) => {
   if (DEBUG_ADDRESSES.includes(address) && !vConsoleInstance) {
     try {
-      const VConsole = (await import('vconsole')).default
-      vConsoleInstance = new VConsole()
-      console.log('🔧 VConsole 已为调试地址启用:', address)
+      // const VConsole = (await import('vconsole')).default
+      // vConsoleInstance = new VConsole()
+      // console.log('🔧 VConsole 已为调试地址启用:', address)
     } catch (error) {
       console.error('加载 VConsole 失败:', error)
     }
