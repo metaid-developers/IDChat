@@ -3,7 +3,7 @@
     :model-value="modelValue"
     :show-close="false"
     :with-header="false"
-    :size="'360px'"
+    :size="drawerSize"
     :append-to-body="true"
     :lock-scroll="false"
     :close-on-click-modal="false"
@@ -528,6 +528,14 @@ const simpleTalkStore = useSimpleTalkStore()
 const userStore = useUserStore()
 const muteNotifyLoading=ref(false)
 const router = useRouter()
+
+// 响应式抽屉宽度，手机上最大 95vw
+const drawerSize = computed(() => {
+  if (typeof window !== 'undefined' && window.innerWidth < 400) {
+    return '95vw'
+  }
+  return '360px'
+})
 
 const scrollContainer = ref<HTMLElement | null>(null)
 const infiniteScrollRef = ref<{ resetLoading: () => void } | null>(null)

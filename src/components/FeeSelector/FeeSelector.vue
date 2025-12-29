@@ -21,7 +21,7 @@
     </div>
 
     <!-- 费率信息 -->
-    <div class="fee-info flex flex-col leading-tight">
+    <div class="fee-info flex flex-col items-center justify-center leading-tight">
       <span class="fee-value text-sm font-medium text-dark-800 dark:text-gray-100">{{
         currentFeeRate
       }}</span>
@@ -57,7 +57,7 @@ const currentFeeRate = computed(() => {
 const feeUnit = computed(() => {
   const chain = chainStore.state.currentChain
   if (chain === 'btc') return 'sat/vB'
-  if (chain === 'doge') return 'sat/vB'
+  if (chain === 'doge') return 'sats/kB'
   return 'sats/b'
 })
 

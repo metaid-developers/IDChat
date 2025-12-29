@@ -106,7 +106,7 @@ function getDefaultConfig(): AppRuntimeConfig {
     chatApi: '/chat-api',
     chatNotify: '',
     chatWs: '',
-    chatWsPath: '/socket',
+    chatWsPath: '',
   }
 
   return {
@@ -249,6 +249,10 @@ export async function loadRuntimeConfig(): Promise<AppRuntimeConfig> {
 function normalizeConfig(config: any): AppRuntimeConfig {
   const defaultConfig = getDefaultConfig()
 
+  // 辅助函数：检测是否是完整URL
+  const isFullUrl = (url: string) =>
+    url && (url.startsWith('http://') || url.startsWith('https://'))
+
   // 如果配置中有新的基础URL格式
   if (config.api?.metaSoBaseURL && config.api?.metaFSBaseURL && config.api?.paths) {
     const metaSoBaseURL = config.api.metaSoBaseURL
@@ -256,19 +260,26 @@ function normalizeConfig(config: any): AppRuntimeConfig {
     const paths = config.api.paths
 
     // 计算完整URL（向后兼容）
+    // 如果 paths 中的值已经是完整URL，则直接使用；否则拼接 baseURL
     config.api = {
       ...defaultConfig.api,
       ...config.api,
       metaSoBaseURL,
       metaFSBaseURL,
       paths,
-      fileApi: `${metaFSBaseURL}${paths.fileApi || ''}`,
-      avatarContentApi: `${metaFSBaseURL}${paths.avatarContentApi || ''}`,
-      metafileIndexerApi: `${metaFSBaseURL}${paths.metafileIndexerApi || ''}`,
-      chatApi: `${metaSoBaseURL}${paths.chatApi || ''}`,
-      chatNotify: `${metaSoBaseURL}${paths.chatNotify || ''}`,
-      chatWs: `${metaSoBaseURL}${paths.chatWs || ''}`,
-      chatWsPath: paths.chatWsPath || '/socket',
+      fileApi: isFullUrl(paths.fileApi) ? paths.fileApi : `${metaFSBaseURL}${paths.fileApi || ''}`,
+      avatarContentApi: isFullUrl(paths.avatarContentApi)
+        ? paths.avatarContentApi
+        : `${metaFSBaseURL}${paths.avatarContentApi || ''}`,
+      metafileIndexerApi: isFullUrl(paths.metafileIndexerApi)
+        ? paths.metafileIndexerApi
+        : `${metaFSBaseURL}${paths.metafileIndexerApi || ''}`,
+      chatApi: isFullUrl(paths.chatApi) ? paths.chatApi : `${metaSoBaseURL}${paths.chatApi || ''}`,
+      chatNotify: isFullUrl(paths.chatNotify)
+        ? paths.chatNotify
+        : `${metaSoBaseURL}${paths.chatNotify || ''}`,
+      chatWs: isFullUrl(paths.chatWs) ? paths.chatWs : `${metaSoBaseURL}${paths.chatWs || ''}`,
+      chatWsPath: paths.chatWsPath || '',
       showNowHost: metaSoBaseURL,
     }
   }

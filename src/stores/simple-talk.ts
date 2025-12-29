@@ -3283,6 +3283,18 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
       console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
 
+      // 计算未读消息数量
+      const serverLastIndex = channel.lastMessage?.index || 0
+      const unreadCount = serverLastIndex - lastReadIndex
+      const UNREAD_AUTO_SCROLL_THRESHOLD = 5 // 未读消息数量在此范围内时直接加载最新消息
+      
+      // 如果未读消息数量 <= 5 条，直接加载最新消息
+      if (unreadCount >= 0 && unreadCount <= UNREAD_AUTO_SCROLL_THRESHOLD) {
+        console.log(`📜 未读消息数量在阈值内 (${unreadCount} <= ${UNREAD_AUTO_SCROLL_THRESHOLD})，直接加载最新消息`)
+        await this.loadNewestMessages(channelId)
+        return
+      }
+
       // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
       const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
       console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
@@ -3292,7 +3304,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
       
       // 4. 检测服务端数据源是否切换（本地消息 index 远大于服务端 lastMessage.index）
-      const serverLastIndex = channel.lastMessage?.index || 0
       const localMaxIndex = localMessages.length > 0 
         ? Math.max(...localMessages.map(m => m.index || 0)) 
         : 0
@@ -3448,6 +3459,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         startIndex = nearestArrayIndex
         endIndex = Math.min(sortedMessages.length - 1, nearestArrayIndex + 19)
         console.log(`📖 计算出的消息范围: 数组位置 [${startIndex}-${endIndex}], index范围 [${sortedMessages[startIndex]?.index}-${sortedMessages[endIndex]?.index}]`)
+      } else if (lastReadIndex === 0 && sortedMessages.length > 0) {
+        // lastReadIndex 为 0，表示没有已读记录或全部已读，返回最新的20条消息
+        console.log(`📖 lastReadIndex 为 0，返回最新的消息`)
+        startIndex = Math.max(0, sortedMessages.length - 20)
+        endIndex = sortedMessages.length - 1
       } else {
          return { messages: [], readMessage: null }
       }
@@ -3658,44 +3674,46 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     },
 
     /**
-     * 获取服务器消息
+     * 获取服务器最新消息
      */
     async fetchServerMessages(channelId: string, channel: SimpleChannel): Promise<UnifiedChatMessage[]> {
       let serverMessages: any[] = []
       
       try {
+        // 计算从哪个 index 开始获取最新消息
+        // 使用 lastMessage.index 来获取最新的消息，而不是 cursor: '0'
+        const lastMessageIndex = channel.lastMessage?.index || 0
+        const startIndex = Math.max(0, lastMessageIndex - 49) // 获取最新50条消息
+        
         if (channel.type === 'group') {
-          // 群聊消息
-          console.log(`🌐 获取群聊 ${channelId} 的服务端消息...`)
-          const { getChannelMessages } = await import('@/api/talk')
-          const result: UnifiedChatResponseData = await getChannelMessages({
+          // 群聊消息 - 使用 index 方式获取最新消息
+          console.log(`🌐 获取群聊 ${channelId} 的服务端最新消息... startIndex=${startIndex}`)
+          const { getChannelNewestMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getChannelNewestMessages({
             groupId: channelId,
-            metaId: this.selfMetaId,
-            cursor: '0',
-            size: '50' // 增加获取数量以减少请求次数
+            startIndex: String(startIndex),
+            size: '50'
           })
           serverMessages = result.list || []
           console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'sub-group') {
-          // 子群聊消息 - 使用 channelId 而不是 parentGroupId
-          console.log(`🌐 获取子群聊 ${channelId} 的服务端消息...`)
-          const { getSubChannelMessages } = await import('@/api/talk')
-          const result: UnifiedChatResponseData = await getSubChannelMessages({
-            channelId: channelId, // 子群聊使用自己的channelId作为groupId
-            metaId: this.selfMetaId,
-            cursor: '0',
-            size: '20'
+          // 子群聊消息 - 使用 index 方式获取最新消息
+          console.log(`🌐 获取子群聊 ${channelId} 的服务端最新消息... startIndex=${startIndex}`)
+          const { getSubChannelNewestMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getSubChannelNewestMessages({
+            channelId: channelId,
+            startIndex: String(startIndex),
+            size: '50'
           })
           serverMessages = result.list || []
           console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'private') {
-          // 私聊消息
-          console.log(`🌐 获取私聊 ${channelId} 的服务端消息...`)
-          const { getPrivateChatMessages } = await import('@/api/talk')
-          const result: UnifiedChatResponseData = await getPrivateChatMessages({
+          // 私聊消息 - 使用 index 方式获取最新消息
+          console.log(`🌐 获取私聊 ${channelId} 的服务端最新消息... startIndex=${startIndex}`)
+          const result: UnifiedChatResponseData = await getNewstPrivateChatMessages({
             metaId: this.selfMetaId,
             otherMetaId: channelId,
-            cursor: '0',
+            startIndex: String(startIndex),
             size: '50'
           })
           serverMessages = result.list || []

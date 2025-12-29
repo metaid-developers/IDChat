@@ -201,7 +201,7 @@
               <div class="fee-label">ECO</div>
               <div class="flex items-center gap-1">
                 <div class="fee-value">{{ chainStore.state.doge.economyFee }}</div>
-                <div class="fee-time">sat/vB</div>
+                <div class="fee-time">sats/kB</div>
               </div>
             </div>
 
@@ -216,7 +216,7 @@
               <div class="fee-label">Normal</div>
               <div class="flex items-center gap-1">
                 <div class="fee-value">{{ chainStore.state.doge.halfHourFee }}</div>
-                <div class="fee-time">sat/vB</div>
+                <div class="fee-time">sats/kB</div>
               </div>
             </div>
 
@@ -239,7 +239,7 @@
                   @click.stop
                 />
                 <div v-else class="fee-value">{{ chainStore.state.doge.customizeFee }}</div>
-                <div class="fee-time">sat/vB</div>
+                <div class="fee-time">sats/kB</div>
               </div>
             </div>
           </div>

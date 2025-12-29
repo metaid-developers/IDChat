@@ -123,9 +123,7 @@
           <Icon v-else name="doge" class="chain-icon-menu w-[24px] h-[24px]" />
           <div class="fee-info">
             <span class="fee-rate-menu">{{ currentFeeRate }}</span>
-            <span class="fee-unit-menu"
-              >{{ chainStore.state.currentChain === 'btc' ? 'sat/vB' : 'sats/b' }}
-            </span>
+            <span class="fee-unit-menu">{{ feeUnit }}</span>
           </div>
           <el-icon><CaretRight class="arrow-icon-menu"/></el-icon>
         </div>
@@ -218,6 +216,13 @@ const currentFeeRate = computed(() => {
   const chainData = chainStore.state[currentChain]
   const selectedFeeType = chainData.selectedFeeType
   return chainData[selectedFeeType]
+})
+
+const feeUnit = computed(() => {
+  const chain = chainStore.state.currentChain
+  if (chain === 'btc') return 'sat/vB'
+  if (chain === 'doge') return 'sats/kB'
+  return 'sats/b'
 })
 
 // Handle fee confirmation
