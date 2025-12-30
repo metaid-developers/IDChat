@@ -1119,4 +1119,27 @@ watch(
     }
   }
 }
+
+// 覆盖 FeeSelector 组件内的文字大小
+:deep(.fee-selector) {
+  gap: 2px !important;
+  padding: 2px 4px !important;
+  min-width: 40px !important;
+  
+  .chain-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  .fee-info {
+    min-width: 28px !important;
+  }
+  
+  .fee-value {
+    font-size: 9px !important;
+  }
+  .fee-unit {
+    font-size: 7px !important;
+  }
+}
 </style>
