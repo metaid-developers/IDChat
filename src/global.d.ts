@@ -207,5 +207,19 @@ interface Window {
     saveBase64Image: (base64string: string) => Promise<any>
     setAppBadge: (count: number) => void
     getPKHByPath: (params: { path: string }) => Promise<string>
+    getGlobalMetaid?: () => Promise<{
+      mvc?: {
+        address: string
+        globalMetaId: string
+      }
+      btc?: {
+        address: string
+        globalMetaId: string
+      }
+      doge?: {
+        address: string
+        globalMetaId: string
+      }
+    }>
   }
 }

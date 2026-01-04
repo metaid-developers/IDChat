@@ -164,7 +164,49 @@ export const useRootStore = defineStore('root', {
     async checkBtcAddressSameAsMvc() {
       const connectionStore = useConnectionStore()
       const userStore = useUserStore()
-      const mvcAddress = await connectionStore.adapter.getMvcAddress() //userStore.last.address
+
+      // 优先使用 getGlobalMetaid 方法检查
+      if (window.metaidwallet?.getGlobalMetaid) {
+        try {
+          const globalMetaIdInfo = await window.metaidwallet.getGlobalMetaid()
+          if (globalMetaIdInfo?.mvc?.globalMetaId) {
+            const mvcGlobalMetaId = globalMetaIdInfo.mvc.globalMetaId
+            const btcGlobalMetaId = globalMetaIdInfo.btc?.globalMetaId
+            const dogeGlobalMetaId = globalMetaIdInfo.doge?.globalMetaId
+
+            const mismatchedChains: string[] = []
+            if (btcGlobalMetaId && btcGlobalMetaId !== mvcGlobalMetaId) {
+              mismatchedChains.push('BTC')
+            }
+            if (dogeGlobalMetaId && dogeGlobalMetaId !== mvcGlobalMetaId) {
+              mismatchedChains.push('DOGE')
+            }
+
+            if (mismatchedChains.length > 0) {
+              throw new Error(
+                `${i18n.global.t('globalMetaIdMismatchError', {
+                  chains: mismatchedChains.join(', '),
+                })}`
+              )
+            }
+            return
+          }
+        } catch (e) {
+          // 如果是我们抛出的错误，继续抛出
+          if (
+            e.message?.includes(
+              i18n.global.t('globalMetaIdMismatchError', { chains: '' }).replace(', ', '')
+            )
+          ) {
+            throw e
+          }
+          // 其他错误则降级使用旧方法
+          console.warn('getGlobalMetaid not supported, fallback to legacy check', e)
+        }
+      }
+
+      // 降级使用原有方法
+      const mvcAddress = await connectionStore.adapter.getMvcAddress()
       const btcAddress = await connectionStore.adapter.getBtcAddress()
       if (mvcAddress && btcAddress && mvcAddress !== btcAddress) {
         throw new Error(`${i18n.global.t('btcSameAsMvcError')}`)

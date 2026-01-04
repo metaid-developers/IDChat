@@ -1481,6 +1481,7 @@
     "mobile_save_tip": "Please long press the image and select 'Save to Photos'"
   },
   "btcSameAsMvcError": "The current Metalet BTC address does not match the MVC address. Please switch to a BTC address that matches the MVC address before proceeding",
+  "globalMetaIdMismatchError": "The current {chains} address type does not match MVC. Please switch the {chains} address type in your wallet before proceeding",
   "redpack_claim_over": "The redpacket has been claimed over",
   "share_group_member": "members",
   "share_group_creator": "creator",

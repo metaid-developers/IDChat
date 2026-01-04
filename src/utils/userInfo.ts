@@ -82,6 +82,20 @@ declare global {
           creatorPubkey: string
         }>
       }
+      getGlobalMetaid?: () => Promise<{
+        mvc?: {
+          address: string
+          globalMetaId: string
+        }
+        btc?: {
+          address: string
+          globalMetaId: string
+        }
+        doge?: {
+          address: string
+          globalMetaId: string
+        }
+      }>
     }
   }
 }

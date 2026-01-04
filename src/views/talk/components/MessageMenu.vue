@@ -1,7 +1,10 @@
 <template>
   <div
     class="message-menu absolute bg-white dark:bg-gray-700  -top-[5PX] px-1.5 py-0.5 rounded-xl shadow hidden lg:group-hover:flex hover:shadow-md transition-all duration-200 z-10"
-    :class="[{ '!flex': showMenu },isMyMessage ? 'left-0  translate-x-4 ' : 'right-0  -translate-x-4 ' ]"
+    :class="[
+      { '!flex': showMenu },
+      isMyMessage ? 'left-0  translate-x-4 ' : 'right-0  -translate-x-4 ',
+    ]"
     v-if="actions.length > 0"
   >
     <button
@@ -35,6 +38,7 @@ import { isMobile } from '@/stores/root'
 import { ElMessage } from 'element-plus'
 import BTC from '@/assets/images/btc.png'
 import MVC from '@/assets/images/icon_mvc.png'
+import DOGE from '@/assets/icons/doge.svg?url'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 const i18n = useI18n()
 
@@ -45,7 +49,7 @@ const props = defineProps([
   'translatedContent',
   'messageId',
   'isSubChannelMsg',
-  'isMyMessage'
+  'isMyMessage',
 ])
 
 const emit = defineEmits<{
@@ -167,14 +171,16 @@ const actions = computed(() => {
           message?.encryption,
           message?.protocol
         )
-        console.log("decryptedMessageContent",decryptedMessageContent)
-     
-        const fromSubChannel=simpleTalk.activeChannel?.type == 'sub-group'
+        console.log('decryptedMessageContent', decryptedMessageContent)
+
+        const fromSubChannel = simpleTalk.activeChannel?.type == 'sub-group'
         if (containsString(props.message.protocol, NodeName.SimpleMsg)) {
           data = {
             communityId: '', // simpleTalk.activeCommunityId,
-            groupId:fromSubChannel ? simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
-            channelId:fromSubChannel ? simpleTalk.activeChannelId : '',
+            groupId: fromSubChannel
+              ? simpleTalk.activeChannel?.parentGroupId
+              : simpleTalk.activeChannelId,
+            channelId: fromSubChannel ? simpleTalk.activeChannelId : '',
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -192,8 +198,10 @@ const actions = computed(() => {
           data = {
             communityId: '', // talk.activeCommunityId,
             // groupId: simpleTalk.activeChannelId,
-            groupId:fromSubChannel ? simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
-            channelId:fromSubChannel ? simpleTalk.activeChannelId : '',
+            groupId: fromSubChannel
+              ? simpleTalk.activeChannel?.parentGroupId
+              : simpleTalk.activeChannelId,
+            channelId: fromSubChannel ? simpleTalk.activeChannelId : '',
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -211,8 +219,10 @@ const actions = computed(() => {
           data = {
             communityId: '', // talk.activeCommunityId,
             // groupId: simpleTalk.activeChannelId,
-            groupId:fromSubChannel ? simpleTalk.activeChannel?.parentGroupId : simpleTalk.activeChannelId,
-            channelId:fromSubChannel ? simpleTalk.activeChannelId : '',
+            groupId: fromSubChannel
+              ? simpleTalk.activeChannel?.parentGroupId
+              : simpleTalk.activeChannelId,
+            channelId: fromSubChannel ? simpleTalk.activeChannelId : '',
             userMetaId: message.userInfo.metaid,
             comment: '',
             message: {
@@ -228,7 +238,7 @@ const actions = computed(() => {
           }
         }
         // 复制该消息内容到剪贴板
-        
+
         emit('toBuzz', data)
       },
     })
@@ -258,14 +268,23 @@ const actions = computed(() => {
 
   if (props.message.txId) {
     if (!containsString(props.message?.protocol, NodeName.SimpleGroupOpenLuckybag)) {
+      // 根据链类型选择不同的图标
+      const chainIcon =
+        props.message.chain == ChatChain.btc
+          ? BTC
+          : props.message.chain == ChatChain.doge
+          ? DOGE
+          : MVC
       actions.push({
         name: 'Talk.MessageMenu.tx',
         icon: 'tx',
-        suffixIcon: props.message.chain == ChatChain.btc ? BTC : MVC,
+        suffixIcon: chainIcon,
         action: () => {
           // 跳转到该消息对应的交易
           if (props.message.chain == ChatChain.btc) {
             window.open(`https://mempool.space/tx/${props.message.txId}`, '_blank')
+          } else if (props.message.chain == ChatChain.doge) {
+            window.open(`https://dogechain.info/tx/${props.message.txId}`, '_blank')
           } else {
             window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
           }
@@ -273,13 +292,26 @@ const actions = computed(() => {
       })
     } else {
       if (props.message.txId.length === 64) {
+        // 根据链类型选择不同的图标
+        const chainIcon =
+          props.message.chain == ChatChain.btc
+            ? BTC
+            : props.message.chain == ChatChain.doge
+            ? DOGE
+            : MVC
         actions.push({
           name: 'Talk.MessageMenu.tx',
           icon: 'tx',
-          suffixIcon: props.message.chain == ChatChain.btc ? BTC : MVC,
+          suffixIcon: chainIcon,
           action: () => {
             // 跳转到该消息对应的交易
-            window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
+            if (props.message.chain == ChatChain.btc) {
+              window.open(`https://mempool.space/tx/${props.message.txId}`, '_blank')
+            } else if (props.message.chain == ChatChain.doge) {
+              window.open(`https://dogechain.info/tx/${props.message.txId}`, '_blank')
+            } else {
+              window.open(`https://mvcscan.com/tx/${props.message.txId}`, '_blank')
+            }
           },
         })
       }

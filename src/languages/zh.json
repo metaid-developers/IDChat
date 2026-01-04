@@ -1481,6 +1481,7 @@
     "mobile_save_tip": "请长按图片选择\"保存到相册\""
   },
   "btcSameAsMvcError": "Metalet BTC当前地址与MVC地址不一致，请切换BTC地址与MVC地址一致后再进行使用",
+  "globalMetaIdMismatchError": "当前 {chains} 地址类型与MVC不一致，请在钱包中切换 {chains} 的地址类型后再进行使用",
   "redpack_claim_over": "红包已抢完！",
   "share_group_member": "成员数",
   "share_group_creator": "创建者",
