@@ -298,7 +298,7 @@ import ChatImage from '@/components/ChatImage/ChatImage.vue'
 import UserAvatar from '@/components/UserAvatar/UserAvatar.vue'
 import Icon from '@/components/Icon/Icon.vue'
 import { formatTimestamp } from '@/utils/talk'
-import { getUserInfoByAddress } from '@/api/man'
+import { getUserInfoByAddress, getUserInfoByGlobalMetaId } from '@/api/man'
 import { useRootStore } from '@/stores/root'
 import { openAppBrowser } from '@/wallet-adapters/metalet'
 
@@ -451,27 +451,37 @@ const fetchMetaFileInfo = async (pinId: string): Promise<any> => {
 }
 
 // 获取用户信息
-const fetchUserInfo = async (address: string): Promise<UserInfo> => {
-  if (userInfoCache.value[address]) {
-    return userInfoCache.value[address]
+const fetchUserInfo = async (addressOrGlobalMetaId: string): Promise<UserInfo> => {
+  if (userInfoCache.value[addressOrGlobalMetaId]) {
+    return userInfoCache.value[addressOrGlobalMetaId]
   }
 
   try {
-    const userInfo = await getUserInfoByAddress(address)
+    // 如果看起来像 globalMetaId（长度 > 40），优先使用 globalMetaId 查询
+    let userInfo
+    if (addressOrGlobalMetaId.length > 40) {
+      try {
+        userInfo = await getUserInfoByGlobalMetaId(addressOrGlobalMetaId)
+      } catch {
+        userInfo = await getUserInfoByAddress(addressOrGlobalMetaId)
+      }
+    } else {
+      userInfo = await getUserInfoByAddress(addressOrGlobalMetaId)
+    }
     const info: UserInfo = {
-      name: userInfo.name || address.slice(0, 8),
+      name: userInfo.name || addressOrGlobalMetaId.slice(0, 8),
       avatar: userInfo.avatar || '',
       metaid: userInfo.metaid || '',
     }
-    userInfoCache.value[address] = info
+    userInfoCache.value[addressOrGlobalMetaId] = info
     return info
   } catch (error) {
     const info: UserInfo = {
-      name: address.slice(0, 8),
+      name: addressOrGlobalMetaId.slice(0, 8),
       avatar: '',
       metaid: '',
     }
-    userInfoCache.value[address] = info
+    userInfoCache.value[addressOrGlobalMetaId] = info
     return info
   }
 }

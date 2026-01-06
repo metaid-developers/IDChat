@@ -623,7 +623,7 @@ import { DB } from '@/utils/db'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
-import { getUserInfoByAddress } from '@/api/man'
+import { getUserInfoByAddress, getUserInfoByGlobalMetaId } from '@/api/man'
 import { useRootStore } from '@/stores/root'
 import {openAppBrowser} from '@/wallet-adapters/metalet'
 import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
@@ -758,7 +758,9 @@ const translatedContent = ref('')
 /** 翻译 end */
 
 const senderName = computed(() => {
-  if (props.message.from === userStore.user?.metaId) {
+  // 使用 globalMetaId 判断（支持多链）
+  const selfGlobalMetaId = userStore.last?.globalMetaId
+  if (props.message.fromGlobalMetaId === selfGlobalMetaId) {
     return userStore.user?.name
   }
 
@@ -775,7 +777,9 @@ const messageIsMock = computed(() => {
 })
 
 const senderMetaName = computed(() => {
-  if (props.message.from === userStore.user?.metaId) {
+  // 使用 globalMetaId 判断（支持多链）
+  const selfGlobalMetaId = userStore.last?.globalMetaId
+  if (props.message.fromGlobalMetaId === selfGlobalMetaId) {
     return userStore.user?.metaName
   }
 
@@ -1060,19 +1064,33 @@ const handleMetaAppLinkClick = () => {
 }
 
 // 获取 Pin 创建者用户信息
-const fetchPinUserInfo = async (address: string) => {
+const fetchPinUserInfo = async (addressOrGlobalMetaId: string, globalMetaId?: string) => {
+  const cacheKey = globalMetaId || addressOrGlobalMetaId
   try {
-    const userInfo = await getUserInfoByAddress(address)
-    pinUserInfo.value[address] = {
-      name: userInfo.name || address.slice(0, 8),
+    // 优先使用 globalMetaId 查询
+    let userInfo
+    if (globalMetaId) {
+      userInfo = await getUserInfoByGlobalMetaId(globalMetaId)
+    } else if (addressOrGlobalMetaId.length > 40) {
+      // 如果看起来像 globalMetaId（长度 > 40），尝试用 globalMetaId 查询
+      try {
+        userInfo = await getUserInfoByGlobalMetaId(addressOrGlobalMetaId)
+      } catch {
+        userInfo = await getUserInfoByAddress(addressOrGlobalMetaId)
+      }
+    } else {
+      userInfo = await getUserInfoByAddress(addressOrGlobalMetaId)
+    }
+    pinUserInfo.value[cacheKey] = {
+      name: userInfo.name || addressOrGlobalMetaId.slice(0, 8),
       avatar: userInfo.avatar,
       metaid: userInfo.metaid
     }
   } catch (error) {
     console.error('Failed to fetch user info:', error)
     // 设置默认值
-    pinUserInfo.value[address] = {
-      name: address.slice(0, 8),
+    pinUserInfo.value[cacheKey] = {
+      name: addressOrGlobalMetaId.slice(0, 8),
       avatar: '',
       metaid: ''
     }
@@ -1603,7 +1621,11 @@ const redEnvelopeMessage = computed(() => {
 })
 
 const isMyMessage = computed(() => {
-  return userStore.last?.metaid === props.message.from
+  // 使用 globalMetaId 判断是否是自己的消息（支持多链 MVC/BTC/DOGE）
+  const selfGlobalMetaId = userStore.last?.globalMetaId
+  // 群聊消息使用 message.globalMetaId，私聊消息使用 message.fromGlobalMetaId
+  const messageGlobalMetaId = props.message.globalMetaId || props.message.fromGlobalMetaId
+  return selfGlobalMetaId === messageGlobalMetaId
 })
 
 // 卡片消息签名成功处理
@@ -1618,7 +1640,11 @@ const handleCardMsgError = (error: Error) => {
 }
 
 const messageAvatarImage = computed(() => {
-  if (props.message.from === userStore.last?.metaid) {
+  // 使用 globalMetaId 判断（支持多链）
+  const selfGlobalMetaId = userStore.last?.globalMetaId
+  // 群聊消息使用 message.globalMetaId，私聊消息使用 message.fromGlobalMetaId
+  const messageGlobalMetaId = props.message.globalMetaId || props.message.fromGlobalMetaId
+  if (messageGlobalMetaId === selfGlobalMetaId) {
     return userStore.last?.avatar
   }
 

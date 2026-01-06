@@ -524,6 +524,12 @@ const closeActionSheet = () => {
 const handleImageChange = (e: Event) => {
   console.log('📸 handleImageChange triggered')
 
+  // 暂时禁用 DOGE 链发送图片功能
+  if (chainStore.state.currentChain === 'doge') {
+    ElMessage.warning(i18n.t('doge_image_not_supported') || 'DOGE 链暂不支持发送图片')
+    return
+  }
+
   rootStore.checkWebViewBridge()
   if (rootStore.isWebView) {
     needWebRefresh({ isNeed: false })
@@ -708,7 +714,7 @@ const mentionDropdownPosition = ref<{
   width?: number
 }>({ left: 0 })
 const mentionDropdownRef = ref<any>(null)
-const currentMentions = ref<Array<{ metaId: string; name: string }>>([])
+const currentMentions = ref<Array<{ globalMetaId: string; name: string }>>([]) // 使用 globalMetaId
 const defaultMembersCache = ref<any[]>([]) // 缓存默认成员列表
 
 // 处理输入事件，检测 @ 符号
@@ -853,9 +859,9 @@ const handleMentionSelect = (user: any) => {
   const mentionText = `@${user.userInfo.name} `
   chatInput.value = beforeMention + mentionText + afterMention
 
-  // 记录被提及的用户信息
+  // 记录被提及的用户信息 - 使用 globalMetaId
   currentMentions.value.push({
-    metaId: user.metaId,
+    globalMetaId: user.globalMetaId,
     name: user.userInfo.name,
   })
 

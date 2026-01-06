@@ -192,8 +192,8 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 interface SocketConfig {
   url: string
   path: string
-  metaid: string
-  type:'app' | 'pc'
+  metaid: string // 参数名改为 metaid（小写），值使用 globalMetaId
+  type: 'app' | 'pc'
   heartbeatInterval?: number // 心跳间隔（毫秒）
   heartbeatTimeout?: number // 心跳超时时间（毫秒）
 }
@@ -207,7 +207,7 @@ interface MessageData {
 interface HeartbeatData {
   type: 'heartbeat'
   timestamp: number
-  metaid: string
+  metaid: string // 参数名改为 metaid（小写）
 }
 
 class SocketIOClient {
@@ -234,8 +234,8 @@ class SocketIOClient {
       this.socket = io(this.config.url, {
         path: this.config.path,
         query: {
-          metaid: this.config.metaid,
-          type:this.config.type
+          metaid: this.config.metaid, // 参数名改为 metaid（小写），值使用 globalMetaId
+          type: this.config.type,
         },
       })
 

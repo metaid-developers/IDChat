@@ -182,7 +182,7 @@ export async function createPinWithDoge<T extends keyof InscribeResultForIfBroad
   }
 
   console.log('doge inscribe data', JSON.stringify(data))
-
+  debugger
   const res = await window.metaidwallet.doge.inscribe({
     data: request,
     options: {

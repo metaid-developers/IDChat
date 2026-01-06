@@ -205,7 +205,7 @@ const appLoginSuccessHandler= async (data: any) => {
               await connectMetalet()
               //  ElMessage.success('调用LoginSuccess成功')
               if (!userStore.last.chatpubkey) {
-                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.globalMetaId)
                 if (ecdhRes?.chatPublicKey) {
                   userStore.updateUserInfo({
                     chatpubkey: ecdhRes?.chatPublicKey
@@ -250,7 +250,7 @@ const appAccountSwitchHandler= async(data:any)=>{
               await connectMetalet()
                //ElMessage.success('调用onAccountSwitch成功')
               if (!userStore.last.chatpubkey) {
-                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.metaid)
+                const ecdhRes = await GetUserEcdhPubkeyForPrivateChat(userStore.last.globalMetaId)
                 if (ecdhRes?.chatPublicKey) {
                   userStore.updateUserInfo({
                     chatpubkey: ecdhRes?.chatPublicKey
@@ -390,6 +390,14 @@ async function connectMetalet() {
 
 
 onMounted(async () => {
+
+  // 确保老用户有正确的 globalMetaId
+  if (userStore.last?.address) {
+    const hasGlobalMetaId = await userStore.ensureGlobalMetaId()
+    if (!hasGlobalMetaId) {
+      console.warn('⚠️ 无法获取 globalMetaId，部分功能可能受限')
+    }
+  }
 
   let retryCount = 0
   let timeoutId: NodeJS.Timeout | undefined

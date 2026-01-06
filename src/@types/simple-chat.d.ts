@@ -40,6 +40,7 @@ export interface BlockedChats {
 
 export interface GroupUserRoleInfo {
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   address: string
   userInfo: ChatUserInfo
   groupId: string
@@ -59,6 +60,7 @@ export interface MemberItem {
   permission: RuleOp[]
   address?: string
   metaId?: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   timeStr?: string
   timestamp?: number
   userInfo?: {
@@ -68,6 +70,7 @@ export interface MemberItem {
     chatPublicKey: string
     chatPublicKeyId?: string // 改为可选
     metaid: string
+    globalMetaId?: string // 新增：全局 MetaId
     name: string
   }
   [key: string]: unknown
@@ -216,6 +219,7 @@ export interface SimpleChannel {
 // 简化的用户信息
 export interface SimpleUser {
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   name: string
   avatar?: string
   address?: string
@@ -244,6 +248,7 @@ export interface SocketEvents {
 // 统一的聊天消息用户信息
 export interface ChatUserInfo {
   metaid: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   address: string
   name: string
   avatar?: string
@@ -279,7 +284,8 @@ export interface UnifiedChatMessage {
   // 通用字段
   txId: string // 交易ID
   pinId: string // Pin ID
-  metaId: string // 发送者 metaId
+  metaId: string // 发送者 metaId（旧字段）
+  globalMetaId?: string // 发送者 globalMetaId（新字段，群聊 API 直接返回）
   address: string // 发送者地址
   userInfo: ChatUserInfo // 发送者用户信息
   nickName: string // 昵称，通常为空字符串
@@ -292,7 +298,7 @@ export interface UnifiedChatMessage {
   data: any // 额外数据，通常为 null
   replyPin: string // 回复消息的 pin，没有回复时为空字符串
   replyInfo: ChatReplyInfo | null // 回复消息的详细信息，没有回复时为 null
-  replyMetaId: string // 回复的 metaId，没有回复时为空字符串
+  replyMetaId: string // 回复的 globalMetaId，没有回复时为空字符串
   timestamp: number // 时间戳
   params: string // 参数，通常为空字符串
   chain: string // 区块链类型，如 "mvc" 或 "btc"
@@ -303,9 +309,9 @@ export interface UnifiedChatMessage {
   mention: Array<string>
 
   // 私聊特有字段
-  from?: string // 私聊：发送者的 metaId
+  fromGlobalMetaId?: string // 私聊：发送者的 globalMetaId
   fromUserInfo?: ChatUserInfo // 私聊：发送者信息
-  to?: string // 私聊：接收者的 metaId
+  toGlobalMetaId?: string // 私聊：接收者的 globalMetaId
   toUserInfo?: ChatUserInfo // 私聊：接收者信息
 
   // 群聊特有字段
@@ -333,12 +339,17 @@ export interface UnifiedChatApiResponse {
 export const isPrivateChatMessage = (
   message: UnifiedChatMessage
 ): message is UnifiedChatMessage & {
-  from: string
+  fromGlobalMetaId: string
   fromUserInfo: ChatUserInfo
-  to: string
+  toGlobalMetaId: string
   toUserInfo: ChatUserInfo
 } => {
-  return !!(message.from && message.fromUserInfo && message.to && message.toUserInfo)
+  return !!(
+    message.fromGlobalMetaId &&
+    message.fromUserInfo &&
+    message.toGlobalMetaId &&
+    message.toUserInfo
+  )
 }
 
 // 类型守护函数 - 判断是否为群聊消息
@@ -367,6 +378,7 @@ export type GroupChatApiResponse = UnifiedChatApiResponse
 export interface SearchUserItem {
   type?: 'user'
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   address: string
   userName: string
   avatar: string

@@ -1463,7 +1463,7 @@ const _sendTextMessage = async (messageDto: MessageDto) => {
     avatarType: 'undefined',
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
-    metaId: userStore.last?.metaid || 'undefined',
+    metaId: userStore.last?.globalMetaId || 'undefined', // 只使用 globalMetaId
     nickName: userStore.last?.name || '',
     userInfo: userStore.last,
     timestamp: Date.now(), // 服务端返回的是毫秒，所以模拟需要乘以1000
@@ -1579,9 +1579,9 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     avatarTxId: userStore.last?.avatarId || 'undefined',
     avatarImage: userStore.last?.avatar || '',
     fromAvatarImage: userStore.last?.avatar || '',
-    metaId: userStore.last?.metaid || 'undefined',
+    metaId: userStore.last?.globalMetaId || 'undefined', // 只使用 globalMetaId
     address: userStore.last?.address,
-    from: userStore.last?.metaid,
+    fromGlobalMetaId: userStore.last?.globalMetaId, // 只使用 globalMetaId
     nickName: userStore.last?.name || '',
     fromName: userStore.last?.name || '',
     userInfo: userStore.last || {},
@@ -1592,7 +1592,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
     encryption: encrypt,
     externalEncryption,
     isMock: true,
-    to,
+    toGlobalMetaId: to, // 改为 toGlobalMetaId
     replyInfo: reply,
     protocol: NodeName.SimpleMsg,
     type: 2,
@@ -1611,7 +1611,7 @@ const _sendTextMessageForSession = async (messageDto: MessageDto) => {
       talkStore.addRetryList({ ...messageDto, mockId })
     } else {
       if (tryRes?.txids?.length || tryRes?.revealTxIds?.length) {
-        if (to === userStore.last.metaid) {
+        if (to === userStore.last.globalMetaId) {
           const txId =
             (tryRes?.txids && tryRes?.txids[0]) || (tryRes?.revealTxIds && tryRes?.revealTxIds[0])
           talkStore.updateMessage(mockMessage, txId)
@@ -2173,7 +2173,7 @@ const sendInviteMessage = async (toMetaId: string, inviteUrl: string, sharedSecr
     mockId,
     txId: '',
     pinId: '',
-    metaId: userStore.last?.metaid || '',
+    metaId: userStore.last?.globalMetaId || '', // 只使用 globalMetaId
     address: userStore.last?.address || '',
     userInfo: userStore.last || {},
     nickName: userStore.last?.name || '',
@@ -2194,9 +2194,9 @@ const sendInviteMessage = async (toMetaId: string, inviteUrl: string, sharedSecr
     index: 0,
     mention: [],
     // 私聊特有字段
-    from: userStore.last?.metaid,
+    fromGlobalMetaId: userStore.last?.globalMetaId, // 只使用 globalMetaId
     fromUserInfo: userStore.last || {},
-    to: toMetaId,
+    toGlobalMetaId: toMetaId, // 改为 toGlobalMetaId
     toUserInfo: {},
   }
 
@@ -2334,8 +2334,8 @@ export const batchInviteUsersToGroup = async (params: {
             // URL 编码
             const encodedPasscode = encodeURIComponent(encryptedPasscode)
 
-            // 添加发送者的 metaId,以便接收者可以获取发送者的公钥来解密 passcode
-            const senderMetaId = userStore.last?.metaid
+            // 添加发送者的 globalMetaId,以便接收者可以获取发送者的公钥来解密 passcode
+            const senderMetaId = userStore.last?.globalMetaId // 只使用 globalMetaId
             inviteUrl = `${window.location.origin}${
               window.location.pathname.startsWith('/chat') ? '/chat' : ''
             }/channels/private/${groupId}?passcode=${encodedPasscode}&from=${senderMetaId}`

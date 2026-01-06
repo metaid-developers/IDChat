@@ -22,6 +22,7 @@ export const useUserStore = defineStore('user', {
         followCount: 0,
         isInit: false,
         metaid: '',
+        globalMetaId: '',  // 新增：全局 MetaId，支持多链（MVC/BTC/DOGE）
         name: '',
         nameId: '',
         nftAvatar: '',
@@ -40,7 +41,7 @@ export const useUserStore = defineStore('user', {
     has: (state) => !!state.last,
     isAuthorized: (state) => {
       const connectedStore = useConnectionStore()
-      return !!(state.last.address && state.last.metaid && connectedStore.last.status == 'connected')
+      return !!(state.last.address && state.last.globalMetaId && connectedStore.last.status == 'connected')
     },
 
   },
@@ -68,6 +69,59 @@ export const useUserStore = defineStore('user', {
         this.last={...this.last,...userInfo}
       },
 
+      /**
+       * 初始化用户信息 - 确保老用户有正确的 globalMetaId
+       * 在应用启动时调用，如果用户已登录但没有 globalMetaId，则通过 API 获取
+       */
+      async ensureGlobalMetaId(): Promise<boolean> {
+        // 如果没有登录，跳过
+        if (!this.last?.address) {
+          return false
+        }
+        
+        // 如果已经有 globalMetaId，跳过
+        if (this.last.globalMetaId && this.last.globalMetaId !== this.last.metaid) {
+          console.log('✅ 用户已有 globalMetaId:', this.last.globalMetaId)
+          return true
+        }
+        
+        console.log('🔄 检测到老用户，尝试获取 globalMetaId...')
+        
+        try {
+          // 1. 先尝试从钱包获取
+          if (window.metaidwallet?.getGlobalMetaid) {
+            const globalMetaIdInfo = await window.metaidwallet.getGlobalMetaid()
+            if (globalMetaIdInfo?.mvc?.globalMetaId) {
+              this.last.globalMetaId = globalMetaIdInfo.mvc.globalMetaId
+              console.log('✅ 从钱包获取到 globalMetaId:', this.last.globalMetaId)
+              return true
+            } else if (globalMetaIdInfo?.btc?.globalMetaId) {
+              this.last.globalMetaId = globalMetaIdInfo.btc.globalMetaId
+              console.log('✅ 从钱包获取到 globalMetaId:', this.last.globalMetaId)
+              return true
+            } else if (globalMetaIdInfo?.doge?.globalMetaId) {
+              this.last.globalMetaId = globalMetaIdInfo.doge.globalMetaId
+              console.log('✅ 从钱包获取到 globalMetaId:', this.last.globalMetaId)
+              return true
+            }
+          }
+          
+          // 2. 通过 API 获取
+          const userRes = await getUserInfoByAddress(this.last.address)
+          if (userRes?.globalMetaId) {
+            this.last.globalMetaId = userRes.globalMetaId
+            console.log('✅ 从 API 获取到 globalMetaId:', this.last.globalMetaId)
+            return true
+          }
+          
+          console.warn('⚠️ 无法获取 globalMetaId，用户需要重新登录')
+          return false
+        } catch (e) {
+          console.error('❌ 获取 globalMetaId 失败:', e)
+          return false
+        }
+      },
+
       async setUserInfo(address: string) {
         
       const user: UserInfo = this.last
@@ -86,6 +140,7 @@ export const useUserStore = defineStore('user', {
             followCount: 0,
             isInit: false,
             metaid: '',
+            globalMetaId: '',  // 新增：全局 MetaId
             name: '',
             nameId: '',
             nftAvatar: '',
@@ -102,6 +157,32 @@ export const useUserStore = defineStore('user', {
       }
 
       const userRes = await getUserInfoByAddress(address)
+      
+      // 如果 API 没有返回 globalMetaId，尝试从钱包获取
+      if (!userRes.globalMetaId && window.metaidwallet?.getGlobalMetaid) {
+        try {
+          const globalMetaIdInfo = await window.metaidwallet.getGlobalMetaid()
+          // 优先使用 mvc 链的 globalMetaId，因为 MVC 链是主链
+          if (globalMetaIdInfo?.mvc?.globalMetaId) {
+            userRes.globalMetaId = globalMetaIdInfo.mvc.globalMetaId
+          } else if (globalMetaIdInfo?.btc?.globalMetaId) {
+            userRes.globalMetaId = globalMetaIdInfo.btc.globalMetaId
+          } else if (globalMetaIdInfo?.doge?.globalMetaId) {
+            userRes.globalMetaId = globalMetaIdInfo.doge.globalMetaId
+          }
+        } catch (e) {
+          console.warn('从钱包获取 globalMetaId 失败:', e)
+        }
+      }
+      
+      // 如果最终还是没有 globalMetaId，提示用户重新登录
+      if (!userRes.globalMetaId) {
+        console.error('❌ 无法获取 globalMetaId，请用户重新登录')
+        ElMessage.error('登录信息不完整，请重新登录')
+        this.clearUserInfo()
+        throw new Error('无法获取 globalMetaId，请重新登录')
+      }
+      
       // debugger
       // if(!userRes.chatpubkey){
       //      const res= await getEcdhPublickey()
@@ -111,7 +192,9 @@ export const useUserStore = defineStore('user', {
       // }
       try {
         if (userRes) {
+          // 直接使用 API 返回的 globalMetaId
           this.last = userRes
+          
           if (!this.last.name) {
             console.log(this.last, 'this.last')
             const layoutStore = useLayoutStore()
@@ -160,6 +243,7 @@ export const useUserStore = defineStore('user', {
         followCount: 0,
         isInit: false,
         metaid: '',
+        globalMetaId: '',  // 新增：全局 MetaId
         name: '',
         nameId: '',
         nftAvatar: '',

@@ -47,7 +47,7 @@ interface Props {
   metaName: string
   metaId?: string
   image: string
-  isCustom: boolean
+  isCustom?: boolean
   type?: 'metaId' | 'metafile'
   disabled?: boolean
   imageClass?: string

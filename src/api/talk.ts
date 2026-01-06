@@ -3,7 +3,7 @@ import { Channel, Community, CommunityAuth,SubChannel,MemberListRes } from '@/@t
 
 import type { GroupChannel, GroupChannelListResponse,GroupUserRoleInfo, SearchGroupsAndUsersResponse, SearchUserItem } from '@/@types/simple-chat.d'
 import { containsString, sleep } from '@/utils/util'
-import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
+import { getUserInfoByAddress,getUserInfoByMetaId, getUserInfoByGlobalMetaId } from "@/api/man";
 import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
 import {  NodeName,MemberRule } from '@/enum'
@@ -295,13 +295,15 @@ export const getAtMeChannels = async (params?: any): Promise<any> => {
 
   return TalkApi.get(`/chat/homes/${metaId}`, { data: JSON.stringify(params) }).then(res => {
     return res.data.data.map((channel: any) => {
-      const channelSide = channel.from === metaId ? 'to' : 'from'
+      // 使用 fromGlobalMetaId/toGlobalMetaId
+      const channelSide = channel.fromGlobalMetaId === metaId ? 'toGlobalMetaId' : 'fromGlobalMetaId'
+      const sidePrefix = channelSide.replace('GlobalMetaId', '')
 
-      channel.name = channel[`${channelSide}Name`]
-      channel.metaName = channel[`${channelSide}UserInfo`]?.metaName
-      channel.id = channel.metaId = channel[`${channelSide}`]
-      channel.avatarImage = channel[`${channelSide}AvatarImage`]
-      channel.publicKeyStr = channel[`${channelSide}PublicKey`]
+      channel.name = channel[`${sidePrefix}Name`]
+      channel.metaName = channel[`${sidePrefix}UserInfo`]?.metaName
+      channel.id = channel.globalMetaId = channel[channelSide]
+      channel.avatarImage = channel[`${sidePrefix}AvatarImage`]
+      channel.publicKeyStr = channel[`${sidePrefix}PublicKey`]
       channel.lastMessageTimestamp = channel.timestamp
       channel.pastMessages = []
       channel.newMessages = []
@@ -312,12 +314,12 @@ export const getAtMeChannels = async (params?: any): Promise<any> => {
 }
 
 export const getChannels = async ({
-  metaId,
+  metaId,  // 参数名保持 metaId，值使用 globalMetaId
   cursor = '0',
   size = '30',
   timestamp=''
 }: {
-  metaId: string
+  metaId: string  // 参数名保持 metaId
   cursor?: string
   size?: string
   timestamp?: string
@@ -325,7 +327,7 @@ export const getChannels = async ({
   // const communityId = params.communityId
  ///community/${communityId}/rooms
  const params=new URLSearchParams({
-  metaId,
+  metaId,  // 参数名保持 metaId
   cursor,
   size,
   timestamp
@@ -846,69 +848,86 @@ export const grabRedPacket = async (params: {
     })
 }
 
-export const GetUserEcdhPubkeyForPrivateChat=(metaId:string):Promise<{
-    metaid:string,
-    name:string,
-    avatar:string,
-    avatarImage:string,
-    chatPublicKey:string,
-    chatPublicKeyId:string,
-    address:string
-}>=>{
-  const query =new URLSearchParams({metaId}).toString() 
-
-  return TalkApi.get(`/user-info?${query}`).then(res => {
-     if(res?.code == 0){
-      
-       return {...res.data.userInfo,address:res.data.address}
-     }else if(res?.code == 1){
-      throw new Error(res?.message)
-     }
-   
-  }).catch((e)=>{
-    
-    throw new Error(e.message)
-  })
+export const GetUserEcdhPubkeyForPrivateChat = async (globalMetaId: string): Promise<{
+    metaid: string,
+    globalMetaId: string,
+    name: string,
+    avatar: string,
+    avatarImage: string,
+    chatPublicKey: string,
+    chatPublicKeyId: string,
+    address: string
+}> => {
+  // 使用 metafile-indexer API 获取用户信息
+  const userInfo = await getUserInfoByGlobalMetaId(globalMetaId)
+  
+  return {
+    metaid: userInfo.metaid,
+    globalMetaId: userInfo.globalMetaId || globalMetaId,
+    name: userInfo.name,
+    avatar: userInfo.avatar,
+    avatarImage: userInfo.avatar, // avatarImage 和 avatar 相同
+    chatPublicKey: userInfo.chatpubkey || '',
+    chatPublicKeyId: userInfo.chatpubkeyId || '',
+    address: userInfo.address
+  }
 }
 
-export const BatchGetUsersEcdhPubkeyForPrivateChat=(params:{
-  metaIds?:string[],
-  addresses?:string[]
-}):Promise<Array<{
-    metaid:string,
-    name:string,
-    avatar:string,
-    avatarImage:string,
-    chatPublicKey:string,
-    chatPublicKeyId:string,
-    address:string
-}>>=>{
-  //const query =new URLSearchParams({metaId}).toString() 
-  params=params || {}
-  return TalkApi.post(`/batch-user-info`,params).then(res => {
-     if(res?.code == 0){
-      let list=[]
-      if(res.data.list?.length){
-        
-        for(let user of res.data.list){
-          list.push({
-            ...user.userInfo,
-            address:user.address
-          })
+export const BatchGetUsersEcdhPubkeyForPrivateChat = async (params: {
+  globalMetaIds?: string[],
+  addresses?: string[]
+}): Promise<Array<{
+    metaid: string,
+    globalMetaId: string,
+    name: string,
+    avatar: string,
+    avatarImage: string,
+    chatPublicKey: string,
+    chatPublicKeyId: string,
+    address: string
+}>> => {
+  // 使用 metafile-indexer API 批量获取用户信息
+  const results: Array<{
+    metaid: string,
+    globalMetaId: string,
+    name: string,
+    avatar: string,
+    avatarImage: string,
+    chatPublicKey: string,
+    chatPublicKeyId: string,
+    address: string
+  }> = []
+  
+  if (params.globalMetaIds && params.globalMetaIds.length > 0) {
+    // 并发获取所有用户信息
+    const promises = params.globalMetaIds.map(async (globalMetaId) => {
+      try {
+        const userInfo = await getUserInfoByGlobalMetaId(globalMetaId)
+        return {
+          metaid: userInfo.metaid,
+          globalMetaId: userInfo.globalMetaId || globalMetaId,
+          name: userInfo.name,
+          avatar: userInfo.avatar,
+          avatarImage: userInfo.avatar,
+          chatPublicKey: userInfo.chatpubkey || '',
+          chatPublicKeyId: userInfo.chatpubkeyId || '',
+          address: userInfo.address
         }
-       
+      } catch (e) {
+        console.warn(`获取用户 ${globalMetaId} 信息失败:`, e)
+        return null
       }
-      return list
-       //return {...res.data.userInfo,address:res.data.address}
-     }else if(res?.code == 1){
-      return []
-      //throw new Error(res?.message)
-     }
-   
-  }).catch((e)=>{
+    })
     
-   return []
-  })
+    const userResults = await Promise.all(promises)
+    for (const result of userResults) {
+      if (result) {
+        results.push(result)
+      }
+    }
+  }
+  
+  return results
 }
 
 // 获取某个頻道的引用公告列表

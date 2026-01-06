@@ -473,10 +473,10 @@ export const useBulidTx = createGlobalState(() => {
        
              
        const fileRes= await createMvcFile({
-          body:chainStore.state.currentChain == 'btc' ? hexToBase64(attachments[0].data) : hexToUint8Array(attachments[0].data),
+          body:chainStore.state.currentChain !== 'mvc' ? hexToBase64(attachments[0].data) : hexToUint8Array(attachments[0].data),
           mime:attachments[0].fileType,
           encryption:fileEncryption,
-          isBroadcast:chainStore.state.currentChain == 'btc' ? true :false
+          isBroadcast:chainStore.state.currentChain !== 'mvc' ? true :false
        })
 
        
@@ -734,13 +734,13 @@ export const useBulidTx = createGlobalState(() => {
         operation: Operation.create,
         contentType:`${mime};binary`, //`image/${mime};binary`,
         encryption: encryption,
-        encoding:chainStore.state.currentChain == 'btc' ? 'base64' : 'binary',
+        encoding:chainStore.state.currentChain !== 'mvc' ? 'base64' : 'binary',
       }
       
       const pinRes= await createPin(metaidData,isBroadcast)
       
       if(!isBroadcast){
-        if(chainStore.state.currentChain == 'btc'){
+        if(chainStore.state.currentChain !== 'mvc'){
           
           initEccLib(ecc)
           if(pinRes?.revealTxsHex?.length){

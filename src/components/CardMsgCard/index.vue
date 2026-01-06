@@ -242,10 +242,10 @@ const logCardData = computed(() => {
 
 // 判断当前用户是否可以操作（只有 replyInfo 中的用户可点击）
 const canInteract = computed(() => {
-  // 获取当前用户的 metaId
-  const currentUserMetaId = userStore.last?.metaid
+  // 获取当前用户的 globalMetaId
+  const currentUserMetaId = userStore.last?.globalMetaId
   if (!currentUserMetaId) {
-    console.log('CardMsgCard canInteract: no current user metaid')
+    console.log('CardMsgCard canInteract: no current user globalMetaId')
     return false
   }
 

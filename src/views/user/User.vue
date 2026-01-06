@@ -264,10 +264,12 @@ async function follow() {
 
 async function toMessage() {
   await checkUserLogin()
+  // 使用 globalMetaId 进行私聊跳转
+  const targetId = userInfo.val!.globalMetaId
   router.push({
     name: 'talkAtMe',
     params: {
-      channelId: userInfo.val!.metaId,
+      channelId: targetId,
     },
   })
 }
@@ -277,7 +279,9 @@ function editBg() {
 }
 
 function toChat() {
-  router.push(`/talk/channels/@me/${route.params.metaId}`)
+  // 使用 globalMetaId 进行私聊跳转
+  const targetId = userInfo.val?.globalMetaId
+  router.push(`/talk/channels/@me/${targetId}`)
 }
 
 Promise.all([getUserInfo(), getUserFoller(), checkUserIsFollowed()]).then(() => {

@@ -13,10 +13,17 @@ import {
   GetUserEcdhPubkeyForPrivateChat,
   BatchGetUsersEcdhPubkeyForPrivateChat,
   getGroupChannelList,
-  getSubChannelMessages
+  getSubChannelMessages,
 } from '@/api/talk'
 
-import { ChannelPublicityType, ChannelType, GroupChannelType, NodeName,MemberRule,GroupMessageType } from '@/enum'
+import {
+  ChannelPublicityType,
+  ChannelType,
+  GroupChannelType,
+  NodeName,
+  MemberRule,
+  GroupMessageType,
+} from '@/enum'
 import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { useLayoutStore } from './layout'
@@ -60,10 +67,10 @@ export const useTalkStore = defineStore('talk', {
       activeCommunityId: '' as string,
       activeChannelId: '' as string,
       activeSubChannelId: '' as string,
-   
-      selfChannelRule:[] as Array<{
-        channelId:string,
-        rule:MemberRule
+
+      selfChannelRule: [] as Array<{
+        channelId: string
+        rule: MemberRule
       }>,
       generalChannels: [
         {
@@ -115,9 +122,16 @@ export const useTalkStore = defineStore('talk', {
   },
 
   getters: {
+    // 当前用户的 MetaId（现在统一使用 globalMetaId）
     selfMetaId(): string {
       const userStore = useUserStore()
-      return userStore.last?.metaid || ''
+      // 只使用 globalMetaId
+      return userStore.last?.globalMetaId || ''
+    },
+
+    // 当前用户的全局 MetaId（支持多链 MVC/BTC/DOGE）- 与 selfMetaId 相同
+    selfGlobalMetaId(): string {
+      return this.selfMetaId // 直接复用 selfMetaId
     },
 
     selfAddress(): string {
@@ -125,11 +139,10 @@ export const useTalkStore = defineStore('talk', {
       return userStore.last?.address || ''
     },
 
-
-      getMychannelRule() {
+    getMychannelRule() {
       return (channeId: string) => {
-        console.log("99999999",this.selfChannelRule)
-        const ruleItem=this.selfChannelRule.find(item=>item.channelId == channeId)
+        console.log('99999999', this.selfChannelRule)
+        const ruleItem = this.selfChannelRule.find(item => item.channelId == channeId)
         return ruleItem ? ruleItem.rule : MemberRule.Normal
       }
     },
@@ -193,10 +206,12 @@ export const useTalkStore = defineStore('talk', {
     activeSubChannel(state): any {
       if (!this.activeCommunity) return null
 
-        if (this.canAccessActiveChannel && this.activeChannel && this.activeChannel?.subChannels?.length) {
-          
-         
-          return this.activeChannel.subChannels[0]
+      if (
+        this.canAccessActiveChannel &&
+        this.activeChannel &&
+        this.activeChannel?.subChannels?.length
+      ) {
+        return this.activeChannel.subChannels[0]
       }
 
       //    if (this.canAccessActiveChannel) {
@@ -205,22 +220,20 @@ export const useTalkStore = defineStore('talk', {
       //       return channel.subChannels[0]
       //     }
       //   })
-      //   
+      //
       //   return activeSubRes.length && activeSubRes[0]
 
       // }
 
       //   if (this.canAccessActiveChannel) {
-      //     
+      //
       //   const currentChannel = this.activeCommunity?.channels?.find((channel: any) => {
-      //     
+      //
       //     return channel.id && channel.id === state.activeChannelId
       //   })
       //   if(currentChannel?.subChannels?.length) return currentChannel?.subChannels[0]
 
-       
       // }
-
     },
 
     activeChannel(state): any {
@@ -230,8 +243,8 @@ export const useTalkStore = defineStore('talk', {
       if (this.isActiveChannelGeneral) {
         return this.generalChannels.find(channel => channel.id === state.activeChannelId)
       }
-      
-        if (this.canAccessActiveChannel) {
+
+      if (this.canAccessActiveChannel) {
         return this.activeCommunity?.channels?.find((channel: any) => {
           return (
             (channel.id && channel.id === state.activeChannelId) ||
@@ -403,37 +416,32 @@ export const useTalkStore = defineStore('talk', {
   },
 
   actions: {
-
-    updateMyChannelRule(channelId:string,rule:MemberRule){
-      const ruleItem=this.selfChannelRule.find(item=>item.channelId == channelId)
-      if(ruleItem){
-         this.selfChannelRule.forEach(((item)=>{
-        if(item.channelId == channelId){
-          item.rule=rule
-        }
-      }))
-      }else{
+    updateMyChannelRule(channelId: string, rule: MemberRule) {
+      const ruleItem = this.selfChannelRule.find(item => item.channelId == channelId)
+      if (ruleItem) {
+        this.selfChannelRule.forEach(item => {
+          if (item.channelId == channelId) {
+            item.rule = rule
+          }
+        })
+      } else {
         this.selfChannelRule.push({
-        channelId:channelId,
-        rule:rule
+          channelId: channelId,
+          rule: rule,
         })
       }
-      
     },
 
-    async checkUserOpenPrivate(metaid:string){
-         
-      
-      if(metaid == this.selfMetaId){
-         const userStore = useUserStore()
-        if(!userStore.last?.chatpubkey){
-          
-            return false
-        }else{
-           return true
+    async checkUserOpenPrivate(globalMetaId: string) {
+      if (globalMetaId == this.selfMetaId) {
+        const userStore = useUserStore()
+        if (!userStore.last?.chatpubkey) {
+          return false
+        } else {
+          return true
         }
       } else {
-        const userInfo = await GetUserEcdhPubkeyForPrivateChat(metaid)
+        const userInfo = await GetUserEcdhPubkeyForPrivateChat(globalMetaId)
         if (!userInfo.chatPublicKey) {
           //ElMessage.error(`${i18n.global.t('user_private_chat_unsupport')}`)
           return false
@@ -485,14 +493,15 @@ export const useTalkStore = defineStore('talk', {
         return item.groupId
       })
       priviteChannel = allChannel.filter(item => {
-        return !item.groupId && item.metaId.length == 64
+        // 私聊：没有 groupId，且 metaId 不以 i0 结尾（群聊 ID 以 i0 结尾）
+        return !item.groupId && !item.metaId.endsWith('i0')
       })
 
       if (priviteChannel.length) {
-        const userMetaIdList = []
+        const userGlobalMetaIdList = []
 
         for (let channel of priviteChannel) {
-          userMetaIdList.push(channel.metaId)
+          userGlobalMetaIdList.push(channel.metaId)
 
           //const userInfo = await GetUserEcdhPubkeyForPrivateChat(channel.metaId)
 
@@ -508,7 +517,7 @@ export const useTalkStore = defineStore('talk', {
           // }
         }
         const userInfoList = await BatchGetUsersEcdhPubkeyForPrivateChat({
-          metaIds: userMetaIdList,
+          globalMetaIds: userGlobalMetaIdList,
         })
 
         for (let i = 0; userInfoList.length && i < userInfoList.length; i++) {
@@ -538,7 +547,7 @@ export const useTalkStore = defineStore('talk', {
 
       if (!this.activeCommunity?.channels) this.activeCommunity!.channels = []
       const activeChannelList = allChannel.filter(
-        item => item?.groupId || item.metaId?.length == 64
+        item => item?.groupId || !item.metaId?.endsWith('i0')
       )
       this.activeCommunity!.channels = activeChannelList //publicChannel//isAtMe ? priviteChannel : publicChannel //allChannel//publicChannel //channels
 
@@ -550,14 +559,14 @@ export const useTalkStore = defineStore('talk', {
         this.initCommunityChannelIds()
 
         // 只保存頻道id
-        if(publicChannel.length){
-          for(let channel of publicChannel){
-              const subChannleList= await getGroupChannelList({
-              groupId:channel.groupId
+        if (publicChannel.length) {
+          for (let channel of publicChannel) {
+            const subChannleList = await getGroupChannelList({
+              groupId: channel.groupId,
             })
-            const parentsIds=subChannleList.map((sub)=>sub.groupId)
-            if(channel.groupId == parentsIds[0]){
-              channel.subChannels=subChannleList
+            const parentsIds = subChannleList.map(sub => sub.groupId)
+            if (channel.groupId == parentsIds[0]) {
+              channel.subChannels = subChannleList
             }
           }
         }
@@ -570,14 +579,12 @@ export const useTalkStore = defineStore('talk', {
         if (communityId == 'public') {
           this.communityChannelIds[communityId] = publicChannelIds.filter(item => item)
 
-          
-          this.communityChannelIds['@me'] = privateChannelIds.filter(item => item.length == 64)
-
-
-
+          this.communityChannelIds['@me'] = privateChannelIds.filter(
+            item => item && !item.endsWith('i0')
+          )
         } else if (communityId == '@me') {
           this.communityChannelIds[communityId] = privateChannelIds.filter(
-            item => item.length == 64
+            item => item && !item.endsWith('i0')
           )
           this.communityChannelIds['public'] = publicChannelIds.filter(item => item)
         }
@@ -587,7 +594,7 @@ export const useTalkStore = defineStore('talk', {
           JSON.stringify(this.communityChannelIds)
         )
       }
-      
+
       return activeChannelList
     },
 
@@ -728,7 +735,6 @@ export const useTalkStore = defineStore('talk', {
         //   .catch(() => {
         //     ElMessage.error('获取群聊成员失败')
         //   })
-
         // getCommunityMembers(routeCommunityId)
         //   .then((members: any) => {
         //     this.members = members
@@ -790,10 +796,10 @@ export const useTalkStore = defineStore('talk', {
           chatType: 0,
           content: '',
           createAddress: userStore.last.address,
-          createMetaId: userStore.last.metaid,
+          createMetaId: userStore.last.globalMetaId,
           createUserAddress: userStore.last.address,
           createUserInfo: userStore.last,
-          createUserMetaId: userStore.last.metaid,
+          createUserMetaId: userStore.last.globalMetaId,
           deleteStatus: 0,
           groupId: '',
           index: 0,
@@ -831,7 +837,6 @@ export const useTalkStore = defineStore('talk', {
           }
         }
       }
-       
 
       // 如果没有指定頻道，则先从存储中尝试读取该社区的最后阅读頻道
       const latestChannelsRecords =
@@ -845,7 +850,7 @@ export const useTalkStore = defineStore('talk', {
         } else {
           channelId = latestChannels[routeCommunityId] || 'welcome'
         }
-         
+
         this.activeChannelId = channelId
         return
 
@@ -856,12 +861,10 @@ export const useTalkStore = defineStore('talk', {
       // 将最后阅读頻道存储到本地
       latestChannels[routeCommunityId] = routeChannelId
       localStorage.setItem('latestChannels-' + this.selfMetaId, JSON.stringify(latestChannels))
-     
+
       this.activeChannelId = routeChannelId
       return 'ready'
     },
-
-  
 
     _updateReadPointers(messageTimestamp: number, messageMetaId: string) {
       if (!this.channelsReadPointers[messageMetaId]) {
@@ -875,77 +878,67 @@ export const useTalkStore = defineStore('talk', {
         this.channelsReadPointers[messageMetaId].latest = messageTimestamp
       }
     },
-    _updateCurrentChannelReadPointers(messageTimestamp: number,messageType?:GroupMessageType) {
-
-      if(messageType && messageType == GroupMessageType.SubChannel){
-          if (this.channelsReadPointers[this.activeSubChannelId]) {
-        this.channelsReadPointers[this.activeSubChannelId].latest = messageTimestamp
-        this.channelsReadPointers[this.activeSubChannelId].lastRead = messageTimestamp
+    _updateCurrentChannelReadPointers(messageTimestamp: number, messageType?: GroupMessageType) {
+      if (messageType && messageType == GroupMessageType.SubChannel) {
+        if (this.channelsReadPointers[this.activeSubChannelId]) {
+          this.channelsReadPointers[this.activeSubChannelId].latest = messageTimestamp
+          this.channelsReadPointers[this.activeSubChannelId].lastRead = messageTimestamp
+        } else {
+          this.channelsReadPointers[this.activeSubChannelId] = {
+            lastRead: messageTimestamp,
+            latest: messageTimestamp,
+          }
+        }
       } else {
-        this.channelsReadPointers[this.activeSubChannelId] = {
-          lastRead: messageTimestamp,
-          latest: messageTimestamp,
+        if (this.channelsReadPointers[this.activeChannelId]) {
+          this.channelsReadPointers[this.activeChannelId].latest = messageTimestamp
+          this.channelsReadPointers[this.activeChannelId].lastRead = messageTimestamp
+        } else {
+          this.channelsReadPointers[this.activeChannelId] = {
+            lastRead: messageTimestamp,
+            latest: messageTimestamp,
+          }
         }
       }
-      }else{
-
-         if (this.channelsReadPointers[this.activeChannelId]) {
-        this.channelsReadPointers[this.activeChannelId].latest = messageTimestamp
-        this.channelsReadPointers[this.activeChannelId].lastRead = messageTimestamp
-      } else {
-        this.channelsReadPointers[this.activeChannelId] = {
-          lastRead: messageTimestamp,
-          latest: messageTimestamp,
-        }
-      }
-
-      }
-
-     
     },
 
     async handleNewGroupMessage(message: any) {
+      const messageType = message.channelId ? GroupMessageType.SubChannel : GroupMessageType.Group
+      const messageMetaId =
+        messageType == GroupMessageType.SubChannel ? message.channelId : message.groupId
+      const groupId = message.groupId
 
-      
-
-      const messageType=message.channelId ? GroupMessageType.SubChannel : GroupMessageType.Group
-      const messageMetaId = messageType == GroupMessageType.SubChannel ? message.channelId : message.groupId
-      const groupId=message.groupId
-
-
-      const isFromActiveChannel = messageType == GroupMessageType.SubChannel ? messageMetaId == this.activeSubChannelId : messageMetaId === this.activeChannelId
+      const isFromActiveChannel =
+        messageType == GroupMessageType.SubChannel
+          ? messageMetaId == this.activeSubChannelId
+          : messageMetaId === this.activeChannelId
 
       // 如果不是当前頻道的消息，则更新未读指针
       if (!isFromActiveChannel) {
         this._updateReadPointers(message.timestamp, messageMetaId)
 
-        if(messageType == GroupMessageType.Group){
-            this.activeCommunity?.channels?.map((channel: any) => {
+        if (messageType == GroupMessageType.Group) {
+          this.activeCommunity?.channels?.map((channel: any) => {
             if (channel.id === messageMetaId) {
-            
-            channel.newMessages = [message]
-          }
-        })
-        }else{
-             this.activeCommunity?.channels?.map((channel: any) => {
+              channel.newMessages = [message]
+            }
+          })
+        } else {
+          this.activeCommunity?.channels?.map((channel: any) => {
             if (channel.id === groupId) {
-            
               channel.subChannels[0].newMessages = [message]
-          }
-        })
+            }
+          })
         }
 
-      
-
         try {
-           if(messageType == GroupMessageType.Group){
-              sortByConditionInPlace(
-            this.activeCommunity?.channels,
-            channel => channel?.groupId == messageMetaId
-          )
-          
-           }
-        return
+          if (messageType == GroupMessageType.Group) {
+            sortByConditionInPlace(
+              this.activeCommunity?.channels,
+              channel => channel?.groupId == messageMetaId
+            )
+          }
+          return
         } catch (error) {
           console.log('socket推送11111', error.toString())
           return
@@ -954,86 +947,98 @@ export const useTalkStore = defineStore('talk', {
 
       // 当前頻道，插入新消息
       // 先去重
-      const isDuplicate = messageType == GroupMessageType.Group ? this.activeChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
-        this.activeChannel?.pastMessages?.some((item: Message) => item.txId === message.txId) : this.activeSubChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
-        this.activeSubChannel?.pastMessages?.some((item: Message) => item.txId === message.txId)
-
-        
+      const isDuplicate =
+        messageType == GroupMessageType.Group
+          ? this.activeChannel?.newMessages?.some((item: Message) => item.txId === message.txId) ||
+            this.activeChannel?.pastMessages?.some((item: Message) => item.txId === message.txId)
+          : this.activeSubChannel?.newMessages?.some(
+              (item: Message) => item.txId === message.txId
+            ) ||
+            this.activeSubChannel?.pastMessages?.some((item: Message) => item.txId === message.txId)
 
       if (isDuplicate) return
 
       // 更新当前頻道的已读指针
-      this._updateCurrentChannelReadPointers(message.timestamp,messageType)
+      this._updateCurrentChannelReadPointers(message.timestamp, messageType)
 
       // 优先查找替代mock数据
       let mockMessage: any
 
       if (containsString(message.protocol, NodeName.SimpleGroupChat)) {
-        
-        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.content === message.content &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        ) : this.activeChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.content === message.content &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        )
-
-        
+        mockMessage =
+          messageType == GroupMessageType.SubChannel
+            ? this.activeSubChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.content === message.content &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
+            : this.activeChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.content === message.content &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
       } else if (containsString(message.protocol, NodeName.SimpleFileGroupChat)) {
-        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        ) : this.activeChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        )
+        mockMessage =
+          messageType == GroupMessageType.SubChannel
+            ? this.activeSubChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
+            : this.activeChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
       } else if (containsString(message.protocol, NodeName.SimpleGroupOpenLuckybag)) {
-        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        ) : this.activeChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        )
+        mockMessage =
+          messageType == GroupMessageType.SubChannel
+            ? this.activeSubChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
+            : this.activeChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
       } else if (containsString(message.protocol, NodeName.SimpleGroupLuckyBag)) {
-        mockMessage = messageType == GroupMessageType.SubChannel ? this.activeSubChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        ) : this.activeChannel?.newMessages?.find(
-          (item: Message) =>
-            item.txId === '' &&
-            item.isMock === true &&
-            item.metaId === message.metaId &&
-            containsString(message.protocol, item?.protocol!)
-        )
+        mockMessage =
+          messageType == GroupMessageType.SubChannel
+            ? this.activeSubChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
+            : this.activeChannel?.newMessages?.find(
+                (item: Message) =>
+                  item.txId === '' &&
+                  item.isMock === true &&
+                  item.metaId === message.metaId &&
+                  containsString(message.protocol, item?.protocol!)
+              )
       }
 
       if (mockMessage) {
         console.log('替换中')
-       
+
         if (containsString(message.protocol, NodeName.SimpleFileGroupChat)) {
           await sleep(2000) // 等待图片上传完成
           this.$patch(state => {
@@ -1053,20 +1058,19 @@ export const useTalkStore = defineStore('talk', {
 
         return
       }
-      if(messageType == GroupMessageType.SubChannel){
+      if (messageType == GroupMessageType.SubChannel) {
         this.activeSubChannel?.newMessages?.push(message)
-       // this.activeChannel?.subChannels[0]?.newMessages?.push(message)
-      }else{
+        // this.activeChannel?.subChannels[0]?.newMessages?.push(message)
+      } else {
         this.activeChannel?.newMessages?.push(message)
       }
-      
 
       try {
-        if(messageType == GroupMessageType.Group)
-        sortByConditionInPlace(
-          this.activeCommunity?.channels,
-          channel => channel?.groupId == messageMetaId
-        )
+        if (messageType == GroupMessageType.Group)
+          sortByConditionInPlace(
+            this.activeCommunity?.channels,
+            channel => channel?.groupId == messageMetaId
+          )
       } catch (error) {
         console.log('socket推送2222', error.toString())
       }
@@ -1130,7 +1134,11 @@ export const useTalkStore = defineStore('talk', {
 
     async handleNewSessionMessage(message: any) {
       const ecdhsStore = useEcdhsStore()
-      const messageMetaId = message.from === this.selfMetaId ? message.to : message.from
+      // 使用 fromGlobalMetaId/toGlobalMetaId
+      const messageMetaId =
+        message.fromGlobalMetaId === this.selfMetaId
+          ? message.toGlobalMetaId
+          : message.fromGlobalMetaId
 
       const isFromActiveChannel = messageMetaId === this.activeChannelId
 
@@ -1139,22 +1147,24 @@ export const useTalkStore = defineStore('talk', {
         this._updateReadPointers(message.timestamp, messageMetaId)
 
         const hasChannelInActiveCommunity = this.activeCommunity?.channels.find(channel => {
-          return channel.id == message?.from
+          return channel.id == message?.fromGlobalMetaId
         })
 
         if (!hasChannelInActiveCommunity) {
-          const userInfo = await GetUserEcdhPubkeyForPrivateChat(message.metaId)
+          const userInfo = await GetUserEcdhPubkeyForPrivateChat(
+            message.fromGlobalMetaId || message.fromUserInfo?.globalMetaId
+          )
           let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
           if (!ecdh) {
             ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
             ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
           }
           const newSession = {
-            id: message.from,
+            id: message.fromGlobalMetaId, // 改为 fromGlobalMetaId
             name: message.fromUserInfo.name,
             publicKeyStr: message.fromUserInfo.chatPublicKey,
             avatarImage: message.fromUserInfo.avatarImage,
-            metaId: message.fromUserInfo.metaid,
+            globalMetaId: message.fromUserInfo.globalMetaId, // 只使用 globalMetaId
             lastMessage: '',
 
             lastMessageTimestamp: null,
@@ -1167,10 +1177,10 @@ export const useTalkStore = defineStore('talk', {
             chatType: 0,
             content: message.content,
             createAddress: message.fromUserInfo.address,
-            createMetaId: message.fromUserInfo.metaid,
+            createGlobalMetaId: message.fromUserInfo.globalMetaId, // 只使用 globalMetaId
             createUserAddress: message.fromUserInfo.address,
             createUserInfo: message.fromUserInfo,
-            createUserMetaId: message.fromUserInfo.metaid,
+            createUserGlobalMetaId: message.fromUserInfo.globalMetaId, // 只使用 globalMetaId
             deleteStatus: 0,
             groupId: '',
             index: message.index,
@@ -1237,7 +1247,6 @@ export const useTalkStore = defineStore('talk', {
             }
           })
         } else {
-          
           this.$patch(state => {
             mockMessage.txId = message.txId
             mockMessage.timestamp = message.timestamp
@@ -1429,14 +1438,14 @@ export const useTalkStore = defineStore('talk', {
       }
     },
 
-    async initSubChannelMessages(channelId:string,selfMetaId?: string) {
+    async initSubChannelMessages(channelId: string, selfMetaId?: string) {
       if (!selfMetaId) selfMetaId = this.selfMetaId
 
       if (!this.activeChannel) return
 
-      if(!channelId) return
+      if (!channelId) return
 
-      if(!this.activeChannel.subChannels.length) return
+      if (!this.activeChannel.subChannels.length) return
 
       const layoutStore = useLayoutStore()
 
@@ -1464,14 +1473,12 @@ export const useTalkStore = defineStore('talk', {
       //   })
       // }
 
-
       //子频道不需要处理私聊
-       messages = await getSubChannelMessages({
-          channelId,
-          metaId: selfMetaId,
-        })
-        console.log(" this.activeChannel", this.activeChannel)
-        
+      messages = await getSubChannelMessages({
+        channelId,
+        metaId: selfMetaId,
+      })
+      console.log(' this.activeChannel', this.activeChannel)
 
       // for(let i of messages){
       //   const userInfo= await getUserInfoByAddress(i.address)
@@ -1486,18 +1493,18 @@ export const useTalkStore = defineStore('talk', {
       // 优化：使用nextTick来减少对session列表的影响
       await nextTick()
 
-      this.activeSubChannelId=channelId || ''
+      this.activeSubChannelId = channelId || ''
       //
-     // this.activeChannel.subChannels[0].pastMessages=messages
-       this.activeSubChannel.pastMessages=messages
-      
+      // this.activeChannel.subChannels[0].pastMessages=messages
+      this.activeSubChannel.pastMessages = messages
+
       //this.activeChannel.subChannels[0].pastMessages = messages
       // if(this.activeChannelType == 'session'){
       //   this.activeChannel.lastMessageTimestamp =nextTimestamp
       // }
-      // 
+      //
       //this.activeChannel.subChannels[0].newMessages=[]
-      this.activeSubChannel.newMessages=[]
+      this.activeSubChannel.newMessages = []
       //this.activeChannel.newMessages = []
 
       // 设置已读指针
@@ -1623,7 +1630,10 @@ export const useTalkStore = defineStore('talk', {
 
       const isSession = Number(message.type) == 2 ? true : false
       if (isSession) {
-        sortByConditionInPlace(this.activeCommunity?.channels, channel => channel?.id == message.to)
+        sortByConditionInPlace(
+          this.activeCommunity?.channels,
+          channel => channel?.id == message.toGlobalMetaId
+        ) // 改为 toGlobalMetaId
         console.log('this.activeChannel333333333333333', this.activeChannel)
       } else {
         sortByConditionInPlace(
@@ -1656,11 +1666,10 @@ export const useTalkStore = defineStore('talk', {
       // }
 
       this.activeSubChannel.newMessages.push(message)
-       //this.activeChannel.subChannels[0].newMessages.push(message)
-      
+      //this.activeChannel.subChannels[0].newMessages.push(message)
     },
 
-    updateMessage(message: any,txid:string) {
+    updateMessage(message: any, txid: string) {
       console.log('this.activeChannel333333333333333', this.activeChannel)
       if (!this.activeChannel) return
       if (!this.activeChannel.newMessages) {
@@ -1678,9 +1687,9 @@ export const useTalkStore = defineStore('talk', {
       //     channel => channel?.groupId == message.groupId
       //   )
       // }
-     this.activeChannel.newMessages = this.activeChannel.newMessages.map((item:any)=>{
-        if(item.mockId == message.mockId){
-          item.txId=txid
+      this.activeChannel.newMessages = this.activeChannel.newMessages.map((item: any) => {
+        if (item.mockId == message.mockId) {
+          item.txId = txid
         }
 
         return item

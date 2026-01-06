@@ -50,9 +50,14 @@ import { computed, ref } from 'vue'
 import { isFileTooLarge, isImage, MessageType, sendMessage } from '@/utils/talk'
 import { FileToAttachmentItem } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
+import { useChainStore } from '@/stores/chain'
+import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps(['currentChannel'])
 const userStore = useUserStore()
+const chainStore = useChainStore()
+const { t } = useI18n()
 
 const showMoreCommandsBox = ref(false)
 
@@ -67,6 +72,12 @@ const openImageUploader = () => {
 }
 
 const handleImageChange = (e: Event) => {
+  // 暂时禁用 DOGE 链发送图片功能
+  if (chainStore.state.currentChain === 'doge') {
+    ElMessage.warning(t('doge_image_not_supported') || 'DOGE 链暂不支持发送图片')
+    return
+  }
+
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
 

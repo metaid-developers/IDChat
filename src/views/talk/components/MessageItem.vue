@@ -542,7 +542,7 @@ import { useModalsStore } from '@/stores/modals'
 import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
-import { getUserInfoByAddress, getUserInfoByMetaId } from '@/api/man'
+import { getUserInfoByAddress, getUserInfoByGlobalMetaId } from '@/api/man'
 import { useImagePreview } from '@/stores/imagePreview'
 import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
@@ -687,7 +687,7 @@ const pinUserInfo = ref<UserInfoCache>({})
 
 // Mention 用户信息缓存
 interface MentionedUser {
-  metaId: string
+  globalMetaId: string
   name: string
   avatar?: string
 }
@@ -803,14 +803,15 @@ function toPrivateChat(message:ChatMessageItem){
 //     }
 //   })
 
+// 使用 globalMetaId 进行私聊跳转
+const targetGlobalMetaId = message.globalMetaId || message.userInfo?.globalMetaId
 router.push({
   name:'talkAtMe',
   params:{
-    channelId:message.userInfo.metaid,
-    // metaid:message.userInfo.metaid
+    channelId: targetGlobalMetaId,
   }
  })
- simpleTalk.setActiveChannel(message.userInfo.metaid)
+ simpleTalk.setActiveChannel(targetGlobalMetaId)
 
 
 
@@ -1084,8 +1085,9 @@ const handleMessageClick = (event: MouseEvent) => {
 
 // 处理 mention 点击跳转到私聊
 const handleMentionClick = async (metaId: string) => {
-  // 如果是自己，不跳转
-  if (metaId === userStore.last?.metaid) {
+  // 如果是自己，不跳转（使用 globalMetaId 判断）
+  const selfGlobalMetaId = userStore.last?.globalMetaId
+  if (metaId === selfGlobalMetaId) {
     return
   }
 
@@ -1129,8 +1131,17 @@ const redPacketMessage = computed(() => {
 })
 
 const isMyMessage = computed(() => {
+  // 使用 globalMetaId 判断是否是自己的消息（支持多链 MVC/BTC/DOGE）
+  const selfGlobalMetaId = userStore.last?.globalMetaId
+  // 群聊消息使用 message.globalMetaId，私聊消息使用 message.fromGlobalMetaId
+  const messageGlobalMetaId = props.message.globalMetaId || props.message.fromGlobalMetaId
 
-  return userStore.last?.metaid === props.message.metaId
+  // 添加调试日志
+  if (selfGlobalMetaId !== messageGlobalMetaId) {
+    console.log('🔍 isMyMessage check:', { selfGlobalMetaId, messageGlobalMetaId, metaId: props.message.metaId })
+  }
+
+  return selfGlobalMetaId === messageGlobalMetaId
 })
 
 // 卡片消息签名成功处理
@@ -1569,19 +1580,33 @@ const handleMetaAppLinkClick = () => {
 }
 
 // 获取 Pin 创建者用户信息
-const fetchPinUserInfo = async (address: string) => {
+const fetchPinUserInfo = async (addressOrGlobalMetaId: string, globalMetaId?: string) => {
+  const cacheKey = globalMetaId || addressOrGlobalMetaId
   try {
-    const userInfo = await getUserInfoByAddress(address)
-    pinUserInfo.value[address] = {
-      name: userInfo.name || address.slice(0, 8),
+    // 优先使用 globalMetaId 查询
+    let userInfo
+    if (globalMetaId) {
+      userInfo = await getUserInfoByGlobalMetaId(globalMetaId)
+    } else if (addressOrGlobalMetaId.length > 40) {
+      // 如果看起来像 globalMetaId（长度 > 40），尝试用 globalMetaId 查询
+      try {
+        userInfo = await getUserInfoByGlobalMetaId(addressOrGlobalMetaId)
+      } catch {
+        userInfo = await getUserInfoByAddress(addressOrGlobalMetaId)
+      }
+    } else {
+      userInfo = await getUserInfoByAddress(addressOrGlobalMetaId)
+    }
+    pinUserInfo.value[cacheKey] = {
+      name: userInfo.name || addressOrGlobalMetaId.slice(0, 8),
       avatar: userInfo.avatar,
       metaid: userInfo.metaid
     }
   } catch (error) {
     console.error('Failed to fetch user info:', error)
     // 设置默认值
-    pinUserInfo.value[address] = {
-      name: address.slice(0, 8),
+    pinUserInfo.value[cacheKey] = {
+      name: addressOrGlobalMetaId.slice(0, 8),
       avatar: '',
       metaid: ''
     }
@@ -1589,28 +1614,28 @@ const fetchPinUserInfo = async (address: string) => {
 }
 
 // 获取被提及用户的信息
-const fetchMentionedUserInfo = async (metaId: string) => {
-  if (mentionedUsers.value.has(metaId)) {
-    return mentionedUsers.value.get(metaId)!
+const fetchMentionedUserInfo = async (globalMetaId: string) => {
+  if (mentionedUsers.value.has(globalMetaId)) {
+    return mentionedUsers.value.get(globalMetaId)!
   }
 
   try {
-    // 通过 API 查询用户信息
-    const userInfo = await getUserInfoByMetaId(metaId)
+    // 通过 API 查询用户信息（支持 globalMetaId 和旧的 metaId）
+    const userInfo = await getUserInfoByGlobalMetaId(globalMetaId)
     const mentionedUser: MentionedUser = {
-      metaId,
-      name: userInfo.name || metaId.slice(0, 8),
+      globalMetaId,
+      name: userInfo.name || globalMetaId.slice(0, 8),
       avatar: userInfo.avatar
     }
-    mentionedUsers.value.set(metaId, mentionedUser)
+    mentionedUsers.value.set(globalMetaId, mentionedUser)
     return mentionedUser
   } catch (error) {
     console.error('Failed to fetch mentioned user info:', error)
     const defaultUser: MentionedUser = {
-      metaId,
-      name: metaId.slice(0, 8)
+      globalMetaId,
+      name: globalMetaId.slice(0, 8)
     }
-    mentionedUsers.value.set(metaId, defaultUser)
+    mentionedUsers.value.set(globalMetaId, defaultUser)
     return defaultUser
   }
 }
@@ -1623,7 +1648,7 @@ const initMentionedUsers = async () => {
 
   // 批量获取被提及用户的信息
   await Promise.all(
-    props.message.mention.map(metaId => fetchMentionedUserInfo(metaId))
+    props.message.mention.map(globalMetaId => fetchMentionedUserInfo(globalMetaId))
   )
 }
 

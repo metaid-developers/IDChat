@@ -15,10 +15,10 @@
       </div>
 
       <!-- 用户列表 -->
-      <div v-else-if="users.length > 0" class="max-h-60 overflow-y-auto">
+      <div v-else-if="validUsers.length > 0" class="max-h-60 overflow-y-auto">
         <div
-          v-for="(user, index) in users"
-          :key="user.metaId"
+          v-for="(user, index) in validUsers"
+          :key="user.metaId || user.userInfo?.metaid || index"
           :class="[
             'mention-item flex items-center px-4 py-2 cursor-pointer transition-colors',
             index === selectedIndex
@@ -30,11 +30,13 @@
         >
           <!-- 头像：优先显示图片，加载失败或无头像时显示默认头像 -->
           <img
-            v-if="user.userInfo?.avatarImage && !avatarErrorMap[user.metaId]"
+            v-if="
+              user.userInfo?.avatarImage && !avatarErrorMap[user.metaId || user.userInfo?.metaid]
+            "
             :src="user.userInfo.avatarImage"
             alt=""
             class="w-8 h-8 rounded-full mr-3 object-cover"
-            @error="handleAvatarError(user.metaId)"
+            @error="handleAvatarError(user.metaId || user.userInfo?.metaid)"
           />
           <div
             v-else
@@ -77,9 +79,11 @@ import { ref, watch, nextTick, computed } from 'vue'
 
 export interface MentionUser {
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId
   address: string
   userInfo: {
     metaid: string
+    globalMetaId?: string // 新增：全局 MetaId
     address: string
     name: string
     avatar?: string
@@ -106,6 +110,11 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits(['select', 'update:selectedIndex'])
 
 const selectedIndex = ref(0)
+
+// 过滤掉 null/undefined 值的用户列表
+const validUsers = computed(() => {
+  return (props.users || []).filter(user => user && user.userInfo)
+})
 
 // 计算下拉框样式
 const dropdownStyle = computed(() => {
@@ -175,7 +184,7 @@ const formatAddress = (address: string) => {
 
 // 暴露方法供父组件调用
 const selectNext = () => {
-  if (selectedIndex.value < props.users.length - 1) {
+  if (selectedIndex.value < validUsers.value.length - 1) {
     selectedIndex.value++
   }
 }
@@ -187,8 +196,8 @@ const selectPrevious = () => {
 }
 
 const selectCurrent = () => {
-  if (props.users[selectedIndex.value]) {
-    selectUser(props.users[selectedIndex.value])
+  if (validUsers.value[selectedIndex.value]) {
+    selectUser(validUsers.value[selectedIndex.value])
   }
 }
 

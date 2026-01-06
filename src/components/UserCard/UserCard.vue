@@ -74,10 +74,12 @@ function toUser(e: Event) {
 
 async function toMessage() {
   await checkUserLogin()
+  // 使用 globalMetaId 进行私聊跳转（如果可用）
+  const targetId = userInfo.val?.globalMetaId || props.metaId
   router.push({
     name: 'talkAtMe',
     params: {
-      channelId: props.metaId,
+      channelId: targetId,
     },
   })
 }

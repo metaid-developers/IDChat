@@ -78,7 +78,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useUserStore } from '@/stores/user'
 import { joinChannel } from '@/utils/talk'
 import { getGroupJoinControlList, getOneChannel } from '@/api/talk'
-import { getUserInfoByMetaId } from '@/api/man'
+import { getUserInfoByGlobalMetaId } from '@/api/man'
 import { ecdhDecrypt } from '@/utils/crypto'
 import type { SimpleChannel } from '@/@types/simple-chat.d'
 
@@ -100,7 +100,7 @@ const decryptedPasswordKey = ref('')
 const groupType = computed(() => route.params.groupType as 'public' | 'private')
 const groupId = computed(() => route.params.groupId as string)
 const passcode = computed(() => route.query.passcode as string | undefined)
-const fromMetaId = computed(() => route.query.from as string | undefined)
+const fromGlobalMetaId = computed(() => route.query.from as string | undefined)
 const isPrivateGroup = computed(() => groupType.value === 'private')
 
 onMounted(async () => {
@@ -119,8 +119,8 @@ onMounted(async () => {
       return
     }
 
-    // 私密群聊需要 passcode 和 fromMetaId
-    if (isPrivateGroup.value && (!passcode.value || !fromMetaId.value)) {
+    // 私密群聊需要 passcode 和 fromGlobalMetaId
+    if (isPrivateGroup.value && (!passcode.value || !fromGlobalMetaId.value)) {
       error.value = t('Talk.Channel.private_group_requires_passcode')
       loading.value = false
       return
@@ -130,11 +130,11 @@ onMounted(async () => {
     await simpleTalkStore.autoInit()
 
     // 如果是私密群聊，先解密 passcode
-    if (isPrivateGroup.value && passcode.value && fromMetaId.value) {
+    if (isPrivateGroup.value && passcode.value && fromGlobalMetaId.value) {
       try {
         console.log('🔓 解密 passcode...')
         // 获取发送者的公钥
-        const senderInfo = await getUserInfoByMetaId(fromMetaId.value)
+        const senderInfo = await getUserInfoByGlobalMetaId(fromGlobalMetaId.value)
         if (!senderInfo.chatpubkey) {
           throw new Error(t('Talk.Channel.sender_pubkey_not_found'))
         }
@@ -213,7 +213,7 @@ onMounted(async () => {
           type: 'group',
           name: decryptedGroupName,
           avatar: channelData.roomAvatarUrl,
-          createdBy: channelData.createUserMetaId || '',
+          createdBy: channelData.createUserInfo?.globalMetaId || channelData.createUserMetaId || '',
           createdAt: Date.now(),
           unreadCount: 0,
           roomJoinType: isPrivateGroup.value ? '100' : '1',
@@ -265,7 +265,7 @@ const handleJoinGroup = async () => {
       }
 
       const whitelist = controlListRes.data.joinWhitelistMetaIds || []
-      const currentUserMetaId = userStore.last?.metaid
+      const currentUserMetaId = userStore.last?.globalMetaId
 
       if (!whitelist.includes(currentUserMetaId)) {
         // 不在白名单中，不允许加群
@@ -278,11 +278,11 @@ const handleJoinGroup = async () => {
     }
 
     // 2. 解密 passcode（私密群聊）- 如果在 onMounted 中还未解密
-    if (isPrivateGroup.value && passcode.value && fromMetaId.value && !decryptedPasswordKey.value) {
+    if (isPrivateGroup.value && passcode.value && fromGlobalMetaId.value && !decryptedPasswordKey.value) {
       console.log('🔓 解密 passcode...')
       try {
         // 获取发送者的公钥
-        const senderInfo = await getUserInfoByMetaId(fromMetaId.value)
+        const senderInfo = await getUserInfoByGlobalMetaId(fromGlobalMetaId.value)
         if (!senderInfo.chatpubkey) {
           throw new Error(t('Talk.Channel.sender_pubkey_not_found'))
         }

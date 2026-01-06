@@ -106,7 +106,7 @@ const loading: boolean[] = reactive([])
 function getRecommendCommunitys() {
   return new Promise<void>(async (resolve, reject) => {
     const res = await GetRecommendCommunitys({
-      metaId: userStore.last?.metaid,
+      metaId: userStore.last?.globalMetaId,
       ...pagination,
     })
     if (res.code === 0) {

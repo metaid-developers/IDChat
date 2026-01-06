@@ -8,6 +8,7 @@ import {
   MetaIdJsRes,
   UtxoItem,
 } from '@/@types/sdk'
+import { ElMessage } from 'element-plus'
 import Decimal from 'decimal.js-light'
 import {
   DEFAULTS,
@@ -187,6 +188,30 @@ export class MetaletSDK {
               res.data.token = res.appAccessToken
             }
             res.data.metaId = res.data.showId
+
+            // 处理 globalMetaId：优先使用 App 返回的，否则通过接口获取
+            if (!res.data.globalMetaId && res.data.address) {
+              try {
+                // 通过 address 从 metafile-indexer 接口获取 globalMetaId
+                const { getUserInfoByAddress } = await import('@/api/man')
+                const apiUserInfo = await getUserInfoByAddress(res.data.address)
+                if (apiUserInfo?.globalMetaId) {
+                  res.data.globalMetaId = apiUserInfo.globalMetaId
+                  console.log('✅ 通过接口获取到 globalMetaId:', apiUserInfo.globalMetaId)
+                }
+              } catch (e) {
+                console.warn('⚠️ 通过接口获取 globalMetaId 失败:', e)
+              }
+            }
+
+            // 如果最终还是没有 globalMetaId，提示用户重新登录
+            if (!res.data.globalMetaId) {
+              console.error('❌ 无法获取 globalMetaId，请用户重新登录')
+              ElMessage.error('登录信息不完整，请重新登录')
+              reject(new Error('无法获取 globalMetaId，请重新登录'))
+              return
+            }
+
             const userInfo = res.data
             if (userInfo) {
               userStore.updateUserInfo(userInfo)
@@ -353,12 +378,10 @@ export class MetaletSDK {
       isTransfer?: boolean
     }
   ) {
-
-    
     return new Promise<NodeTransactions | null>(async (resolve, reject) => {
       //
       console.log('option', option?.payType)
-      
+
       const rootStore = useRootStore()
       const userStore = useUserStore()
       if (!rootStore.metaletWhiteProtocolList.includes(params.nodeName) && userStore.metaletLogin) {
@@ -571,7 +594,7 @@ export class MetaletSDK {
               console.log('hexTxs', hexTxs)
 
               const unSignTransations: TransactionInfo[] = []
-              
+
               for (let i = 0; i < hexTxs.length; i++) {
                 if (Array.isArray(hexTxs[i])) {
                   for (let j = 0; j < (hexTxs[i] as Array<any>).length; j++) {
@@ -579,7 +602,7 @@ export class MetaletSDK {
                     const { path } = await this.wallet.session.getAddressPath(
                       transation.inputs[0].output!.script.toAddress(this.network).toString()
                     )
-                      
+
                     if (hexTxs[i].hasMetaId) {
                       unSignTransations.push({
                         txHex: transation.toString(),
@@ -614,7 +637,7 @@ export class MetaletSDK {
                   //
 
                   const { transation } = hexTxs[i]
-                  
+
                   console.log('transation', transation, hexTxs[i])
 
                   const { path } = await this.wallet.session.getAddressPath(
@@ -652,8 +675,8 @@ export class MetaletSDK {
               // hexTxs.forEach(async tx => {
 
               // })
-              console.log("unSignTransations",unSignTransations)
-              
+              console.log('unSignTransations', unSignTransations)
+
               const { signedTransactions } = await this.wallet!.metaIDJsWallet.signTransactions({
                 transactions: unSignTransations,
               })
@@ -1773,8 +1796,6 @@ export class MetaletSDK {
     return new Promise<void>(async (resolve, reject) => {
       //
       try {
-
-        
         //  廣播  payToAddress
         if (
           !option?.notBroadcastKeys?.includes('payToAddress') &&

@@ -175,7 +175,18 @@ const { communityId, channelId, subId } = route.params as {
 watch(
   () => route.params,
   (newVal, oldVal) => {
-    if (newVal.channelId != oldVal.channelId) {
+    // 检查 channelId 或 communityId 是否变化
+    const channelChanged = newVal.channelId != oldVal.channelId
+    const communityChanged = newVal.communityId != oldVal.communityId
+
+    if (channelChanged || communityChanged) {
+      console.log('🔄 路由参数变化:', {
+        oldCommunityId: oldVal.communityId,
+        newCommunityId: newVal.communityId,
+        oldChannelId: oldVal.channelId,
+        newChannelId: newVal.channelId,
+      })
+
       if (newVal?.subId && newVal?.subId !== oldVal?.subId) {
         resolve(newVal.communityId as string, newVal.channelId as string, newVal.subId as string)
       } else {
@@ -188,7 +199,8 @@ watch(
         resolve(newVal.communityId as string, newVal.channelId as string, newVal.subId as string)
       }
     }
-  }
+  },
+  { deep: true }
 )
 
 // 解析 communityId 为 metaName 的情况

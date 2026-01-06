@@ -244,10 +244,12 @@
                   <div class="fee-value-wrap">
                     <input
                       v-if="selectedDOGEFeeType === 'customizeFee'"
-                      v-model="customDOGEValue"
+                      v-model="customDOGEInputValue"
                       type="number"
                       class="fee-input"
-                      placeholder="Custom fee"
+                      placeholder="0.001"
+                      step="0.0001"
+                      min="0.001"
                       @click.stop
                     />
                     <span v-else class="fee-value">
@@ -293,6 +295,8 @@ const selectedDOGEFeeType = ref<ChainFeeData['selectedFeeType']>(chainStore.stat
 const customBTCValue = ref<number>(chainStore.state.btc.customizeFee)
 const customMVCValue = ref<number>(chainStore.state.mvc.customizeFee)
 const customDOGEValue = ref<number>(chainStore.state.doge.customizeFee)
+// 用于输入的 DOGE 单位值（用户输入 DOGE，内部存储 sats）
+const customDOGEInputValue = ref<number>(chainStore.state.doge.customizeFee / 100000000)
 
 // Computed
 // const isMobile = computed(() => window.innerWidth <= 1024)
@@ -334,11 +338,15 @@ const handleConfirm = () => {
   } else if (selectedChain.value === 'doge') {
     chainStore.setDogeFeeType(selectedDOGEFeeType.value)
     if (selectedDOGEFeeType.value === 'customizeFee') {
-      if(customDOGEValue.value < 100000){
-       ElMessage.error('DOGE custom fee must be at least 100000 sat/vB')
-       customDOGEValue.value=100000
+      // 将 DOGE 单位转换为 sats/kB
+      const dogeInSats = Math.round(customDOGEInputValue.value * 100000000)
+      if(dogeInSats < 100000){
+       ElMessage.error('DOGE custom fee must be at least 0.001 DOGE/KB')
+       customDOGEInputValue.value = 0.001
+       chainStore.setDogeCustomizeFee(100000)
+      } else {
+        chainStore.setDogeCustomizeFee(dogeInSats)
       }
-      chainStore.setDogeCustomizeFee(customDOGEValue.value)
     }
   } else {
     chainStore.setMvcFeeType(selectedMVCFeeType.value)
@@ -371,6 +379,8 @@ watch(
       } else if (selectedChain.value === 'doge') {
         selectedDOGEFeeType.value = chainStore.state.doge.selectedFeeType
         customDOGEValue.value = chainStore.state.doge.customizeFee
+        // 将 sats 转换为 DOGE 单位用于输入显示
+        customDOGEInputValue.value = chainStore.state.doge.customizeFee / 100000000
       } else {
         selectedMVCFeeType.value = chainStore.state.mvc.selectedFeeType
         customMVCValue.value = chainStore.state.mvc.customizeFee

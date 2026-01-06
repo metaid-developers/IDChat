@@ -1,4 +1,4 @@
-import { string } from "yup"
+import { string } from 'yup'
 
 declare interface GetHonorsResItem {
   codehash: string
@@ -167,6 +167,7 @@ declare interface MetaNoteItem {
 
 declare interface UserAllInfo {
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   metaIdTag: string
   address: string
   pubKey: string
@@ -272,8 +273,6 @@ declare interface MetaNameSearchResult {
   infos: Partial<MetaNameInfo>
   txid: string
 }
-
-
 
 declare interface MetaNameItem {
   codeHash: string

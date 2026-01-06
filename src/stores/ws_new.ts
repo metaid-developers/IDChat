@@ -16,7 +16,7 @@ interface MessageData {
 interface SocketConfig {
   url: string
   path: string
-  metaid: string
+  metaid: string // 参数名改为 metaid（小写），值使用 globalMetaId
   type: 'pc' | 'app'
 }
 
@@ -29,9 +29,16 @@ export const useWsStore = defineStore('ws', {
   },
 
   getters: {
+    // 当前用户的 MetaId（现在统一使用 globalMetaId）
     selfMetaId(): string {
       const userStore = useUserStore()
-      return userStore.last?.metaid || ''
+      // 只使用 globalMetaId
+      return userStore.last?.globalMetaId || ''
+    },
+
+    // 当前用户的全局 MetaId（支持多链 MVC/BTC/DOGE）- 与 selfMetaId 相同
+    selfGlobalMetaId(): string {
+      return this.selfMetaId // 直接复用 selfMetaId
     },
 
     activeChannelId(): string {
@@ -46,14 +53,14 @@ export const useWsStore = defineStore('ws', {
 
   actions: {
     async init() {
-      const selfMetaId = this.selfMetaId
+      const selfGlobalMetaId = this.selfGlobalMetaId // 使用 globalMetaId 值
       const rootStore = useRootStore()
       rootStore.checkWebViewBridge()
-      if (!selfMetaId) return
+      if (!selfGlobalMetaId) return
       const config: SocketConfig = {
         url: `${VITE_CHAT_WS() || import.meta.env.VITE_CHAT_WS}`,
         path: `${VITE_CHAT_WS_PATH()}/socket.io`,
-        metaid: selfMetaId,
+        metaid: selfGlobalMetaId, // 参数名改为 metaid（小写），值使用 globalMetaId
         type: rootStore.isWebView || isIOS || isAndroid ? 'app' : 'pc',
       }
 

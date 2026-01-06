@@ -5,6 +5,7 @@
     :width="200"
     trigger="click"
     content="this is content, this is content, this is content"
+    v-if="member && member.userInfo"
   >
     <template #reference>
       <div
@@ -14,10 +15,10 @@
         <div class="flex items-center">
           <!--member.avatarType-->
           <UserAvatar
-            :name="member.userInfo.name"
+            :name="member.userInfo?.name || ''"
             :type="'metaId'"
-            :meta-id="member.userInfo.metaid"
-            :image="member.userInfo.avatar"
+            :meta-id="member.userInfo?.metaid || ''"
+            :image="member.userInfo?.avatar || ''"
             :meta-name="''"
             :image-class="'w-9 h-9'"
             class="shrink-0"
@@ -25,14 +26,14 @@
           <div class="ml-2 flex flex-col gap-y-px">
             <div class="flex flex-row items-center justify-between ">
               <UserName
-                :name="member.userInfo.name"
+                :name="member.userInfo?.name || ''"
                 :meta-name="''"
                 class="max-w-[160PX] mr-2 text-sm"
               />
               <Icon :name="getRuleName" class="w-[46px] h-[18px]" v-if="getRuleName"></Icon>
             </div>
-            <div class="text-xxs text-dark-300 dark:text-gray-400" v-if="member.userInfo.metaid">
-              MetaID: {{ member.userInfo.metaid.substring(0, 6) }}
+            <div class="text-xxs text-dark-300 dark:text-gray-400" v-if="member.userInfo?.metaid">
+              MetaID: {{ member.userInfo?.metaid?.substring(0, 6) || '' }}
             </div>
           </div>
         </div>
@@ -82,7 +83,7 @@
           width="220"
           :icon="InfoFilled"
           icon-color="red"
-          :title="`Are you sure to remove this user ${member.userInfo.name}?`"
+          :title="`Are you sure to remove this user ${member.userInfo?.name || ''}?`"
           @cancel="onCancel"
           @confirm="onConfirm"
           v-if="!isYou"
@@ -112,7 +113,7 @@
           width="220"
           :icon="InfoFilled"
           icon-color="red"
-          :title="`Confirm adding this user to the blocklist ${member.userInfo.name}?`"
+          :title="`Confirm adding this user to the blocklist ${member.userInfo?.name || ''}?`"
           @cancel="onCancel"
           @confirm="onSetBlockListConfirm"
           v-if="!isYou"
@@ -173,7 +174,7 @@ const emit = defineEmits([
 const router = useRouter()
 const route = useRoute()
 const isYou = computed(() => {
-  return props.member.userInfo.metaid === simpleTalk.selfMetaId
+  return props.member?.userInfo?.metaid === simpleTalk.selfMetaId
 })
 
 // const currentChannelInfo = computed(() => {
@@ -244,9 +245,11 @@ const popMemberMenu = () => {
 }
 
 const isCurrentUserCreator = computed(() => {
+  // 使用 globalMetaId 判断（支持多链）
+  const selfGlobalMetaId = userStore.last?.globalMetaId
   return (
-    props.createUserMetaId === userStore.last?.metaid &&
-    props.member.userInfo.metaid !== userStore.last?.metaid
+    props.createUserMetaId === selfGlobalMetaId &&
+    props.member?.userInfo?.globalMetaId !== selfGlobalMetaId
   )
 })
 
@@ -282,13 +285,13 @@ const onSetBlockListConfirm = () => {
 
 const onConfirm = async () => {
   clicked.value = false
-  console.log('delete user', props.member.userInfo.metaid)
+  console.log('delete user', props.member?.userInfo?.metaid)
   // TODO: implement delete user logic
   console.log('confirm!')
 
   try {
     const data = {
-      removeMetaid: props.member.userInfo.metaid,
+      removeMetaid: props.member?.userInfo?.metaid,
       groupId: props.groupId,
       reason: '',
       timestamp: Math.floor(Date.now() / 1000),
@@ -328,19 +331,18 @@ const onConfirm = async () => {
       })
     }
     ElMessage.success('delete success')
-    emit('updated', props.member.userInfo.metaid)
+    emit('updated', props.member?.userInfo?.metaid)
   } catch (error) {
     ElMessage.error((error as any).message || 'delete failed')
   }
 }
 
 const messageThisGuy = () => {
-  return
   // 如果是自己，就不要发消息了
   if (isYou.value) return
 
-  const memberMetaId = props.member.userInfo.metaid
-  router.push('/talk/channels/@me/' + memberMetaId)
+  // 通过 emit 让父组件处理私聊跳转和关闭抽屉
+  emit('toPrivateChat', props.member)
 }
 </script>
 <style lang=""></style>

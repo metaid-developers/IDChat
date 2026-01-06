@@ -10,7 +10,7 @@
   },
   "api": {
     "mvcBaseApi": "https://api.mvcscan.com/browser",
-    "metaSoBaseURL": "https://testchat.show.now",
+    "metaSoBaseURL": "https://api.idchat.io",
     "metaFSBaseURL": "https://file.metaid.io",
     "paths": {
       "fileApi": "/metafile-indexer/api/v1/files",

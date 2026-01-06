@@ -250,6 +250,7 @@ interface RemoteSearchGroup {
   avatar?: string
   avatarId?: string
   metaId?: string
+  globalMetaId?: string // 新增：全局 MetaId
   timestamp?: string
   type: 'user' | 'group'
   userName?: string
@@ -402,19 +403,21 @@ export default defineComponent({
     // 选择远程群组
     const selectRemoteGroup = (group: RemoteSearchGroup) => {
       // 转换远程群组数据格式以匹配本地联系人格式
+      const targetId = group.globalMetaId || ''
       const remoteContact = {
-        id: group.groupId || group.metaId || '',
+        id: group.groupId || targetId,
         roomName: group.groupName,
         memberCount: group.memberCount || 0,
         isRemote: true, // 标记这是远程群组
         metaId: group.metaId,
+        globalMetaId: group.globalMetaId,
         type: group.type,
       }
       layout.$patch({
         isShowLeftNav: false,
       })
       if (group.type === 'user') {
-        router.push(`/talk/@me/${group.metaId}`)
+        router.push(`/talk/@me/${targetId}`)
       } else {
         router.push(`/talk/channels/public/${group?.groupId}`)
       }

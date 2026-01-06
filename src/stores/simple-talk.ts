@@ -30,16 +30,16 @@ class SimpleChatDB {
   private db: IDBDatabase | null = null
   private readonly DB_NAME = 'SimpleChatDB'
   private readonly DB_VERSION = 7 // 增加版本号以添加 settings 表
-  private userPrefix = 'default_' // 用户数据前缀
+  private userPrefix = 'default_' // 用户数据前缀（使用 globalMetaId）
 
-  constructor(userMetaId?: string) {
-    this.userPrefix = userMetaId ? `user_${userMetaId}_` : 'default_'
+  constructor(globalMetaId?: string) {
+    this.userPrefix = globalMetaId ? `user_${globalMetaId}_` : 'default_'
   }
 
-  async init(userMetaId?: string): Promise<void> {
+  async init(globalMetaId?: string): Promise<void> {
     
-    if (userMetaId) {
-      this.userPrefix = `user_${userMetaId}_`
+    if (globalMetaId) {
+      this.userPrefix = `user_${globalMetaId}_`
     }
     
     return new Promise((resolve, reject) => {
@@ -517,8 +517,8 @@ class SimpleChatDB {
     // 创建可以安全存储到 IndexedDB 的消息副本
     const safeMessageData = this.createCloneableMessage(message)
     const isPrivateChat = isPrivateChatMessage(safeMessageData)
-    // 确定频道ID
-    const channelId = isPrivateChat ? (this.userPrefix.indexOf(safeMessageData.from) !== -1 ? safeMessageData.to : safeMessageData.from) : message.channelId ||  message.groupId 
+    // 确定频道ID（使用 fromGlobalMetaId/toGlobalMetaId）
+    const channelId = isPrivateChat ? (this.userPrefix.indexOf(safeMessageData.fromGlobalMetaId) !== -1 ? safeMessageData.toGlobalMetaId : safeMessageData.fromGlobalMetaId) : message.channelId ||  message.groupId 
     if (!channelId) {
       
       console.warn('⚠️ 无法确定消息的频道ID，跳过保存')
@@ -656,10 +656,10 @@ class SimpleChatDB {
         mockId: message.mockId ? String(message.mockId) : undefined,
         error: message.error ? String(message.error) : undefined,
 
-        // 私聊特有字段
-        from: message.from ? String(message.from) : undefined,
+        // 私聊特有字段（使用 globalMetaId）
+        fromGlobalMetaId: message.fromGlobalMetaId ? String(message.fromGlobalMetaId) : undefined,
         fromUserInfo: safeFromUserInfo,
-        to: message.to ? String(message.to) : undefined,
+        toGlobalMetaId: message.toGlobalMetaId ? String(message.toGlobalMetaId) : undefined,
         toUserInfo: safeToUserInfo,
 
         // 群聊特有字段
@@ -1407,7 +1407,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     // IndexedDB实例
     db: new SimpleChatDB(),
     
-    // 当前用户的 MetaId（用于用户切换检测）
+    // 当前用户的 GlobalMetaId（用于用户切换检测，支持多链 MVC/BTC/DOGE）
     currentUserMetaId: '',
     
     // 系统状态
@@ -1477,11 +1477,18 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       const userStore = useUserStore()
       return userStore.last?.address || ''
     },
-    // 当前用户的 MetaId
+    // 当前用户的 MetaId（现在统一使用 globalMetaId）
     selfMetaId(): string {
       const userStore = useUserStore();
-      console.log('🚀 获取当前用户 MetaId', userStore.last?.metaid)
-      return userStore.last?.metaid || ''
+      // 只使用 globalMetaId，不降级
+      const globalMetaId = userStore.last?.globalMetaId || ''
+      console.log('🚀 获取当前用户 GlobalMetaId', globalMetaId)
+      return globalMetaId
+    },
+
+    // 当前用户的全局 MetaId（支持多链 MVC/BTC/DOGE）- 与 selfMetaId 相同
+    selfGlobalMetaId(): string {
+      return this.selfMetaId  // 直接复用 selfMetaId
     },
   
     // 获取当前激活的频道
@@ -1714,7 +1721,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       this.isInitializing = true
       const userStore = useUserStore()
       const rootStore=useRootStore()
-      const currentUserMetaId = userStore.last?.metaid
+      // 使用 globalMetaId 作为本地数据 key（支持多链）
+      const currentUserMetaId = userStore.last?.globalMetaId
       
       // 确保 Map 对象正确初始化（处理持久化恢复问题）
       if (!(this.messageCache instanceof Map)) {
@@ -1795,7 +1803,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
          if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
           
-          GetUserEcdhPubkeyForPrivateChat(userStore.last?.metaid).then((ecdhRes) => {
+          GetUserEcdhPubkeyForPrivateChat(userStore.last?.globalMetaId).then((ecdhRes) => {
             if (ecdhRes?.chatPublicKey) {
             userStore.updateUserInfo({
             chatpubkey: ecdhRes?.chatPublicKey
@@ -2296,7 +2304,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 从服务端同步数据
      */
     async syncFromServer(): Promise<void> {
-      if (!this.selfMetaId) {
+      if (!this.selfGlobalMetaId) {  // 改为 globalMetaId
         console.warn('⚠️ 未找到用户信息，跳过同步')
         return
       }
@@ -2346,11 +2354,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async fetchLatestChatInfo(): Promise<any[]> {
       console.log('🌐 开始调用 API 获取聊天数据...', {
-        selfMetaId: this.selfMetaId,
+        selfGlobalMetaId: this.selfGlobalMetaId,
         apiEndpoint: '/user/latest-chat-info-list'
       })
       const result = await getChannels({ 
-        metaId: this.selfMetaId,
+        metaId: this.selfGlobalMetaId,  // 参数名保持 metaId，值使用 globalMetaId
         cursor: '0',
         size: '100'
       })
@@ -2541,7 +2549,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           name: channelData.channelName, // 使用解析出的频道名称
           avatar: channelData.channelIcon, // 暂时置空，如用户要求
           members: [], // 成员信息暂时置空
-          createdBy: channelData.createUserMetaId, // 使用新结构的 metaId
+          createdBy: channelData.createUserInfo?.globalMetaId || channelData.createUserMetaId, // 使用 globalMetaId
           createdAt: channelData.timestamp , // 转换为毫秒
           unreadCount: 0,
           lastReadIndex: 0, // 初始化已读索引为 0，与群聊、私聊保持一致
@@ -2604,23 +2612,25 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const isPrivateChat = channel.type === "2"
         
         if (isPrivateChat) {
-          // 私聊数据转换
+          // 私聊数据转换 - 使用对方的 globalMetaId 作为频道ID
           const userInfo = channel.userInfo
+          // 私聊中 globalMetaId 在 userInfo 里面
+          const targetGlobalMetaId = userInfo?.globalMetaId
           return {
-            id: channel.metaId,
+            id: targetGlobalMetaId,
             type: 'private' as ChatType,
             name: userInfo?.name || '未知用户',
             avatar: userInfo?.avatarImage.length>64?userInfo?.avatarImage.replace('/content','/thumbnail'):'',
-            members: [this.selfMetaId, channel.metaId],
+            members: [this.selfMetaId, targetGlobalMetaId],
             createdBy: this.selfMetaId,
             createdAt: channel.timestamp || Date.now(),
             unreadCount: 0, // 未读数由本地管理
-            targetMetaId: channel.metaId,
+            targetMetaId: targetGlobalMetaId,
             publicKeyStr: userInfo?.chatPublicKey,
             lastMessage:  {
               content: channel.content,
               type: channel.chatType,
-              sender: channel.createMetaId || channel.metaId,
+              sender: userInfo?.globalMetaId || channel.createMetaId,
               senderName: userInfo?.name || '',
               timestamp: channel.timestamp || 0,
               chatPublicKey: userInfo?.chatPublicKey,
@@ -2636,7 +2646,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             name: channel.roomName || '未命名群聊',
             avatar: channel.roomIcon ? `${VITE_FILE_API()}/content/${channel.roomIcon.replace('metafile://', '')}` : undefined,
             members: [], // 群成员需要单独获取
-            createdBy: channel.createUserMetaId || '',
+            createdBy: channel.createUserInfo?.globalMetaId || channel.createUserMetaId || '',
             createdAt: channel.timestamp || Date.now(),
             unreadCount: 0, // 未读数由本地管理
             // 保留服务端返回的 roomJoinType（默认为 '1' 表示公开）
@@ -3144,8 +3154,12 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const userStore = useUserStore()
         const ecdhsStore = useEcdhsStore()
         
-        // 判断是否是 64 位长度的 metaId（私聊）
-        if (channelId.length === 64) {
+        // 判断是否是群聊：群聊 ID 格式为 [64位hex]i0，以 i0 结尾
+        // 私聊使用 globalMetaId，不以 i0 结尾
+        const isGroupChannel = channelId.endsWith('i0') && /^[a-fA-F0-9]{64}i0$/.test(channelId)
+        
+        if (!isGroupChannel) {
+          // 私聊频道
           console.log(`🔍 检测到私聊 channelId: ${channelId}`)
           
           try {
@@ -3218,7 +3232,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               type: 'group',
               name: channelInfo.roomName || '群聊',
               avatar: channelInfo.roomAvatarUrl,
-              createdBy: channelInfo.createUserMetaId || '',
+              createdBy: channelInfo.createUserInfo?.globalMetaId || channelInfo.createUserMetaId || '',
               createdAt: channelInfo.timestamp || Date.now(),
               roomNote: channelInfo.roomNote,
               userCount: channelInfo.userCount,
@@ -4487,16 +4501,16 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     /**
      * 创建私聊
      */
-    async createPrivateChat(targetMetaId: string): Promise<SimpleChannel | null> {
+    async createPrivateChat(targetGlobalMetaId: string): Promise<SimpleChannel | null> {
       // 检查是否已存在
       const existing = this.channels.find(
-        c => c.type === 'private' && c.targetMetaId === targetMetaId
+        c => c.type === 'private' && c.targetMetaId === targetGlobalMetaId
       )
       if (existing) return existing
 
       try {
         // 获取用户信息
-        const userInfo = await GetUserEcdhPubkeyForPrivateChat(targetMetaId)
+        const userInfo = await GetUserEcdhPubkeyForPrivateChat(targetGlobalMetaId)
         if (!userInfo.chatPublicKey) {
           throw new Error('用户未开启私聊功能')
         }
@@ -4512,16 +4526,16 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
 
         const newChat: SimpleChannel = {
-          id: targetMetaId,
+          id: targetGlobalMetaId,
           type: 'private',
           name: userInfo.name,
           avatar: userInfo.avatarImage,
-          members: [this.selfMetaId, targetMetaId],
+          members: [this.selfMetaId, targetGlobalMetaId],
           createdBy: this.selfMetaId,
           createdAt: Date.now(),
           unreadCount: 0,
           lastReadIndex: 0, // 显式初始化已读索引为 0
-          targetMetaId,
+          targetMetaId: targetGlobalMetaId,
           publicKeyStr: userInfo.chatPublicKey
         }
 
@@ -4612,7 +4626,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       content: string, 
       messageType: MessageType = MessageType.msg, 
       reply: any,
-      mentions?: Array<{ metaId: string; name: string }>
+      mentions?: Array<{ globalMetaId: string; name: string }>  // 使用 globalMetaId
     ): Promise<UnifiedChatMessage | null> {
       console.log(`✉️ 发送消息到频道 ${channelId}`, { content, messageType, reply, mentions })
       try {
@@ -4646,9 +4660,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           txId: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           pinId: `pin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           metaId: this.selfMetaId,
+          globalMetaId: this.selfGlobalMetaId, // 添加 globalMetaId 用于识别消息发送者
           address: userStore.last?.address || '',
           userInfo: {
             metaid: this.selfMetaId,
+            globalMetaId: this.selfGlobalMetaId, // 添加 globalMetaId
             address: userStore.last?.address || '',
             name: userStore.last?.name || 'Unknown',
             avatar: userStore.last?.avatar,
@@ -4672,11 +4688,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           blockHeight: 0,
           index: channel?.lastMessage ? (channel.lastMessage.index || 0) + 1 : 1,
           
-          // @ 提及功能
-          mention: mentions && mentions.length > 0 ? mentions.map(m => m.metaId) : [],
+          // @ 提及功能 - 使用 globalMetaId
+          mention: mentions && mentions.length > 0 ? mentions.map(m => m.globalMetaId) : [],
 
-          // 私聊特有字段
-          from: isPrivateChat ? this.selfMetaId : undefined,
+          // 私聊特有字段（使用 fromGlobalMetaId/toGlobalMetaId）
+          fromGlobalMetaId: isPrivateChat ? this.selfMetaId : undefined,
           fromUserInfo: isPrivateChat ? {
             metaid: this.selfMetaId,
             address: userStore.last?.address || '',
@@ -4685,7 +4701,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             avatarImage: userStore.last?.avatar,
             chatPublicKey: ''
           } : undefined,
-          to: isPrivateChat ? channelId : undefined,
+          toGlobalMetaId: isPrivateChat ? channelId : undefined,
           toUserInfo: isPrivateChat ? channel?.serverData?.userInfo : undefined,
 
           // 群聊特有字段
@@ -4718,7 +4734,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             contentType,
             encryption,
             replyPin: reply ? `${reply.txId}i0` : '',
-            mention: mentions && mentions.length > 0 ? mentions.map(m => m.metaId) : [],
+            mention: mentions && mentions.length > 0 ? mentions.map(m => m.globalMetaId) : [],  // 使用 globalMetaId
           } 
           
           const node = {
@@ -4918,7 +4934,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
 
         // 判断消息类型
-        const isPrivateChat = message.from !== undefined && message.to !== undefined
+        const isPrivateChat = message.fromGlobalMetaId !== undefined && message.toGlobalMetaId !== undefined
         const isSubGroupChat = !isPrivateChat && !!message.channelId && message.channelId !== ''
         
         if (!isPrivateChat) {
@@ -4957,7 +4973,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const externalEncryption = '0' as const
           
           const dataCarrier = {
-            to: message.to,
+            to: message.toGlobalMetaId,  // 改为 toGlobalMetaId
             timestamp,
             content: message.content,
             contentType,
@@ -4972,7 +4988,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             externalEncryption,
           }
           
-          console.log(`🚀 重发私聊消息到: ${message.to}`)
+          console.log(`🚀 重发私聊消息到: ${message.toGlobalMetaId}`)  // 改为 toGlobalMetaId
           await tryCreateNode(node, message.mockId)
         }
 
@@ -4996,8 +5012,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         const isPrivateChat = isPrivateChatMessage(message);
         if (isPrivateChat) {
-          // 私聊：使用发送者或接收者的 metaId
-          channelId = message.to === this.selfMetaId ? message.from : message.to;
+          // 私聊：使用发送者或接收者的 globalMetaId
+          channelId = message.toGlobalMetaId === this.selfMetaId ? message.fromGlobalMetaId : message.toGlobalMetaId;
         } else {
           // 群聊：优先使用 channelId（子群聊），其次使用 groupId（主群聊）
           channelId = message.channelId || message.groupId;
@@ -5008,8 +5024,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             isPrivateChat,
             channelId: message.channelId,
             groupId: message.groupId,
-            from: message.from,
-            to: message.to
+            fromGlobalMetaId: message.fromGlobalMetaId,
+            toGlobalMetaId: message.toGlobalMetaId
           })
           return
         }
@@ -5157,8 +5173,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         const isPrivateChat = isPrivateChatMessage(message);
         if (isPrivateChat) {
-          // 私聊：使用发送者或接收者的 metaId
-          channelId = message.to === this.selfMetaId ? message.from : message.to;
+          // 私聊：使用发送者或接收者的 globalMetaId
+          channelId = message.toGlobalMetaId === this.selfMetaId ? message.fromGlobalMetaId : message.toGlobalMetaId;
         } else {
           // 群聊：检查是否是子群聊消息
           // 如果 channelId 不为空且不是空字符串，则是子群聊消息
@@ -5178,8 +5194,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             isPrivateChat,
             channelId: message.channelId,
             groupId: message.groupId,
-            from: message.from,
-            to: message.to,
+            fromGlobalMetaId: message.fromGlobalMetaId,
+            toGlobalMetaId: message.toGlobalMetaId,
             message
           })
           return
@@ -5217,11 +5233,23 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const exists = existingMessages.some(m => m.txId === message.txId)
         
         // 从后往前查找对应的mock消息
+        // 需要同时比较 globalMetaId（因为本地消息使用 globalMetaId，服务器消息也有 globalMetaId）
         let mockMessage = null
+        const serverGlobalMetaId = message.globalMetaId || message.userInfo?.globalMetaId
+        
         for (let i = existingMessages.length - 1; i >= 0; i--) {
           const msg = existingMessages[i]
-          if (msg.mockId && msg.content === message.content && msg.metaId === message.metaId) {
+          // 匹配条件：有 mockId，内容相同，且发送者相同（比较 globalMetaId）
+          const msgGlobalMetaId = msg.globalMetaId
+          if (msg.mockId && msg.content === message.content && 
+              msgGlobalMetaId === serverGlobalMetaId) {
             mockMessage = msg
+            console.log('🔍 Mock消息匹配成功:', { 
+              localMetaId: msg.metaId, 
+              localGlobalMetaId: msg.globalMetaId,
+              serverMetaId: message.metaId, 
+              serverGlobalMetaId: serverGlobalMetaId 
+            })
             break
           }
         }
@@ -5233,7 +5261,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           mockMessage.pinId = message.pinId
           mockMessage.timestamp = message.timestamp
           mockMessage.mockId = '' // 清空mockId，表示已发送成功
-          mockMessage.userInfo = isPrivateChat && message.from === this.selfMetaId ? message.toUserInfo : message.userInfo
+          // 更新 globalMetaId 和 metaId（用服务器返回的正确值）
+          mockMessage.globalMetaId = message.globalMetaId
+          mockMessage.metaId = message.metaId
+          mockMessage.userInfo = isPrivateChat && message.fromGlobalMetaId === this.selfMetaId ? message.toUserInfo : message.userInfo
           // 更新数据库
           if(message.index >0 ){
             mockMessage.index = message.index
@@ -5241,7 +5272,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
           await this.updateMessage(mockMessage)
            await this.updateChannelLastMessage(channelId, mockMessage)
-          console.log(`🔄 更新了已存在的草稿消息: ${mockMessage.mockId} 为正式消息: ${message.txId}`)
+          console.log(`🔄 更新了已存在的草稿消息为正式消息: ${message.txId}`)
           return
        }  
       
@@ -5272,8 +5303,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         const isPrivateChat = isPrivateChatMessage(message);
         if (isPrivateChat) {
-          // 私聊：使用发送者或接收者的 metaId
-          channelId = message.to === this.selfMetaId ? message.from : message.to;
+          // 私聊：使用发送者或接收者的 globalMetaId
+          channelId = message.toGlobalMetaId === this.selfMetaId ? message.fromGlobalMetaId : message.toGlobalMetaId;
         } else {
           // 群聊：优先使用 channelId（子群聊），其次使用 groupId（主群聊）
           channelId = message.channelId || message.groupId;
@@ -5284,8 +5315,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             isPrivateChat,
             channelId: message.channelId,
             groupId: message.groupId,
-            from: message.from,
-            to: message.to,
+            fromGlobalMetaId: message.fromGlobalMetaId,
+            toGlobalMetaId: message.toGlobalMetaId,
             message
           })
           return

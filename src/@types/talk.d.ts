@@ -12,6 +12,7 @@ declare interface Message {
   avatarTxId: string
   avatarImage?: string
   metaId?: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   nickName: string
   timestamp: number
   txId: string
@@ -24,6 +25,7 @@ declare interface Message {
 declare interface MemberListItem {
   address: string
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   timeStr: string
   timestamp: number
   userInfo: {
@@ -33,6 +35,7 @@ declare interface MemberListItem {
     chatPublicKey: string
     chatPublicKeyId: string
     metaid: string
+    globalMetaId?: string // 新增：全局 MetaId
     name: string
   }
 }
@@ -54,6 +57,7 @@ declare interface TalkError {
 
 declare interface Contact {
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   name: string
   avatarType?: string
   avatarTxId?: string
@@ -69,6 +73,7 @@ declare interface Community {
   cover: string
   description: string
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   metaName: string
   metaNameNft: string
   metanetId: string
@@ -82,6 +87,7 @@ declare interface Community {
   channels: Channel[]
   memberTotal?: number
   ownerMetaId: string
+  ownerGlobalMetaId?: string // 新增：所有者全局 MetaId
   ownerInfo: {
     address: string
   }
@@ -185,6 +191,7 @@ declare interface Channel {
   txId: string
   id: string
   metaId: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链
   pinId: string
   type: string
   roomName: string
@@ -197,11 +204,13 @@ declare interface Channel {
   roomNewestTxId: string
   roomNewestPinId: string
   roomNewestMetaId: string
+  roomNewestGlobalMetaId?: string // 新增：最新消息发送者全局 MetaId
   roomNewestUserName: string
   roomNewestProtocol: string
   roomNewestProtocol: string
   roomNewestTimestamp: number
   createUserMetaId: string
+  createUserGlobalMetaId?: string // 新增：创建者全局 MetaId
   userCount: number
   chatSettingType: 0 | 1
   deleteStatus: number
@@ -220,12 +229,14 @@ declare interface SubChannel {
   channelNewestTxId: string
   channelNewestPinId: string
   channelNewestMetaId: string
+  channelNewestGlobalMetaId?: string // 新增：最新消息发送者全局 MetaId
   channelNewestUserName: string
   channelNewestProtocol: string
   channelNewestContent: string
   channelNote?: string
   channelNewestTimestamp: number
   createUserMetaId: string
+  createUserGlobalMetaId?: string // 新增：创建者全局 MetaId
   createUserAddress: string
   timestamp: number
   chain: ChatChain

@@ -48,12 +48,14 @@ export interface ChatUserInfo {
   chatPublicKey: string
   chatPublicKeyId: string
   metaid: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链（MVC/BTC/DOGE）
   name: string
 }
 
 // 新版 metafile-indexer API 返回的用户信息接口
 export interface MetafileUserInfo {
   metaid: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链（MVC/BTC/DOGE）
   name: string
   address: string
   avatar: string
@@ -76,6 +78,7 @@ export interface UserInfo {
   followCount?: number
   isInit?: boolean
   metaid: string
+  globalMetaId?: string // 新增：全局 MetaId，支持多链（MVC/BTC/DOGE）
   name: string
   nameId?: string
   nftAvatar?: string
@@ -95,6 +98,7 @@ export const getUserInfoByAddress = async (address: string): Promise<UserInfo> =
     // 将新 API 返回结构转换为兼容旧结构的 UserInfo
     const userInfo: UserInfo = {
       metaid: res.metaid,
+      globalMetaId: res.globalMetaId, // 只使用 globalMetaId
       name: res.name,
       address: res.address,
       avatar: res.avatar,
@@ -113,6 +117,26 @@ export const getUserInfoByMetaId = async (metaid: string): Promise<UserInfo> => 
   // 将新 API 返回结构转换为兼容旧结构的 UserInfo
   const userInfo: UserInfo = {
     metaid: res.metaid,
+    globalMetaId: res.globalMetaId, // 只使用 globalMetaId
+    name: res.name,
+    address: res.address,
+    avatar: res.avatar,
+    avatarId: res.avatarId,
+    chatpubkey: res.chatpubkey,
+    chatpubkeyId: res.chatpubkeyId,
+  }
+  return userInfo
+}
+
+// 新增：通过 globalMetaId 获取用户信息（支持多链）
+export const getUserInfoByGlobalMetaId = async (globalMetaId: string): Promise<UserInfo> => {
+  // 使用新的 metafile-indexer API，通过 globalMetaId 查询
+  const res: MetafileUserInfo = await metafileIndexerApi.get(`/info/globalmetaid/${globalMetaId}`)
+
+  // 将新 API 返回结构转换为兼容旧结构的 UserInfo
+  const userInfo: UserInfo = {
+    metaid: res.metaid,
+    globalMetaId: res.globalMetaId, // 只使用 globalMetaId
     name: res.name,
     address: res.address,
     avatar: res.avatar,

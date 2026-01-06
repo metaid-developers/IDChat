@@ -618,9 +618,10 @@ const triggleMuteNotify=computed(()=>{
 })
 
 
-// 判断当前用户是否是频道创建者
+// 判断当前用户是否是频道创建者（使用 globalMetaId 判断）
 const isCurrentUserCreator = computed(() => {
-  return currentChannelInfo.value?.createdBy === userStore.last?.metaid
+  const selfGlobalMetaId = userStore.last?.globalMetaId
+  return currentChannelInfo.value?.createdBy === selfGlobalMetaId
 })
 
 // 判断是否为私密群聊
@@ -664,19 +665,27 @@ const currentLink = computed(() => {
 // 管理员列表（包含 owner 和 admins）
 const currentAdminList = computed(() => {
   if (!memberPermissions.value) return []
-  const creatorWithOwnerRole = {
-        ...memberPermissions.value.creator,
-        rule: MemberRule.Owner // 使用枚举值
-      }
-  const adminList = [creatorWithOwnerRole,...(memberPermissions.value.admins || []).filter(admin=>{
+
+  const adminList: any[] = []
+
+  // 只有当 creator 存在时才添加
+  if (memberPermissions.value.creator) {
+    const creatorWithOwnerRole = {
+      ...memberPermissions.value.creator,
+      rule: MemberRule.Owner // 使用枚举值
+    }
+    adminList.push(creatorWithOwnerRole)
+  }
+
+  // 添加其他管理员（排除 creator）
+  const admins = (memberPermissions.value.admins || []).filter(admin => {
     return admin.metaId !== memberPermissions.value?.creator?.metaId
   }).map(admin => ({
     ...admin,
     rule: MemberRule.Admin // 确保管理员的 rule 字段被正确设置为 Admin
-  }))]
+  }))
 
-
-
+  adminList.push(...admins)
 
   return adminList
 })
@@ -836,15 +845,15 @@ const handleDeleteSuccess = (metaid: string) => {
 }
 
 const handlePrivateChat=async(member:MemberItem)=>{
-
+  // 使用 globalMetaId 进行私聊跳转
+  const targetGlobalMetaId = member.userInfo?.globalMetaId
   router.push({
     name: 'talkAtMe',
     params: {
-      channelId: member.userInfo!.metaid,
-      // metaid:message.userInfo.metaid
+      channelId: targetGlobalMetaId,
     },
   })
-  simpleTalkStore.setActiveChannel(member.userInfo!.metaid)
+  simpleTalkStore.setActiveChannel(targetGlobalMetaId)
   emit('update:modelValue', false)
 
 }
