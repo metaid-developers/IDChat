@@ -3299,6 +3299,15 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
       // 计算未读消息数量
       const serverLastIndex = channel.lastMessage?.index || 0
+      
+      // 如果 serverLastIndex <= 0（例如 -1），说明 latest-chat-info-list 接口返回的 index 无效
+      // 此时应该直接加载最新消息
+      if (serverLastIndex <= 0) {
+        console.log(`⚠️ serverLastIndex 无效 (${serverLastIndex})，直接加载最新消息`)
+        await this.loadNewestMessages(channelId)
+        return
+      }
+      
       const unreadCount = serverLastIndex - lastReadIndex
       const UNREAD_AUTO_SCROLL_THRESHOLD = 5 // 未读消息数量在此范围内时直接加载最新消息
       
@@ -3501,15 +3510,19 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       try {
         let serverMessages: UnifiedChatMessage[] = []
 
-        if (lastReadIndex!==0 && channel.lastMessage && channel.lastMessage.index && lastReadIndex < channel.lastMessage.index) {
+        // 添加 channel.lastMessage.index > 0 检查，确保 index 有效
+        // 当 latest-chat-info-list 接口返回 index = -1 时，直接使用 fetchServerMessages 获取最新消息
+        if (lastReadIndex!==0 && channel.lastMessage && channel.lastMessage.index && channel.lastMessage.index > 0 && lastReadIndex < channel.lastMessage.index) {
           // 如果有已读消息，以其时间戳为基准获取服务器消息
           console.log(` 基于已读消息时间戳 ${lastReadTimestamp} 获取服务器消息`)
           const startIndex = channel.lastMessage.index-lastReadIndex>20?Math.max(0,lastReadIndex-1):channel.lastMessage.index-22;
           console.log(` 基于已读消息索引 ${lastReadIndex} 获取服务器消息，从 ${startIndex} 开始`,channel.lastMessage.index,lastReadIndex,startIndex)
           serverMessages = await this.fetchServerNewsterMessages(channelId, channel,startIndex )
         } else {
-          // 没有已读消息，获取最新消息
-          console.log(`📡 获取最新服务器消息`)
+          // 没有已读消息，或 lastMessage.index 无效（<= 0），获取最新消息
+          const lastMsgIndex = channel.lastMessage?.index
+          const invalidIndexMsg = (lastMsgIndex !== undefined && lastMsgIndex <= 0) ? ` (lastMessage.index 无效: ${lastMsgIndex})` : ''
+          console.log(`📡 获取最新服务器消息${invalidIndexMsg}`)
           serverMessages = await this.fetchServerMessages(channelId, channel)
         }
 
@@ -3697,6 +3710,14 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 计算从哪个 index 开始获取最新消息
         // 使用 lastMessage.index 来获取最新的消息，而不是 cursor: '0'
         const lastMessageIndex = channel.lastMessage?.index || 0
+        
+        // 如果 lastMessage.index <= 0（例如 -1），说明 latest-chat-info-list 接口返回的 index 无效
+        // 此时应该使用 /group-chat-list-v2 接口并传入 timestamp=0 来获取最新消息
+        if (lastMessageIndex <= 0) {
+          console.log(`⚠️ lastMessage.index 无效 (${lastMessageIndex})，使用 timestamp=0 获取最新消息`)
+          return await this.fetchServerMessagesWithTimestampZero(channelId, channel)
+        }
+        
         const startIndex = Math.max(0, lastMessageIndex - 49) // 获取最新50条消息
         
         if (channel.type === 'group') {
@@ -3735,6 +3756,62 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
       } catch (apiError) {
         console.error(`❌ API调用失败:`, apiError)
+        serverMessages = []
+      }
+      
+      return serverMessages
+    },
+    
+    /**
+     * 当 lastMessage.index 无效时，使用 timestamp=0 获取服务器最新消息
+     * 通过 /group-chat-list-v2 等接口获取
+     */
+    async fetchServerMessagesWithTimestampZero(channelId: string, channel: SimpleChannel): Promise<UnifiedChatMessage[]> {
+      let serverMessages: any[] = []
+      
+      try {
+        if (channel.type === 'group') {
+          // 群聊消息 - 使用 /group-chat-list-v2 接口，timestamp=0 获取最新消息
+          console.log(`🌐 获取群聊 ${channelId} 的服务端最新消息 (timestamp=0)...`)
+          const { getChannelMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getChannelMessages({
+            groupId: channelId,
+            metaId: this.selfMetaId,
+            cursor: '0',
+            size: '50',
+            timestamp: '0'
+          })
+          serverMessages = result.list || []
+          console.log(`📡 群聊API(timestamp=0)返回 ${serverMessages.length} 条消息`)
+        } else if (channel.type === 'sub-group') {
+          // 子群聊消息 - 使用 /channel-chat-list-v3 接口，timestamp=0 获取最新消息
+          console.log(`🌐 获取子群聊 ${channelId} 的服务端最新消息 (timestamp=0)...`)
+          const { getSubChannelMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getSubChannelMessages({
+            channelId: channelId,
+            metaId: this.selfMetaId,
+            cursor: '0',
+            size: '50',
+            timestamp: '0'
+          })
+          serverMessages = result.list || []
+          console.log(`📡 子群聊API(timestamp=0)返回 ${serverMessages.length} 条消息`)
+        } else if (channel.type === 'private') {
+          // 私聊消息 - 使用 /private-chat-list 接口，timestamp=0 获取最新消息
+          console.log(`🌐 获取私聊 ${channelId} 的服务端最新消息 (timestamp=0)...`)
+          const { getPrivateChatMessages } = await import('@/api/talk')
+          const result: UnifiedChatResponseData = await getPrivateChatMessages({
+            metaId: this.selfMetaId,
+            otherMetaId: channelId,
+            cursor: '0',
+            size: '50',
+            timestamp: '0'
+          })
+          serverMessages = result.list || []
+          console.log(`📡 私聊API(timestamp=0)返回 ${serverMessages.length} 条消息`)
+        }
+      } catch (apiError) {
+        console.error(`❌ API调用(timestamp=0)失败:`, apiError)
         serverMessages = []
       }
       

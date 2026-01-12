@@ -340,10 +340,10 @@ const handleConfirm = () => {
     if (selectedDOGEFeeType.value === 'customizeFee') {
       // 将 DOGE 单位转换为 sats/kB
       const dogeInSats = Math.round(customDOGEInputValue.value * 100000000)
-      if(dogeInSats < 100000){
-       ElMessage.error('DOGE custom fee must be at least 0.001 DOGE/KB')
-       customDOGEInputValue.value = 0.001
-       chainStore.setDogeCustomizeFee(100000)
+      if(dogeInSats < 5000000){
+       ElMessage.error('DOGE custom fee must be at least 0.05 DOGE/KB')
+       customDOGEInputValue.value = 0.05
+       chainStore.setDogeCustomizeFee(5000000)
       } else {
         chainStore.setDogeCustomizeFee(dogeInSats)
       }

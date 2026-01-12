@@ -67,7 +67,7 @@ export const useChainStore = defineStore('chain', () => {
       hourFee: 200000,
       economyFee: 200000,
       minimumFee: 200000,
-      customizeFee: 200000,
+      customizeFee: 5000000,
       selectedFeeType: 'economyFee',
       lastUpdated: 0,
     },
@@ -82,7 +82,7 @@ export const useChainStore = defineStore('chain', () => {
       hourFee: 200000,
       economyFee: 200000,
       minimumFee: 200000,
-      customizeFee: 200000,
+      customizeFee: 5000000,
       selectedFeeType: 'economyFee',
       lastUpdated: 0,
     }
