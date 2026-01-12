@@ -1,73 +1,124 @@
-# ShowV3
+# IDChat
 
-- 集成自适应（使用设计稿 px,自动转换 rem）
-- 集成`i18n`国际化多语言配置
-- 集成`element-plus`Ui 组件,tempalte 里面直接使用，不用引入。script 使用需单独引入
-- 集成代码格式规范和编辑器自动格式化
-- 使用 Vue3 最新 SFC setup 语法，推荐使用[https://vue3js.cn/docs/zh/guide/composition-api-setup.html#%E5%8F%82%E6%95%B0](https://vue3js.cn/docs/zh/guide/composition-api-setup.html#%E5%8F%82%E6%95%B0)
+<p align="center">
+  <img src="public/pwa-512x512-assets/icon.png" alt="IDChat Logo" width="120" height="120">
+</p>
 
-## 使用
+<p align="center">
+  <strong>A decentralized, blockchain-based instant messaging application built on MetaID protocol</strong>
+</p>
 
-1. 修改`.env`的`VITE_Design_Size`的自适应配置,`VITE_AppName`:应用名称;`VITE_AppDescription`:应用描述
-2. 修改 publice 目录下对应图标
-3. 图标推荐使用 svg 格式。有两种使用方式,
-   1. 多色图标 `import` 引入使用,可以自由编辑 svg 每个部分， 使用方法[vite-svg-loader](https://github.com/jpkleemans/vite-svg-loader)
-   2. 单色图标 使用全局组件 `<Icon />`，使用方法查看下面 全局组件部分内容
-4. 布局推荐使用`flex`,`flex`全局快捷样式查看`/src/assets//styles/flex.scss`
-5. 卸载旧的浏览器`Vue.js devtools`插件，安装最新版本[https://chrome.google.com/webstore/detail/vuejs-devtools/ljjemllljcmogpfapbkkighbhhppjdbg](https://chrome.google.com/webstore/detail/vuejs-devtools/ljjemllljcmogpfapbkkighbhhppjdbg)
-6. 页面标题统一在`router.ts`路由文件，根据`meta.title`字段配置，通过配置`meta.isAuth`字段是否需要登录才可访问
-7. 页面是否缓存,统一在`router.ts`路由文件，根据`meta.keepAlive`字段配置
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#getting-started">Getting Started</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#license">License</a>
+</p>
 
-## 全局组件
+---
 
-- `Image`: `MetaFile` 图片使用全局组件 `<Image />`, 使用本地数据库缓存图片,使用方法：`/src/components/Image/Image.vue`
-- `UserAvatar`: 用户头像组件使用方法：`/src/components/UserAvatar/UserAvatar.vue`
-- `Icon`: `svg`图标雪碧图组件（减少资源请求，不用引入使用）,把`svg`图标放在`/src/assets/icons/`目录下，使用方法 `/src/components/Icon/Icon.vue`
+## ✨ Features
 
-## VSCode 设置
+- 🔐 **Decentralized Identity** - Built on MetaID protocol, your identity is truly yours
+- 💬 **End-to-End Encryption** - Private messages are encrypted using ECIES
+- 👥 **Group Chat** - Create and manage encrypted group conversations
+- 🧧 **Crypto Red Packets** - Send BTC/MVC red packets to friends
+- 📁 **Decentralized Storage** - Files stored on blockchain via MetaFile
+- 🌐 **Multi-language Support** - i18n internationalization
+- 📱 **PWA Support** - Install as a native app on any device
+- 🔗 **Wallet Integration** - Connect with MetaletWallet and other Web3 wallets
 
-安装推荐插件即可
+## 🚀 Getting Started
 
-## API 配置说明
+### Prerequisites
 
-应用的 API 配置位于 `public/app-config.json` 文件中，以下是各配置项的说明：
+- Node.js >= 16
+- Yarn package manager
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/metaid-developers/IDChat.git
+
+# Navigate to project directory
+cd IDChat
+
+# Install dependencies
+yarn install
+```
+
+### Development
+
+```bash
+# Start development server (testnet)
+yarn gray
+
+# Start development server (mainnet)
+yarn mainnet
+```
+
+### Build
+
+```bash
+# Build for testnet
+yarn build:gray
+
+# Build for mainnet
+yarn build:mainnet
+```
+
+## 🛠 Tech Stack
+
+- **Framework**: Vue 3 with Composition API
+- **Build Tool**: Vite
+- **UI Components**: Element Plus, Headless UI
+- **Styling**: Tailwind CSS, SCSS
+- **State Management**: Harlem
+- **Blockchain**: MVC (MicrovisionChain), Bitcoin
+- **Protocol**: MetaID
+
+## 📁 Project Structure
+
+```
+src/
+├── api/          # API service modules
+├── components/   # Reusable Vue components
+├── config/       # App configuration
+├── hooks/        # Vue composables
+├── languages/    # i18n translation files
+├── layout/       # Layout components
+├── lib/          # Third-party libraries
+├── stores/       # State management
+├── utils/        # Utility functions
+├── views/        # Page components
+└── wallet-adapters/  # Wallet integration adapters
+```
+
+## ⚙️ Configuration
+
+API configuration is located in `public/app-config.json`:
 
 ```json
 {
   "api": {
-    "mvcBaseApi": "https://api.mvcscan.com/browser",
-    "fileApi": "https://file.metaid.io/metafile-indexer/api/v1/files",
-    "avatarContentApi": "https://file.metaid.io/metafile-indexer/thumbnail",
-    "metafileIndexerApi": "https://file.metaid.io/metafile-indexer/api",
-    "chatApi": "https://www.show.now/chat-api",
-    "chatNotify": "https://api.idchat.io",
-    "chatWs": "https://www.show.now",
-    "chatWsPath": "/socket"
+    "chatApi": "https://api.idchat.io",
+    "chatWs": "wss://api.idchat.io",
+    "fileApi": "https://file.metaid.io/metafile-indexer/api/v1/files"
   }
 }
 ```
 
-| 配置项               | 说明                                                              |
-| -------------------- | ----------------------------------------------------------------- |
-| `mvcBaseApi`         | MVC 区块链浏览器 API 地址，用于查询区块链相关数据（交易、地址等） |
-| `fileApi`            | MetaFile 文件上传/下载 API 地址，用于处理文件的存储和获取         |
-| `avatarContentApi`   | 头像缩略图 API 地址，用于获取用户头像的缩略图资源                 |
-| `metafileIndexerApi` | MetaFile 索引器 API 地址，用于文件索引和查询服务                  |
-| `chatApi`            | 聊天服务 REST API 地址，用于处理聊天消息、群组管理等 HTTP 请求    |
-| `chatNotify`         | 聊天通知服务地址，用于处理推送通知相关功能                        |
-| `chatWs`             | WebSocket 服务器地址，用于实时消息通信的基础 URL                  |
-| `chatWsPath`         | WebSocket 连接路径，与 `chatWs` 组合形成完整的 WebSocket 连接地址 |
+## 🤝 Contributing
 
-### 环境配置文件
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-- `public/app-config.json` - 生产环境配置
-- `public/app-config.dev.json` - 开发环境配置
-- `public/app-config-test.json` - 测试环境配置
+## 📄 License
 
-### WebSocket 连接示例
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
-WebSocket 完整连接地址由 `chatWs` + `chatWsPath` 组成：
+## 🔗 Links
 
-```
-wss://www.show.now/socket
-```
+- [MetaID Protocol](https://metaid.io)
+- [MicrovisionChain](https://mvc.space)
+- [MetaletWallet](https://metalet.space)
