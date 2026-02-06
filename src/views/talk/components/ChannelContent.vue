@@ -52,7 +52,12 @@ const type = computed(() => {
     const role = simpleTalk.getCurrentUserRoleInGroup(simpleTalk.activeChannel!.parentGroupId!)
     return role.isAdmin || role.isCreator || role.isWhitelist ? 'allowed' : 'forbidden'
   } else if (simpleTalk.activeChannel?.type === 'group') {
-    return simpleTalk.activeChannel.isTemporary ? 'join' : 'allowed'
+    // 判断用户是否是群成员：
+    // isTemporary 为 false（明确设置）表示用户已加入该群聊
+    // isTemporary 为 true 或 undefined 都表示可能未加入
+    const channel = simpleTalk.activeChannel
+    const isMember = channel.isTemporary === false
+    return isMember ? 'allowed' : 'join'
   } else {
     return simpleTalk.activeChannel?.publicKeyStr ? 'allowed' : 'forbidden'
   }
