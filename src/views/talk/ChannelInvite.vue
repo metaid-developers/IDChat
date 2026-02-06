@@ -162,8 +162,8 @@ onMounted(async () => {
       }
     }
 
-    // 获取群聊信息
-    const channel = undefined
+    // 获取群聊信息 - 先检查用户是否已在本地频道列表中
+    const channel = simpleTalkStore.channels.find(ch => ch.id === groupId.value && ch.type === 'group')
 
     if (channel) {
       // 用户已经在群中
