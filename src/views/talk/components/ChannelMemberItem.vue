@@ -10,7 +10,6 @@
     <template #reference>
       <div
         class="flex items-center justify-between py-1 lg:py-2 group cursor-pointer hover:bg-dark-200 hover:dark:bg-gray-900 px-4"
-        @click="messageThisGuy"
       >
         <div class="flex items-center">
           <!--member.avatarType-->
@@ -174,7 +173,16 @@ const emit = defineEmits([
 const router = useRouter()
 const route = useRoute()
 const isYou = computed(() => {
-  return props.member?.userInfo?.metaid === simpleTalk.selfMetaId
+  const selfId = simpleTalk.selfMetaId
+  const selfAddr = userStore.last?.address
+  const member = props.member
+  return (
+    member?.userInfo?.metaid === selfId ||
+    member?.userInfo?.globalMetaId === selfId ||
+    member?.metaId === selfId ||
+    member?.globalMetaId === selfId ||
+    (selfAddr && (member?.address === selfAddr || member?.userInfo?.address === selfAddr))
+  )
 })
 
 // const currentChannelInfo = computed(() => {
@@ -183,8 +191,6 @@ const isYou = computed(() => {
 
 const selfPermission = computed(() => {
   return simpleTalk.getCurrentUserRoleInGroup(props.groupId)
-  // return simpleTalk.getMychannelRule(currentChannelInfo.value?.groupId || route.params.groupId as string)
-  //return props.selfRule
 })
 
 const getRuleName = computed(() => {
@@ -222,8 +228,6 @@ const getRuleIcon = computed(() => {
       return ''
   }
 })
-
-console.log('selfPermission', selfPermission.value)
 
 const isOwner = computed(() => {
   const memberRule = props.role !== undefined ? props.role : props.member?.rule
@@ -285,9 +289,6 @@ const onSetBlockListConfirm = () => {
 
 const onConfirm = async () => {
   clicked.value = false
-  console.log('delete user', props.member?.userInfo?.metaid)
-  // TODO: implement delete user logic
-  console.log('confirm!')
 
   try {
     const data = {

@@ -501,7 +501,7 @@ import {
 import { metafile } from '@/utils/filters'
 import { NodeName,MemberRule,RuleOp } from '@/enum'
 import { createSinglePin } from '@/utils/pin'
-
+import { getUserInfoByMetaId, getUserInfoByAddress } from '@/api/man'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import { setChannelAdmins,setChannelWhiteList,setChannelBlockList } from '@/utils/talk'
@@ -845,8 +845,27 @@ const handleDeleteSuccess = (metaid: string) => {
 }
 
 const handlePrivateChat=async(member:MemberItem)=>{
-  // 使用 globalMetaId 进行私聊跳转
-  const targetGlobalMetaId = member.userInfo?.globalMetaId
+  // 优先使用 globalMetaId，如果不可用则通过 API 解析
+  let targetGlobalMetaId = member.userInfo?.globalMetaId || member.globalMetaId
+
+  // 如果没有 globalMetaId，通过 address 或 metaId 查询
+  if (!targetGlobalMetaId) {
+    try {
+      const address = member.userInfo?.address || member.address
+      const metaId = member.userInfo?.metaid || member.metaId
+      if (address) {
+        const info = await getUserInfoByAddress(address)
+        targetGlobalMetaId = info?.globalMetaId
+      } else if (metaId) {
+        const info = await getUserInfoByMetaId(metaId)
+        targetGlobalMetaId = info?.globalMetaId
+      }
+    } catch (e) {
+      console.warn('获取 globalMetaId 失败:', e)
+    }
+  }
+
+  if (!targetGlobalMetaId) return
   router.push({
     name: 'talkAtMe',
     params: {

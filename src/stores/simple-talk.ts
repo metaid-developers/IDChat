@@ -17,14 +17,6 @@ import { SubChannel } from '@/@types/talk'
 import { useRootStore } from './root'
 import { VITE_AVATAR_CONTENT_API, VITE_FILE_API } from '@/config/app-config'
 
-
-
-
-
-
-
-
-
 // IndexedDB 管理类
 class SimpleChatDB {
   private db: IDBDatabase | null = null
@@ -63,7 +55,6 @@ class SimpleChatDB {
         const oldVersion = event.oldVersion
         const newVersion = event.newVersion || this.DB_VERSION
         
-        console.log(`🔄 数据库升级: ${oldVersion} → ${newVersion}`)
         
         // 创建频道表
         if (!this.db.objectStoreNames.contains('channels')) {
@@ -71,7 +62,6 @@ class SimpleChatDB {
           channelStore.createIndex('userPrefix', 'userPrefix')
           channelStore.createIndex('type', 'type')
           channelStore.createIndex('lastActivity', 'lastMessage.timestamp')
-          console.log('✅ 创建频道表')
         } else {
           // 表已存在，检查并添加缺失的索引
           const transaction = (event.target as IDBOpenDBRequest).transaction
@@ -79,15 +69,12 @@ class SimpleChatDB {
             const channelStore = transaction.objectStore('channels')
             if (!channelStore.indexNames.contains('userPrefix')) {
               channelStore.createIndex('userPrefix', 'userPrefix')
-              console.log('✅ 添加频道表 userPrefix 索引')
             }
             if (!channelStore.indexNames.contains('type')) {
               channelStore.createIndex('type', 'type')
-              console.log('✅ 添加频道表 type 索引')
             }
             if (!channelStore.indexNames.contains('lastActivity')) {
               channelStore.createIndex('lastActivity', 'lastMessage.timestamp')
-              console.log('✅ 添加频道表 lastActivity 索引')
             }
           }
         }
@@ -98,7 +85,6 @@ class SimpleChatDB {
           messageStore.createIndex('userPrefix', 'userPrefix')
           messageStore.createIndex('channelId', 'channelId')
           messageStore.createIndex('timestamp', 'timestamp')
-          console.log('✅ 创建消息表')
         } else {
           // 表已存在，检查并添加缺失的索引
           const transaction = (event.target as IDBOpenDBRequest).transaction
@@ -106,15 +92,12 @@ class SimpleChatDB {
             const messageStore = transaction.objectStore('messages')
             if (!messageStore.indexNames.contains('userPrefix')) {
               messageStore.createIndex('userPrefix', 'userPrefix')
-              console.log('✅ 添加消息表 userPrefix 索引')
             }
             if (!messageStore.indexNames.contains('channelId')) {
               messageStore.createIndex('channelId', 'channelId')
-              console.log('✅ 添加消息表 channelId 索引')
             }
             if (!messageStore.indexNames.contains('timestamp')) {
               messageStore.createIndex('timestamp', 'timestamp')
-              console.log('✅ 添加消息表 timestamp 索引')
             }
           }
         }
@@ -124,7 +107,6 @@ class SimpleChatDB {
           const userStore = this.db.createObjectStore('users', { keyPath: 'id' })
           userStore.createIndex('userPrefix', 'userPrefix')
           userStore.createIndex('metaId', 'metaId')
-          console.log('✅ 创建用户表')
         } else {
           // 表已存在，检查并添加缺失的索引
           const transaction = (event.target as IDBOpenDBRequest).transaction
@@ -132,11 +114,9 @@ class SimpleChatDB {
             const userStore = transaction.objectStore('users')
             if (!userStore.indexNames.contains('userPrefix')) {
               userStore.createIndex('userPrefix', 'userPrefix')
-              console.log('✅ 添加用户表 userPrefix 索引')
             }
             if (!userStore.indexNames.contains('metaId')) {
               userStore.createIndex('metaId', 'metaId')
-              console.log('✅ 添加用户表 metaId 索引')
             }
           }
         }
@@ -146,7 +126,6 @@ class SimpleChatDB {
           const redPacketStore = this.db.createObjectStore('redPacketIds', { keyPath: 'id' })
           redPacketStore.createIndex('userPrefix', 'userPrefix')
           redPacketStore.createIndex('redPacketId', 'redPacketId')
-          console.log('✅ 创建红包ID表')
         } else {
           // 表已存在，检查并添加缺失的索引
           const transaction = (event.target as IDBOpenDBRequest).transaction
@@ -154,11 +133,9 @@ class SimpleChatDB {
             const redPacketStore = transaction.objectStore('redPacketIds')
             if (!redPacketStore.indexNames.contains('userPrefix')) {
               redPacketStore.createIndex('userPrefix', 'userPrefix')
-              console.log('✅ 添加红包ID表 userPrefix 索引')
             }
             if (!redPacketStore.indexNames.contains('redPacketId')) {
               redPacketStore.createIndex('redPacketId', 'redPacketId')
-              console.log('✅ 添加红包ID表 redPacketId 索引')
             }
           }
         }
@@ -169,7 +146,6 @@ class SimpleChatDB {
           lastReadIndexStore.createIndex('userMetaId', 'userMetaId')
           lastReadIndexStore.createIndex('channelId', 'channelId')
           lastReadIndexStore.createIndex('userChannel', ['userMetaId', 'channelId'], { unique: true })
-          console.log('✅ 创建 lastReadIndex 表')
         } else {
           // 表已存在，检查并添加缺失的索引
           const transaction = (event.target as IDBOpenDBRequest).transaction
@@ -177,15 +153,12 @@ class SimpleChatDB {
             const lastReadIndexStore = transaction.objectStore('lastReadIndexes')
             if (!lastReadIndexStore.indexNames.contains('userMetaId')) {
               lastReadIndexStore.createIndex('userMetaId', 'userMetaId')
-              console.log('✅ 添加 lastReadIndex 表 userMetaId 索引')
             }
             if (!lastReadIndexStore.indexNames.contains('channelId')) {
               lastReadIndexStore.createIndex('channelId', 'channelId')
-              console.log('✅ 添加 lastReadIndex 表 channelId 索引')
             }
             if (!lastReadIndexStore.indexNames.contains('userChannel')) {
               lastReadIndexStore.createIndex('userChannel', ['userMetaId', 'channelId'], { unique: true })
-              console.log('✅ 添加 lastReadIndex 表 userChannel 联合索引')
             }
           }
         }
@@ -198,7 +171,6 @@ class SimpleChatDB {
           mentionStore.createIndex('isRead', 'isRead')
           mentionStore.createIndex('timestamp', 'timestamp')
           mentionStore.createIndex('channelRead', ['channelId', 'isRead'])
-          console.log('✅ 创建 mentions 表')
         } else {
           // 表已存在，检查并添加缺失的索引
           const transaction = (event.target as IDBOpenDBRequest).transaction
@@ -206,23 +178,18 @@ class SimpleChatDB {
             const mentionStore = transaction.objectStore('mentions')
             if (!mentionStore.indexNames.contains('userPrefix')) {
               mentionStore.createIndex('userPrefix', 'userPrefix')
-              console.log('✅ 添加 mentions 表 userPrefix 索引')
             }
             if (!mentionStore.indexNames.contains('channelId')) {
               mentionStore.createIndex('channelId', 'channelId')
-              console.log('✅ 添加 mentions 表 channelId 索引')
             }
             if (!mentionStore.indexNames.contains('isRead')) {
               mentionStore.createIndex('isRead', 'isRead')
-              console.log('✅ 添加 mentions 表 isRead 索引')
             }
             if (!mentionStore.indexNames.contains('timestamp')) {
               mentionStore.createIndex('timestamp', 'timestamp')
-              console.log('✅ 添加 mentions 表 timestamp 索引')
             }
             if (!mentionStore.indexNames.contains('channelRead')) {
               mentionStore.createIndex('channelRead', ['channelId', 'isRead'])
-              console.log('✅ 添加 mentions 表 channelRead 联合索引')
             }
           }
         }
@@ -232,7 +199,6 @@ class SimpleChatDB {
           const settingsStore = this.db.createObjectStore('settings', { keyPath: 'id' })
           settingsStore.createIndex('userPrefix', 'userPrefix')
           settingsStore.createIndex('key', 'key')
-          console.log('✅ 创建 settings 表')
         }
       }
 
@@ -783,7 +749,6 @@ class SimpleChatDB {
           .map(({ userPrefix, id, ...message }) => message)
           .sort((a, b) => a.index - b.index)
         
-        console.log(`📋 获取索引范围 [${startIndex}-${endIndex}] 的消息: ${messages.length} 条`)
         resolve(messages)
       }
       request.onerror = () => {
@@ -802,7 +767,6 @@ class SimpleChatDB {
       const request = store.delete(messageId)
       
       request.onsuccess = () => {
-        console.log(`🗑️ 成功删除消息: ${messageId}`)
         resolve()
       }
       request.onerror = () => {
@@ -837,7 +801,6 @@ class SimpleChatDB {
           }
           cursor.continue()
         } else {
-          console.log(`🗑️ 成功删除频道 ${channelId} 的 ${deletedCount} 条消息`)
           resolve()
         }
       }
@@ -954,16 +917,13 @@ class SimpleChatDB {
       getRequest.onsuccess = () => {
         const mention = getRequest.result
         if (mention) {
-          console.log(`📌 找到@提及记录:`, { id: mentionId, isRead: mention.isRead })
           if (mention.isRead === 1 || mention.isRead === true) {
-            console.log(`📌 @提及 ${mentionId} 已经是已读状态`)
             resolve()
             return
           }
           mention.isRead = 1 // 使用数字 1 而不是 true，保持一致性
           const putRequest = store.put(mention)
           putRequest.onsuccess = () => {
-            console.log(`✅ @提及 ${mentionId} 状态已更新为已读`)
             resolve()
           }
           putRequest.onerror = () => {
@@ -1055,7 +1015,6 @@ class SimpleChatDB {
         const request = store.put(record)
         
         request.onsuccess = () => {
-          console.log(`✅ 子频道头部状态已保存: ${groupId} = ${status}`)
           resolve()
         }
         request.onerror = () => {
@@ -1142,7 +1101,6 @@ class SimpleChatDB {
 
   // ==================== End Settings 方法 ====================
 
-
   async clearAllData(): Promise<void> {
     if (!this.db) return
     
@@ -1169,7 +1127,6 @@ class SimpleChatDB {
   async saveReceivedRedPacketId(redPacketId: string): Promise<void> {
     if (!this.db || !redPacketId) return
     
-    console.log(`💾 保存红包ID: ${redPacketId}`)
     
     // 检查数据库中是否存在 redPacketIds 表
     if (!this.db.objectStoreNames.contains('redPacketIds')) {
@@ -1191,7 +1148,6 @@ class SimpleChatDB {
         const request = store.put(record)
         
         request.onsuccess = () => {
-          console.log(`✅ 红包ID ${redPacketId} 保存成功`)
           resolve()
         }
         request.onerror = () => {
@@ -1457,19 +1413,16 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
      getOneChannelSubHeaderShowStatus():(channelId: string) => boolean {
       return (channelId: string) => {
-        console.log('🟢 getOneChannelSubHeaderShowStatus 查询, channelId:', channelId)
-        console.log('🟢 showSubChannelHeader 数组:', JSON.stringify(this.showSubChannelHeader))
+        // console.log('🟢 getOneChannelSubHeaderShowStatus 查询, channelId:', channelId)
+        // console.log('🟢 showSubChannelHeader 数组:', JSON.stringify(this.showSubChannelHeader))
         if(this.showSubChannelHeader.length){
             const show:ShowSubChannleHeaderItem= this.showSubChannelHeader.find((c:ShowSubChannleHeaderItem) => c.groupId === channelId)
         if(show){
-          console.log('🟢 找到记录, status:', show.status)
           return show.status
         }else{
-          console.log('🟢 未找到记录, 返回 true')
           return true
         }
         }else{  
-          console.log('🟢 数组为空, 返回 true')
           return true
         }
       }
@@ -1484,7 +1437,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       const userStore = useUserStore();
       // 只使用 globalMetaId，不降级
       const globalMetaId = userStore.last?.globalMetaId || ''
-      console.log('🚀 获取当前用户 GlobalMetaId', globalMetaId)
       return globalMetaId
     },
 
@@ -1502,8 +1454,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     activeChannelMessages(): UnifiedChatMessage[] {
       return (this.messageCache.get(this.activeChannelId) || []) as UnifiedChatMessage[];
     },
-
-
 
     // 获取所有频道（按最后活跃时间排序）
     allChannels(): SimpleChannel[] {
@@ -1595,7 +1545,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       }
     },
 
-
     // 获取所有主群聊（不包括子群聊）
     mainGroupChannels(): SimpleChannel[] {
       return this.groupChannels.filter(c => !c.parentGroupId)
@@ -1665,22 +1614,42 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         const currentUserMetaId = this.selfMetaId
+        const currentUserAddress = this.selfAddress
         const permissions = channel.memberPermissions
 
+        // 兼容 metaId、globalMetaId 和 address 三种格式的比较
+        const isSameUser = (member: MemberItem | null | undefined) => {
+          if (!member) return false
+          // 按 metaId / globalMetaId 匹配
+          if (member.metaId === currentUserMetaId ||
+            member.globalMetaId === currentUserMetaId ||
+            member.userInfo?.metaid === currentUserMetaId ||
+            member.userInfo?.globalMetaId === currentUserMetaId) {
+            return true
+          }
+          // 按 address 匹配（兼容 API 返回旧格式 metaId 的情况）
+          if (currentUserAddress && (
+            member.address === currentUserAddress ||
+            member.userInfo?.address === currentUserAddress)) {
+            return true
+          }
+          return false
+        }
+
         // 检查是否是创建者
-        const isCreator = permissions.creator?.metaId === currentUserMetaId
+        const isCreator = isSameUser(permissions.creator)
 
         // 检查是否是管理员
-        const isAdmin = permissions.admins.some(admin => admin.metaId === currentUserMetaId)
+        const isAdmin = permissions.admins.some(admin => isSameUser(admin))
 
         // 检查是否被阻止
-        const isBlocked = permissions.blockList.some(blocked => blocked.metaId === currentUserMetaId)
+        const isBlocked = permissions.blockList.some(blocked => isSameUser(blocked))
 
         // 检查是否在白名单
-        const isWhitelist = permissions.whiteList.some(whitelisted => whitelisted.metaId === currentUserMetaId)
+        const isWhitelist = permissions.whiteList.some(whitelisted => isSameUser(whitelisted))
 
         // 获取成员信息
-        const memberInfo = permissions.list.find(member => member.metaId === currentUserMetaId) || null
+        const memberInfo = permissions.list.find(member => isSameUser(member)) || null
 
         return { isCreator, isAdmin, isBlocked, isWhitelist, memberInfo }
       }
@@ -1697,7 +1666,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 检查是否在 IDChat 环境下
         if (navigator.userAgent.includes('IDChat')) {
            const totalCount = this.totalUnreadCount
-          console.log(`📱 通知 IDChat app 未读消息数: ${totalCount}`)
           
           // 调用 app 注入的方法设置 badge
           if (window.metaidwallet && typeof (window.metaidwallet as any).setAppBadge === 'function') {
@@ -1717,7 +1685,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async init(): Promise<void> {
       if (this.isInitializing) {
         
-        console.log('⏳ 聊天系统正在初始化中...')
         return
       }
       this.isInitializing = true
@@ -1728,11 +1695,9 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       
       // 确保 Map 对象正确初始化（处理持久化恢复问题）
       if (!(this.messageCache instanceof Map)) {
-        console.log('🔧 修复消息缓存 Map 对象')
         this.messageCache = new Map<string, UnifiedChatMessage[]>()
       }
       if (!(this.userCache instanceof Map)) {
-        console.log('🔧 修复用户缓存 Map 对象')
         this.userCache = new Map<string, SimpleUser>()
       }
       
@@ -1746,17 +1711,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       const needReinit = !this.isInitialized || this.currentUserMetaId !== currentUserMetaId
       
       if (!needReinit) {
-        console.log('✅ 聊天系统已为当前用户初始化')
         this.isInitializing = false
         return
       }
 
       try {
-        console.log(`🚀 为用户 ${currentUserMetaId} 初始化聊天系统...`)
         
         // 如果是切换用户，先清理之前用户的数据
         if (this.currentUserMetaId && this.currentUserMetaId !== currentUserMetaId) {
-          console.log(`🔄 检测到用户切换 ${this.currentUserMetaId} → ${currentUserMetaId}`)
           await this.reset()
         }
         
@@ -1765,20 +1727,15 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         // 1. 初始化IndexedDB（带用户隔离）
         await this.db.init(currentUserMetaId)
-        console.log('✅ IndexedDB 初始化成功')
         // 2. 加载本地缓存数据（快速显示）
         await this.loadFromLocal()
-        console.log('✅ 本地数据加载完成')
         // 3. 异步同步服务端数据
-        console.log('🚀 开始后台同步服务端数据...')
          this.syncFromServer().then(async ()=>{
  // 加载已读索引到内存（向后兼容）
         await this.loadLastReadIndexes()
-        console.log('✅ 服务端数据同步完成')
 
         // 从 IndexedDB 加载子频道头部显示状态
         await this.loadSubChannelHeaderStatusFromDB()
-        console.log('✅ 子频道头部状态加载完成')
 
          }).catch(error => {
           console.warn('⚠️ 后台同步失败:', error)
@@ -1796,7 +1753,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // await this.restoreLastActiveChannel()
 
         this.isInitialized = true
-        console.log(`✅ 用户 ${currentUserMetaId} 的聊天系统初始化成功`)
 
         // 通知 IDChat app 未读消息数量
         this.notifyIDChatAppBadge()
@@ -1835,13 +1791,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 恢复上次的激活频道
      */
     async restoreLastActiveChannel(): Promise<void> {
-        console.log(`🔄 恢复上次激活频道`)
       if (!this.selfMetaId) return
       
       const lastChannelId = localStorage.getItem(`lastActiveChannel-${this.selfMetaId}`)
-      console.log('🚀 上次激活频道ID', lastChannelId,this.channels)
       if (lastChannelId && this.channels.find(c => c.id === lastChannelId)) {
-        console.log(`🔄 恢复上次激活频道: ${lastChannelId}`)
         // 使用 setActiveChannel 来正确加载消息
         await this.setActiveChannel(lastChannelId)
       }
@@ -1864,7 +1817,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         const channels = await this.db.getChannels()
         this.channels = channels
-        console.log(`📂 从本地加载了 ${channels.length} 个频道`)
        
         // 加载已领取的红包ID
         await this.initReceivedRedPacketIds()
@@ -1901,7 +1853,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async loadRecentHistoryMessages(): Promise<void> {
       if (!this.selfMetaId) return
 
-      console.log('🔄 开始智能加载历史消息（检查连续性）...')
       
       try {
         // 计算三个月前的时间戳（秒）
@@ -1931,7 +1882,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           await sleep(500)
         }
 
-        console.log('✅ 历史消息加载完成')
         
         // 加载完成后同步未读@提及数量
         await this.syncUnreadMentionCounts()
@@ -1952,7 +1902,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
       // 如果没有最新消息，跳过
       if (!channel.lastMessage || !channel.lastMessage.index) {
-        console.log(`⏭️ 频道 ${channel.name} 没有消息，跳过加载`)
         return
       }
 
@@ -1963,7 +1912,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       
       if (localMessages.length === 0) {
         // 本地没有消息，从最新位置开始往前翻页加载
-        console.log(`📥 频道 ${channel.name} 本地无消息，从最新位置开始加载...`)
         await this.loadChannelHistoryMessages(channelId, latestIndex, threeMonthsAgo)
         return
       }
@@ -1972,7 +1920,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const missingRanges = this.findMissingMessageRanges(localMessages, latestIndex)
       
       if (missingRanges.length === 0) {
-        console.log(`✅ 频道 ${channel.name} 消息完整，无需加载`)
         return
       }
 
@@ -1988,12 +1935,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         })
         
         if (!hasRecentMissing) {
-          console.log(`⏭️ 频道 ${channel.name} 的缺失消息都超过3个月，跳过加载`)
           return
         }
       }
 
-      console.log(`📥 频道 ${channel.name} 发现 ${missingRanges.length} 个缺失段，开始补全...`)
       
       // 从最新的缺失段开始补全（优先补全最新的消息）
       // missingRanges 已经是从旧到新排序的，需要反转
@@ -2001,7 +1946,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       
       for (const range of reversedRanges) {
         const rangeSize = range.endIndex - range.startIndex + 1
-        console.log(`📥  频道 ${channel.name} 补全缺失段 [${range.startIndex}, ${range.endIndex}]，共 ${rangeSize} 条消息`)
         
         // 检查这个缺失段是否超过三个月前
         // 如果 range.endIndex 对应的消息时间戳可以判断，就跳过
@@ -2013,7 +1957,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         await sleep(300)
       }
       
-      console.log(`✅ 频道 ${channel.name} 历史消息补全完成`)
     },
 
     /**
@@ -2044,17 +1987,13 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const currentStartIndex = Math.max(1, currentEndIndex - batchSize + 1)
           const expectedCount = currentEndIndex - currentStartIndex + 1
           
-          console.log(`📥 频道 ${channel.name} 第 ${batchCount + 1} 批，加载 [${currentStartIndex}, ${currentEndIndex}]，预期 ${expectedCount} 条`)
           
           // 使用 fetchServerNewsterMessages 按 index 分页获取消息
           const messages = await this.fetchServerNewsterMessages(channelId, channel, currentStartIndex,batchSize)
           
           if (messages.length === 0) {
-            console.log(`⏹️ 频道 ${channel.name} 没有更多消息，已到达边界`)
             break
           }
-
-          console.log(`📡 获取到 ${messages.length} 条消息`)
 
           // 按 index 排序
           const sortedMessages = messages.sort((a, b) => a.index - b.index)
@@ -2066,13 +2005,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           for (const message of sortedMessages) {
             // 边界条件1: 检查是否超过三个月
             if (message.timestamp < threeMonthsAgo) {
-              console.log(`⏹️ 消息 index=${message.index} 已超过三个月，停止加载`)
               reachedBoundary = true
             }
 
             // 边界条件2: 检查是否到达最早消息 (index=1)
             if (message.index === 1) {
-              console.log(`⏹️ 已到达最早消息 (index=1)，停止加载`)
               reachedBoundary = true
             }
 
@@ -2100,12 +2037,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               }
               
               await this.db.saveMention(mentionRecord)
-              console.log(`📌 创建历史@提及记录: ${mentionRecord.id}`)
             }
           }
 
           if (reachedBoundary) {
-            console.log(`✅ 频道 ${channel.name} 到达边界条件，停止加载`)
             break
           }
 
@@ -2118,18 +2053,15 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const isRangeContinuous = this.checkMessageRangeContinuity(rangeMessages, currentStartIndex, fromIndex)
           
           if (isRangeContinuous) {
-            console.log(`✅ 当前范围 [${currentStartIndex}, ${fromIndex}] 消息已连续`)
             
             // 如果已经到达 index=1，完全停止
             if (currentStartIndex === 1) {
-              console.log(`✅ 已到达最早消息 (index=1)，停止加载`)
               break
             }
             
             // 继续往前加载
             currentEndIndex = currentStartIndex - 1
           } else {
-            console.log(`⚠️ 当前范围 [${currentStartIndex}, ${fromIndex}] 消息不连续，继续补全`)
             // 不更新 currentEndIndex，继续尝试补全同一范围
             currentEndIndex = currentStartIndex - 1
           }
@@ -2140,7 +2072,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           await sleep(300)
         }
 
-        console.log(`✅ 频道 ${channel.name} 历史消息加载完成，共 ${batchCount} 批`)
       } catch (error) {
         console.error(`❌ 加载频道 ${channelId} 历史消息失败:`, error)
       }
@@ -2152,7 +2083,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     calculateUnreadMentions(): void {
       if (!this.selfMetaId) return
 
-      console.log('🔄 开始计算未读 @ 提及数量...')
       const now = Date.now()
 
       for (const channel of this.channels) {
@@ -2179,7 +2109,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         channel.mentionCheckTimestamp = now
         
         if (mentionCount > 0) {
-          console.log(`📌 频道 ${channel.name} 有 ${mentionCount} 条未读 @ 提及`)
         }
       }
 
@@ -2190,7 +2119,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         })
       })
 
-      console.log('✅ 未读 @ 提及计算完成')
     },
 
     /**
@@ -2202,7 +2130,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       try {
         const redPacketIds = await this.db.getReceivedRedPacketIds()
         this.receivedRedPacketIds = redPacketIds
-        console.log(`📂 从本地加载了 ${redPacketIds.length} 个已领取红包ID`)
       } catch (error) {
         console.error('初始化红包ID列表失败:', error)
         this.receivedRedPacketIds = []
@@ -2223,11 +2150,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const channel = this.channels.find(c => c.id === channelId)
           if (channel) {
             channel.lastReadIndex = Math.max(channel.lastReadIndex || 0, messageIndex)
-            console.log(`🔖 频道 ${channelId} 的已读索引更新为 ${channel.lastReadIndex}`)
           }
         }
         
-        console.log(`📂 从本地加载了 ${lastReadIndexes.length} 个已读索引`)
 
         // 迁移旧数据：将 channel 中的 lastReadIndex 迁移到独立表
         await this.migrateLastReadIndexes()
@@ -2259,7 +2184,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
         
         if (migratedCount > 0) {
-          console.log(`📦 迁移了 ${migratedCount} 个已读索引到独立表`)
         }
       } catch (error) {
         console.error('迁移已读索引失败:', error)
@@ -2282,7 +2206,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 更新内存状态
         this.receivedRedPacketIds.push(id)
         
-        console.log(`✅ 红包ID ${id} 已添加到已领取列表`)
       } catch (error) {
         console.error('添加红包ID失败:', error)
       }
@@ -2314,13 +2237,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       this.isLoading = true
       
       try {
-        console.log('🔄 开始同步服务端数据...')
         
         // 使用统一的 latest-chat-info-list 接口获取所有聊天数据
         let allChannelsData: any[] = []
         try {
           allChannelsData = await this.fetchLatestChatInfo()
-          console.log(`✅ 获取到 ${allChannelsData.length} 条聊天数据`)
         } catch (e) {
           console.warn('获取聊天列表失败，使用本地数据:', e)
           // 接口报错时不清空本地数据，直接返回
@@ -2335,14 +2256,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
         // 转换数据格式
         const serverChannels = this.transformLatestChatInfo(allChannelsData)
-        console.log(`✅ 转换为 ${serverChannels.length} 个频道数据`)
 
         // 合并到本地
         await this.mergeChannels(serverChannels)
-        console.log(`✅ 合并到本地完成，共 ${this.channels.length} 个频道`)
         
         this.lastSyncTime = Date.now()
-        console.log(`✅ 同步完成，共 ${serverChannels.length} 个频道`)
         
       } catch (error) {
         console.error('❌ 同步服务端数据失败:', error)
@@ -2355,10 +2273,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 获取最新聊天信息列表
      */
     async fetchLatestChatInfo(): Promise<any[]> {
-      console.log('🌐 开始调用 API 获取聊天数据...', {
-        selfGlobalMetaId: this.selfGlobalMetaId,
-        apiEndpoint: '/user/latest-chat-info-list'
-      })
       const result = await getChannels({ 
         metaId: this.selfGlobalMetaId,  // 参数名保持 metaId，值使用 globalMetaId
         cursor: '0',
@@ -2372,11 +2286,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async fetchGroupChannels(groupId: string): Promise<SubChannel[]> {
       try {
-        console.log(`🌐 获取群聊 ${groupId} 的子频道列表...`)
         const response = await getGroupChannelList({ groupId })
         
         if (response.code === 0 && response.data?.list) {
-          console.log(`✅ 获取到 ${response.data.list.length} 个子频道`)
           return response.data.list
         } else {
           console.warn(`⚠️ 获取子频道失败: ${response.message}`)
@@ -2394,7 +2306,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     async fetchGroupMemberPermissions(groupId: string): Promise<MemberListRes | null> {
       
       try {
-        console.log(`🔄 获取群聊 ${groupId} 成员权限信息...`)
         
         const apiResponse = await getChannelMembers({
           groupId,
@@ -2440,7 +2351,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // delete channelToSave.serverData // 移除可能包含不可序列化数据的字段
         await this.db.saveChannel(channelToSave)
         
-        console.log(`✅ 群聊 ${groupId} 权限信息已更新并保存`)
         return memberPermissions
         
       } catch (error) {
@@ -2467,7 +2377,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const cacheExpiry = 5 * 60 * 1000 // 5分钟过期
         
         if (cacheAge < cacheExpiry) {
-          console.log(`📋 使用缓存的权限信息 (${Math.round(cacheAge / 1000)}s ago)`)
           return channel.memberPermissions
         }
       }
@@ -2487,7 +2396,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
 
       try {
-        console.log(`🔄 为群聊 ${groupId} 加载子频道...`)
         const channels = await this.fetchGroupChannels(groupId)
         
         // 现在子群聊作为独立频道处理，需要创建独立的子群聊频道
@@ -2495,7 +2403,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           await this.createSubGroupChannel(groupId, channelData)
         }
         
-        console.log(`✅ 群聊 ${groupId} 子频道加载完成，共 ${channels.length} 个独立频道`)
       } catch (error) {
         console.error(`❌ 加载群聊 ${groupId} 子频道失败:`, error)
       }
@@ -2511,13 +2418,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       )
 
       if (subChannels.length > 0) {
-        console.log(`📂 从独立频道获取子频道，共 ${subChannels.length} 个`)
         // 转换为 GroupChannel 格式
         return subChannels.map(sc => sc.serverData as GroupChannel).filter(Boolean)
       }
 
       // 否则从服务器获取
-      console.log(`📡 本地无子频道，从服务器获取...`)
       await this.loadGroupChannels(groupId)
       
       // 重新获取创建的子频道
@@ -2542,7 +2447,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const parentChannel = this.channels.find(c => c.id === parentGroupId && c.type === 'group')
         const parentRoomJoinType = parentChannel?.roomJoinType || '1' // 默认为公开群聊
         
-        console.log(`📝 为群聊 ${parentGroupId} 创建子群聊频道: ${channelName}, 继承 roomJoinType: ${parentRoomJoinType}`)
         
         // 创建子群聊作为独立频道，和群聊、私聊同一层级
         const subChannel: SimpleChannel = {
@@ -2597,7 +2501,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
        
 
-        console.log(`✅ 子群聊频道创建成功: ${channelName} (独立频道)`)
         return subChannel
       } catch (error) {
         console.error('❌ 创建子群聊频道失败:', error)
@@ -2730,7 +2633,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       existingMap.forEach(localChannel => {
         // 保留本地的子群聊频道
         if (localChannel.parentGroupId) {
-          console.log(`📂 保留本地子群聊频道: ${localChannel.name} (${localChannel.id})`)
           mergedChannels.push(localChannel)
           return // 避免重复添加
         }
@@ -2740,7 +2642,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (isNotInServer) {
           // 如果是临时频道，或者是当前激活的频道，都要保留
           if (localChannel.isTemporary === true || localChannel.id === this.activeChannelId) {
-            console.log(`📂 保留本地临时频道: ${localChannel.name} (${localChannel.id}), isTemporary: ${localChannel.isTemporary}`)
             // 确保标记为临时频道
             localChannel.isTemporary = true
             mergedChannels.push(localChannel)
@@ -2780,7 +2681,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       )
 
       if (channelsWithEncryptedNames.length > 0) {
-        console.log(`🔓 发现 ${channelsWithEncryptedNames.length} 个私密群聊名称需要解密...`)
         
         for (const channel of channelsWithEncryptedNames) {
           let hasChanges = false
@@ -2791,7 +2691,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             const decryptedName = decrypted.toString(CryptoJS.enc.Utf8)
             
             if (decryptedName) {
-              console.log(`🔓 群聊名称已解密: "${channel.name.substring(0, 20)}..." -> "${decryptedName}"`)
               channel.name = decryptedName
               hasChanges = true
             }
@@ -2806,7 +2705,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               const decryptedNote = decrypted.toString(CryptoJS.enc.Utf8)
               
               if (decryptedNote) {
-                console.log(`🔓 群公告已解密: "${channel.roomNote.substring(0, 20)}..." -> "${decryptedNote}"`)
                 channel.roomNote = decryptedNote
                 hasChanges = true
               }
@@ -2828,11 +2726,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       )
 
       if (needPasswordKeyChannels.length === 0) {
-        console.log('✅ 所有群聊的 passwordKey 均已设置，无需处理')
         return
       }
-
-      console.log(`🔑 开始为 ${needPasswordKeyChannels.length} 个群聊设置 passwordKey...`)
 
       // 分为三组：
       // 1. 私密群聊创建者（roomJoinType==='100' && createdBy===selfMetaId）- 从钱包获取
@@ -2875,7 +2770,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                     const decryptedName = decrypted.toString(CryptoJS.enc.Utf8)
                     
                     if (decryptedName) {
-                      console.log(`🔓 私密群聊名称已解密: "${channel.name.substring(0, 20)}..." -> "${decryptedName}"`)
                       channel.name = decryptedName
                     }
                   }
@@ -2891,7 +2785,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                     const decryptedNote = decrypted.toString(CryptoJS.enc.Utf8)
                     
                     if (decryptedNote) {
-                      console.log(`🔓 私密群聊公告已解密: "${channel.roomNote.substring(0, 20)}..." -> "${decryptedNote}"`)
                       channel.roomNote = decryptedNote
                     }
                   }
@@ -2903,7 +2796,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                 // 保存到数据库
                 await this.db.saveChannel(channel)
 
-                console.log(`✅ 私密群聊 ${channel.name} 的 passwordKey 已设置（来自钱包）`)
               } catch (error) {
                 console.error(`❌ 获取私密群聊 ${channel.name} 的 passwordKey 失败:`, error)
               }
@@ -2916,9 +2808,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 这些用户应该通过邀请链接加入群组，在 ChannelInvite.vue 中解密 passcode 并保存 passwordKey
       // 如果这里有频道，说明用户可能是通过其他方式加入的或者本地 passwordKey 丢失
       if (privateMemberChannels.length > 0) {
-        console.log(
-          `🔍 发现 ${privateMemberChannels.length} 个私密群聊（成员身份）没有 passwordKey，尝试从服务器获取...`
-        )
         
         // 检查钱包是否可用（需要用来解密 passcode）
         if (!window.metaidwallet || typeof (window.metaidwallet as any).common?.ecdh !== 'function') {
@@ -2954,7 +2843,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                     return
                   }
                   
-                  console.log(`🔑 开始解密群聊 ${channel.name} 的 passcode...`)
                   
                   // 使用 ECDH 解密 passcode
                   try {
@@ -2972,7 +2860,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                       return
                     }
                     
-                    console.log(`✅ 成功解密 passwordKey，群聊: ${channel.name}`)
                     
                     // 更新频道的 passwordKey
                     channel.passwordKey = passwordKey
@@ -2984,7 +2871,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                         const nameText = decryptedName.toString(CryptoJS.enc.Utf8)
                         
                         if (nameText) {
-                          console.log(`🔓 群聊名称已解密: "${channel.name.substring(0, 20)}..." -> "${nameText}"`)
                           channel.name = nameText
                         }
                       }
@@ -2999,7 +2885,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                         const noteText = decryptedNote.toString(CryptoJS.enc.Utf8)
                         
                         if (noteText) {
-                          console.log(`🔓 群公告已解密: "${channel.roomNote.substring(0, 20)}..." -> "${noteText}"`)
                           channel.roomNote = noteText
                         }
                       }
@@ -3010,7 +2895,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                     // 保存到数据库
                     await this.db.saveChannel(channel)
                     
-                    console.log(`✅ 私密群聊 ${channel.name} 的 passwordKey 已设置（来自服务器 passcode）`)
                   } catch (ecdhError) {
                     console.error(`❌ ECDH 解密失败，群聊: ${channel.name}`, ecdhError)
                   }
@@ -3038,7 +2922,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               // 保存到数据库
               await this.db.saveChannel(channel)
 
-              console.log(`✅ 群聊 ${channel.name} 的 passwordKey 已设置（来自 channelId）`)
             } catch (error) {
               console.error(`❌ 设置群聊 ${channel.name} 的 passwordKey 失败:`, error)
             }
@@ -3046,7 +2929,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         )
       }
 
-      console.log(`✅ passwordKey 设置完成`)
       
       // 强制触发响应式更新，确保解密后的名称显示在 UI 上
       // 通过重新赋值 channels 数组来触发 Vue 的响应式系统
@@ -3059,14 +2941,12 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     async loadSubChannelsForGroups(channels: SimpleChannel[]): Promise<void> {
       const groupChannels = channels.filter(c => c.type === 'group' && !c.parentGroupId)
       
-      console.log(`🔄 开始为 ${groupChannels.length} 个群聊加载子频道...`)
       
       // 使用 Promise.allSettled 避免单个失败影响整体
       const results = await Promise.allSettled(
         groupChannels.map(async (groupChannel) => {
           try {
             await this.loadGroupChannels(groupChannel.id)
-            console.log(`✅ 群聊 ${groupChannel.name} 子频道加载完成`)
           } catch (error) {
             console.warn(`⚠️ 群聊 ${groupChannel.name} 子频道加载失败:`, error)
           }
@@ -3074,7 +2954,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       )
 
       const successCount = results.filter(r => r.status === 'fulfilled').length
-      console.log(`✅ 子频道加载完成: ${successCount}/${groupChannels.length} 个群聊成功`)
     },
 
     /**
@@ -3097,7 +2976,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       this.isSetActiveChannelIdInProgress = true
       // 如果频道不存在，尝试创建临时频道
       if (!channel) {
-        console.log(`🔍 频道 ${channelId} 不在当前列表中，尝试创建临时频道...`)
         const temporaryChannel = await this.createTemporaryChannel(channelId)
        
         
@@ -3115,7 +2993,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 将临时频道保存到数据库（确保刷新后能恢复）
         try {
           await this.db.saveChannel(channel)
-          console.log(`💾 临时频道已保存到数据库: ${channel.name}, isTemporary: ${channel.isTemporary}`)
         } catch (dbError) {
           console.warn('⚠️ 保存临时频道到数据库失败:', dbError)
         }
@@ -3123,7 +3000,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if(temporaryChannel.type==='group'){
           await this.loadGroupChannels(temporaryChannel.id)
         }
-        console.log(`✅ 临时频道已创建并添加到列表: ${channel.name} (${channel.type})`)
       }
 
       this.activeChannelId = channelId
@@ -3131,7 +3007,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 总是重新加载消息以确保数据最新
       try {
         await this.loadMessages(channelId)
-        console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
         if(this.activeChannelMessages.length === 0){
           this.isSetActiveChannelIdInProgress = false
         }
@@ -3175,7 +3050,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         if (!isGroupChannel) {
           // 私聊频道
-          console.log(`🔍 检测到私聊 channelId: ${channelId}`)
           
           try {
             const userInfo = await GetUserEcdhPubkeyForPrivateChat(channelId)
@@ -3211,7 +3085,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               }
             }
 
-            console.log(`✅ 创建临时私聊频道: ${privateChannel.name}`)
             return privateChannel
           } catch (error) {
             console.error(`❌ 获取私聊用户信息失败 ${channelId}:`, error)
@@ -3219,7 +3092,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           }
         } else {
           // 群聊频道
-          console.log(`🔍 检测到群聊 channelId: ${channelId}`)
           
           try {
             const channelInfo = await getOneChannel(channelId)
@@ -3236,7 +3108,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               const existingChannel = dbChannels.find(ch => ch.id === channelId)
               if (existingChannel?.passwordKey) {
                 passwordKeyFromDB = existingChannel.passwordKey
-                console.log('✅ 从数据库中恢复 passwordKey:', passwordKeyFromDB)
               }
             } catch (dbError) {
               console.warn('⚠️ 无法从数据库获取 passwordKey:', dbError)
@@ -3258,7 +3129,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               serverData: channelInfo
             }
 
-            console.log(`✅ 创建临时群聊频道: ${groupChannel.name}, passwordKey: ${passwordKeyFromDB ? '已恢复' : '未设置'}`)
             return groupChannel
           } catch (error) {
             console.error(`❌ 获取群聊信息失败 ${channelId}:`, error)
@@ -3299,7 +3169,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 加载频道消息的内部实现
      */
     async _loadMessagesInternal(channelId: string): Promise<void> {
-      console.log(`📝 开始加载频道 ${channelId} 的消息...`)
       
       // 1. 查找频道信息
       const channel = this.channels.find(c => c.id === channelId)
@@ -3310,7 +3179,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
 
       const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
-      console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
 
       // 计算未读消息数量
       const serverLastIndex = channel.lastMessage?.index || 0
@@ -3318,7 +3186,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 如果 serverLastIndex <= 0（例如 -1），说明 latest-chat-info-list 接口返回的 index 无效
       // 此时应该直接加载最新消息
       if (serverLastIndex <= 0) {
-        console.log(`⚠️ serverLastIndex 无效 (${serverLastIndex})，直接加载最新消息`)
         await this.loadNewestMessages(channelId)
         return
       }
@@ -3328,17 +3195,14 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       
       // 如果未读消息数量 <= 5 条，直接加载最新消息
       if (unreadCount >= 0 && unreadCount <= UNREAD_AUTO_SCROLL_THRESHOLD) {
-        console.log(`📜 未读消息数量在阈值内 (${unreadCount} <= ${UNREAD_AUTO_SCROLL_THRESHOLD})，直接加载最新消息`)
         await this.loadNewestMessages(channelId)
         return
       }
 
       // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
       const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
-      console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
       
       // 3. 检查本地消息是否充足且连续
-      console.log(`🔍 检查本地消息连续性...`)
       const messagesAreContinuous = this.checkMessagesContinuity(localMessages, lastReadIndex)
       
       // 4. 检测服务端数据源是否切换（本地消息 index 远大于服务端 lastMessage.index）
@@ -3351,8 +3215,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const isServerDataSourceChanged = serverLastIndex > 0 && localMaxIndex > serverLastIndex + 10 && localMessages.length > 5
       
       if (isServerDataSourceChanged) {
-        console.log(`⚠️ 检测到服务端数据源切换: 本地最大index=${localMaxIndex}, 服务端lastIndex=${serverLastIndex}, 本地消息数=${localMessages.length}`)
-        console.log(`🔄 清除本地缓存消息，从服务端重新拉取...`)
         // 清除该频道的本地消息缓存
         await this.db.deleteChannelMessages(channelId)
         // 从服务端重新获取消息
@@ -3361,13 +3223,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
       
       if (localMessages.length >= 20 && messagesAreContinuous) {
-        console.log(`🚀 本地消息充足且连续 (${localMessages.length}条)，直接展示`)
         this.messageCache.set(channelId, localMessages)
         return // 直接返回，不再请求服务器
       } else if (localMessages.length >= 20) {
-        console.log(`⚠️ 本地消息充足但不连续 (${localMessages.length}条)，需要从服务器补充`)
       } else {
-        console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
       }
      
       // 5. 本地消息不足或不连续，需要从服务器获取
@@ -3401,7 +3260,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         // 如果索引不连续（中间有缺失的消息）
         if (currentIndex - prevIndex > 1) {
-          console.log(`⚠️ 消息不连续: index ${prevIndex} -> ${currentIndex}, 缺失 ${currentIndex - prevIndex - 1} 条消息`)
           return false
         }
       }
@@ -3412,11 +3270,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       
       // 确保已读消息在范围内，或者已读索引为0（初始状态）
       if (lastReadIndex > 0 && (lastReadIndex < minIndex || lastReadIndex > maxIndex)) {
-        console.log(`⚠️ 已读索引 ${lastReadIndex} 不在消息范围 [${minIndex}-${maxIndex}] 内`)
         return false
       }
 
-      console.log(`✅ 消息连续性检查通过: 索引范围 [${minIndex}-${maxIndex}], 共 ${messages.length} 条消息`)
       return true
     },
 
@@ -3446,7 +3302,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (sortedMessages[i].index === lastReadIndex) {
           readMessage = sortedMessages[i]
           readMessageArrayIndex = i
-          console.log(`📖 找到已读消息 (msg.index: ${lastReadIndex}, 数组位置: ${i})`)
           break
         }
       }
@@ -3466,7 +3321,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       } else if (lastReadIndex !== 0 && sortedMessages.length > 0) {
         // 本地消息有数据但找不到精确匹配的 readMessage
         // 参考 loadServerMessagesAroundReadIndex 的逻辑计算 startIndex
-        console.log(`📖 未找到精确匹配的已读消息 (lastReadIndex: ${lastReadIndex})，从本地消息中计算位置`)
         
         // 计算目标起始 index（参考 loadServerMessagesAroundReadIndex 的逻辑）
         const targetStartIndex = maxLocalIndex - lastReadIndex > 20 
@@ -3489,17 +3343,14 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           if (sortedMessages[i].index >= lastReadIndex) {
             readMessage = sortedMessages[i]
             readMessageArrayIndex = i
-            console.log(`📖 找到最接近的已读消息 (msg.index: ${sortedMessages[i].index}, 目标 lastReadIndex: ${lastReadIndex})`)
             break
           }
         }
         
         startIndex = nearestArrayIndex
         endIndex = Math.min(sortedMessages.length - 1, nearestArrayIndex + 19)
-        console.log(`📖 计算出的消息范围: 数组位置 [${startIndex}-${endIndex}], index范围 [${sortedMessages[startIndex]?.index}-${sortedMessages[endIndex]?.index}]`)
       } else if (lastReadIndex === 0 && sortedMessages.length > 0) {
         // lastReadIndex 为 0，表示没有已读记录或全部已读，返回最新的20条消息
-        console.log(`📖 lastReadIndex 为 0，返回最新的消息`)
         startIndex = Math.max(0, sortedMessages.length - 20)
         endIndex = sortedMessages.length - 1
       } else {
@@ -3529,15 +3380,12 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 当 latest-chat-info-list 接口返回 index = -1 时，直接使用 fetchServerMessages 获取最新消息
         if (lastReadIndex!==0 && channel.lastMessage && channel.lastMessage.index && channel.lastMessage.index > 0 && lastReadIndex < channel.lastMessage.index) {
           // 如果有已读消息，以其时间戳为基准获取服务器消息
-          console.log(` 基于已读消息时间戳 ${lastReadTimestamp} 获取服务器消息`)
           const startIndex = channel.lastMessage.index-lastReadIndex>20?Math.max(0,lastReadIndex-1):channel.lastMessage.index-22;
-          console.log(` 基于已读消息索引 ${lastReadIndex} 获取服务器消息，从 ${startIndex} 开始`,channel.lastMessage.index,lastReadIndex,startIndex)
           serverMessages = await this.fetchServerNewsterMessages(channelId, channel,startIndex )
         } else {
           // 没有已读消息，或 lastMessage.index 无效（<= 0），获取最新消息
           const lastMsgIndex = channel.lastMessage?.index
           const invalidIndexMsg = (lastMsgIndex !== undefined && lastMsgIndex <= 0) ? ` (lastMessage.index 无效: ${lastMsgIndex})` : ''
-          console.log(`📡 获取最新服务器消息${invalidIndexMsg}`)
           serverMessages = await this.fetchServerMessages(channelId, channel)
         }
 
@@ -3562,7 +3410,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         // 更新缓存
         this.messageCache.set(channelId, finalMessages)
-        console.log(`✅ 基于已读索引加载完成，共 ${finalMessages.length} 条消息`)
         
       } catch (error) {
         console.error('❌ 从服务器加载消息失败:', error)
@@ -3580,7 +3427,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       try {
         if (channel.type === 'group') {
           // 群聊消息 - 使用timestamp参数从指定时间点获取消息
-          console.log(`🌐 获取群聊 ${channelId} 从时间戳 ${fromTimestamp} 开始的服务端消息...`)
           const { getChannelMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getChannelMessages({
             groupId: channelId,
@@ -3590,10 +3436,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: fromTimestamp.toString()
           })
           serverMessages = result.list || []
-          console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'sub-group') {
           // 子群聊消息 - 使用timestamp参数从指定时间点获取消息
-          console.log(`🌐 获取子群聊 ${channelId} 从时间戳 ${fromTimestamp} 开始的服务端消息...`)
           const { getSubChannelMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getSubChannelMessages({
             channelId: channelId,
@@ -3603,10 +3447,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: fromTimestamp.toString()
           })
           serverMessages = result.list || []
-          console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'private') {
           // 私聊消息 - 使用timestamp参数从指定时间点获取消息
-          console.log(`🌐 获取私聊 ${channelId} 从时间戳 ${fromTimestamp} 开始的服务端消息...`)
           const { getPrivateChatMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getPrivateChatMessages({
             metaId: this.selfMetaId,
@@ -3616,7 +3458,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: fromTimestamp.toString()
           })
           serverMessages = result.list || []
-          console.log(`📡 私聊API返回 ${serverMessages.length} 条消息`)
         }
       } catch (apiError) {
         console.error(`❌ 基于时间戳的API调用失败:`, apiError)
@@ -3639,7 +3480,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
 
       try {
-        console.log(`🚀 加载频道 ${targetChannelId} 的最新消息...`)
         
        
 
@@ -3652,17 +3492,14 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
 
         // 3. 强制从服务器获取最新消息
-        console.log(`📡 强制从服务器获取最新消息...`)
         const serverMessages = await this.fetchServerMessages(targetChannelId, channel)
         
         if (serverMessages.length === 0) {
-          console.log(`📭 服务器没有返回消息`)
           this.messageCache.set(targetChannelId, [])
           return
         }
          // 1. 清空当前消息缓存
         this.messageCache.delete(targetChannelId)
-        console.log(`🗑️ 已清空频道 ${targetChannelId} 的消息缓存`)
 
         // 4. 按时间排序并设置为当前消息
         const sortedMessages = serverMessages.sort((a, b) => a.timestamp - b.timestamp)
@@ -3673,7 +3510,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           await this.db.saveMessage(msg)
         }
 
-        console.log(`✅ 已加载 ${sortedMessages.length} 条最新消息`)
         
       } catch (error) {
         console.error('❌ 加载最新消息失败:', error)
@@ -3686,21 +3522,18 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 同步加载服务器消息（阻塞式）
      */
     async loadServerMessagesSync(channelId: string, channel: SimpleChannel, localMessages: UnifiedChatMessage[]): Promise<void> {
-      console.log(`🔄 同步加载服务器消息...`)
       
       const serverMessages = await this.fetchServerMessages(channelId, channel)
       const mergedMessages = await this.mergeAndSaveMessages(channelId, localMessages, serverMessages)
       
       // 更新缓存
       this.messageCache.set(channelId, mergedMessages)
-      console.log(`✅ 同步加载完成，共 ${mergedMessages.length} 条消息`)
     },
 
     /**
      * 异步后台加载服务器消息（非阻塞式）
      */
     async loadServerMessagesInBackground(channelId: string, channel: SimpleChannel): Promise<void> {
-      console.log(`🔄 后台加载服务器消息...`)
       
       try {
         const localMessages = this.messageCache.get(channelId) || []
@@ -3709,7 +3542,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         // 静默更新缓存，不影响当前显示
         this.messageCache.set(channelId, mergedMessages)
-        console.log(`✅ 后台加载完成，更新了 ${mergedMessages.length} 条消息`)
       } catch (error) {
         console.warn('⚠️ 后台加载服务器消息失败:', error)
       }
@@ -3729,7 +3561,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 如果 lastMessage.index <= 0（例如 -1），说明 latest-chat-info-list 接口返回的 index 无效
         // 此时应该使用 /group-chat-list-v2 接口并传入 timestamp=0 来获取最新消息
         if (lastMessageIndex <= 0) {
-          console.log(`⚠️ lastMessage.index 无效 (${lastMessageIndex})，使用 timestamp=0 获取最新消息`)
           return await this.fetchServerMessagesWithTimestampZero(channelId, channel)
         }
         
@@ -3737,7 +3568,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         if (channel.type === 'group') {
           // 群聊消息 - 使用 index 方式获取最新消息
-          console.log(`🌐 获取群聊 ${channelId} 的服务端最新消息... startIndex=${startIndex}`)
           const { getChannelNewestMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getChannelNewestMessages({
             groupId: channelId,
@@ -3745,10 +3575,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             size: '50'
           })
           serverMessages = result.list || []
-          console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'sub-group') {
           // 子群聊消息 - 使用 index 方式获取最新消息
-          console.log(`🌐 获取子群聊 ${channelId} 的服务端最新消息... startIndex=${startIndex}`)
           const { getSubChannelNewestMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getSubChannelNewestMessages({
             channelId: channelId,
@@ -3756,10 +3584,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             size: '50'
           })
           serverMessages = result.list || []
-          console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'private') {
           // 私聊消息 - 使用 index 方式获取最新消息
-          console.log(`🌐 获取私聊 ${channelId} 的服务端最新消息... startIndex=${startIndex}`)
           const result: UnifiedChatResponseData = await getNewstPrivateChatMessages({
             metaId: this.selfMetaId,
             otherMetaId: channelId,
@@ -3767,7 +3593,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             size: '50'
           })
           serverMessages = result.list || []
-          console.log(`📡 私聊API返回 ${serverMessages.length} 条消息`)
         }
       } catch (apiError) {
         console.error(`❌ API调用失败:`, apiError)
@@ -3787,7 +3612,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       try {
         if (channel.type === 'group') {
           // 群聊消息 - 使用 /group-chat-list-v2 接口，timestamp=0 获取最新消息
-          console.log(`🌐 获取群聊 ${channelId} 的服务端最新消息 (timestamp=0)...`)
           const { getChannelMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getChannelMessages({
             groupId: channelId,
@@ -3797,10 +3621,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: '0'
           })
           serverMessages = result.list || []
-          console.log(`📡 群聊API(timestamp=0)返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'sub-group') {
           // 子群聊消息 - 使用 /channel-chat-list-v3 接口，timestamp=0 获取最新消息
-          console.log(`🌐 获取子群聊 ${channelId} 的服务端最新消息 (timestamp=0)...`)
           const { getSubChannelMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getSubChannelMessages({
             channelId: channelId,
@@ -3810,10 +3632,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: '0'
           })
           serverMessages = result.list || []
-          console.log(`📡 子群聊API(timestamp=0)返回 ${serverMessages.length} 条消息`)
         } else if (channel.type === 'private') {
           // 私聊消息 - 使用 /private-chat-list 接口，timestamp=0 获取最新消息
-          console.log(`🌐 获取私聊 ${channelId} 的服务端最新消息 (timestamp=0)...`)
           const { getPrivateChatMessages } = await import('@/api/talk')
           const result: UnifiedChatResponseData = await getPrivateChatMessages({
             metaId: this.selfMetaId,
@@ -3823,7 +3643,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: '0'
           })
           serverMessages = result.list || []
-          console.log(`📡 私聊API(timestamp=0)返回 ${serverMessages.length} 条消息`)
         }
       } catch (apiError) {
         console.error(`❌ API调用(timestamp=0)失败:`, apiError)
@@ -3859,7 +3678,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       }
       
       if (newMessages.length > 0) {
-        console.log(`💾 保存了 ${newMessages.length} 条新消息到本地`)
       }
       
       return mergedMessages
@@ -3870,7 +3688,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async refreshMessagesFromServer(channelId: string): Promise<void> {
       try {
-        console.log(`🔄 手动刷新频道 ${channelId} 的服务器消息...`)
         
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
@@ -3888,7 +3705,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const mergedMessages = await this.mergeAndSaveMessages(channelId, localMessages, serverMessages)
         this.messageCache.set(channelId, mergedMessages)
         
-        console.log(`✅ 手动刷新完成，更新了 ${mergedMessages.length} 条消息`)
       } catch (error) {
         console.error('❌ 手动刷新消息失败:', error)
       }
@@ -3899,7 +3715,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async loadMoreMessages(channelId: string, beforeTimestamp?: number): Promise<boolean> {
       try {
-        console.log(`📜 加载更多历史消息: ${channelId}, 早于时间: ${beforeTimestamp ? new Date(beforeTimestamp).toLocaleString() : '无'}`)
         
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
@@ -3914,21 +3729,18 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (currentMessages.length > 0) {
           // 找到当前最小的 index
           const minIndex = Math.min(...currentMessages.map(msg => msg.index || 0))
-          console.log(`📊 当前消息中最小的 index: ${minIndex}`)
           
           if (minIndex > 1) { // 只有当最小index大于1时才尝试本地加载
             // 查找本地是否有比最小index小的连续20条消息
             const localHistoryMessages = await this.loadLocalHistoryMessages(channelId, minIndex - 1, 20)
             
             if (localHistoryMessages.length > 0) {
-              console.log(`📂 从本地找到 ${localHistoryMessages.length} 条历史消息`)
               
               // 检查是否连续
               const sortedLocalMessages = localHistoryMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
               const isConsecutive = this.checkConsecutiveIndexes(sortedLocalMessages, minIndex - localHistoryMessages.length)
               
               if (isConsecutive) {
-                console.log(`✅ 本地历史消息 index 连续，直接使用本地数据`)
                 
                 // 合并到现有消息中
                 const allMessagesMap = new Map<string, UnifiedChatMessage>()
@@ -3945,19 +3757,15 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
                 // 更新缓存
                 this.messageCache.set(channelId, mergedMessages)
                 
-                console.log(`✅ 本地历史消息加载完成，新增 ${localHistoryMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
                 return true
               } else {
-                console.log(`⚠️ 本地历史消息 index 不连续，需要从服务器加载`)
               }
             } else {
-              console.log(`📭 本地没有找到更多历史消息`)
             }
           }
         }
         
         // 第二步：从服务器加载历史消息
-        console.log(`🌐 开始从服务器加载历史消息...`)
         
         // 确定分页的 timestamp 参数
         let timestamp = '0'
@@ -3969,8 +3777,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const earliestMessage = currentMessages[0] // 因为是降序排列
           timestamp = earliestMessage.timestamp.toString()
         }
-
-        console.log(`📄 分页参数: timestamp=${timestamp}, size=20`)
 
         // 从服务器获取更多历史消息
         let serverMessages: any[] = []
@@ -3985,7 +3791,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: timestamp, // 使用 timestamp 参数进行分页
             size: '20' // 每次加载20条
           })
-          console.log(`📡 分页群聊API返回:`, result)
           serverMessages = result.list || []
         }else if (channel.type === 'sub-group') {
           // 子群聊消息
@@ -3997,7 +3802,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             timestamp: timestamp, // 使用 timestamp 参数进行分页
             size: '20' // 每次加载20条
           })
-          console.log(`📡 分页子群聊API返回:`, result)
           serverMessages = result.list || []
         }else if (channel.type === 'private') {
           // 私聊消息  
@@ -4012,10 +3816,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           serverMessages = result.list || []
         }
 
-        console.log(`📡 分页加载获取了 ${serverMessages.length} 条历史消息`)
-
         if (serverMessages.length === 0) {
-          console.log(`📭 没有更多历史消息了`)
           return false // 没有更多消息
         }
 
@@ -4042,7 +3843,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           await this.db.saveMessage(msg)
         }
         
-        console.log(`✅ 服务器分页加载完成，新增 ${convertedMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
         
         return true // 成功加载了更多消息
         
@@ -4077,7 +3877,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             .sort((a: any, b: any) => (b.index || 0) - (a.index || 0)) // 按 index 降序
             .slice(0, limit) // 限制数量
           
-          console.log(`📊 本地历史查询: channelId=${channelId}, maxIndex=${maxIndex}, 找到 ${historyMessages.length} 条消息`)
           resolve(historyMessages)
         }
         
@@ -4093,7 +3892,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async loadMoreNewestMessages(channelId: string, afterTimestamp?: number): Promise<boolean> {
       try {
-        console.log(`📜 加载更多最新消息: ${channelId}, 晚于时间: ${afterTimestamp ? new Date(afterTimestamp).toLocaleString() : '无'}`)
         
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
@@ -4110,20 +3908,17 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (currentMessages.length > 0) {
           // 找到当前最大的 index
           const maxIndex = Math.max(...currentMessages.map(msg => msg.index || 0))
-          console.log(`📊 当前消息中最大的 index: ${maxIndex}`)
           
           // 查找本地是否有比最大index大的连续20条消息
           const localNewestMessages = await this.loadLocalNewestMessages(channelId, maxIndex + 1, 20)
           
           if (localNewestMessages.length > 0) {
-            console.log(`📂 从本地找到 ${localNewestMessages.length} 条最新消息`)
             
             // 检查是否连续
             const sortedLocalMessages = localNewestMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
             const isConsecutive = this.checkConsecutiveIndexes(sortedLocalMessages, maxIndex + 1)
             
             if (isConsecutive) {
-              console.log(`✅ 本地最新消息 index 连续，直接使用本地数据`)
               
               // 合并到现有消息中
               const allMessagesMap = new Map<string, UnifiedChatMessage>()
@@ -4140,18 +3935,14 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               // 更新缓存
               this.messageCache.set(channelId, mergedMessages)
               
-              console.log(`✅ 本地最新消息加载完成，新增 ${localNewestMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
               return true
             } else {
-              console.log(`⚠️ 本地最新消息 index 不连续，需要从服务器加载`)
             }
           } else {
-            console.log(`📭 本地没有找到更多最新消息`)
           }
         }
         
         // 第二步：从服务器加载最新消息
-        console.log(`🌐 开始从服务器加载最新消息...`)
         
         // 确定起始 index
         let startIndex = 1
@@ -4161,15 +3952,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           startIndex = (latestMessage.index || 0) + 1
         }
 
-        console.log(`📄 分页参数: startIndex=${startIndex}, size=20`)
-
         // 使用 fetchServerNewsterMessages 获取最新消息
         const serverMessages = await this.fetchServerNewsterMessages(channelId, channel, startIndex)
 
-        console.log(`📡 分页加载获取了 ${serverMessages.length} 条最新消息`)
-
         if (serverMessages.length === 0) {
-          console.log(`📭 没有更多最新消息了`)
           return false // 没有更多消息
         }
 
@@ -4196,7 +3982,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           await this.db.saveMessage(msg)
         }
         
-        console.log(`✅ 服务器分页加载完成，新增 ${convertedMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
         
         return true // 成功加载了更多消息
         
@@ -4231,7 +4016,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             .sort((a: any, b: any) => (a.index || 0) - (b.index || 0)) // 按 index 升序
             .slice(0, limit) // 限制数量
           
-          console.log(`📊 本地最新消息查询: channelId=${channelId}, minIndex=${minIndex}, 找到 ${newestMessages.length} 条消息`)
           resolve(newestMessages)
         }
         
@@ -4241,7 +4025,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }
       })
     },
-
 
       /**
      * 获取服务器消息
@@ -4296,7 +4079,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const actualIndex = messages[i].index || 0
         
         if (actualIndex !== expectedIndex) {
-          console.log(`❌ Index 不连续: 期望 ${expectedIndex}, 实际 ${actualIndex}`)
           return false
         }
       }
@@ -4315,7 +4097,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const expectedCount = endIndex - startIndex + 1
       
       if (messages.length !== expectedCount) {
-        console.log(`⚠️ 消息数量不匹配: 期望 ${expectedCount} 条，实际 ${messages.length} 条`)
         return false
       }
 
@@ -4324,7 +4105,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const actualIndex = messages[i].index
         
         if (actualIndex !== expectedIndex) {
-          console.log(`⚠️ Index 不连续: 期望 ${expectedIndex}, 实际 ${actualIndex}`)
           return false
         }
       }
@@ -4355,7 +4135,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const firstIndex = sortedMessages[0].index
       if (firstIndex > 1) {
         missingRanges.push({startIndex: 1, endIndex: firstIndex - 1})
-        console.log(`🔍 发现缺失段: [1, ${firstIndex - 1}]`)
       }
 
       // 检查消息之间的间隙
@@ -4365,7 +4144,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         if (nextIndex - currentIndex > 1) {
           missingRanges.push({startIndex: currentIndex + 1, endIndex: nextIndex - 1})
-          console.log(`🔍 发现缺失段: [${currentIndex + 1}, ${nextIndex - 1}]`)
         }
       }
 
@@ -4373,7 +4151,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const lastIndex = sortedMessages[sortedMessages.length - 1].index
       if (lastIndex < maxIndex) {
         missingRanges.push({startIndex: lastIndex + 1, endIndex: maxIndex})
-        console.log(`🔍 发现缺失段: [${lastIndex + 1}, ${maxIndex}]`)
       }
 
       return missingRanges
@@ -4418,7 +4195,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             channel.unreadMentionCount = unreadCount
             channel.mentionCheckTimestamp = Date.now()
             await this.db.saveChannel(channel)
-            console.log(`✅ 频道 ${channel.name} 未读 @ 提及已清除`)
           }).catch(error => {
             console.warn(`标记频道 ${channelId} 提及为已读失败:`, error)
           })
@@ -4446,7 +4222,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           console.warn(`⚠️ 未找到频道 ${channelId}，无法设置已读索引`)
           return
         }
-        console.log(`🔖 设置频道 ${channelId} 的已读索引为 ${messageIndex} (当前值: ${channel.lastReadIndex})`)
 
         
         
@@ -4467,7 +4242,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
        
 
         const timestampInfo = timestamp ? ` (消息时间: ${new Date(timestamp).toLocaleString()})` : ''
-        console.log(`✅ 频道 ${channelId} 已读索引已从 ${channel.lastReadIndex} 更新为: ${messageIndex} (用户: ${this.selfMetaId})${timestampInfo}`)
         
         // 通知 IDChat app 未读消息数量
         this.notifyIDChatAppBadge()
@@ -4550,7 +4324,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (!this.selfMetaId) return
 
         await this.db.deleteLastReadIndex(this.selfMetaId, channelId)
-        console.log(`🗑️ 已清理频道 ${channelId} 的已读索引`)
       } catch (error) {
         console.error(`❌ 清理频道 ${channelId} 已读索引失败:`, error)
       }
@@ -4582,7 +4355,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           console.warn(`⚠️ 获取新群聊 ${groupId} 权限信息失败:`, error)
         })
 
-        console.log(`✅ 创建群聊: ${name}`)
         return newGroup
       } catch (error) {
         console.error('创建群聊失败:', error)
@@ -4634,7 +4406,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         this.channels.unshift(newChat)
         await this.db.saveChannel(newChat)
 
-        console.log(`✅ 创建私聊: ${userInfo.name}`)
         return newChat
       } catch (error) {
         console.error('创建私聊失败:', error)
@@ -4653,7 +4424,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       roomNote?: string
     }): Promise<boolean> {
       try {
-        console.log(`🔄 更新频道信息: ${channelId}`, updates)
 
         // 查找频道
         const channel = this.channels.find(c => c.id === channelId)
@@ -4675,7 +4445,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (updates.name !== undefined && updates.name !== channel.name) {
           channel.name = updates.name
           hasChanges = true
-          console.log(`📝 更新频道名称: "${oldInfo.name}" → "${updates.name}"`)
         }
 
         if (updates.avatar !== undefined && updates.avatar !== channel.avatar) {
@@ -4684,24 +4453,20 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           }
           channel.avatar = updates.avatar
           hasChanges = true
-          console.log(`🖼️ 更新频道头像: "${oldInfo.avatar}" → "${updates.avatar}"`)
         }
 
         if (updates.roomNote !== undefined && updates.roomNote !== channel.roomNote) {
           channel.roomNote = updates.roomNote
           hasChanges = true
-          console.log(`📋 更新群聊公告: "${oldInfo.roomNote}" → "${updates.roomNote}"`)
         }
 
         if (!hasChanges) {
-          console.log(`ℹ️ 频道信息无变化，跳过保存`)
           return true
         }
 
         // saveChannel 方法内部会调用 createCloneableChannel 来安全序列化
         await this.db.saveChannel(channel)
         
-        console.log(`✅ 频道 ${channelId} 信息更新成功`)
         return true
 
       } catch (error) {
@@ -4720,7 +4485,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       reply: any,
       mentions?: Array<{ globalMetaId: string; name: string }>  // 使用 globalMetaId
     ): Promise<UnifiedChatMessage | null> {
-      console.log(`✉️ 发送消息到频道 ${channelId}`, { content, messageType, reply, mentions })
       try {
         const chainStore = useChainStore()
         const userStore = useUserStore()
@@ -4736,14 +4500,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const mockId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const timestamp = getTimestampInSeconds()
         
-        console.log(`📤 准备发送消息到频道 ${channelId}`, {
-          isPrivateChat,
-          isSubGroupChat,
-          channelType: channel?.type,
-          parentGroupId: channel?.parentGroupId,
-          channelName: channel?.name,
-          timestamp
-        })
         
         // 创建消息对象
         const message: UnifiedChatMessage = {
@@ -4802,11 +4558,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           metanetId: isPrivateChat ? undefined : (isSubGroupChat ? channel?.parentGroupId : channelId)
         }
 
-        console.log(`📝 消息对象创建完成:`, {
-          groupId: message.groupId,
-          channelId: message.channelId,
-          isSubGroupChat
-        })
         
         // 保存消息到本地
         await this.addMessage(message)
@@ -4836,13 +4587,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             externalEncryption,
           }
           
-          console.log(`🚀 发送群聊消息:`, {
-            groupID: dataCarrier.groupID,
-            channelID: dataCarrier.channelID,
-            isSubGroupChat,
-            content,
-            node
-          })
           
           await tryCreateNode(node, mockId)
         } else {
@@ -4866,11 +4610,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             externalEncryption,
           }
           
-          console.log(`🚀 发送私聊消息到: ${channelId}`)
           await tryCreateNode(node, mockId)
         }
 
-        console.log(`✅ 发送消息到频道 ${channelId} ${isSubGroupChat ? '(子群聊)' : ''}: ${content}`)
         return message
       } catch (error) {
         console.error('发送消息失败:', error)
@@ -4879,7 +4621,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     },
 
     async removeMessage(mockId: string) {
-      console.log(`🗑️ 开始删除消息 mockId: ${mockId}`)
       
       try {
         let foundMessage: UnifiedChatMessage | null = null
@@ -4894,7 +4635,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             
             // 从缓存中删除消息
             messages.splice(messageIndex, 1)
-            console.log(`📝 从缓存中删除消息: channelId=${channelId}, mockId=${mockId}`)
             break
           }
         }
@@ -4907,12 +4647,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 2. 根据消息的 txId 从数据库中删除记录
         if (foundMessage.txId) {
           await this.db.deleteMessage(foundMessage.txId)
-          console.log(`🗄️ 从数据库中删除消息: txId=${foundMessage.txId}`)
         } else {
           console.warn(`⚠️ 消息没有 txId，跳过数据库删除: mockId=${mockId}`)
         }
 
-        console.log(`✅ 消息删除完成: mockId=${mockId}`)
       } catch (error) {
         console.error(`❌ 删除消息失败: mockId=${mockId}`, error)
         throw error
@@ -4920,7 +4658,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     },
 
     async setMessageError(mockId: string, error: string) {
-      console.log(`❌ 设置消息错误状态 mockId: ${mockId}, error: ${error}`)
       
       try {
         let foundMessage: UnifiedChatMessage | null = null
@@ -4937,7 +4674,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             // 设置错误信息
             message.error = error
             this.updateMessage(message)
-            console.log(`📝 为消息设置错误状态: channelId=${channelId}, mockId=${mockId}, error=${error}`)
             break
           }
         }
@@ -4951,12 +4687,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (foundMessage.txId) {
           // 这里需要更新数据库中的消息记录，添加错误信息
           await this.db.saveMessage(foundMessage)
-          console.log(`🗄️ 更新数据库中消息的错误状态: txId=${foundMessage.txId}`)
         } else {
-          console.log(`💡 消息尚未发送到服务器，仅更新内存缓存: mockId=${mockId}`)
         }
 
-        console.log(`✅ 消息错误状态设置完成: mockId=${mockId}`)
       } catch (error) {
         console.error(`❌ 设置消息错误状态失败: mockId=${mockId}`, error)
         throw error
@@ -4991,7 +4724,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
           return
         }
-       console.log(`✅ txId 设置完成: mockId=${mockId} txid=${txid}`)
       } catch (error) {
         console.error(`❌ txId 设置失败: mockId=${mockId}`, error)
         throw error
@@ -5003,7 +4735,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * @param message 需要重发的消息对象
      */
     async tryResend(message: UnifiedChatMessage): Promise<boolean> {
-      console.log(`🔄 尝试重新发送消息: mockId=${message.mockId}`, message)
       
       if (!message.mockId) {
         console.error('❌ 消息没有 mockId，无法重发')
@@ -5055,7 +4786,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             externalEncryption,
           }
           
-          console.log(`🚀 重发群聊消息:`, { groupID: dataCarrier.groupID, channelID: dataCarrier.channelID })
           await tryCreateNode(node, message.mockId)
         } else {
           // 私聊消息重发
@@ -5080,11 +4810,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             externalEncryption,
           }
           
-          console.log(`🚀 重发私聊消息到: ${message.toGlobalMetaId}`)  // 改为 toGlobalMetaId
           await tryCreateNode(node, message.mockId)
         }
 
-        console.log(`✅ 消息重发请求已发送: mockId=${message.mockId}`)
         return true
       } catch (error) {
         console.error(`❌ 消息重发失败: mockId=${message.mockId}`, error)
@@ -5180,10 +4908,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             createdAt: Date.now()
           }
 
-          console.log(`📌 创建@提及记录数据:`, mentionRecord)
           
           await this.db.saveMention(mentionRecord)
-          console.log(`📌 创建@提及记录: ${mentionRecord.id}`)
           
           // 更新频道未读提及计数
           const channel = this.channels.find(c => c.id === channelId)
@@ -5192,13 +4918,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             channel.unreadMentionCount = unreadCount
             channel.mentionCheckTimestamp = Date.now()
             await this.db.saveChannel(channel)
-            console.log(`📌 频道 ${channel.name} 未读 @ 提及: ${unreadCount}`)
           }
         }
       }
       
 
-        console.log(`✅ 消息已添加到频道 ${channelId} ${message.channelId ? '(子群聊)' : '(主群聊/私聊)'}`)
       } catch (error) {
         console.error('添加消息失败:', error)
         throw error
@@ -5242,7 +4966,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         return bTime - aTime
       })
 
-      console.log(`✅ 频道 ${channelId} 最后消息已更新`)
     },
 
     /**
@@ -5251,7 +4974,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     async receiveMessage(message: UnifiedChatMessage): Promise<void> {
       try {
         
-        console.log('📩 接收到新消息:', message)
         // 确定频道ID - 支持子群聊
         let channelId: string | undefined;
         // 如果消息是自己发的 并且消息页面不在最下面 让消息滚到最下面；
@@ -5273,12 +4995,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const hasSubChannel = message.channelId && message.channelId.trim() !== '';
           channelId = hasSubChannel ? message.channelId : message.groupId;
           
-          console.log('📩 群聊消息分析:', {
-            channelId: message.channelId,
-            groupId: message.groupId,
-            hasSubChannel,
-            targetChannelId: channelId
-          });
         }
         
         if (!channelId) {
@@ -5295,13 +5011,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
         // 检查是否是子群聊消息
         const isSubGroupMessage = !isPrivateChat && message.channelId && message.channelId.trim() !== '';
-        console.log(`📩 消息目标频道: ${channelId} ${isSubGroupMessage ? '(子群聊)' : '(主群聊/私聊)'}`)
 
         // 如果是子群聊消息，确保子群聊频道存在
         if (isSubGroupMessage) {
           const existingChannel = this.channels.find(c => c.id === channelId);
           if (!existingChannel) {
-            console.log(`🔄 子群聊频道 ${channelId} 不存在，尝试创建...`);
             await this.loadGroupChannels(message.groupId || '');
             return
           }
@@ -5313,7 +5027,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             this.convertTemporaryToRegular(existingPrivate.id)
           }
           if(!existingPrivate){
-            console.log(`🔄 私聊频道 ${channelId} 不存在，尝试创建...`);
             await sleep(3000)
             await this.syncFromServer()
             return
@@ -5336,18 +5049,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           if (msg.mockId && msg.content === message.content && 
               msgGlobalMetaId === serverGlobalMetaId) {
             mockMessage = msg
-            console.log('🔍 Mock消息匹配成功:', { 
-              localMetaId: msg.metaId, 
-              localGlobalMetaId: msg.globalMetaId,
-              serverMetaId: message.metaId, 
-              serverGlobalMetaId: serverGlobalMetaId 
-            })
             break
           }
         }
         
         if (mockMessage) {
-          console.log('找到对应的mock消息:', mockMessage)
           // 如果找到了对应的mock消息，更新其txId等信息
           mockMessage.txId = message.txId
           mockMessage.pinId = message.pinId
@@ -5364,7 +5070,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
           await this.updateMessage(mockMessage)
            await this.updateChannelLastMessage(channelId, mockMessage)
-          console.log(`🔄 更新了已存在的草稿消息为正式消息: ${message.txId}`)
           return
        }  
       
@@ -5376,7 +5081,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             message.index = (channel?.lastMessage?.index || 0) + 1
           }
           await this.addMessage(message)
-          console.log(`📨 收到新消息: ${message.content}`)
         }else{
           // tip: 如果消息已存在，可以选择更新内容（如状态变更等
         }
@@ -5429,7 +5133,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           }
         }
 
-        console.log(`✅ 消息 ${message.txId} 已更新到频道 ${channelId} ${message.channelId ? '(子群聊)' : '(主群聊/私聊)'}`)
       } catch (error) {
         console.error('更新消息失败:', error)
         throw error
@@ -5453,7 +5156,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           }
         }
 
-        console.log(`✅ 消息 ${messageId} 已删除`)
       } catch (error) {
         console.error('删除消息失败:', error)
         throw error
@@ -5481,7 +5183,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async getSubChannelsForBroadcast(groupId: string): Promise<SimpleChannel[]> {
       try {
-        console.log(`🔍 获取群聊 ${groupId} 的子频道列表`)
         
         // 确保子频道数据已加载
         await this.loadGroupChannels(groupId)
@@ -5496,7 +5197,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           return timeB - timeA
         })
         
-        console.log(`✅ 获取到 ${sortedSubChannels.length} 个子频道`)
         return sortedSubChannels
       } catch (error) {
         console.error('❌ 获取子频道列表失败:', error)
@@ -5509,7 +5209,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async enterSubGroupChat(channelId: string): Promise<boolean> {
       try {
-        console.log(`🚪 进入子群聊: ${channelId}`)
         
         // 检查子群聊是否存在
         const subChannel = this.channels.find(c => c.id === channelId)
@@ -5521,7 +5220,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 设置为当前激活频道
         await this.setActiveChannel(channelId)
         
-        console.log(`✅ 成功进入子群聊: ${subChannel.name}`)
         return true
       } catch (error) {
         console.error('❌ 进入子群聊失败:', error)
@@ -5540,12 +5238,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           return false
         }
         
-        console.log(`🔙 从子群聊 ${subChannel.name} 返回主群聊`)
         
         // 切换到主群聊
         await this.setActiveChannel(subChannel.parentGroupId)
         
-        console.log(`✅ 成功返回主群聊`)
         return true
       } catch (error) {
         console.error('❌ 返回主群聊失败:', error)
@@ -5558,12 +5254,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async refreshSubChannels(groupId: string): Promise<void> {
       try {
-        console.log(`🔄 刷新群聊 ${groupId} 的子频道数据`)
         
         // 子群聊现在作为独立频道，直接重新加载频道列表即可
         await this.loadGroupChannels(groupId)
         
-        console.log(`✅ 子频道数据刷新完成`)
       } catch (error) {
         console.error('❌ 刷新子频道数据失败:', error)
       }
@@ -5573,7 +5267,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 重置系统（用于用户登出或切换用户）
      */
     async reset(): Promise<void> {
-      console.log('🔄 重置聊天系统...')
       
       // 清理内存状态
       this.channels = []
@@ -5589,7 +5282,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       if (this.currentUserMetaId) {
         try {
           // await this.db.clearUserData()
-          console.log(`✅ 用户 ${this.currentUserMetaId} 的本地数据已清理`)
         } catch (error) {
           console.error('清理用户数据失败:', error)
         }
@@ -5598,11 +5290,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 重置用户标识
       this.currentUserMetaId = ''
       
-      console.log('✅ 聊天系统重置完成')
     },
     async receiveUserRoleMessage(message: GroupUserRoleInfo) {
       
-      console.log('📩 接收到用户角色消息:', message)
        // 2. 加载本地缓存数据（快速显示）
      
     
@@ -5650,8 +5340,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     },
 
       async updateShowSubChannelHeader(payload:ShowSubChannleHeaderItem){
-      console.log('🔵 updateShowSubChannelHeader 被调用, payload:', payload)
-      console.log('🔵 当前 showSubChannelHeader:', JSON.stringify(this.showSubChannelHeader))
+      // console.log('🔵 updateShowSubChannelHeader 被调用, payload:', payload)
+      // console.log('🔵 当前 showSubChannelHeader:', JSON.stringify(this.showSubChannelHeader))
        
       const hasRecord=this.showSubChannelHeader.length && this.showSubChannelHeader.find((item:ShowSubChannleHeaderItem)=>item.groupId == payload.groupId)
 
@@ -5666,7 +5356,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         this.showSubChannelHeader.push(payload)
       }
       
-      console.log('🔵 更新后 showSubChannelHeader:', JSON.stringify(this.showSubChannelHeader))
+      // console.log('🔵 更新后 showSubChannelHeader:', JSON.stringify(this.showSubChannelHeader))
   
       localStorage.setItem('showSubChannelHeaderList',JSON.stringify(this.showSubChannelHeader))
       
@@ -5685,7 +5375,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       try {
         const statuses = await this.db.getAllSubChannelHeaderStatus()
         if (statuses.length > 0) {
-          console.log('📦 从 IndexedDB 加载子频道头部状态:', statuses.length, '条')
           // 合并到内存中的状态
           statuses.forEach(({ groupId, status }) => {
             const existing = this.showSubChannelHeader.find((item: ShowSubChannleHeaderItem) => item.groupId === groupId)
@@ -5721,7 +5410,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const index = this.channels.findIndex(c => c.id === channelId && c.isTemporary)
         if (index > -1) {
           this.channels.splice(index, 1)
-          console.log(`🗑️ 已移除临时频道: ${channelId}`)
           
           // 如果移除的是当前活跃频道，清除活跃状态
           if (this.activeChannelId === channelId) {
@@ -5736,7 +5424,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         )
         const removedCount = initialLength - this.channels.length
         if (removedCount > 0) {
-          console.log(`🗑️ 已清理 ${removedCount} 个非活跃临时频道`)
         }
       }
     },
@@ -5753,7 +5440,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         this.db.saveChannel(channel).catch(err => {
           console.warn('⚠️ 保存频道到数据库失败:', err)
         })
-        console.log(`✅ 频道 ${channelId} 已标记为已加入 (isTemporary: false)`)
         return true
       }
       return false
@@ -5765,7 +5451,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 同步所有频道的未读@提及数量
      */
     async syncUnreadMentionCounts(): Promise<void> {
-      console.log('🔄 开始同步所有频道的未读@提及数量...')
       
       try {
         for (const channel of this.channels) {
@@ -5773,11 +5458,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           channel.unreadMentionCount = unreadCount
           
           if (unreadCount > 0) {
-            console.log(`📌 频道 ${channel.name} 有 ${unreadCount} 条未读 @ 提及`)
           }
         }
         
-        console.log('✅ 未读@提及数量同步完成')
       } catch (error) {
         console.error('❌ 同步未读@提及数量失败:', error)
       }
@@ -5827,7 +5510,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 如果缓存中没有该消息，尝试加载
         const hasMessage = messages.some(m => m.index === mention.messageIndex)
         if (!hasMessage) {
-          console.log(`📥 消息 index=${mention.messageIndex} 不在缓存中，正在加载...`)
           // 从数据库加载消息
           const dbMessages = await this.db.getMessages(mention.channelId)
           if (dbMessages.length > 0) {
@@ -5856,7 +5538,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
         // 6. 触发滚动到消息的事件（通过 DOM ID 或其他方式）
         // 这部分需要在组件中配合实现
-        console.log(`✅ 跳转到消息 index=${mention.messageIndex}`)
+        // console.log(`✅ 跳转到消息 index=${mention.messageIndex}`)
         
         return true
       } catch (error) {
@@ -5873,7 +5555,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if(!channelId) channelId = this.activeChannelId
         const mentionId = `${channelId}_${index}`
         
-        console.log(`📌 尝试标记@提及为已读: mentionId=${mentionId}, channelId=${channelId}, index=${index}`)
         
         await this.db.markMentionAsRead(mentionId)
         
@@ -5884,10 +5565,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const oldCount = channel.unreadMentionCount || 0
           channel.unreadMentionCount = unreadCount
           await this.db.saveChannel(channel)
-          console.log(`📌 频道 ${channel.name} 未读@提及: ${oldCount} -> ${unreadCount}`)
         }
         
-        console.log(`✅ @提及 ${mentionId} 已标记为已读`)
       } catch (error) {
         console.error('标记@提及已读失败:', error, { index, channelId })
       }
@@ -5895,5 +5574,4 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
   },
   
 })
-
 
