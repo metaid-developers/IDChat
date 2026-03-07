@@ -542,7 +542,7 @@ import { useModalsStore } from '@/stores/modals'
 import { useJobsStore } from '@/stores/jobs'
 import { getOneRedPacket } from '@/api/talk'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
-import { getUserInfoByAddress, getUserInfoByGlobalMetaId } from '@/api/man'
+import { getUserInfoByAddress, getUserInfoByGlobalMetaId, getUserInfoByMetaId } from '@/api/man'
 import { useImagePreview } from '@/stores/imagePreview'
 import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
@@ -781,7 +781,7 @@ function handlerScrollIndex(index:number){
 }
 
 
-function toPrivateChat(message:ChatMessageItem){
+async function toPrivateChat(message:ChatMessageItem){
   // if(message.userInfo.metaid == userStore.last.metaid){
   //    return
   // }
@@ -803,8 +803,26 @@ function toPrivateChat(message:ChatMessageItem){
 //     }
 //   })
 
-// 使用 globalMetaId 进行私聊跳转
-const targetGlobalMetaId = message.globalMetaId || message.userInfo?.globalMetaId
+// 优先使用 globalMetaId，如果不可用则通过 API 解析
+let targetGlobalMetaId = message.globalMetaId || message.userInfo?.globalMetaId
+
+if (!targetGlobalMetaId) {
+  try {
+    const address = message.userInfo?.address || message.address
+    const metaId = message.userInfo?.metaid || message.metaId
+    if (address) {
+      const info = await getUserInfoByAddress(address)
+      targetGlobalMetaId = info?.globalMetaId
+    } else if (metaId) {
+      const info = await getUserInfoByMetaId(metaId)
+      targetGlobalMetaId = info?.globalMetaId
+    }
+  } catch (e) {
+    console.warn('获取 globalMetaId 失败:', e)
+  }
+}
+
+if (!targetGlobalMetaId) return
 router.push({
   name:'talkAtMe',
   params:{
@@ -1096,14 +1114,29 @@ const handleMentionClick = async (metaId: string) => {
     return ElMessage.error(`${i18n.t('self_private_chat_unsupport')}`)
   }
 
+  // 如果传入的不是 globalMetaId（不以 'id' 开头），通过 API 解析
+  let targetGlobalMetaId = metaId
+  if (metaId && !metaId.startsWith('id')) {
+    try {
+      const info = await getUserInfoByMetaId(metaId)
+      if (info?.globalMetaId) {
+        targetGlobalMetaId = info.globalMetaId
+      }
+    } catch (e) {
+      console.warn('获取 globalMetaId 失败:', e)
+    }
+  }
+
+  if (!targetGlobalMetaId) return
+
   // 跳转到私聊页面
   router.push({
     name: 'talkAtMe',
     params: {
-      channelId: metaId,
+      channelId: targetGlobalMetaId,
     }
   })
-  simpleTalk.setActiveChannel(metaId)
+  simpleTalk.setActiveChannel(targetGlobalMetaId)
 }
 
 

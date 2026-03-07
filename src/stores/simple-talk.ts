@@ -1723,6 +1723,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         const userStore = useUserStore()
+        const currentUserAddress = this.selfAddress
         const currentUserIds = new Set(
           [this.selfMetaId, userStore.last?.metaid, userStore.last?.globalMetaId]
             .filter(Boolean)
@@ -1731,7 +1732,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const permissions = channel.memberPermissions
 
         const isCurrentUser = (member?: MemberItem | null): boolean => {
-          if (!member || currentUserIds.size === 0) return false
+          if (!member) return false
 
           const memberIds = [
             member.metaId,
@@ -1742,7 +1743,17 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             .filter(Boolean)
             .map(id => String(id))
 
-          return memberIds.some(id => currentUserIds.has(id))
+          if (currentUserIds.size > 0 && memberIds.some(id => currentUserIds.has(id))) {
+            return true
+          }
+
+          // 兼容 address 匹配（某些接口场景只返回 address 或 metaId 未统一）
+          if (currentUserAddress) {
+            const memberAddress = member.address || member.userInfo?.address
+            return memberAddress === currentUserAddress
+          }
+
+          return false
         }
 
         // 检查是否是创建者
