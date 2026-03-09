@@ -308,6 +308,8 @@
       "broadcast_title": "# 发布频道聊天",
       "SetAdmin": "设置为管理员",
       "WhiteList": "添加到白名单",
+      "MuteUser": "禁言用户",
+      "BlockUser": "拉黑用户",
       "removeAdmin": "移除管理员",
       "remove_WhiteList": "移除白名单",
       "getRoleError": "获取用户权限信息错误,请刷新重试",

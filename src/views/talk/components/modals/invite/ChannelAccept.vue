@@ -166,9 +166,7 @@ const tryJoinChannel = async () => {
     // 等待3秒后改变状态（防止后端还未同步）
     await sleep(1000)
     const simpleTalk = useSimpleTalkStore()
-    if (!simpleTalk.isInitialized) {
-      await simpleTalk.init()
-    }
+    await simpleTalk.ensureInitialized()
     await simpleTalk.syncFromServer()
     await simpleTalk.loadMessages(groupInfo.value!.groupId)
   } catch (error) {

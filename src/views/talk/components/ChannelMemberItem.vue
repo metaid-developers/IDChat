@@ -4,7 +4,7 @@
     title=""
     :width="200"
     trigger="click"
-    content="this is content, this is content, this is content"
+    :disabled="isYou"
     v-if="member && member.userInfo"
   >
     <template #reference>
@@ -42,42 +42,29 @@
       </div>
     </template>
     <div>
-      <el-button :icon="Promotion" text type="info" @click="toPrivateChat(member)">
+      <el-button :icon="Promotion" text type="info" @click="toPrivateChat">
         {{ $t('Talk.Channel.SendMessage') }}
       </el-button>
 
-      <div class="my-2" v-if="!isYou && selfPermission.isCreator">
+      <div class="my-2" v-if="canSetAdmin">
         <div class="flex items-center el-button el-button--info is-text" @click="manageAdmin">
           <Icon name="admin" class="w-[15px] h-[15px] text-dark-300 dark:text-gray-400"></Icon>
           <span class="ml-[5.4px]">
-            {{ isAdmin ? $t('Talk.Channel.removeAdmin') : $t('Talk.Channel.SetAdmin') }}
+            {{ $t('Talk.Channel.SetAdmin') }}
           </span>
         </div>
       </div>
 
-      <div
-        class="my-2"
-        v-if="
-          !isYou && !isOwner && !isAdmin && (selfPermission.isCreator || selfPermission.isAdmin)
-        "
-      >
+      <div class="my-2" v-if="canManageMember">
         <div class="flex items-center el-button el-button--info is-text" @click="manageWhitelist">
           <Icon name="white_list" class="w-[15px] h-[15px] text-dark-300 dark:text-gray-400"></Icon>
           <span class="ml-[5.4px]">
-            {{
-              isSpeaker ? $t('Talk.Channel.remove_WhiteList') : $t('Talk.Channel.WhiteList')
-            }}</span
-          >
+            {{ $t('Talk.Channel.WhiteList') }}
+          </span>
         </div>
       </div>
 
-      <div
-        class="my-2"
-        v-if="
-          (!isYou && selfPermission.isCreator) ||
-            (!isYou && !isOwner && !isAdmin && (selfPermission.isCreator || selfPermission.isAdmin))
-        "
-      >
+      <div class="my-2" v-if="canManageMember">
         <el-popconfirm
           width="220"
           :icon="InfoFilled"
@@ -85,7 +72,6 @@
           :title="`Are you sure to remove this user ${member.userInfo?.name || ''}?`"
           @cancel="onCancel"
           @confirm="onConfirm"
-          v-if="!isYou"
         >
           <template #reference>
             <el-button :icon="Remove" text type="danger">
@@ -100,29 +86,22 @@
           </template>
         </el-popconfirm>
       </div>
-      <!--黑名单功能-->
-      <!-- <div
-        class="my-2 "
-        v-if="
-          (!isYou && selfPermission.isCreator) ||
-            (!isYou && !isOwner && !isAdmin && (selfPermission.isCreator || selfPermission.isAdmin))
-        "
-      >
+      <div class="my-2" v-if="canManageMember">
         <el-popconfirm
           width="220"
           :icon="InfoFilled"
           icon-color="red"
-          :title="`Confirm adding this user to the blocklist ${member.userInfo?.name || ''}?`"
+          :title="`Are you sure to block this user ${member.userInfo?.name || ''}`"
           @cancel="onCancel"
-          @confirm="onSetBlockListConfirm"
-          v-if="!isYou"
+          @confirm="onMuteConfirm"
         >
           <template #reference>
-            <div class="flex items-center el-button el-button--info is-text">
-              <Icon name="block_list" class="w-[15px] h-[15px]"></Icon>
-              <span class="ml-[5.4px] text-[#f56c6c]">{{ $t('Talk.Channel.Add.BlackList') }}</span>
+            <div class="flex items-center el-button el-button--warning is-text">
+              <Icon name="speaker" class="w-[15px] h-[15px] text-[#e6a23c]"></Icon>
+              <span class="ml-[5.4px] text-[#e6a23c]">
+                {{ $t('Talk.Channel.MuteUser') }}
+              </span>
             </div>
-         
           </template>
           <template #actions="{ confirm, cancel }">
             <el-button size="small" @click="cancel">No!</el-button>
@@ -131,7 +110,32 @@
             </el-button>
           </template>
         </el-popconfirm>
-      </div> -->
+      </div>
+      <div class="my-2" v-if="canManageMember">
+        <el-popconfirm
+          width="220"
+          :icon="InfoFilled"
+          icon-color="red"
+          :title="`Are you sure to block this user ${member.userInfo?.name || ''}`"
+          @cancel="onCancel"
+          @confirm="onBlockConfirm"
+        >
+          <template #reference>
+            <div class="flex items-center el-button el-button--danger is-text">
+              <Icon name="block_list" class="w-[15px] h-[15px] text-[#f56c6c]"></Icon>
+              <span class="ml-[5.4px] text-[#f56c6c]">
+                {{ $t('Talk.Channel.BlockUser') }}
+              </span>
+            </div>
+          </template>
+          <template #actions="{ confirm, cancel }">
+            <el-button size="small" @click="cancel">No!</el-button>
+            <el-button type="danger" size="small" :disabled="!clicked" @click="confirm">
+              Yes?
+            </el-button>
+          </template>
+        </el-popconfirm>
+      </div>
     </div>
   </el-popover>
 </template>
@@ -145,13 +149,12 @@ import { createPinWithBtc } from '@/utils/pin'
 import { createPin } from '@/utils/userInfo'
 import { InfoFilled, Promotion, Remove } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { MemberRule, RuleOp } from '@/enum'
+import { MemberRule } from '@/enum'
 import { useI18n } from 'vue-i18n'
 import { VITE_ADDRESS_HOST } from '@/config/app-config'
 
-const userStore = useUserStore()
 const chainStore = useChainStore()
+const userStore = useUserStore()
 const clicked = ref(false)
 const i18n = useI18n()
 function onCancel() {
@@ -170,19 +173,25 @@ const emit = defineEmits([
   'toPrivateChat',
 ])
 // const talk = useTalkStore()
-const router = useRouter()
-const route = useRoute()
-const isYou = computed(() => {
-  const selfId = simpleTalk.selfMetaId
-  const selfAddr = userStore.last?.address
-  const member = props.member
-  return (
-    member?.userInfo?.metaid === selfId ||
-    member?.userInfo?.globalMetaId === selfId ||
-    member?.metaId === selfId ||
-    member?.globalMetaId === selfId ||
-    (selfAddr && (member?.address === selfAddr || member?.userInfo?.address === selfAddr))
+const currentUserIds = computed(() => {
+  return new Set(
+    [simpleTalk.selfMetaId, userStore.last?.metaid, userStore.last?.globalMetaId]
+      .filter(Boolean)
+      .map(id => String(id))
   )
+})
+
+const isYou = computed(() => {
+  const memberIds = [
+    props.member?.metaId,
+    props.member?.globalMetaId,
+    props.member?.userInfo?.metaid,
+    props.member?.userInfo?.globalMetaId,
+  ]
+    .filter(Boolean)
+    .map(id => String(id))
+
+  return memberIds.some(id => currentUserIds.value.has(id))
 })
 
 // const currentChannelInfo = computed(() => {
@@ -191,6 +200,16 @@ const isYou = computed(() => {
 
 const selfPermission = computed(() => {
   return simpleTalk.getCurrentUserRoleInGroup(props.groupId)
+  // return simpleTalk.getMychannelRule(currentChannelInfo.value?.groupId || route.params.groupId as string)
+  //return props.selfRule
+})
+
+const canSetAdmin = computed(() => {
+  return !isYou.value && selfPermission.value.isCreator
+})
+
+const canManageMember = computed(() => {
+  return !isYou.value && (selfPermission.value.isCreator || selfPermission.value.isAdmin)
 })
 
 const getRuleName = computed(() => {
@@ -229,35 +248,7 @@ const getRuleIcon = computed(() => {
   }
 })
 
-const isOwner = computed(() => {
-  const memberRule = props.role !== undefined ? props.role : props.member?.rule
-  return memberRule == MemberRule.Owner
-})
-
-const isAdmin = computed(() => {
-  const memberRule = props.role !== undefined ? props.role : props.member?.rule
-  return memberRule === MemberRule.Admin
-})
-
-const isSpeaker = computed(() => {
-  const memberRule = props.role !== undefined ? props.role : props.member?.rule
-  return memberRule === MemberRule.Speaker
-})
-
-const popMemberMenu = () => {
-  if (isYou.value) return
-}
-
-const isCurrentUserCreator = computed(() => {
-  // 使用 globalMetaId 判断（支持多链）
-  const selfGlobalMetaId = userStore.last?.globalMetaId
-  return (
-    props.createUserMetaId === selfGlobalMetaId &&
-    props.member?.userInfo?.globalMetaId !== selfGlobalMetaId
-  )
-})
-
-function toPrivateChat(message: any) {
+function toPrivateChat() {
   emit('toPrivateChat', props.member)
 }
 
@@ -277,14 +268,41 @@ const manageWhitelist = () => {
   emit('updateUserWhiteList', props.member)
 }
 
-const onSetBlockListConfirm = () => {
-  clicked.value = false
-
-  const hasPermission = selfPermission.value.isCreator || selfPermission.value.isAdmin
-  if (!hasPermission) {
-    return ElMessage.error(`${i18n.t('Non_permission_set Blocklist')}`)
+const createProtocolPin = async (protocolPath: string, body: Record<string, unknown>) => {
+  const metaidData = {
+    body: JSON.stringify(body),
+    path: `${VITE_ADDRESS_HOST() || import.meta.env.VITE_ADDRESS_HOST}:/protocols/${protocolPath}`,
+    flag: 'metaid',
+    version: '1.0.0',
+    operation: 'create',
+    contentType: 'application/json',
+    encryption: '0',
+    encoding: 'utf-8',
   }
-  emit('updateUserBlockList', props.member)
+
+  const currentChain = chainStore.state.currentChain
+  const chainData = chainStore.state[currentChain]
+  const selectedFeeType = chainData.selectedFeeType
+  const feeRate = chainData[selectedFeeType]
+
+  if (currentChain === ChatChain.btc) {
+    await createPinWithBtc({
+      inscribeDataArray: [metaidData],
+      options: {
+        network: 'mainnet',
+        noBroadcast: 'no',
+        feeRate: feeRate,
+      },
+    })
+    return
+  }
+
+  await createPin(metaidData, {
+    network: 'mainnet',
+    signMessage: 'update Group Info',
+    serialAction: 'finish',
+    feeRate: feeRate,
+  })
 }
 
 const onConfirm = async () => {
@@ -297,40 +315,7 @@ const onConfirm = async () => {
       reason: '',
       timestamp: Math.floor(Date.now() / 1000),
     }
-
-    const metaidData = {
-      body: JSON.stringify(data),
-      path: `${VITE_ADDRESS_HOST() ||
-        import.meta.env.VITE_ADDRESS_HOST}:/protocols/simplegroupremoveuser`,
-      flag: 'metaid',
-      version: '1.0.0',
-      operation: 'create',
-      contentType: 'application/json',
-      encryption: '0',
-      encoding: 'utf-8',
-    }
-
-    const currentChain = chainStore.state.currentChain
-    const chainData = chainStore.state[currentChain]
-    const selectedFeeType = chainData.selectedFeeType
-    const feeRate = chainData[selectedFeeType]
-    if (currentChain === ChatChain.btc) {
-      const txIDs = await createPinWithBtc({
-        inscribeDataArray: [metaidData],
-        options: {
-          network: 'mainnet',
-          noBroadcast: 'no',
-          feeRate: feeRate,
-        },
-      })
-    } else {
-      const { txids } = await createPin(metaidData, {
-        network: 'mainnet',
-        signMessage: 'update Group Info',
-        serialAction: 'finish',
-        feeRate: feeRate,
-      })
-    }
+    await createProtocolPin('simplegroupremoveuser', data)
     ElMessage.success('delete success')
     emit('updated', props.member?.userInfo?.metaid)
   } catch (error) {
@@ -338,12 +323,67 @@ const onConfirm = async () => {
   }
 }
 
-const messageThisGuy = () => {
-  // 如果是自己，就不要发消息了
-  if (isYou.value) return
+const onBlockConfirm = async () => {
+  clicked.value = false
 
-  // 通过 emit 让父组件处理私聊跳转和关闭抽屉
-  emit('toPrivateChat', props.member)
+  const hasPermission = selfPermission.value.isCreator || selfPermission.value.isAdmin
+  if (!hasPermission) {
+    return ElMessage.error(`${i18n.t('Non_permission_set Blocklist')}`)
+  }
+
+  const targetMetaId = props.member?.userInfo?.metaid || props.member?.metaId
+  if (!targetMetaId || !props.groupId) {
+    return ElMessage.error('block failed')
+  }
+
+  try {
+    const removeData = {
+      removeMetaid: targetMetaId,
+      groupId: props.groupId,
+      reason: '',
+      timestamp: Math.floor(Date.now() / 1000),
+    }
+    await createProtocolPin('simplegroupremoveuser', removeData)
+
+    const blockData = {
+      groupId: props.groupId,
+      users: [targetMetaId],
+    }
+    await createProtocolPin('simplegroupjoinblock', blockData)
+
+    ElMessage.success('block success')
+    emit('updated', targetMetaId)
+  } catch (error) {
+    ElMessage.error((error as any).message || 'block failed')
+  }
 }
+
+const onMuteConfirm = async () => {
+  clicked.value = false
+
+  const hasPermission = selfPermission.value.isCreator || selfPermission.value.isAdmin
+  if (!hasPermission) {
+    return ElMessage.error(`${i18n.t('Non_permission_set Blocklist')}`)
+  }
+
+  const targetMetaId = props.member?.userInfo?.metaid || props.member?.metaId
+  if (!targetMetaId || !props.groupId) {
+    return ElMessage.error('mute failed')
+  }
+
+  try {
+    const muteData = {
+      groupId: props.groupId,
+      users: [targetMetaId],
+    }
+    await createProtocolPin('simplegroupblock', muteData)
+
+    ElMessage.success('mute success')
+    emit('updated', targetMetaId)
+  } catch (error) {
+    ElMessage.error((error as any).message || 'mute failed')
+  }
+}
+
 </script>
 <style lang=""></style>

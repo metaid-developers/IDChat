@@ -83,7 +83,6 @@ import CreateBroadcastChannelModal from './components/modals/CreateBroadcastChan
 import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
-import { fa } from 'element-plus/es/locale'
 
 // const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
@@ -102,9 +101,9 @@ console.log('route', route)
 
 // 初始化 simple-talk store
 const initSimpleTalk = async () => {
-  if (user.isAuthorized && !simpleTalk.isInitialized) {
+  if (user.isAuthorized) {
     try {
-      await simpleTalk.init()
+      await simpleTalk.ensureInitialized()
       console.log('✅ Simple-talk store 初始化成功')
     } catch (error) {
       console.error('❌ Simple-talk store 初始化失败:', error)
@@ -208,9 +207,7 @@ async function resolve(communityId: string, channelId: string, subId?: string) {
   console.log('解析 communityId:', communityId, channelId, subId)
 
   if (isPublicChannel(communityId)) {
-    if (!simpleTalk.isInitialized) {
-      await simpleTalk.init()
-    }
+    await simpleTalk.ensureInitialized()
     if (simpleTalk.channels.find(c => c.id === channelId)) {
       if (simpleTalk.activeChannelId !== channelId) {
         console.log('切换频道:subId', subId)
@@ -240,9 +237,7 @@ async function resolve(communityId: string, channelId: string, subId?: string) {
       }
     }
   } else {
-    if (!simpleTalk.isInitialized) {
-      await simpleTalk.init()
-    }
+    await simpleTalk.ensureInitialized()
     await simpleTalk.setActiveChannel(channelId)
   }
 }

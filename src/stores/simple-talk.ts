@@ -446,8 +446,6 @@ class SimpleChatDB {
         lastReadIndex: channel.lastReadIndex||0, // 保留已读索引
         targetMetaId: channel.targetMetaId,
         publicKeyStr: channel.publicKeyStr,
-        // 保留临时频道标识
-        isTemporary: channel.isTemporary,
   // 保留群聊的加入类型（来自服务端 roomJoinType），方便本地判断和展示
   roomJoinType: (channel as any).roomJoinType || undefined,
   // 保留服务端返回的 path 字段
@@ -1723,7 +1721,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         const userStore = useUserStore()
-        const currentUserAddress = this.selfAddress
         const currentUserIds = new Set(
           [this.selfMetaId, userStore.last?.metaid, userStore.last?.globalMetaId]
             .filter(Boolean)
@@ -1732,7 +1729,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const permissions = channel.memberPermissions
 
         const isCurrentUser = (member?: MemberItem | null): boolean => {
-          if (!member) return false
+          if (!member || currentUserIds.size === 0) return false
 
           const memberIds = [
             member.metaId,
@@ -1743,17 +1740,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             .filter(Boolean)
             .map(id => String(id))
 
-          if (currentUserIds.size > 0 && memberIds.some(id => currentUserIds.has(id))) {
-            return true
-          }
-
-          // 兼容 address 匹配（某些接口场景只返回 address 或 metaId 未统一）
-          if (currentUserAddress) {
-            const memberAddress = member.address || member.userInfo?.address
-            return memberAddress === currentUserAddress
-          }
-
-          return false
+          return memberIds.some(id => currentUserIds.has(id))
         }
 
         // 检查是否是创建者
@@ -2762,7 +2749,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             unreadCount: 0, // 未读数由本地管理
             targetMetaId: targetGlobalMetaId,
             publicKeyStr: userInfo?.chatPublicKey,
-            isTemporary: false, // 服务端返回的频道表示用户已加入
             lastMessage:  {
               content: channel.content,
               type: channel.chatType,
@@ -2785,7 +2771,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             createdBy: channel.createUserInfo?.globalMetaId || channel.createUserMetaId || '',
             createdAt: channel.timestamp || Date.now(),
             unreadCount: 0, // 未读数由本地管理
-            isTemporary: false, // 服务端返回的频道表示用户已加入
             // 保留服务端返回的 roomJoinType（默认为 '1' 表示公开）
             roomJoinType: channel.roomJoinType || '1',
             // 保留服务端返回的 path 字段（若有）
@@ -2859,25 +2844,16 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
       }
 
-      // 保留本地独有频道（包括子群聊频道和临时频道）
+      // 保留本地独有频道（包括子群聊频道）
       existingMap.forEach(localChannel => {
         // 保留本地的子群聊频道
         if (localChannel.parentGroupId) {
           console.log(`📂 保留本地子群聊频道: ${localChannel.name} (${localChannel.id})`)
           mergedChannels.push(localChannel)
-          return // 避免重复添加
         }
-        
-        // 保留临时频道（未加入的群聊）
-        const isNotInServer = !serverChannels.find(c => c.id === localChannel.id)
-        if (isNotInServer) {
-          // 如果是临时频道，或者是当前激活的频道，都要保留
-          if (localChannel.isTemporary === true || localChannel.id === this.activeChannelId) {
-            console.log(`📂 保留本地临时频道: ${localChannel.name} (${localChannel.id}), isTemporary: ${localChannel.isTemporary}`)
-            // 确保标记为临时频道
-            localChannel.isTemporary = true
-            mergedChannels.push(localChannel)
-          }
+        if (localChannel.isTemporary && !serverChannels.find(c => c.id === localChannel.id)) {
+          console.log(`📂 保留本地临时频道: ${localChannel.name} (${localChannel.id})`)
+          mergedChannels.push(localChannel)
         }
       })
 
@@ -3252,12 +3228,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 将临时频道添加到频道列表中
         this.channels.unshift(channel)
         
-        // 将临时频道保存到数据库（确保刷新后能恢复）
-        try {
+        // 将临时频道保存到数据库以持久化 passwordKey
+        if (channel.passwordKey) {
           await this.db.saveChannel(channel)
-          console.log(`💾 临时频道已保存到数据库: ${channel.name}, isTemporary: ${channel.isTemporary}`)
-        } catch (dbError) {
-          console.warn('⚠️ 保存临时频道到数据库失败:', dbError)
+          console.log(`💾 临时频道已保存到数据库，包括 passwordKey`)
         }
         
         if(temporaryChannel.type==='group'){
@@ -6260,14 +6234,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 当用户主动加入频道时，可以将临时频道转为常规频道
      */
     convertTemporaryToRegular(channelId: string): boolean {
-      const channel = this.channels.find(c => c.id === channelId)
-      if (channel && channel.isTemporary !== false) {
+      const channel = this.channels.find(c => c.id === channelId && c.isTemporary)
+      if (channel) {
         channel.isTemporary = false
-        // 保存到数据库
-        this.db.saveChannel(channel).catch(err => {
-          console.warn('⚠️ 保存频道到数据库失败:', err)
-        })
-        console.log(`✅ 频道 ${channelId} 已标记为已加入 (isTemporary: false)`)
+        console.log(`✅ 临时频道 ${channelId} 已转换为常规频道`)
         return true
       }
       return false

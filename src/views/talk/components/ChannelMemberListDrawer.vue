@@ -467,6 +467,7 @@ import {
   defineEmits,
   withDefaults,
   nextTick,
+  onBeforeUnmount,
 } from 'vue'
 import { ElSwitch } from 'element-plus'
 import { useTalkStore } from '@/stores/talk'
@@ -545,6 +546,9 @@ const searchKey = ref('')
 const searchList = ref<MemberItem[]>([])
 // 搜索状态
 const isSearching = ref(false)
+const SEARCH_DEBOUNCE_MS = 250
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let latestSearchReqId = 0
 // 加载状态
 const loading = ref(false)
 // 是否没有更多数据
@@ -1046,18 +1050,25 @@ watch(() => props.modelValue, async (newValue) => {
 // })
 
 // 搜索成员
-const searchMembers = async () => {
-  if (!searchKey.value.trim() || !currentChannelInfo.value) return
+const searchMembers = async (keyword?: string) => {
+  const query = (keyword ?? searchKey.value).trim()
+  if (!query || !currentChannelInfo.value) return
 
+  const reqId = ++latestSearchReqId
   isSearching.value = true
   searchList.value = []
 
   try {
     const results = await searchChannelMembers({
       groupId: currentChannelInfo.value.id,
-      query: searchKey.value.trim(),
+      query,
       size: '20'
     })
+
+    // 丢弃过期请求的结果，避免快速输入导致闪烁
+    if (reqId !== latestSearchReqId) {
+      return
+    }
 
     // 转换搜索结果为 MemberItem 格式
     if (results && Array.isArray(results)) {
@@ -1071,13 +1082,37 @@ const searchMembers = async () => {
         permission: [], // 默认权限
         userInfo: item.userInfo
       }))
+    } else {
+      searchList.value = []
     }
   } catch (error) {
+    if (reqId !== latestSearchReqId) {
+      return
+    }
     console.error('搜索成员失败:', error)
     searchList.value = []
   } finally {
-    isSearching.value = false
+    if (reqId === latestSearchReqId) {
+      isSearching.value = false
+    }
   }
+}
+
+const queueSearchMembers = () => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+  const keyword = searchKey.value.trim()
+  if (!keyword) {
+    latestSearchReqId += 1
+    isSearching.value = false
+    searchList.value = []
+    return
+  }
+  searchDebounceTimer = setTimeout(() => {
+    searchDebounceTimer = null
+    searchMembers(keyword)
+  }, SEARCH_DEBOUNCE_MS)
 }
 
 // 处理无限滚动加载更多
@@ -1097,10 +1132,13 @@ const handleLoadMore = async () => {
 
 // 监听搜索关键词变化
 watch(() => searchKey.value, () => {
-  if (searchKey.value.trim()) {
-    searchMembers()
-  } else {
-    searchList.value = []
+  queueSearchMembers()
+})
+
+onBeforeUnmount(() => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = null
   }
 })
 

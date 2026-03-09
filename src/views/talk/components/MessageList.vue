@@ -153,38 +153,30 @@ const emit = defineEmits<{
   (e: 'quote', message: any): void
 }>()
 
-import { getChannelMessages, getPrivateChatMessages } from '@/api/talk'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import {
   computed,
   nextTick,
-  onBeforeUnmount,
   ref,
   watch,
-  inject,
   onMounted,
   onUnmounted,
-  watchEffect,
 } from 'vue'
-import { useRoute } from 'vue-router'
 import LoadingList from './LoadingList.vue'
 import MessageItem from './MessageItem.vue'
 import MessageItemForSession from './MessageItemForSession.vue'
-import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 import BroadcastChatHeader from '@/components/BroadcastChatHeader.vue'
 import BroadcastChatHeaderBack from '@/components/BroadcastChatHeaderBack.vue'
-import { openLoading, sleep, debounce } from '@/utils/util'
+import { openLoading, sleep } from '@/utils/util'
 import { useUserStore } from '@/stores/user'
 import Publish from '@/views/buzz/components/Publish.vue'
 import { IsEncrypt, NodeName, ChatChain } from '@/enum'
 import { decrypt } from '@/utils/crypto'
 import { ShareChatMessageData } from '@/@types/common'
 import { useBulidTx } from '@/hooks/use-build-tx'
-import { useRouter } from 'vue-router'
-import { useChainStore } from '@/stores/chain'
 import { isMobile } from '@/stores/root'
-import { ArrowDownBold, Bottom } from '@element-plus/icons-vue'
+import { Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import { VITE_ADDRESS_HOST } from '@/config/app-config'
 
@@ -200,14 +192,11 @@ const touchStartY = ref(0) // 记录触摸开始位置
 const user = useUserStore()
 const simpleTalk = useSimpleTalkStore()
 const layout = useLayoutStore()
-const router = useRouter()
 const isShowPublish = ref(false)
-const chainStore = useChainStore()
 const repostBuzzTxId = ref('')
 const PublishRef = ref()
 const buildTx = useBulidTx()
 const messagesScroll = ref<HTMLElement>()
-const route = useRoute()
 const showScrollToBottom = ref(false)
 
 const lastReadIndex = ref(-1)
@@ -309,6 +298,18 @@ const jumpToNextUnreadMention = async () => {
 // 消息元素引用和观察器
 const messageRefs = ref<Map<number, HTMLElement>>(new Map())
 const messageObserver = ref<IntersectionObserver | null>(null)
+let observeMessagesTimer: ReturnType<typeof setTimeout> | null = null
+let scrollRafId: number | null = null
+
+const scheduleObserveMessages = (delay = 80) => {
+  if (observeMessagesTimer) {
+    clearTimeout(observeMessagesTimer)
+  }
+  observeMessagesTimer = setTimeout(() => {
+    observeMessages()
+    observeMessagesTimer = null
+  }, delay)
+}
 // const _welComePage = computed(() => {
 //   if (user.isAuthorized === false) {
 //     return true
@@ -326,7 +327,6 @@ const messageObserver = ref<IntersectionObserver | null>(null)
 const notLoadAll = computed(() => {
   const maxIndex =
     simpleTalk.activeChannelMessages[simpleTalk.activeChannelMessages.length - 1]?.index
-  console.log('maxIndex', maxIndex, simpleTalk.activeChannel?.lastMessage?.index)
   if (
     simpleTalk.activeChannel &&
     simpleTalk.activeChannel.lastMessage &&
@@ -340,7 +340,6 @@ const notLoadAll = computed(() => {
 
 const scrollToMessagesBottom = async () => {
   if (unReadCount.value > 0 || notLoadAll.value) {
-    console.log('滚动到底部并加载最新消息', unReadCount.value > 0, notLoadAll.value)
     await simpleTalk.loadNewestMessages(simpleTalk.activeChannelId)
     await nextTick()
     await sleep(100)
@@ -387,7 +386,6 @@ const initMessageObserver = () => {
 
             // 检查是否是 @ 提及消息，如果是则标记已读
             if (message?.mention && message.mention.includes(simpleTalk.selfMetaId)) {
-              console.log('包含提及，标记为已读', messageIndex)
               simpleTalk
                 .markMentionRead(message.index)
                 .then(() => {
@@ -401,18 +399,11 @@ const initMessageObserver = () => {
                 })
             }
 
-            console.log(
-              `📖 消息 ${messageIndex} 进入视图，更新已读索引${
-                messageTimestamp ? ` (时间戳: ${new Date(messageTimestamp).toLocaleString()})` : ''
-              }`
-            )
             simpleTalk
               .setLastReadIndex(simpleTalk.activeChannelId, messageIndex, messageTimestamp)
               .catch(error => {
                 console.warn('❌ 更新已读索引失败:', error)
               })
-          } else {
-            console.log('🎯 频道切换中但无消息，或 lastReadIndex 未定义，跳过更新已读索引')
           }
         }
       })
@@ -462,11 +453,9 @@ const currentChannelType = computed(() => {
 
 const loadItems = async (isPrepending = false) => {
   if (activeChannel.value?.isTemporary) {
-    console.log('临时频道不加载消息')
     return
   }
   // 防止重复加载
-  console.log('loadItems', { isPrepending }, isLoadingTop.value || isLoadingBottom.value)
   if (isLoadingTop.value || isLoadingBottom.value) return
 
   if (!isPrepending) {
@@ -511,11 +500,6 @@ const loadItems = async (isPrepending = false) => {
       // 添加新内容后，列表总高度会增加
       const scrollHeightAfter = listWrapper.value.scrollHeight
       // 将滚动条位置设置为新内容的高度，这样旧内容就回到了原来的位置
-      console.log('保持滚动位置:', {
-        scrollHeightBefore,
-        scrollHeightAfter,
-        addedHeight: scrollHeightAfter - scrollHeightBefore,
-      })
       listContainer.value.scrollTop = scrollHeightBefore - scrollHeightAfter
     }
   }
@@ -553,50 +537,41 @@ const handleScroll = (event: Event) => {
   const container = event.target as HTMLElement
   if (!container) return
 
-  try {
-    // 检查是否滚动到顶部
-    if (Math.abs(container.scrollTop) < 50) {
-      console.log(
-        '滚动到底部，准备加载新数据...',
-        Math.abs(container.scrollTop) < 50,
-        isNoMoreBottom.value,
-        isLoadingBottom.value
-      )
-      if (!isNoMoreBottom.value && !isLoadingBottom.value) {
-        loadItems(true) // true 表示上滑加载
-        return
-      }
-    }
-
-    // 更新是否在底部的状态（用于自动滚动判断）
-    // 由于使用 flex-direction: column-reverse，scrollTop=0 表示在底部
-    isNearBottom.value = Math.abs(container.scrollTop) < AUTO_SCROLL_THRESHOLD
-
-    if (Math.abs(container.scrollTop) > 500) {
-      showScrollToBottom.value = true
-    } else {
-      showScrollToBottom.value = false
-    }
-
-    // 检查是否滚动到底部
-    const threshold = 200 // 预加载阈值
-    if (
-      container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
-      threshold
-    ) {
-      console.log(
-        '滚动到顶部，准备加载更多数据...',
-        container.scrollHeight,
-        container.scrollTop,
-        container.clientHeight
-      )
-      loadItems(false).catch(error => {
-        console.error('加载更多数据失败:', error)
-      })
-    }
-  } catch (error) {
-    console.error('滚动事件处理失败:', error)
+  if (scrollRafId !== null) {
+    cancelAnimationFrame(scrollRafId)
   }
+  scrollRafId = requestAnimationFrame(() => {
+    try {
+      // 检查是否滚动到顶部
+      if (Math.abs(container.scrollTop) < 50) {
+        if (!isNoMoreBottom.value && !isLoadingBottom.value) {
+          loadItems(true) // true 表示上滑加载
+          scrollRafId = null
+          return
+        }
+      }
+
+      // 更新是否在底部的状态（用于自动滚动判断）
+      // 由于使用 flex-direction: column-reverse，scrollTop=0 表示在底部
+      isNearBottom.value = Math.abs(container.scrollTop) < AUTO_SCROLL_THRESHOLD
+      showScrollToBottom.value = Math.abs(container.scrollTop) > 500
+
+      // 检查是否滚动到底部
+      const threshold = 200 // 预加载阈值
+      if (
+        container.scrollHeight - Math.abs(container.scrollTop) - container.clientHeight <
+        threshold
+      ) {
+        loadItems(false).catch(error => {
+          console.error('加载更多数据失败:', error)
+        })
+      }
+    } catch (error) {
+      console.error('滚动事件处理失败:', error)
+    } finally {
+      scrollRafId = null
+    }
+  })
 }
 
 /**
@@ -608,7 +583,6 @@ const handleWheel = (event: WheelEvent) => {
 
   // deltaY > 0 表示向下滚动（显示更旧消息），deltaY < 0 表示向上滚动（显示更新消息）
   if (event.deltaY > 0 && Math.abs(container.scrollTop) < 10) {
-    console.log('检测到向下滚动（鼠标滚轮），准备加载最新消息...')
     if (!isNoMoreBottom.value && !isLoadingBottom.value) {
       loadItems(true) // 加载最新消息
     }
@@ -636,7 +610,6 @@ const handleTouchMove = (event: TouchEvent) => {
 
   // deltaY > 0 表示向下滑动（下拉），在顶部附近时触发加载最新消息
   if (deltaY < 0 && Math.abs(container.scrollTop) < 10) {
-    console.log('检测到向下滑动（触摸），准备加载最新消息...')
     if (!isNoMoreBottom.value && !isLoadingBottom.value) {
       loadItems(true) // 加载最新消息
     }
@@ -645,25 +618,13 @@ const handleTouchMove = (event: TouchEvent) => {
 
 // 自动初始化 simple-talk
 const autoInitSimpleTalk = async () => {
-  if (user.isAuthorized) {
-    if (!simpleTalk.isInitialized) {
-      try {
-        await simpleTalk.init()
-      } catch (error) {
-        console.error('❌ MessageList simple-talk 初始化失败:', error)
-      }
-    } else if (simpleTalk.channels.length === 0) {
-      // 如果已初始化但没有频道，强制同步
-      console.log('🔄 SimpleTalk已初始化但无频道，强制同步...')
-      try {
-        // await simpleTalk.syncFromServer()
-        console.log('✅ 强制同步完成，频道数量:', simpleTalk.channels.length)
-      } catch (error) {
-        console.error('❌ 强制同步失败:', error)
-      }
-    } else {
-      console.log('✅ SimpleTalk已正常初始化，频道数量:', simpleTalk.channels.length)
-    }
+  if (!user.isAuthorized) {
+    return
+  }
+  try {
+    await simpleTalk.ensureInitialized()
+  } catch (error) {
+    console.error('❌ MessageList simple-talk 初始化失败:', error)
   }
 }
 
@@ -727,7 +688,7 @@ watch(
       try {
         scrollToMessagesBottom()
       } catch (error) {
-        console.log(error)
+        console.error(error)
       }
     }
   },
@@ -753,16 +714,8 @@ watch(
       const lastRead = simpleTalk.activeChannel.lastReadIndex ?? 0
       const unreadCount = lastMsgIndex - lastRead
 
-      console.log(
-        '🎯 频道切换中且有消息，未读数量:',
-        unreadCount,
-        '阈值:',
-        UNREAD_AUTO_SCROLL_THRESHOLD
-      )
-
       // 如果未读消息数量在阈值范围内（1-5条），直接滚动到最新
       if (unreadCount >= 0 && unreadCount <= UNREAD_AUTO_SCROLL_THRESHOLD) {
-        console.log('📜 未读消息数量在阈值内，直接滚动到最新消息')
         lastReadIndex.value = -1 // 不显示未读分隔线
 
         await nextTick()
@@ -771,7 +724,7 @@ watch(
             listContainer.value.scrollTop = 0
           }
           simpleTalk.setActiveChannelIdInProgress(false)
-          observeMessages()
+          scheduleObserveMessages()
         }, 200)
         return
       }
@@ -790,10 +743,7 @@ watch(
       setTimeout(() => {
         // 查找最后已读消息对应的元素
         const targetElement = messageRefs.value.get(lastReadIndex.value + 1)
-        console.log('targetElement for lastReadIndex', targetElement, lastReadIndex.value)
         if (lastReadIndex.value !== 0 && targetElement && listContainer.value) {
-          console.log('📍 找到最后已读消息元素，滚动到位置:', lastReadIndex.value)
-
           // 计算目标元素相对于容器的位置
           const containerRect = listContainer.value.getBoundingClientRect()
           const targetRect = targetElement.getBoundingClientRect()
@@ -809,11 +759,10 @@ watch(
         }
         // 设置切换完成状态
         simpleTalk.setActiveChannelIdInProgress(false)
-        observeMessages()
+        scheduleObserveMessages()
       }, 200) // 等待200ms确保DOM渲染完成
     } else if (messagesLength > 0) {
       // 有消息但 lastReadIndex 未定义，滚动到底部并重置状态
-      console.log('🎯 频道切换中有消息，但 lastReadIndex 未定义，滚动到底部')
       lastReadIndex.value = -1
       await nextTick()
       setTimeout(() => {
@@ -821,50 +770,49 @@ watch(
           listContainer.value.scrollTop = 0
         }
         simpleTalk.setActiveChannelIdInProgress(false)
-        observeMessages()
+        scheduleObserveMessages()
       }, 200)
-    } else {
-      // 没有消息的情况，store 中已经处理了状态重置
-      console.log('🎯 频道切换中但无消息，等待消息加载')
     }
   },
   { immediate: true }
 )
 
+const messageListWatchKey = computed(() => {
+  const messages = simpleTalk.activeChannelMessages
+  const first = messages[0]
+  const last = messages[messages.length - 1]
+  return `${simpleTalk.activeChannelId}:${messages.length}:${first?.txId || first?.mockId || ''}:${last?.txId || last?.mockId || ''}`
+})
+
 // 监听消息变化，确保在有消息时滚动到底部
 watch(
-  [() => simpleTalk.activeChannelMessages],
-  ([simpleMessages]) => {
-    // 如果有消息显示，重新观察消息元素
-    const hasMessages = simpleMessages && simpleMessages.length > 0
-    const currentMessageCount = simpleMessages?.length || 0
+  () => messageListWatchKey.value,
+  () => {
+    const simpleMessages = simpleTalk.activeChannelMessages
+    const hasMessages = simpleMessages.length > 0
+    const currentMessageCount = simpleMessages.length
     const isNewMessageAdded = currentMessageCount > previousMessageCount.value
 
     // 更新之前的消息数量
     previousMessageCount.value = currentMessageCount
 
-    if (hasMessages) {
-      console.log('📝 检测到消息变化，重新设置观察器', {
-        isNewMessageAdded,
-        isNearBottom: isNearBottom.value,
-        currentCount: currentMessageCount,
-      })
-
-      nextTick(() => {
-        // 延迟执行，确保DOM已更新
-        setTimeout(() => {
-          observeMessages()
-
-          // 如果有新消息且用户在查看最新区域，自动滚动到最新
-          if (isNewMessageAdded && isNearBottom.value && listContainer.value) {
-            console.log('📜 检测到新消息且用户在底部，自动滚动到最新')
-            listContainer.value.scrollTop = 0
-          }
-        }, 100)
-      })
+    if (!hasMessages) {
+      return
     }
+
+    nextTick(() => {
+      // 延迟执行，确保DOM已更新
+      setTimeout(() => {
+        scheduleObserveMessages(0)
+
+        // 如果有新消息且用户在查看最新区域，自动滚动到最新
+        if (isNewMessageAdded && isNearBottom.value && listContainer.value) {
+          listContainer.value.scrollTop = 0
+        }
+      }, 80)
+    })
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 )
 
 // 监听活动频道变化，重新加载未读@提及
@@ -883,6 +831,16 @@ watch(
 onUnmounted(() => {
   if (isMobile) {
     document.removeEventListener('click', handleGlobalClick)
+  }
+
+  if (scrollRafId !== null) {
+    cancelAnimationFrame(scrollRafId)
+    scrollRafId = null
+  }
+
+  if (observeMessagesTimer) {
+    clearTimeout(observeMessagesTimer)
+    observeMessagesTimer = null
   }
 
   // 清理超时保护

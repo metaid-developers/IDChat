@@ -316,7 +316,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRaw, Ref, onMounted, nextTick, watch } from 'vue'
+import { computed, ref, toRaw, Ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { Popover, PopoverButton, PopoverPanel, TransitionRoot } from '@headlessui/vue'
 import { ElMessage, ElPopover, ElMessageBox } from 'element-plus'
 
@@ -716,6 +716,9 @@ const mentionDropdownPosition = ref<{
 const mentionDropdownRef = ref<any>(null)
 const currentMentions = ref<Array<{ globalMetaId: string; name: string }>>([]) // 使用 globalMetaId
 const defaultMembersCache = ref<any[]>([]) // 缓存默认成员列表
+const MENTION_SEARCH_DEBOUNCE_MS = 180
+let mentionSearchTimer: ReturnType<typeof setTimeout> | null = null
+let latestMentionReqId = 0
 
 // 处理输入事件，检测 @ 符号
 const handleInput = (e: Event) => {
@@ -754,9 +757,15 @@ const handleInput = (e: Event) => {
 
       // 如果没有输入文字，使用默认成员列表或从接口获取
       if (!query) {
+        if (mentionSearchTimer) {
+          clearTimeout(mentionSearchTimer)
+          mentionSearchTimer = null
+        }
+        latestMentionReqId += 1
+        mentionLoading.value = false
         loadDefaultMembers()
       } else {
-        searchMentionUsers(query)
+        queueMentionSearch(query)
       }
     }
   } else {
@@ -830,6 +839,7 @@ const loadDefaultMembers = async () => {
 const searchMentionUsers = async (query: string) => {
   if (!simpleTalk.activeChannelId) return
 
+  const reqId = ++latestMentionReqId
   mentionLoading.value = true
 
   try {
@@ -839,13 +849,33 @@ const searchMentionUsers = async (query: string) => {
       size: '10',
     })
 
+    if (reqId !== latestMentionReqId) return
     mentionUsers.value = results || []
   } catch (error) {
+    if (reqId !== latestMentionReqId) return
     console.error('搜索群成员失败:', error)
     mentionUsers.value = []
   } finally {
-    mentionLoading.value = false
+    if (reqId === latestMentionReqId) {
+      mentionLoading.value = false
+    }
   }
+}
+
+const queueMentionSearch = (query: string) => {
+  if (mentionSearchTimer) {
+    clearTimeout(mentionSearchTimer)
+  }
+  const keyword = query.trim()
+  if (!keyword) {
+    latestMentionReqId += 1
+    mentionLoading.value = false
+    return
+  }
+  mentionSearchTimer = setTimeout(() => {
+    mentionSearchTimer = null
+    searchMentionUsers(keyword)
+  }, MENTION_SEARCH_DEBOUNCE_MS)
 }
 
 // 处理选择用户
@@ -1095,11 +1125,25 @@ const trySendText = async (e: any) => {
 watch(
   () => simpleTalk.activeChannelId,
   () => {
+    if (mentionSearchTimer) {
+      clearTimeout(mentionSearchTimer)
+      mentionSearchTimer = null
+    }
+    latestMentionReqId += 1
+    mentionLoading.value = false
     defaultMembersCache.value = []
     showMentionDropdown.value = false
     currentMentions.value = []
   }
 )
+
+onBeforeUnmount(() => {
+  if (mentionSearchTimer) {
+    clearTimeout(mentionSearchTimer)
+    mentionSearchTimer = null
+  }
+  latestMentionReqId += 1
+})
 </script>
 
 <style lang="scss" scoped>

@@ -60,7 +60,8 @@ const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
 const rootStore = useRootStore()
 const needModifyPubkey = ref(false)
-const { allChannels } = storeToRefs(useSimpleTalkStore())
+const simpleTalkStore = useSimpleTalkStore()
+const { allChannels } = storeToRefs(simpleTalkStore)
 
 // console.log('talkStore', simpleTalkStore.allChannels)
 
@@ -78,8 +79,7 @@ const _allChannels = computed(() => {
 
 onMounted(async () => {
   const pubkey = userStore.last.chatpubkey
-  const ecdh = await getEcdhPublickey()
-  await useSimpleTalkStore().init()
+  const [ecdh] = await Promise.all([getEcdhPublickey(), simpleTalkStore.ensureInitialized()])
   if (pubkey && pubkey !== ecdh.ecdhPubKey) {
     needModifyPubkey.value = true
   }

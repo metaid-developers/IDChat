@@ -214,15 +214,31 @@ export async function loadRuntimeConfig(): Promise<AppRuntimeConfig> {
   console.log('⏳ Loading runtime config...', import.meta.env.MODE)
 
   try {
-    const response = await fetch(
-      window.location.pathname.startsWith('/chat')
-        ? '/chat/app-config.json?t=' + Date.now()
-        : '/app-config.json?t=' + Date.now()
-    )
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+    const ts = Date.now()
+    const inChatPath = window.location.pathname.startsWith('/chat')
+    const configUrls = inChatPath
+      ? [`/chat/app-config.json?t=${ts}`, `/app-config.json?t=${ts}`]
+      : [`/app-config.json?t=${ts}`]
+
+    let config: any = null
+    let lastError: Error | null = null
+
+    for (const url of configUrls) {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}, url: ${url}`)
+        }
+        config = await response.json()
+        break
+      } catch (error: any) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+      }
     }
-    const config = await response.json()
+
+    if (!config) {
+      throw lastError || new Error('Failed to load runtime config from all candidate URLs')
+    }
 
     // 可选：在开发环境进行配置验证
     // 注意：动态导入在生产构建时可能导致 Rollup 代码分割冲突，已禁用

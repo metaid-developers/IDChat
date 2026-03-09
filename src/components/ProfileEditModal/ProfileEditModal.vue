@@ -388,7 +388,7 @@ const save = async () => {
     ElMessage.success('Profile updated successfully!')
     emit('update:modelValue', false)
     setTimeout(async () => {
-      await simpleTalk.init()
+      await simpleTalk.ensureInitialized()
       if (route.params.channelId && route.params.channelId !== 'welcome') {
         window.location.reload()
       }

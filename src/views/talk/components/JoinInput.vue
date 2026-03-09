@@ -54,9 +54,7 @@ const tryJoinChannel = async () => {
     // 等待3秒后改变状态（防止后端还未同步）
     await sleep(1000)
 
-    if (!simpleTalk.isInitialized) {
-      await simpleTalk.init()
-    }
+    await simpleTalk.ensureInitialized()
     simpleTalk.convertTemporaryToRegular(simpleTalk.activeChannelId)
     await simpleTalk.syncFromServer()
   } catch (error) {

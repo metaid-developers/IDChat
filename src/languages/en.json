@@ -274,6 +274,8 @@
       "broadcast_title": "# Broadcast Chat",
       "SetAdmin": "Set as Admin",
       "WhiteList": "Add to Whitelist",
+      "MuteUser": "Mute User",
+      "BlockUser": "Block User",
       "removeAdmin": "Remove From Admin",
       "remove_WhiteList": "Remove From Whitelist",
       "getRoleError": "Failed to retrieve user permission information. Please refresh and try again",
