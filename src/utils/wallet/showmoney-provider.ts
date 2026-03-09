@@ -1,7 +1,7 @@
 // @ts-ignore
 import mvc from 'mvc-lib'
 import { HttpRequests, ApiRequestTypes } from '@/utils/wallet/request2'
-import HttpRequest from 'request-sdk'
+import * as RequestSDK from 'request-sdk'
 import { BaseUtxo, MetasvUtxoTypes, MetaNameRequestDate, MetaNameReqType } from './hd-wallet'
 import axios, { AxiosInstance } from 'axios'
 import { UtxoItem } from '@/@types/sdk'
@@ -12,6 +12,19 @@ import { GetTxChainInfo } from '@/api/metaid-base'
 import { Session } from './session'
 import { Utxos } from '@/api/dashbroad'
 import Decimal from 'decimal.js-light'
+
+function resolveRequestCtor(mod: any): any {
+  const globalRequest = (globalThis as any)?.HttpRequest
+  const candidates = [mod?.default, mod?.HttpRequest, mod, globalRequest]
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'function') return candidate
+  }
+
+  throw new Error('request-sdk constructor not found')
+}
+
+const RequestCtor: any = resolveRequestCtor(RequestSDK)
 const mvcBaseApi=import.meta.env.VITE_MVC_BASEAPI
 const cyber3api=import.meta.env.VITE_CYBER3_API
 interface BaseApiResultTypes<T> {
@@ -104,11 +117,11 @@ export default class ShowmoneyProvider {
     if (params?.bsvMetaSvApi) this.bsvMetaSvApi = params.bsvMetaSvApi
     if (params?.network) this.network = params.network
 
-    this.metaSvHttp = new HttpRequest(this.metaSvApi).request
-    this.serviceHttp = new HttpRequest(this.apiPrefix + '/serviceapi').request
+    this.metaSvHttp = new RequestCtor(this.metaSvApi).request
+    this.serviceHttp = new RequestCtor(this.apiPrefix + '/serviceapi').request
     // 初始化 metasv签名接口 http
     // this.metasvSignatureHttp = new HttpRequest(this.apiPrefix + '/metasv-signature', {
-    this.metasvSignatureHttp = new HttpRequest('https://api.showmoney.app/metasv-signature', {
+    this.metasvSignatureHttp = new RequestCtor('https://api.showmoney.app/metasv-signature', {
       responseHandel(response) {
         return new Promise((resolve, reject) => {
           if (response.data.code && response.data.code !== 0) {

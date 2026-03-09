@@ -16,6 +16,44 @@ import { getMyBlockChatList} from "@/api/chat-notify";
 import { SubChannel } from '@/@types/talk'
 import { useRootStore } from './root'
 import { VITE_AVATAR_CONTENT_API, VITE_FILE_API } from '@/config/app-config'
+import { createPerfSpan } from '@/utils/perf-monitor'
+
+const ENABLE_STARTUP_HISTORY_BACKFILL =
+  import.meta.env.VITE_CHAT_ENABLE_STARTUP_HISTORY_BACKFILL === 'true'
+const STARTUP_HISTORY_BACKFILL_DELAY_MS = Number(
+  import.meta.env.VITE_CHAT_STARTUP_HISTORY_BACKFILL_DELAY_MS || '12000'
+)
+const STARTUP_HISTORY_BACKFILL_MAX_CHANNELS = Number(
+  import.meta.env.VITE_CHAT_STARTUP_HISTORY_BACKFILL_MAX_CHANNELS || '3'
+)
+const LOCAL_HISTORY_SCAN_LIMIT = Number(import.meta.env.VITE_CHAT_LOCAL_HISTORY_SCAN_LIMIT || '5000')
+const LOAD_MESSAGES_SERVER_TIMEOUT_MS = Number(
+  import.meta.env.VITE_CHAT_LOAD_MESSAGES_SERVER_TIMEOUT_MS || '6000'
+)
+const LOAD_MESSAGES_SERVER_COOLDOWN_MS = Number(
+  import.meta.env.VITE_CHAT_LOAD_MESSAGES_SERVER_COOLDOWN_MS || '10000'
+)
+const GROUP_PERMISSION_FETCH_DELAY_MS = Number(
+  import.meta.env.VITE_CHAT_GROUP_PERMISSION_FETCH_DELAY_MS || '1200'
+)
+const DEFAULT_SERVER_FETCH_SIZE = Number(import.meta.env.VITE_CHAT_SERVER_FETCH_SIZE || '30')
+
+let initInFlight: Promise<void> | null = null
+const lastReadRecordCache = new Map<string, { index: number; timestamp: number | null }>()
+const channelLoadInFlight = new Map<string, Promise<void>>()
+const channelServerSyncInFlight = new Map<string, Promise<void>>()
+const channelLastServerSyncAt = new Map<string, number>()
+const groupPermissionFetchTimers = new Map<string, number>()
+
+const getLastReadCacheKey = (userMetaId: string, channelId: string): string =>
+  `${userMetaId}::${channelId}`
+
+const normalizePositiveInteger = (value: number, fallback: number): number => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback
+  }
+  return Math.floor(value)
+}
 
 
 
@@ -511,35 +549,56 @@ class SimpleChatDB {
     })
   }
 
-  async saveMessage(message: UnifiedChatMessage): Promise<void> {
-    if (!this.db) return
-    
+  private buildMessageRecord(message: UnifiedChatMessage): Record<string, any> | null {
     // 创建可以安全存储到 IndexedDB 的消息副本
     const safeMessageData = this.createCloneableMessage(message)
     const isPrivateChat = isPrivateChatMessage(safeMessageData)
     // 确定频道ID（使用 fromGlobalMetaId/toGlobalMetaId）
-    const channelId = isPrivateChat ? (this.userPrefix.indexOf(safeMessageData.fromGlobalMetaId) !== -1 ? safeMessageData.toGlobalMetaId : safeMessageData.fromGlobalMetaId) : message.channelId ||  message.groupId 
+    const channelId = isPrivateChat
+      ? this.userPrefix.indexOf(safeMessageData.fromGlobalMetaId) !== -1
+        ? safeMessageData.toGlobalMetaId
+        : safeMessageData.fromGlobalMetaId
+      : message.channelId || message.groupId
+
     if (!channelId) {
-      
       console.warn('⚠️ 无法确定消息的频道ID，跳过保存')
-      return
+      return null
     }
-    
+
     // 添加用户前缀和id字段（用于IndexedDB的keyPath）
-    const messageWithPrefix = {
+    return {
       ...safeMessageData,
       id: safeMessageData.txId, // 添加id字段作为IndexedDB的主键
       userPrefix: this.userPrefix,
-      channelId: channelId // 确保设置正确的channelId用于查询
+      channelId, // 确保设置正确的channelId用于查询
     }
-    
+  }
+
+  async saveMessage(message: UnifiedChatMessage): Promise<void> {
+    await this.saveMessages([message])
+  }
+
+  async saveMessages(messages: UnifiedChatMessage[]): Promise<void> {
+    if (!this.db || !messages.length) return
+
+    const records = messages
+      .map(message => this.buildMessageRecord(message))
+      .filter((item): item is Record<string, any> => !!item)
+
+    if (!records.length) return
+
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['messages'], 'readwrite')
       const store = transaction.objectStore('messages')
-      const request = store.put(messageWithPrefix)
-      
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(request.error)
+
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+      transaction.onabort = () =>
+        reject(transaction.error || new Error('批量保存消息事务被中断'))
+
+      records.forEach(record => {
+        store.put(record)
+      })
     })
   }
 
@@ -740,10 +799,10 @@ class SimpleChatDB {
         clearTimeout(timeoutId)
         const allMessages = request.result || []
         const userMessages = allMessages.filter((msg: any) => msg.userPrefix === this.userPrefix && String(msg.channelId) === String(channelId))
-        const messages = userMessages
+        const sortedMessages = userMessages
           .map(({ userPrefix, id, ...message }: any) => message)
           .sort((a: any, b: any) => (a.index || 0) - (b.index || 0))
-          .slice(0, limit)
+        const messages = limit > 0 ? sortedMessages.slice(-limit) : sortedMessages
         resolve(messages)
       }
       request.onerror = () => {
@@ -1482,7 +1541,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       const userStore = useUserStore();
       // 只使用 globalMetaId，不降级
       const globalMetaId = userStore.last?.globalMetaId || ''
-      console.log('🚀 获取当前用户 GlobalMetaId', globalMetaId)
       return globalMetaId
     },
 
@@ -1662,23 +1720,43 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           return { isCreator: false, isAdmin: false, isBlocked: false, isWhitelist: false, memberInfo: null }
         }
 
-        const currentUserMetaId = this.selfMetaId
+        const userStore = useUserStore()
+        const currentUserIds = new Set(
+          [this.selfMetaId, userStore.last?.metaid, userStore.last?.globalMetaId]
+            .filter(Boolean)
+            .map(id => String(id))
+        )
         const permissions = channel.memberPermissions
 
+        const isCurrentUser = (member?: MemberItem | null): boolean => {
+          if (!member || currentUserIds.size === 0) return false
+
+          const memberIds = [
+            member.metaId,
+            member.globalMetaId,
+            member.userInfo?.metaid,
+            member.userInfo?.globalMetaId,
+          ]
+            .filter(Boolean)
+            .map(id => String(id))
+
+          return memberIds.some(id => currentUserIds.has(id))
+        }
+
         // 检查是否是创建者
-        const isCreator = permissions.creator?.metaId === currentUserMetaId
+        const isCreator = isCurrentUser(permissions.creator)
 
         // 检查是否是管理员
-        const isAdmin = permissions.admins.some(admin => admin.metaId === currentUserMetaId)
+        const isAdmin = permissions.admins.some(isCurrentUser)
 
         // 检查是否被阻止
-        const isBlocked = permissions.blockList.some(blocked => blocked.metaId === currentUserMetaId)
+        const isBlocked = permissions.blockList.some(isCurrentUser)
 
         // 检查是否在白名单
-        const isWhitelist = permissions.whiteList.some(whitelisted => whitelisted.metaId === currentUserMetaId)
+        const isWhitelist = permissions.whiteList.some(isCurrentUser)
 
         // 获取成员信息
-        const memberInfo = permissions.list.find(member => member.metaId === currentUserMetaId) || null
+        const memberInfo = permissions.list.find(isCurrentUser) || null
 
         return { isCreator, isAdmin, isBlocked, isWhitelist, memberInfo }
       }
@@ -1713,120 +1791,137 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 初始化聊天系统
      */
     async init(): Promise<void> {
-      if (this.isInitializing) {
-        
-        console.log('⏳ 聊天系统正在初始化中...')
-        return
-      }
-      this.isInitializing = true
-      const userStore = useUserStore()
-      const rootStore=useRootStore()
-      // 使用 globalMetaId 作为本地数据 key（支持多链）
-      const currentUserMetaId = userStore.last?.globalMetaId
-      
-      // 确保 Map 对象正确初始化（处理持久化恢复问题）
-      if (!(this.messageCache instanceof Map)) {
-        console.log('🔧 修复消息缓存 Map 对象')
-        this.messageCache = new Map<string, UnifiedChatMessage[]>()
-      }
-      if (!(this.userCache instanceof Map)) {
-        console.log('🔧 修复用户缓存 Map 对象')
-        this.userCache = new Map<string, SimpleUser>()
-      }
-      
-      if (!currentUserMetaId) {
-        console.warn('⚠️ 用户未登录，无法初始化聊天系统')
-        this.isInitializing = false
+      const endInitSpan = createPerfSpan('simpleTalk.init', {
+        alreadyInitializing: this.isInitializing,
+        isInitialized: this.isInitialized,
+      })
+
+      if (initInFlight) {
+        await initInFlight
+        endInitSpan({ reusedInFlight: true, initialized: this.isInitialized })
         return
       }
 
-      // 检查是否需要重新初始化（用户切换）
-      const needReinit = !this.isInitialized || this.currentUserMetaId !== currentUserMetaId
-      
-      if (!needReinit) {
-        console.log('✅ 聊天系统已为当前用户初始化')
-        this.isInitializing = false
-        return
-      }
+      initInFlight = (async () => {
+        if (this.isInitializing) {
+          return
+        }
 
-      try {
-        console.log(`🚀 为用户 ${currentUserMetaId} 初始化聊天系统...`)
+        this.isInitializing = true
+        const userStore = useUserStore()
+        const rootStore=useRootStore()
+        // 使用 globalMetaId 作为本地数据 key（支持多链）
+        const currentUserMetaId = userStore.last?.globalMetaId
         
-        // 如果是切换用户，先清理之前用户的数据
-        if (this.currentUserMetaId && this.currentUserMetaId !== currentUserMetaId) {
-          console.log(`🔄 检测到用户切换 ${this.currentUserMetaId} → ${currentUserMetaId}`)
-          await this.reset()
+        // 确保 Map 对象正确初始化（处理持久化恢复问题）
+        if (!(this.messageCache instanceof Map)) {
+          this.messageCache = new Map<string, UnifiedChatMessage[]>()
+        }
+        if (!(this.userCache instanceof Map)) {
+          this.userCache = new Map<string, SimpleUser>()
         }
         
-        // 设置当前用户
-        this.currentUserMetaId = currentUserMetaId
-        
-        // 1. 初始化IndexedDB（带用户隔离）
-        await this.db.init(currentUserMetaId)
-        console.log('✅ IndexedDB 初始化成功')
-        // 2. 加载本地缓存数据（快速显示）
-        await this.loadFromLocal()
-        console.log('✅ 本地数据加载完成')
-        // 3. 异步同步服务端数据
-        console.log('🚀 开始后台同步服务端数据...')
-         this.syncFromServer().then(async ()=>{
- // 加载已读索引到内存（向后兼容）
-        await this.loadLastReadIndexes()
-        console.log('✅ 服务端数据同步完成')
+        if (!currentUserMetaId) {
+          console.warn('⚠️ 用户未登录，无法初始化聊天系统')
+          return
+        }
 
-        // 从 IndexedDB 加载子频道头部显示状态
-        await this.loadSubChannelHeaderStatusFromDB()
-        console.log('✅ 子频道头部状态加载完成')
+        // 检查是否需要重新初始化（用户切换）
+        const needReinit = !this.isInitialized || this.currentUserMetaId !== currentUserMetaId
+        if (!needReinit) {
+          return
+        }
 
-         }).catch(error => {
-          console.warn('⚠️ 后台同步失败:', error)
-        }).finally(() => {
-           // 5. 异步加载最近三个月的历史消息（后台执行，不阻塞界面）
-        setTimeout(() => {
-          this.loadRecentHistoryMessages().catch(error => {
-            console.warn('⚠️ 后台加载历史消息失败:', error)
-          })
-        }, 5000)
-        })
-
-       
-        // 4. 恢复上次的激活频道（异步）
-        // await this.restoreLastActiveChannel()
-
-        this.isInitialized = true
-        console.log(`✅ 用户 ${currentUserMetaId} 的聊天系统初始化成功`)
-
-        // 通知 IDChat app 未读消息数量
-        this.notifyIDChatAppBadge()
-
-       
-        
-         if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
-          
-          GetUserEcdhPubkeyForPrivateChat(userStore.last?.globalMetaId).then((ecdhRes) => {
-            if (ecdhRes?.chatPublicKey) {
-            userStore.updateUserInfo({
-            chatpubkey: ecdhRes?.chatPublicKey
-            })
-            rootStore.updateShowCreatePubkey(false)
-          }else{
-            rootStore.updateShowCreatePubkey(true)
+        try {
+          // 如果是切换用户，先清理之前用户的数据
+          if (this.currentUserMetaId && this.currentUserMetaId !== currentUserMetaId) {
+            await this.reset()
           }
-          })
           
-      }
+          // 设置当前用户
+          this.currentUserMetaId = currentUserMetaId
+          
+          // 1. 初始化IndexedDB（带用户隔离）
+          await this.db.init(currentUserMetaId)
+          // 2. 加载本地缓存数据（快速显示）
+          await this.loadFromLocal()
+          // 3. 异步同步服务端数据
+          this.syncFromServer()
+            .then(async () => {
+              // 加载已读索引到内存（向后兼容）
+              await this.loadLastReadIndexes()
 
-      } catch (error) {
-        console.error('❌ 聊天系统初始化失败:', error)
-        // 即使初始化失败，也标记为已初始化，避免卡在 loading 页面
-        // 用户可以看到界面，只是可能没有数据
-        this.isInitialized = true
-        console.warn('⚠️ 初始化失败但仍标记为已初始化，用户可以看到界面')
-        throw error
+              // 从 IndexedDB 加载子频道头部显示状态
+              await this.loadSubChannelHeaderStatusFromDB()
+            })
+            .catch(error => {
+              console.warn('⚠️ 后台同步失败:', error)
+            })
+            .finally(() => {
+              if (!ENABLE_STARTUP_HISTORY_BACKFILL) {
+                return
+              }
+              const delayMs = normalizePositiveInteger(STARTUP_HISTORY_BACKFILL_DELAY_MS, 12000)
+              const maxChannels = normalizePositiveInteger(STARTUP_HISTORY_BACKFILL_MAX_CHANNELS, 3)
+              setTimeout(() => {
+                this.loadRecentHistoryMessages({ maxChannels }).catch(error => {
+                  console.warn('⚠️ 后台加载历史消息失败:', error)
+                })
+              }, delayMs)
+            })
+
+          // 4. 恢复上次的激活频道（异步）
+          // await this.restoreLastActiveChannel()
+
+          this.isInitialized = true
+
+          // 通知 IDChat app 未读消息数量
+          this.notifyIDChatAppBadge()
+
+          if (userStore.isAuthorized && !userStore.last?.chatpubkey) {
+            GetUserEcdhPubkeyForPrivateChat(userStore.last?.globalMetaId).then((ecdhRes) => {
+              if (ecdhRes?.chatPublicKey) {
+                userStore.updateUserInfo({
+                  chatpubkey: ecdhRes?.chatPublicKey
+                })
+                rootStore.updateShowCreatePubkey(false)
+              } else {
+                rootStore.updateShowCreatePubkey(true)
+              }
+            })
+          }
+        } catch (error) {
+          console.error('❌ 聊天系统初始化失败:', error)
+          // 即使初始化失败，也标记为已初始化，避免卡在 loading 页面
+          // 用户可以看到界面，只是可能没有数据
+          this.isInitialized = true
+          console.warn('⚠️ 初始化失败但仍标记为已初始化，用户可以看到界面')
+          throw error
+        } finally {
+          this.isInitializing = false
+        }
+      })()
+
+      let success = false
+      try {
+        await initInFlight
+        success = true
+      } finally {
+        endInitSpan({
+          reusedInFlight: false,
+          success,
+          initialized: this.isInitialized,
+          channelCount: this.channels.length,
+        })
+        initInFlight = null
       }
-      finally {
-        this.isInitializing = false
+    },
+
+    async ensureInitialized(): Promise<void> {
+      if (this.isInitialized && this.currentUserMetaId === this.selfMetaId) {
+        return
       }
+      await this.init()
     },
 
     /**
@@ -1896,7 +1991,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 异步加载最近三个月的历史消息
      * 智能检查消息连续性，只加载缺失的部分
      */
-    async loadRecentHistoryMessages(): Promise<void> {
+    async loadRecentHistoryMessages(options?: { maxChannels?: number }): Promise<void> {
       if (!this.selfMetaId) return
 
       console.log('🔄 开始智能加载历史消息（检查连续性）...')
@@ -1904,29 +1999,33 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         // 计算三个月前的时间戳（秒）
         const threeMonthsAgo = Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000)
-        
-        // 遍历所有频道，检查并加载缺失消息
-        const loadPromises = this.channels.map(async (channel) => {
-          try {
-            
-await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
-            
-           
 
-            
-            
-          } catch (error) {
-            console.warn(`⚠️ 加载频道 ${channel.name} 历史消息失败:`, error)
-          }
-        })
+        const maxChannels = normalizePositiveInteger(options?.maxChannels || 0, 0)
+        const sortedChannels = [...this.channels]
+          .filter(channel => (channel.lastMessage?.index || 0) > 0)
+          .sort(
+            (a, b) =>
+              (b.lastMessage?.timestamp || b.createdAt || 0) -
+              (a.lastMessage?.timestamp || a.createdAt || 0)
+          )
+        const channelsToLoad =
+          maxChannels > 0 ? sortedChannels.slice(0, maxChannels) : sortedChannels
 
         // 并发加载，限制并发数
         const batchSize = 2
-        for (let i = 0; i < loadPromises.length; i += batchSize) {
-          const batch = loadPromises.slice(i, i + batchSize)
-          await Promise.all(batch)
+        for (let i = 0; i < channelsToLoad.length; i += batchSize) {
+          const batch = channelsToLoad.slice(i, i + batchSize)
+          await Promise.all(
+            batch.map(async channel => {
+              try {
+                await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
+              } catch (error) {
+                console.warn(`⚠️ 加载频道 ${channel.name} 历史消息失败:`, error)
+              }
+            })
+          )
           // 每批次之间稍微延迟，避免请求过于集中
-          await sleep(500)
+          await sleep(200)
         }
 
         console.log('✅ 历史消息加载完成')
@@ -1957,7 +2056,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       const latestIndex = channel.lastMessage.index
 
       // 从数据库加载已有消息
-      const localMessages = await this.db.getMessages(channelId, 100000)
+      const localMessages = await this.db.getMessages(channelId, LOCAL_HISTORY_SCAN_LIMIT)
       
       if (localMessages.length === 0) {
         // 本地没有消息，从最新位置开始往前翻页加载
@@ -2056,6 +2155,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
           // 按 index 排序
           const sortedMessages = messages.sort((a, b) => a.index - b.index)
+          await this.db.saveMessages(sortedMessages)
 
           // 检查是否到达边界条件
           let reachedBoundary = false
@@ -2073,9 +2173,6 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               console.log(`⏹️ 已到达最早消息 (index=1)，停止加载`)
               reachedBoundary = true
             }
-
-            // 保存消息到数据库
-            await this.db.saveMessage(message)
 
             // 检查是否有@提及当前用户
             if (message.mention && 
@@ -2108,7 +2205,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           }
 
           // 检查本地消息连续性（只检查已加载的部分）
-          const localMessages = await this.db.getMessages(channelId, 100000)
+          const localMessages = await this.db.getMessages(channelId, LOCAL_HISTORY_SCAN_LIMIT)
           const sortedLocal = localMessages.sort((a, b) => a.index - b.index)
           
           // 检查从 currentStartIndex 到 fromIndex 这个范围内是否连续
@@ -2304,12 +2401,19 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 从服务端同步数据
      */
     async syncFromServer(): Promise<void> {
+      const endSyncSpan = createPerfSpan('simpleTalk.syncFromServer', {
+        currentChannels: this.channels.length,
+      })
       if (!this.selfGlobalMetaId) {  // 改为 globalMetaId
         console.warn('⚠️ 未找到用户信息，跳过同步')
+        endSyncSpan({ skipped: true, reason: 'missingSelfGlobalMetaId' })
         return
       }
 
       this.isLoading = true
+      let success = false
+      let fetchedItems = 0
+      let mergedChannels = 0
       
       try {
         console.log('🔄 开始同步服务端数据...')
@@ -2318,6 +2422,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         let allChannelsData: any[] = []
         try {
           allChannelsData = await this.fetchLatestChatInfo()
+          fetchedItems = allChannelsData.length
           console.log(`✅ 获取到 ${allChannelsData.length} 条聊天数据`)
         } catch (e) {
           console.warn('获取聊天列表失败，使用本地数据:', e)
@@ -2333,6 +2438,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
         // 转换数据格式
         const serverChannels = this.transformLatestChatInfo(allChannelsData)
+        mergedChannels = serverChannels.length
         console.log(`✅ 转换为 ${serverChannels.length} 个频道数据`)
 
         // 合并到本地
@@ -2340,12 +2446,19 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         console.log(`✅ 合并到本地完成，共 ${this.channels.length} 个频道`)
         
         this.lastSyncTime = Date.now()
+        success = true
         console.log(`✅ 同步完成，共 ${serverChannels.length} 个频道`)
         
       } catch (error) {
         console.error('❌ 同步服务端数据失败:', error)
       } finally {
         this.isLoading = false
+        endSyncSpan({
+          success,
+          fetchedItems,
+          mergedChannels,
+          localChannels: this.channels.length,
+        })
       }
     },
 
@@ -2353,16 +2466,25 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 获取最新聊天信息列表
      */
     async fetchLatestChatInfo(): Promise<any[]> {
+      const endSpan = createPerfSpan('simpleTalk.fetchLatestChatInfo', {
+        metaId: this.selfGlobalMetaId,
+      })
       console.log('🌐 开始调用 API 获取聊天数据...', {
         selfGlobalMetaId: this.selfGlobalMetaId,
         apiEndpoint: '/user/latest-chat-info-list'
       })
-      const result = await getChannels({ 
-        metaId: this.selfGlobalMetaId,  // 参数名保持 metaId，值使用 globalMetaId
-        cursor: '0',
-        size: '100'
-      })
-      return result
+      try {
+        const result = await getChannels({ 
+          metaId: this.selfGlobalMetaId,  // 参数名保持 metaId，值使用 globalMetaId
+          cursor: '0',
+          size: '100'
+        })
+        endSpan({ count: Array.isArray(result) ? result.length : 0 })
+        return result
+      } catch (error: any) {
+        endSpan({ error: error?.message || String(error) })
+        throw error
+      }
     },
 
     /**
@@ -3077,7 +3199,13 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 设置当前激活频道
      */
     async setActiveChannel(channelId: string): Promise<void> {
-      if (this.activeChannelId === channelId) return
+      const endSetActiveSpan = createPerfSpan('simpleTalk.setActiveChannel', {
+        channelId,
+      })
+      if (this.activeChannelId === channelId) {
+        endSetActiveSpan({ skipped: true, reason: 'sameChannel' })
+        return
+      }
 
       // 检查频道是否存在于当前channels列表中
       let channel = this.channels.find(c => c.id === channelId)
@@ -3091,6 +3219,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (!temporaryChannel) {
           console.error(`❌ 无法创建临时频道: ${channelId}`)
           this.isSetActiveChannelIdInProgress = false
+          endSetActiveSpan({ success: false, reason: 'temporaryChannelFailed' })
           return
         }
         
@@ -3113,24 +3242,76 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
 
       this.activeChannelId = channelId
 
-      // 总是重新加载消息以确保数据最新
       try {
-        await this.loadMessages(channelId)
-        console.log(`✅ 激活频道设置完成，当前消息数: ${this.activeChannelMessages.length}`)
-        if(this.activeChannelMessages.length === 0){
-          this.isSetActiveChannelIdInProgress = false
+        const cachedMessages = this.messageCache.get(channelId)
+        if (cachedMessages && cachedMessages.length > 0) {
+          this.messageCache.set(
+            channelId,
+            [...cachedMessages].sort((a, b) => (a.index || 0) - (b.index || 0))
+          )
+        } else {
+          const localMessages = await this.db.getMessages(channelId, 50)
+          if (localMessages.length > 0) {
+            this.messageCache.set(
+              channelId,
+              localMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
+            )
+          } else {
+            this.messageCache.set(channelId, [])
+          }
         }
       } catch (error) {
-        console.error(`❌ 加载消息失败:`, error)
-        // 消息加载失败时也要重置状态，避免卡住
-        this.isSetActiveChannelIdInProgress = false
+        console.warn(`⚠️ 预加载本地消息失败: ${channelId}`, error)
       }
+
+      const endLoadMessagesSpan = createPerfSpan('simpleTalk.setActiveChannel.loadMessages', {
+        channelId,
+      })
+      void this.loadMessages(channelId)
+        .then(() => {
+          if (this.activeChannelId !== channelId) {
+            endLoadMessagesSpan({ skipped: true, reason: 'activeChannelChanged' })
+            return
+          }
+          if (this.activeChannelMessages.length === 0) {
+            this.isSetActiveChannelIdInProgress = false
+          }
+          endLoadMessagesSpan({
+            success: true,
+            messageCount: this.activeChannelMessages.length,
+          })
+        })
+        .catch(error => {
+          console.error(`❌ 加载消息失败:`, error)
+          // 消息加载失败时也要重置状态，避免卡住
+          if (this.activeChannelId === channelId) {
+            this.isSetActiveChannelIdInProgress = false
+          }
+          endLoadMessagesSpan({
+            success: false,
+            error: error?.message || String(error),
+          })
+        })
+
       // 如果是群聊，获取权限信息
       if (channel && channel.type === 'group') {
-        // 在后台获取权限信息，不阻塞界面
-        this.getGroupMemberPermissions(channelId).catch(error => {
-          console.warn(`⚠️ 获取群聊 ${channelId} 权限信息失败:`, error)
-        })
+        const previousTimer = groupPermissionFetchTimers.get(channelId)
+        if (previousTimer) {
+          clearTimeout(previousTimer)
+          groupPermissionFetchTimers.delete(channelId)
+        }
+
+        const timerId = setTimeout(() => {
+          groupPermissionFetchTimers.delete(channelId)
+          if (this.activeChannelId !== channelId) {
+            return
+          }
+          // 在后台获取权限信息，不阻塞消息主链路
+          this.getGroupMemberPermissions(channelId).catch(error => {
+            console.warn(`⚠️ 获取群聊 ${channelId} 权限信息失败:`, error)
+          })
+        }, normalizePositiveInteger(GROUP_PERMISSION_FETCH_DELAY_MS, 1200))
+        groupPermissionFetchTimers.set(channelId, Number(timerId))
       }
 
       // 标记为已读
@@ -3139,6 +3320,11 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 保存到本地存储
       // localStorage.setItem(`lastActiveChannel-${this.selfMetaId}`, channelId)
       // this.isSetActiveChannelIdInProgress = false
+      endSetActiveSpan({
+        success: true,
+        channelType: channel?.type || 'unknown',
+        cachedMessages: this.messageCache.get(channelId)?.length || 0,
+      })
     },
 
     setActiveChannelIdInProgress(value: boolean) {
@@ -3260,6 +3446,13 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      * 加载频道消息
      */
     async loadMessages(channelId: string): Promise<void> {
+      const existingInFlight = channelLoadInFlight.get(channelId)
+      if (existingInFlight) {
+        await existingInFlight
+        return
+      }
+
+      const endLoadSpan = createPerfSpan('simpleTalk.loadMessages', { channelId })
       // 添加整体超时保护（30秒）
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
@@ -3267,16 +3460,34 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         }, 30000)
       })
 
+      const task = (async () => {
+        try {
+          await Promise.race([
+            this._loadMessagesInternal(channelId),
+            timeoutPromise
+          ])
+          endLoadSpan({
+            success: true,
+            messageCount: this.messageCache.get(channelId)?.length || 0,
+          })
+        } catch (error) {
+          console.error('❌ 加载消息失败:', error)
+          // 出错时至少设置本地消息或空数组
+          const fallbackMessages = await this.db.getMessages(channelId).catch(() => [])
+          this.messageCache.set(channelId, fallbackMessages)
+          endLoadSpan({
+            success: false,
+            fallbackCount: fallbackMessages.length,
+            error: (error as any)?.message || String(error),
+          })
+        }
+      })()
+
+      channelLoadInFlight.set(channelId, task)
       try {
-        await Promise.race([
-          this._loadMessagesInternal(channelId),
-          timeoutPromise
-        ])
-      } catch (error) {
-        console.error('❌ 加载消息失败:', error)
-        // 出错时至少设置本地消息或空数组
-        const fallbackMessages = await this.db.getMessages(channelId).catch(() => [])
-        this.messageCache.set(channelId, fallbackMessages)
+        await task
+      } finally {
+        channelLoadInFlight.delete(channelId)
       }
     },
 
@@ -3287,14 +3498,35 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       console.log(`📝 开始加载频道 ${channelId} 的消息...`)
       
       // 1. 查找频道信息
+      const endResolveChannelSpan = createPerfSpan('simpleTalk.loadMessages.resolveChannel', { channelId })
       const channel = this.channels.find(c => c.id === channelId)
       if (!channel) {
+        endResolveChannelSpan({ found: false })
         console.warn(`⚠️ 未找到频道 ${channelId}`)
         this.messageCache.set(channelId, [])
         return
       }
+      endResolveChannelSpan({ found: true, channelType: channel.type })
 
-      const { index: lastReadIndex, timestamp: lastReadTimestamp } = await this.getLastReadIndexWithTimestamp(channelId)
+      const endReadStateSpan = createPerfSpan('simpleTalk.loadMessages.readState', { channelId })
+      let lastReadIndex = channel.lastReadIndex || 0
+      let lastReadTimestamp: number | null = null
+      let readStateFastPath = false
+
+      if (lastReadIndex > 0) {
+        // 关键路径优先使用内存已读索引，避免每次切频道都等待 IndexedDB。
+        readStateFastPath = true
+        void this.getLastReadIndexWithTimestamp(channelId).catch(() => {})
+      } else {
+        const readState = await this.getLastReadIndexWithTimestamp(channelId)
+        lastReadIndex = readState.index
+        lastReadTimestamp = readState.timestamp
+      }
+      endReadStateSpan({
+        lastReadIndex,
+        hasTimestamp: lastReadTimestamp !== null,
+        fastPath: readStateFastPath,
+      })
       console.log(`📖 频道 ${channelId} 的最后已读索引: ${lastReadIndex}`)
 
       // 计算未读消息数量
@@ -3314,12 +3546,26 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 如果未读消息数量 <= 5 条，直接加载最新消息
       if (unreadCount >= 0 && unreadCount <= UNREAD_AUTO_SCROLL_THRESHOLD) {
         console.log(`📜 未读消息数量在阈值内 (${unreadCount} <= ${UNREAD_AUTO_SCROLL_THRESHOLD})，直接加载最新消息`)
-        await this.loadNewestMessages(channelId)
+        const quickLocalMessages = this.messageCache.get(channelId)
+        if (quickLocalMessages && quickLocalMessages.length > 0) {
+          this.messageCache.set(channelId, quickLocalMessages)
+          void this.loadNewestMessages(channelId)
+        } else {
+          await this.loadNewestMessages(channelId)
+        }
         return
       }
 
       // 2. 先从本地 IndexedDB 加载消息，基于 lastReadIndex 查找
+      const endLocalAroundSpan = createPerfSpan('simpleTalk.loadMessages.localAroundRead', {
+        channelId,
+        lastReadIndex,
+      })
       const { messages: localMessages, readMessage } = await this.loadMessagesAroundReadIndex(channelId, lastReadIndex)
+      endLocalAroundSpan({
+        localCount: localMessages.length,
+        hasReadMessage: !!readMessage,
+      })
       console.log(`📂 从本地加载了 ${localMessages.length} 条消息，已读消息:`, readMessage)
       
       // 3. 检查本地消息是否充足且连续
@@ -3334,6 +3580,16 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 如果本地最大索引比服务端最新索引大超过10，且本地消息数量超过5条，说明服务端数据源可能切换了
       // 增加本地消息数量阈值，避免因本地消息过少导致误判
       const isServerDataSourceChanged = serverLastIndex > 0 && localMaxIndex > serverLastIndex + 10 && localMessages.length > 5
+      createPerfSpan('simpleTalk.loadMessages.continuityCheck', {
+        channelId,
+        lastReadIndex,
+        localCount: localMessages.length,
+      })({
+        messagesAreContinuous,
+        localMaxIndex,
+        serverLastIndex,
+        isServerDataSourceChanged,
+      })
       
       if (isServerDataSourceChanged) {
         console.log(`⚠️ 检测到服务端数据源切换: 本地最大index=${localMaxIndex}, 服务端lastIndex=${serverLastIndex}, 本地消息数=${localMessages.length}`)
@@ -3355,8 +3611,71 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         console.log(`📡 本地消息不足 (${localMessages.length}条)，从服务器获取更多...`)
       }
      
+      // 对“无未读且本地已有足够消息”的场景，先快速展示本地，再后台增量同步。
+      if (unreadCount <= 0 && localMessages.length >= 20) {
+        this.messageCache.set(channelId, localMessages)
+
+        const syncTask = channelServerSyncInFlight.get(channelId)
+        if (syncTask) {
+          return
+        }
+
+        const now = Date.now()
+        const lastSyncedAt = channelLastServerSyncAt.get(channelId) || 0
+        if (now - lastSyncedAt < LOAD_MESSAGES_SERVER_COOLDOWN_MS) {
+          createPerfSpan('simpleTalk.loadMessages.serverSyncCooldown', {
+            channelId,
+            unreadCount,
+            localCount: localMessages.length,
+          })({
+            cooldownMs: LOAD_MESSAGES_SERVER_COOLDOWN_MS,
+          })
+          return
+        }
+
+        const endNonBlockingSyncSpan = createPerfSpan('simpleTalk.loadMessages.nonBlockingServerSync', {
+          channelId,
+          localCount: localMessages.length,
+          unreadCount,
+        })
+        const backgroundTask = this.loadServerMessagesAroundReadIndex(
+          channelId,
+          channel,
+          lastReadIndex,
+          readMessage,
+          localMessages,
+          lastReadTimestamp
+        )
+          .then(() => {
+            endNonBlockingSyncSpan({
+              success: true,
+              finalCount: this.messageCache.get(channelId)?.length || 0,
+            })
+          })
+          .catch(error => {
+            endNonBlockingSyncSpan({
+              success: false,
+              error: error?.message || String(error),
+            })
+          })
+          .finally(() => {
+            channelServerSyncInFlight.delete(channelId)
+          })
+
+        channelServerSyncInFlight.set(channelId, backgroundTask)
+        return
+      }
+
       // 5. 本地消息不足或不连续，需要从服务器获取
+      const endServerAroundSpan = createPerfSpan('simpleTalk.loadMessages.serverAroundRead', {
+        channelId,
+        localCount: localMessages.length,
+        lastReadIndex,
+      })
       await this.loadServerMessagesAroundReadIndex(channelId, channel, lastReadIndex, readMessage, localMessages, lastReadTimestamp)
+      endServerAroundSpan({
+        finalCount: this.messageCache.get(channelId)?.length || 0,
+      })
     },
 
     async loadMessageByIndex(index:number){
@@ -3413,7 +3732,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       readMessage: UnifiedChatMessage | null
     }> {
       // 获取所有本地消息
-      const allLocalMessages = await this.db.getMessages(channelId, 100000) // 获取更多消息用于查找
+      const allLocalMessages = await this.db.getMessages(channelId, LOCAL_HISTORY_SCAN_LIMIT) // 获取更多消息用于查找
       
       if (allLocalMessages.length === 0) {
         return { messages: [], readMessage: null }
@@ -3509,25 +3828,109 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
     ): Promise<void> {
       try {
         let serverMessages: UnifiedChatMessage[] = []
+        const endFetchSpan = createPerfSpan('simpleTalk.loadMessages.serverAroundRead.fetch', {
+          channelId,
+          channelType: channel.type,
+          lastReadIndex,
+        })
+        const timeoutMs = normalizePositiveInteger(LOAD_MESSAGES_SERVER_TIMEOUT_MS, 6000)
+
+        if (this.activeChannelId !== channelId) {
+          endFetchSpan({
+            skipped: true,
+            reason: 'inactiveChannelBeforeFetch',
+            activeChannelId: this.activeChannelId,
+          })
+          return
+        }
 
         // 添加 channel.lastMessage.index > 0 检查，确保 index 有效
         // 当 latest-chat-info-list 接口返回 index = -1 时，直接使用 fetchServerMessages 获取最新消息
+        let fetchPromise: Promise<UnifiedChatMessage[]>
         if (lastReadIndex!==0 && channel.lastMessage && channel.lastMessage.index && channel.lastMessage.index > 0 && lastReadIndex < channel.lastMessage.index) {
           // 如果有已读消息，以其时间戳为基准获取服务器消息
           console.log(` 基于已读消息时间戳 ${lastReadTimestamp} 获取服务器消息`)
           const startIndex = channel.lastMessage.index-lastReadIndex>20?Math.max(0,lastReadIndex-1):channel.lastMessage.index-22;
           console.log(` 基于已读消息索引 ${lastReadIndex} 获取服务器消息，从 ${startIndex} 开始`,channel.lastMessage.index,lastReadIndex,startIndex)
-          serverMessages = await this.fetchServerNewsterMessages(channelId, channel,startIndex )
+          fetchPromise = this.fetchServerNewsterMessages(channelId, channel,startIndex )
         } else {
           // 没有已读消息，或 lastMessage.index 无效（<= 0），获取最新消息
           const lastMsgIndex = channel.lastMessage?.index
           const invalidIndexMsg = (lastMsgIndex !== undefined && lastMsgIndex <= 0) ? ` (lastMessage.index 无效: ${lastMsgIndex})` : ''
           console.log(`📡 获取最新服务器消息${invalidIndexMsg}`)
-          serverMessages = await this.fetchServerMessages(channelId, channel)
+          fetchPromise = this.fetchServerMessages(channelId, channel)
         }
 
+        const timeoutToken = Symbol('serverFetchTimeout')
+        const racedResult = await Promise.race<UnifiedChatMessage[] | symbol>([
+          fetchPromise,
+          sleep(timeoutMs).then(() => timeoutToken),
+        ])
+
+        if (racedResult === timeoutToken) {
+          endFetchSpan({
+            timedOut: true,
+            timeoutMs,
+            activeChannelId: this.activeChannelId,
+          })
+          createPerfSpan('simpleTalk.loadMessages.serverAroundRead.fetchTimeout', {
+            channelId,
+            timeoutMs,
+          })({
+            localCount: localMessages.length,
+          })
+
+          // 慢请求时优先使用本地结果，避免前台等待过长。
+          if (localMessages.length > 0 && this.activeChannelId === channelId) {
+            this.messageCache.set(channelId, localMessages)
+          }
+
+          // 晚到结果到达后再做合并，不阻塞前台体验。
+          void fetchPromise
+            .then(async lateMessages => {
+              if (!lateMessages?.length) return
+              const currentLocalMessages = this.messageCache.get(channelId) || localMessages
+              const mergedMessages = await this.mergeAndSaveMessages(
+                channelId,
+                currentLocalMessages,
+                lateMessages
+              )
+              channelLastServerSyncAt.set(channelId, Date.now())
+
+              if (this.activeChannelId === channelId) {
+                this.messageCache.set(channelId, mergedMessages)
+              }
+            })
+            .catch(error => {
+              console.warn(`⚠️ 频道 ${channelId} 慢请求晚到合并失败:`, error)
+            })
+
+          return
+        }
+        if (!Array.isArray(racedResult)) {
+          endFetchSpan({
+            success: false,
+            reason: 'invalidFetchResult',
+          })
+          return
+        }
+        serverMessages = racedResult
+        endFetchSpan({
+          serverCount: serverMessages.length,
+          timedOut: false,
+        })
+
         // 合并本地和服务器消息
+        const endMergeSpan = createPerfSpan('simpleTalk.loadMessages.serverAroundRead.merge', {
+          channelId,
+          localCount: localMessages.length,
+          serverCount: serverMessages.length,
+        })
         const mergedMessages = await this.mergeAndSaveMessages(channelId, localMessages, serverMessages)
+        endMergeSpan({
+          mergedCount: mergedMessages.length,
+        })
+        channelLastServerSyncAt.set(channelId, Date.now())
         
         // 如果有已读消息，重新基于 lastReadIndex 筛选消息
         let finalMessages = mergedMessages
@@ -3636,9 +4039,50 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           return
         }
 
-        // 3. 强制从服务器获取最新消息
+        // 3. 强制从服务器获取最新消息（慢请求软超时）
         console.log(`📡 强制从服务器获取最新消息...`)
-        const serverMessages = await this.fetchServerMessages(targetChannelId, channel)
+        const timeoutMs = normalizePositiveInteger(LOAD_MESSAGES_SERVER_TIMEOUT_MS, 6000)
+        const fetchPromise = this.fetchServerMessages(targetChannelId, channel)
+        const timeoutToken = Symbol('loadNewestFetchTimeout')
+        const racedResult = await Promise.race<UnifiedChatMessage[] | symbol>([
+          fetchPromise,
+          sleep(timeoutMs).then(() => timeoutToken),
+        ])
+
+        if (racedResult === timeoutToken) {
+          createPerfSpan('simpleTalk.loadNewestMessages.fetchTimeout', {
+            channelId: targetChannelId,
+            timeoutMs,
+          })({
+            currentCacheCount: this.messageCache.get(targetChannelId)?.length || 0,
+          })
+
+          // 晚到结果到达后再合并，避免前台阻塞。
+          void fetchPromise
+            .then(async lateMessages => {
+              if (!lateMessages?.length) return
+              const currentLocalMessages =
+                this.messageCache.get(targetChannelId) || (await this.db.getMessages(targetChannelId, 50))
+              const mergedMessages = await this.mergeAndSaveMessages(
+                targetChannelId,
+                currentLocalMessages,
+                lateMessages
+              )
+              channelLastServerSyncAt.set(targetChannelId, Date.now())
+              if (this.activeChannelId === targetChannelId) {
+                this.messageCache.set(targetChannelId, mergedMessages)
+              }
+            })
+            .catch(error => {
+              console.warn(`⚠️ 频道 ${targetChannelId} 最新消息晚到合并失败:`, error)
+            })
+          return
+        }
+
+        if (!Array.isArray(racedResult)) {
+          return
+        }
+        const serverMessages = racedResult
         
         if (serverMessages.length === 0) {
           console.log(`📭 服务器没有返回消息`)
@@ -3653,10 +4097,9 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         const sortedMessages = serverMessages.sort((a, b) => a.timestamp - b.timestamp)
         this.messageCache.set(targetChannelId, sortedMessages)
 
-        // 5. 保存新消息到本地数据库
-        for (const msg of serverMessages) {
-          await this.db.saveMessage(msg)
-        }
+        // 5. 批量保存新消息到本地数据库，避免逐条事务开销
+        await this.db.saveMessages(serverMessages)
+        channelLastServerSyncAt.set(targetChannelId, Date.now())
 
         console.log(`✅ 已加载 ${sortedMessages.length} 条最新消息`)
         
@@ -3705,6 +4148,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async fetchServerMessages(channelId: string, channel: SimpleChannel): Promise<UnifiedChatMessage[]> {
       let serverMessages: any[] = []
+      const fetchSize = normalizePositiveInteger(DEFAULT_SERVER_FETCH_SIZE, 30)
       
       try {
         // 计算从哪个 index 开始获取最新消息
@@ -3718,7 +4162,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           return await this.fetchServerMessagesWithTimestampZero(channelId, channel)
         }
         
-        const startIndex = Math.max(0, lastMessageIndex - 49) // 获取最新50条消息
+        const startIndex = Math.max(0, lastMessageIndex - (fetchSize - 1)) // 获取最近消息
         
         if (channel.type === 'group') {
           // 群聊消息 - 使用 index 方式获取最新消息
@@ -3727,7 +4171,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const result: UnifiedChatResponseData = await getChannelNewestMessages({
             groupId: channelId,
             startIndex: String(startIndex),
-            size: '50'
+            size: String(fetchSize)
           })
           serverMessages = result.list || []
           console.log(`📡 群聊API返回 ${serverMessages.length} 条消息`)
@@ -3738,7 +4182,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           const result: UnifiedChatResponseData = await getSubChannelNewestMessages({
             channelId: channelId,
             startIndex: String(startIndex),
-            size: '50'
+            size: String(fetchSize)
           })
           serverMessages = result.list || []
           console.log(`📡 子群聊API返回 ${serverMessages.length} 条消息`)
@@ -3749,7 +4193,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             metaId: this.selfMetaId,
             otherMetaId: channelId,
             startIndex: String(startIndex),
-            size: '50'
+            size: String(fetchSize)
           })
           serverMessages = result.list || []
           console.log(`📡 私聊API返回 ${serverMessages.length} 条消息`)
@@ -3768,6 +4212,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
      */
     async fetchServerMessagesWithTimestampZero(channelId: string, channel: SimpleChannel): Promise<UnifiedChatMessage[]> {
       let serverMessages: any[] = []
+      const fetchSize = normalizePositiveInteger(DEFAULT_SERVER_FETCH_SIZE, 30)
       
       try {
         if (channel.type === 'group') {
@@ -3778,7 +4223,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             groupId: channelId,
             metaId: this.selfMetaId,
             cursor: '0',
-            size: '50',
+            size: String(fetchSize),
             timestamp: '0'
           })
           serverMessages = result.list || []
@@ -3791,7 +4236,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             channelId: channelId,
             metaId: this.selfMetaId,
             cursor: '0',
-            size: '50',
+            size: String(fetchSize),
             timestamp: '0'
           })
           serverMessages = result.list || []
@@ -3804,7 +4249,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
             metaId: this.selfMetaId,
             otherMetaId: channelId,
             cursor: '0',
-            size: '50',
+            size: String(fetchSize),
             timestamp: '0'
           })
           serverMessages = result.list || []
@@ -3834,14 +4279,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       // 按时间升序排序：旧消息在前，新消息在后
       const mergedMessages = Array.from(allMessagesMap.values()).sort((a, b) => a.timestamp - b.timestamp)
       
-      // 保存新消息到本地
-      const newMessages = serverMessages.filter(serverMsg => 
-        !localMessages.some(localMsg => localMsg.txId === serverMsg.txId)
-      )
-      
-      for (const msg of newMessages) {
-        await this.db.saveMessage(msg)
-      }
+      // 保存新消息到本地（去重后批量写入）
+      const localMessageIdSet = new Set(localMessages.map(msg => msg.txId))
+      const newMessages = serverMessages.filter(serverMsg => !localMessageIdSet.has(serverMsg.txId))
+      await this.db.saveMessages(newMessages)
       
       if (newMessages.length > 0) {
         console.log(`💾 保存了 ${newMessages.length} 条新消息到本地`)
@@ -4022,10 +4463,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 更新缓存
         this.messageCache.set(channelId, mergedMessages)
         
-        // 保存新消息到本地
-        for (const msg of convertedMessages) {
-          await this.db.saveMessage(msg)
-        }
+        // 批量保存新消息到本地，避免逐条写入
+        await this.db.saveMessages(convertedMessages)
         
         console.log(`✅ 服务器分页加载完成，新增 ${convertedMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
         
@@ -4046,7 +4485,12 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       return new Promise((resolve) => {
         const transaction = this.db.database!.transaction(['messages'], 'readonly')
         const store = transaction.objectStore('messages')
-        const request = store.getAll()
+        let request: IDBRequest
+        if (store.indexNames.contains('channelId')) {
+          request = store.index('channelId').getAll(channelId)
+        } else {
+          request = store.getAll()
+        }
         
         request.onsuccess = () => {
           const allMessages = request.result || []
@@ -4176,10 +4620,8 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         // 更新缓存
         this.messageCache.set(channelId, mergedMessages)
         
-        // 保存新消息到本地
-        for (const msg of convertedMessages) {
-          await this.db.saveMessage(msg)
-        }
+        // 批量保存新消息到本地，避免逐条写入
+        await this.db.saveMessages(convertedMessages)
         
         console.log(`✅ 服务器分页加载完成，新增 ${convertedMessages.length} 条消息，总计 ${mergedMessages.length} 条`)
         
@@ -4200,7 +4642,12 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       return new Promise((resolve) => {
         const transaction = this.db.database!.transaction(['messages'], 'readonly')
         const store = transaction.objectStore('messages')
-        const request = store.getAll()
+        let request: IDBRequest
+        if (store.indexNames.contains('channelId')) {
+          request = store.index('channelId').getAll(channelId)
+        } else {
+          request = store.getAll()
+        }
         
         request.onsuccess = () => {
           const allMessages = request.result || []
@@ -4445,6 +4892,10 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         
         // 保存到独立的 lastReadIndex 表，使用消息的时间戳
         await this.db.saveLastReadIndex(this.selfMetaId, channelId, messageIndex, timestamp)
+        lastReadRecordCache.set(getLastReadCacheKey(this.selfMetaId, channelId), {
+          index: messageIndex,
+          timestamp: timestamp ?? null,
+        })
 
         // 更新内存中的 lastReadIndex（保持向后兼容）
 
@@ -4473,11 +4924,24 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           return 0
         }
 
+        const channel = this.channels.find(c => c.id === channelId)
+        if ((channel?.lastReadIndex || 0) > 0) {
+          return channel!.lastReadIndex || 0
+        }
+
+        const cachedRecord = lastReadRecordCache.get(getLastReadCacheKey(this.selfMetaId, channelId))
+        if (cachedRecord) {
+          return cachedRecord.index
+        }
+
         // 从独立存储获取已读索引
         const lastReadIndex = await this.db.getLastReadIndex(this.selfMetaId, channelId)
+        lastReadRecordCache.set(getLastReadCacheKey(this.selfMetaId, channelId), {
+          index: lastReadIndex,
+          timestamp: null,
+        })
         
         // 同时更新内存中的值（保持向后兼容）
-        const channel = this.channels.find(c => c.id === channelId)
         if (channel && channel.lastReadIndex !== lastReadIndex) {
           channel.lastReadIndex = lastReadIndex
         }
@@ -4498,13 +4962,45 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
           return { index: 0, timestamp: null }
         }
 
-        // 从独立存储获取已读索引和时间戳
+        const cacheKey = getLastReadCacheKey(this.selfMetaId, channelId)
+        const cachedRecord = lastReadRecordCache.get(cacheKey)
+        const channel = this.channels.find(c => c.id === channelId)
+        const memoryIndex = channel?.lastReadIndex || 0
+
+        if (cachedRecord && cachedRecord.index === memoryIndex) {
+          return { index: cachedRecord.index, timestamp: cachedRecord.timestamp }
+        }
+
+        if (memoryIndex > 0) {
+          // 前台路径优先使用内存中的已读索引，避免切频道阻塞。
+          // 在后台异步刷新 timestamp 缓存即可。
+          void this.db
+            .getLastReadIndexRecord(this.selfMetaId, channelId)
+            .then(record => {
+              if (!record) return
+              lastReadRecordCache.set(cacheKey, {
+                index: record.messageIndex,
+                timestamp: record.messageTimestamp,
+              })
+              const currentChannel = this.channels.find(c => c.id === channelId)
+              if (currentChannel && currentChannel.lastReadIndex !== record.messageIndex) {
+                currentChannel.lastReadIndex = record.messageIndex
+              }
+            })
+            .catch(() => {})
+
+          return {
+            index: memoryIndex,
+            timestamp: cachedRecord?.timestamp ?? null,
+          }
+        }
+
+        // 内存无值时再回退到 DB 读取
         const record = await this.db.getLastReadIndexRecord(this.selfMetaId, channelId)
         const lastReadIndex = record ? record.messageIndex : 0
         const timestamp = record ? record.messageTimestamp : null
+        lastReadRecordCache.set(cacheKey, { index: lastReadIndex, timestamp })
 
-        // 同时更新内存中的值（保持向后兼容）
-        const channel = this.channels.find(c => c.id === channelId)
         if (channel && channel.lastReadIndex !== lastReadIndex) {
           channel.lastReadIndex = lastReadIndex
         }
@@ -4535,6 +5031,7 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
         if (!this.selfMetaId) return
 
         await this.db.deleteLastReadIndex(this.selfMetaId, channelId)
+        lastReadRecordCache.delete(getLastReadCacheKey(this.selfMetaId, channelId))
         console.log(`🗑️ 已清理频道 ${channelId} 的已读索引`)
       } catch (error) {
         console.error(`❌ 清理频道 ${channelId} 已读索引失败:`, error)
@@ -5569,6 +6066,12 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
       this.isInitialized = false
       this.lastSyncTime = 0
       this.activeMessageMenuId = ''
+      lastReadRecordCache.clear()
+      channelLoadInFlight.clear()
+      channelServerSyncInFlight.clear()
+      channelLastServerSyncAt.clear()
+      groupPermissionFetchTimers.forEach(timerId => clearTimeout(timerId))
+      groupPermissionFetchTimers.clear()
       
       // 如果有当前用户，清理其本地数据
       if (this.currentUserMetaId) {
@@ -5876,5 +6379,3 @@ await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
   },
   
 })
-
-

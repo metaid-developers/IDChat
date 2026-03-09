@@ -1,6 +1,5 @@
 import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
-import HttpRequest from '@/utils/request'
 
 const manApi = createLazyApiClient(() => `${getRuntimeConfig().api.manApi}/api`, {
   responseHandel: response => {
@@ -92,30 +91,60 @@ export interface UserInfo {
   chatpubkeyId?: string
 }
 
-export const getUserInfoByAddress = async (address: string): Promise<UserInfo> => {
-  // 使用新的 metafile-indexer API
-  return metafileIndexerApi.get(`/info/address/${address}`).then((res: MetafileUserInfo) => {
-    // 将新 API 返回结构转换为兼容旧结构的 UserInfo
-    const userInfo: UserInfo = {
-      metaid: res.metaid,
-      globalMetaId: res.globalMetaId, // 只使用 globalMetaId
-      name: res.name,
-      address: res.address,
-      avatar: res.avatar,
-      avatarId: res.avatarId,
-      chatpubkey: res.chatpubkey,
-      chatpubkeyId: res.chatpubkeyId,
-    }
-    return userInfo
-  })
+interface UserInfoCacheEntry {
+  value: UserInfo
+  expiresAt: number
 }
 
-export const getUserInfoByMetaId = async (metaid: string): Promise<UserInfo> => {
-  // 使用新的 metafile-indexer API
-  const res: MetafileUserInfo = await metafileIndexerApi.get(`/info/metaid/${metaid}`)
+const USER_INFO_CACHE_TTL_MS = 5 * 60 * 1000
+const MAX_USER_INFO_CACHE_SIZE = 2000
 
-  // 将新 API 返回结构转换为兼容旧结构的 UserInfo
-  const userInfo: UserInfo = {
+const addressCache = new Map<string, UserInfoCacheEntry>()
+const metaIdCache = new Map<string, UserInfoCacheEntry>()
+const globalMetaIdCache = new Map<string, UserInfoCacheEntry>()
+
+const addressInFlight = new Map<string, Promise<UserInfo>>()
+const metaIdInFlight = new Map<string, Promise<UserInfo>>()
+const globalMetaIdInFlight = new Map<string, Promise<UserInfo>>()
+
+const nowTs = (): number => Date.now()
+
+const normalizeKey = (value: string): string => String(value || '').trim()
+
+const cloneUserInfo = (userInfo: UserInfo): UserInfo => ({ ...userInfo })
+
+const getFromCache = (cache: Map<string, UserInfoCacheEntry>, key: string): UserInfo | null => {
+  const entry = cache.get(key)
+  if (!entry) return null
+  if (entry.expiresAt <= nowTs()) {
+    cache.delete(key)
+    return null
+  }
+  return cloneUserInfo(entry.value)
+}
+
+const sweepCacheIfNeeded = (cache: Map<string, UserInfoCacheEntry>): void => {
+  if (cache.size <= MAX_USER_INFO_CACHE_SIZE) return
+  const removeCount = Math.ceil(cache.size * 0.2)
+  const keys = cache.keys()
+  for (let i = 0; i < removeCount; i += 1) {
+    const key = keys.next().value
+    if (!key) break
+    cache.delete(key)
+  }
+}
+
+const setCache = (cache: Map<string, UserInfoCacheEntry>, key: string, userInfo: UserInfo): void => {
+  if (!key) return
+  cache.set(key, {
+    value: cloneUserInfo(userInfo),
+    expiresAt: nowTs() + USER_INFO_CACHE_TTL_MS,
+  })
+  sweepCacheIfNeeded(cache)
+}
+
+const normalizeUserInfo = (res: MetafileUserInfo): UserInfo => {
+  return {
     metaid: res.metaid,
     globalMetaId: res.globalMetaId, // 只使用 globalMetaId
     name: res.name,
@@ -125,24 +154,104 @@ export const getUserInfoByMetaId = async (metaid: string): Promise<UserInfo> => 
     chatpubkey: res.chatpubkey,
     chatpubkeyId: res.chatpubkeyId,
   }
-  return userInfo
+}
+
+const warmAllCaches = (userInfo: UserInfo): void => {
+  const addressKey = normalizeKey(userInfo.address || '')
+  const metaIdKey = normalizeKey(userInfo.metaid || '')
+  const globalMetaIdKey = normalizeKey(userInfo.globalMetaId || '')
+
+  if (addressKey) setCache(addressCache, addressKey, userInfo)
+  if (metaIdKey) setCache(metaIdCache, metaIdKey, userInfo)
+  if (globalMetaIdKey) setCache(globalMetaIdCache, globalMetaIdKey, userInfo)
+}
+
+const resolveUserInfoWithCache = async (
+  key: string,
+  cache: Map<string, UserInfoCacheEntry>,
+  inFlight: Map<string, Promise<UserInfo>>,
+  fetcher: () => Promise<UserInfo>
+): Promise<UserInfo> => {
+  const normalizedKey = normalizeKey(key)
+  if (!normalizedKey) return fetcher().then(result => cloneUserInfo(result))
+
+  const cached = getFromCache(cache, normalizedKey)
+  if (cached) return cached
+
+  const existingPromise = inFlight.get(normalizedKey)
+  if (existingPromise) {
+    return existingPromise.then(result => cloneUserInfo(result))
+  }
+
+  const promise = fetcher()
+    .then(result => {
+      warmAllCaches(result)
+      return result
+    })
+    .finally(() => {
+      inFlight.delete(normalizedKey)
+    })
+
+  inFlight.set(normalizedKey, promise)
+  return promise.then(result => cloneUserInfo(result))
+}
+
+export const getUserInfoByAddress = async (address: string): Promise<UserInfo> => {
+  return resolveUserInfoWithCache(
+    address,
+    addressCache,
+    addressInFlight,
+    async () => {
+      // 使用新的 metafile-indexer API
+      const res: MetafileUserInfo = await metafileIndexerApi.get(`/info/address/${address}`)
+      return normalizeUserInfo(res)
+    }
+  )
+}
+
+export const getUserInfoByMetaId = async (metaid: string): Promise<UserInfo> => {
+  return resolveUserInfoWithCache(
+    metaid,
+    metaIdCache,
+    metaIdInFlight,
+    async () => {
+      // 使用新的 metafile-indexer API
+      const res: MetafileUserInfo = await metafileIndexerApi.get(`/info/metaid/${metaid}`)
+      return normalizeUserInfo(res)
+    }
+  )
 }
 
 // 新增：通过 globalMetaId 获取用户信息（支持多链）
 export const getUserInfoByGlobalMetaId = async (globalMetaId: string): Promise<UserInfo> => {
-  // 使用新的 metafile-indexer API，通过 globalMetaId 查询
-  const res: MetafileUserInfo = await metafileIndexerApi.get(`/info/globalmetaid/${globalMetaId}`)
+  return resolveUserInfoWithCache(
+    globalMetaId,
+    globalMetaIdCache,
+    globalMetaIdInFlight,
+    async () => {
+      // 使用新的 metafile-indexer API，通过 globalMetaId 查询
+      const res: MetafileUserInfo = await metafileIndexerApi.get(`/info/globalmetaid/${globalMetaId}`)
+      return normalizeUserInfo(res)
+    }
+  )
+}
 
-  // 将新 API 返回结构转换为兼容旧结构的 UserInfo
-  const userInfo: UserInfo = {
-    metaid: res.metaid,
-    globalMetaId: res.globalMetaId, // 只使用 globalMetaId
-    name: res.name,
-    address: res.address,
-    avatar: res.avatar,
-    avatarId: res.avatarId,
-    chatpubkey: res.chatpubkey,
-    chatpubkeyId: res.chatpubkeyId,
+export const clearUserInfoRequestCache = (): void => {
+  addressCache.clear()
+  metaIdCache.clear()
+  globalMetaIdCache.clear()
+  addressInFlight.clear()
+  metaIdInFlight.clear()
+  globalMetaIdInFlight.clear()
+}
+
+export const getUserInfoRequestCacheStats = () => {
+  return {
+    addressCacheSize: addressCache.size,
+    metaIdCacheSize: metaIdCache.size,
+    globalMetaIdCacheSize: globalMetaIdCache.size,
+    addressInFlightSize: addressInFlight.size,
+    metaIdInFlightSize: metaIdInFlight.size,
+    globalMetaIdInFlightSize: globalMetaIdInFlight.size,
   }
-  return userInfo
 }
