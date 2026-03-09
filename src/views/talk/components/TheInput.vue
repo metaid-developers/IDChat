@@ -89,7 +89,7 @@
         class="self-stretch flex items-center grow bg-[#F5F7FA] dark:bg-gray-800 px-3 py-2 mx-2 rounded-lg"
       >
         <textarea
-          class="w-full !outline-none placeholder:text-dark-250 placeholder:dark:text-gray-400 placeholder:text-sm placeholder:truncate text-dark-800 dark:text-gray-100 text-base caret-gray-600 dark:caret-gray-400 resize-none !h-fit bg-transparent transition-all duration-150 delay-100"
+          class="w-full !outline-none placeholder:text-dark-250 placeholder:dark:text-gray-400 placeholder:text-sm placeholder:truncate text-dark-800 dark:text-gray-100 text-base caret-gray-600 dark:caret-gray-400 resize-none overflow-x-hidden bg-transparent transition-all duration-150 delay-100 whitespace-pre-wrap break-words"
           :rows="rows"
           ref="theTextBox"
           :placeholder="
@@ -106,6 +106,7 @@
           @compositionstart="onCompositionStart"
           @compositionend="onCompositionEnd"
           @input="handleInput"
+          @paste="handlePaste"
         />
 
         <!-- 发送按钮（在输入框内） -->
@@ -521,14 +522,43 @@ const closeActionSheet = () => {
   showRedPacketActionSheet.value = false
 }
 
-const handleImageChange = (e: Event) => {
-  console.log('📸 handleImageChange triggered')
-
-  // 暂时禁用 DOGE 链发送图片功能
+const ensureImageSendingEnabled = () => {
   if (chainStore.state.currentChain === 'doge') {
     ElMessage.warning(i18n.t('doge_image_not_supported') || 'DOGE 链暂不支持发送图片')
-    return
+    return false
   }
+  return true
+}
+
+const setImageFileToBuffer = (file: File) => {
+  if (!isImage(file)) {
+    talk.$patch({
+      error: {
+        type: 'image_only',
+        message: 'image_only',
+        timestamp: Date.now(),
+      },
+    })
+    return false
+  }
+
+  if (isFileTooLarge(file)) {
+    talk.$patch({
+      error: {
+        type: 'image_too_large',
+        message: 'image_too_large',
+        timestamp: Date.now(),
+      },
+    })
+    return false
+  }
+
+  imageFile.value = file
+  return true
+}
+
+const handleImageChange = (e: Event) => {
+  if (!ensureImageSendingEnabled()) return
 
   rootStore.checkWebViewBridge()
   if (rootStore.isWebView) {
@@ -536,51 +566,26 @@ const handleImageChange = (e: Event) => {
   }
 
   const target = e.target as HTMLInputElement
-  console.log('📸 target.files:', target.files)
+  const file = target.files?.[0]
+  if (!file) return
 
-  // 检查是否有文件
-  if (!target.files || target.files.length === 0) {
-    console.warn('⚠️ 没有选择文件或文件列表为空')
-    return
-  }
+  setImageFileToBuffer(file)
+}
 
-  const file = target.files[0]
-  console.log('📸 选择的文件:', {
-    name: file.name,
-    type: file.type,
-    size: file.size,
-  })
+const handlePaste = (e: ClipboardEvent) => {
+  const clipboardItems = e.clipboardData?.items
+  if (!clipboardItems?.length) return
 
-  if (file) {
-    if (!isImage(file)) {
-      console.error('❌ 文件不是图片类型:', file.type)
-      talk.$patch({
-        error: {
-          type: 'image_only',
-          message: 'image_only',
-          timestamp: Date.now(),
-        },
-      })
-      return
-    }
+  const imageItem = Array.from(clipboardItems).find(item => item.type.startsWith('image/'))
+  if (!imageItem) return
 
-    if (isFileTooLarge(file)) {
-      console.error('❌ 文件太大:', file.size)
-      talk.$patch({
-        error: {
-          type: 'image_too_large',
-          message: 'image_too_large',
-          timestamp: Date.now(),
-        },
-      })
-      return
-    }
+  const file = imageItem.getAsFile()
+  if (!file) return
 
-    console.log('✅ 图片验证通过，设置预览')
-    imageFile.value = file
-  } else {
-    console.warn('⚠️ file 为空')
-  }
+  e.preventDefault()
+  if (!ensureImageSendingEnabled()) return
+
+  setImageFileToBuffer(file)
 }
 
 const deleteImage = () => {
@@ -689,6 +694,61 @@ const userStore = useUserStore()
 const connectionStore = useConnectionStore()
 const isSending = ref(false)
 const theTextBox: Ref<HTMLTextAreaElement | null> = ref(null)
+const MIN_INPUT_ROWS = 1
+const MAX_INPUT_ROWS = 8
+const rows = ref(MIN_INPUT_ROWS)
+
+const parsePx = (value: string, fallback = 0) => {
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const clamp = (value: number, min: number, max: number) => {
+  return Math.min(Math.max(value, min), max)
+}
+
+const getTextareaMetrics = (textBox: HTMLTextAreaElement) => {
+  const styles = window.getComputedStyle(textBox)
+  const lineHeight = parsePx(styles.lineHeight, 24)
+  const paddingTop = parsePx(styles.paddingTop)
+  const paddingBottom = parsePx(styles.paddingBottom)
+  const borderTop = parsePx(styles.borderTopWidth)
+  const borderBottom = parsePx(styles.borderBottomWidth)
+  const verticalExtra = paddingTop + paddingBottom + borderTop + borderBottom
+
+  return { lineHeight, verticalExtra }
+}
+
+const updateTextareaLayout = () => {
+  const textBox = theTextBox.value
+  if (!textBox) return
+
+  const { lineHeight, verticalExtra } = getTextareaMetrics(textBox)
+
+  const minHeight = lineHeight * MIN_INPUT_ROWS + verticalExtra
+  const maxHeight = lineHeight * MAX_INPUT_ROWS + verticalExtra
+
+  textBox.style.height = 'auto'
+  const targetHeight = clamp(textBox.scrollHeight, minHeight, maxHeight)
+  textBox.style.height = `${targetHeight}px`
+  textBox.style.overflowY = textBox.scrollHeight > maxHeight ? 'auto' : 'hidden'
+
+  const contentHeight = Math.max(targetHeight - verticalExtra, lineHeight)
+  const lineCount = Math.round(contentHeight / lineHeight)
+  rows.value = clamp(lineCount, MIN_INPUT_ROWS, MAX_INPUT_ROWS)
+}
+
+const resetTextareaLayout = () => {
+  rows.value = MIN_INPUT_ROWS
+  const textBox = theTextBox.value
+  if (!textBox) return
+
+  const { lineHeight, verticalExtra } = getTextareaMetrics(textBox)
+  const minHeight = lineHeight * MIN_INPUT_ROWS + verticalExtra
+  textBox.style.height = `${minHeight}px`
+  textBox.style.overflowY = 'hidden'
+  textBox.scrollTop = 0
+}
 
 // 中文输入法状态管理
 const isComposing = ref(false)
@@ -723,6 +783,7 @@ let latestMentionReqId = 0
 // 处理输入事件，检测 @ 符号
 const handleInput = (e: Event) => {
   const target = e.target as HTMLTextAreaElement
+  updateTextareaLayout()
   const cursorPos = target.selectionStart || 0
   const textBeforeCursor = chatInput.value.substring(0, cursorPos)
 
@@ -935,28 +996,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
 }
 
-const rows = computed(() => {
-  if (isSending.value) {
-    return 1
-  }
-
-  // 行数=换行符+过长的行数+1
-  const lines = chatInput.value.split('\n')
-  // 计算列数：当前textarea宽度/字体宽度 TODO
-
-  // const cols = Math.floor(
-  //   (theTextBox.value?.clientWidth || 0) / (theTextBox.value?.offsetWidth || 0)
-  // )
-
-  const rowsCount = lines.reduce((acc, line) => {
-    // const lineRows = Math.max(1, Math.ceil(line.length / cols))
-    const lineRows = 1
-    return acc + lineRows
-  }, 0)
-
-  return Math.min(Math.max(rowsCount, 1), 10)
-})
-
 const checkSpaceBalance = () => {
   return new Promise<void>(async (resolve, reject) => {
     // 获取餘额
@@ -985,23 +1024,38 @@ const checkSpaceBalance = () => {
   })
 }
 
-const trySendText = async (e: any) => {
-  isSending.value = true
+const trySendText = async (_e: any) => {
+  if (isSending.value) return
 
-  // 去除首尾空格
-  chatInput.value = chatInput.value.trim()
-  if (!validateTextMessage(chatInput.value)) {
-    isSending.value = false
+  const plainText = chatInput.value.trim()
+  if (!validateTextMessage(plainText)) {
     return
   }
 
   if (spaceNotEnoughFlag.value) {
-    isSending.value = false
     return
   }
+
+  if (!simpleTalk.activeChannel) {
+    console.error('No active channel')
+    return
+  }
+
+  isSending.value = true
+
+  // 先保存 mentions，随后立刻清空输入区，避免用户看到发送延迟
+  const mentions = currentMentions.value.length > 0 ? [...currentMentions.value] : undefined
+  chatInput.value = ''
+  currentMentions.value = []
+  resetTextareaLayout()
+  nextTick(() => {
+    resetTextareaLayout()
+    requestAnimationFrame(() => resetTextareaLayout())
+  })
+
   console.log('activeChannel type:', simpleTalk.activeChannel?.type)
-  // 发送成功后滚动到底部
   emit('scrollToBottom')
+
   // 私聊会话和頻道群聊的加密方式不同
   let content = ''
 
@@ -1024,7 +1078,7 @@ const trySendText = async (e: any) => {
     }
 
     if (!isPrivateGroup) {
-      content = encrypt(chatInput.value, simpleTalk.activeChannel.id.substring(0, 16))
+      content = encrypt(plainText, simpleTalk.activeChannel.id.substring(0, 16))
     } else {
       // 私密群聊加密：子群聊使用父群聊的 passwordKey
       let secretKey =
@@ -1053,7 +1107,7 @@ const trySendText = async (e: any) => {
         return ElMessage.error('无法获取群组密钥，请重新加入群组')
       }
 
-      content = encrypt(chatInput.value, secretKey)
+      content = encrypt(plainText, secretKey)
       console.log(
         '🔐 私密群聊消息已加密, passwordKey:',
         secretKey.substring(0, 8) + '...',
@@ -1083,32 +1137,18 @@ const trySendText = async (e: any) => {
       return ElMessage.error('Failed to generate shared secret')
     }
 
-    console.log(chatInput.value, sharedSecret)
+    console.log(plainText, sharedSecret)
 
-    content = ecdhEncrypt(chatInput.value, sharedSecret)
+    content = ecdhEncrypt(plainText, sharedSecret)
 
     console.log('ecdhDecrypt', ecdhDecrypt(content, sharedSecret))
   }
 
-  chatInput.value = ''
   console.log('simpleTalk.activeChannel.id', simpleTalk.activeChannel?.id)
 
-  // 使用 simple-talk store 发送消息
-  if (!simpleTalk.activeChannel) {
-    console.error('No active channel')
-    isSending.value = false
-    return
-  }
-
   try {
-    // 准备 mentions 数据
-    const mentions = currentMentions.value.length > 0 ? [...currentMentions.value] : undefined
-
     // 使用 simple-talk 的 sendMessage 方法，传递 mentions
     await simpleTalk.sendMessage(simpleTalk.activeChannel.id, content, 0, props.quote, mentions)
-
-    // 清空 mentions 记录
-    currentMentions.value = []
 
     if (props.quote) {
       emit('update:quote', undefined)
@@ -1116,8 +1156,9 @@ const trySendText = async (e: any) => {
     console.log('Message sent successfully via simpleTalk')
   } catch (error) {
     console.error('Failed to send message via simpleTalk:', error)
+  } finally {
+    isSending.value = false
   }
-  isSending.value = false
 }
 /** ------ */
 
@@ -1134,8 +1175,23 @@ watch(
     defaultMembersCache.value = []
     showMentionDropdown.value = false
     currentMentions.value = []
+    nextTick(() => {
+      updateTextareaLayout()
+    })
   }
 )
+
+watch(chatInput, () => {
+  nextTick(() => {
+    updateTextareaLayout()
+  })
+})
+
+onMounted(() => {
+  nextTick(() => {
+    updateTextareaLayout()
+  })
+})
 
 onBeforeUnmount(() => {
   if (mentionSearchTimer) {

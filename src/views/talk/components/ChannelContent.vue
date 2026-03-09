@@ -1,11 +1,14 @@
 <template>
-  <div class="h-full  pb-17.5 lg:pb-20">
+  <div class="h-full" :style="{ paddingBottom: `${messageListBottomPadding}px` }">
     <MessageList @quote="val => (quote.val = val)" ref="MessageListRef" />
   </div>
 
-  <div class="fixed bottom-0 left-0 right-0 px-4 pt-4 lg:absolute bg-[#FFFFFF] dark:bg-gray-900">
+  <div
+    v-if="type === 'allowed'"
+    ref="bottomAreaRef"
+    class="fixed bottom-0 left-0 right-0 px-4 pt-4 lg:absolute bg-[#FFFFFF] dark:bg-gray-900"
+  >
     <TheInput
-      v-if="type === 'allowed'"
       v-model:quote="quote.val"
       @to-quote="toQuote"
       @scroll-to-bottom="scrollToBottom"
@@ -13,16 +16,30 @@
     <TheErrorBox />
   </div>
 
-  <div v-if="type === 'forbidden'" class="fixed bottom-0 left-0 right-0 lg:absolute">
+  <div
+    v-if="type === 'forbidden'"
+    ref="bottomAreaRef"
+    class="fixed bottom-0 left-0 right-0 lg:absolute"
+  >
     <MuteInput></MuteInput>
   </div>
-  <div v-if="type === 'join'" class="fixed bottom-0 left-0 right-0 lg:absolute">
+  <div v-if="type === 'join'" ref="bottomAreaRef" class="fixed bottom-0 left-0 right-0 lg:absolute">
     <JoinInput></JoinInput>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, provide, reactive, ref, computed } from 'vue'
+import {
+  defineAsyncComponent,
+  provide,
+  reactive,
+  ref,
+  computed,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+} from 'vue'
 import TheInput from './TheInput.vue'
 import MuteInput from './subChannel/MuteInput.vue'
 import TheErrorBox from './TheErrorBox.vue'
@@ -35,7 +52,12 @@ const MessageList = defineAsyncComponent({
   loader: () => import('./MessageList.vue'),
 })
 const MessageListRef = ref()
+const bottomAreaRef = ref<HTMLElement | null>(null)
 const simpleTalk = useSimpleTalkStore()
+const DEFAULT_BOTTOM_PADDING = 80
+const messageListBottomPadding = ref(DEFAULT_BOTTOM_PADDING)
+let bottomAreaResizeObserver: ResizeObserver | null = null
+
 function toQuote() {
   MessageListRef.value.scrollToTimeStamp(quote.val!.timestamp)
 }
@@ -59,6 +81,53 @@ const type = computed(() => {
     return isMember ? 'allowed' : 'join'
   } else {
     return simpleTalk.activeChannel?.publicKeyStr ? 'allowed' : 'forbidden'
+  }
+})
+
+const keepLatestVisibleOnInputResize = () => {
+  MessageListRef.value?.keepLatestVisibleOnInputResize?.()
+}
+
+const updateBottomPadding = () => {
+  const nextPadding = bottomAreaRef.value?.offsetHeight || DEFAULT_BOTTOM_PADDING
+  messageListBottomPadding.value = nextPadding
+  nextTick(() => keepLatestVisibleOnInputResize())
+}
+
+const bindBottomAreaObserver = async () => {
+  await nextTick()
+
+  if (bottomAreaResizeObserver) {
+    bottomAreaResizeObserver.disconnect()
+    bottomAreaResizeObserver = null
+  }
+
+  const target = bottomAreaRef.value
+  if (!target) {
+    messageListBottomPadding.value = DEFAULT_BOTTOM_PADDING
+    return
+  }
+
+  updateBottomPadding()
+
+  bottomAreaResizeObserver = new ResizeObserver(() => {
+    updateBottomPadding()
+  })
+  bottomAreaResizeObserver.observe(target)
+}
+
+watch(type, () => {
+  bindBottomAreaObserver()
+})
+
+onMounted(() => {
+  bindBottomAreaObserver()
+})
+
+onBeforeUnmount(() => {
+  if (bottomAreaResizeObserver) {
+    bottomAreaResizeObserver.disconnect()
+    bottomAreaResizeObserver = null
   }
 })
 

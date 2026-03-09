@@ -1163,18 +1163,48 @@ const redPacketMessage = computed(() => {
   )
 })
 
-const isMyMessage = computed(() => {
-  // 使用 globalMetaId 判断是否是自己的消息（支持多链 MVC/BTC/DOGE）
-  const selfGlobalMetaId = userStore.last?.globalMetaId
-  // 群聊消息使用 message.globalMetaId，私聊消息使用 message.fromGlobalMetaId
-  const messageGlobalMetaId = props.message.globalMetaId || props.message.fromGlobalMetaId
+const normalizeIdentifier = (value?: string | null) => {
+  return String(value || '').trim().toLowerCase()
+}
 
-  // 添加调试日志
-  if (selfGlobalMetaId !== messageGlobalMetaId) {
-    console.log('🔍 isMyMessage check:', { selfGlobalMetaId, messageGlobalMetaId, metaId: props.message.metaId })
+const isMyMessage = computed(() => {
+  // 历史分页消息在 globalMetaId/metaId/address 字段上可能存在不一致，
+  // 这里统一做多字段匹配，避免自己的消息在左右布局间抖动。
+  const selfIdentifiers = new Set(
+    [
+      simpleTalk.selfMetaId,
+      simpleTalk.selfGlobalMetaId,
+      simpleTalk.selfAddress,
+      userStore.last?.globalMetaId,
+      userStore.last?.metaid,
+      userStore.last?.address,
+    ]
+      .map(normalizeIdentifier)
+      .filter(Boolean)
+  )
+
+  const messageIdentifiers = new Set(
+    [
+      props.message.globalMetaId,
+      props.message.metaId,
+      props.message.address,
+      props.message.fromGlobalMetaId,
+      props.message.userInfo?.globalMetaId,
+      props.message.userInfo?.metaid,
+      props.message.userInfo?.address,
+      props.message.fromUserInfo?.globalMetaId,
+      props.message.fromUserInfo?.metaid,
+      props.message.fromUserInfo?.address,
+    ]
+      .map(normalizeIdentifier)
+      .filter(Boolean)
+  )
+
+  for (const id of messageIdentifiers) {
+    if (selfIdentifiers.has(id)) return true
   }
 
-  return selfGlobalMetaId === messageGlobalMetaId
+  return false
 })
 
 // 卡片消息签名成功处理

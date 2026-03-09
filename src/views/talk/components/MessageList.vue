@@ -353,6 +353,17 @@ const scrollToMessagesBottom = async () => {
   }
 }
 
+const keepLatestVisibleOnInputResize = () => {
+  const container = listContainer.value
+  if (!container) return
+
+  // 仅当用户本来就在底部附近时，输入框增高后保持贴底
+  if (Math.abs(container.scrollTop) < AUTO_SCROLL_THRESHOLD) {
+    container.scrollTop = 0
+    isNearBottom.value = true
+  }
+}
+
 // 设置消息元素引用
 const setMessageRef = (el: any, message: any) => {
   if (el && el.$el) {
@@ -990,6 +1001,7 @@ defineExpose({
   scrollToIndex,
   scrollToTimeStamp,
   scrollToMessagesBottom,
+  keepLatestVisibleOnInputResize,
 })
 
 // onUnmounted(() => {
