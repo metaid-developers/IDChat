@@ -180,6 +180,7 @@ const currentUserIds = computed(() => {
       .map(id => String(id))
   )
 })
+const currentUserAddress = computed(() => userStore.last?.address || simpleTalk.selfAddress)
 
 const isYou = computed(() => {
   const memberIds = [
@@ -191,7 +192,16 @@ const isYou = computed(() => {
     .filter(Boolean)
     .map(id => String(id))
 
-  return memberIds.some(id => currentUserIds.value.has(id))
+  if (memberIds.some(id => currentUserIds.value.has(id))) {
+    return true
+  }
+
+  const memberAddress = props.member?.address || props.member?.userInfo?.address
+  if (currentUserAddress.value && memberAddress) {
+    return memberAddress === currentUserAddress.value
+  }
+
+  return false
 })
 
 // const currentChannelInfo = computed(() => {

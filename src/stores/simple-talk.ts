@@ -1721,6 +1721,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         const userStore = useUserStore()
+        const currentUserAddress = this.selfAddress
         const currentUserIds = new Set(
           [this.selfMetaId, userStore.last?.metaid, userStore.last?.globalMetaId]
             .filter(Boolean)
@@ -1729,7 +1730,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const permissions = channel.memberPermissions
 
         const isCurrentUser = (member?: MemberItem | null): boolean => {
-          if (!member || currentUserIds.size === 0) return false
+          if (!member) return false
 
           const memberIds = [
             member.metaId,
@@ -1740,7 +1741,17 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             .filter(Boolean)
             .map(id => String(id))
 
-          return memberIds.some(id => currentUserIds.has(id))
+          if (currentUserIds.size > 0 && memberIds.some(id => currentUserIds.has(id))) {
+            return true
+          }
+
+          // 兼容 address 匹配（某些接口场景只返回 address 或 metaId 未统一）
+          if (currentUserAddress) {
+            const memberAddress = member.address || member.userInfo?.address
+            return memberAddress === currentUserAddress
+          }
+
+          return false
         }
 
         // 检查是否是创建者
@@ -2749,6 +2760,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             unreadCount: 0, // 未读数由本地管理
             targetMetaId: targetGlobalMetaId,
             publicKeyStr: userInfo?.chatPublicKey,
+            isTemporary: false, // 服务端返回的频道表示用户已加入
             lastMessage:  {
               content: channel.content,
               type: channel.chatType,
@@ -2771,6 +2783,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             createdBy: channel.createUserInfo?.globalMetaId || channel.createUserMetaId || '',
             createdAt: channel.timestamp || Date.now(),
             unreadCount: 0, // 未读数由本地管理
+            isTemporary: false, // 服务端返回的频道表示用户已加入
             // 保留服务端返回的 roomJoinType（默认为 '1' 表示公开）
             roomJoinType: channel.roomJoinType || '1',
             // 保留服务端返回的 path 字段（若有）
@@ -2810,6 +2823,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             unreadCount: existing.unreadCount, // 保留本地未读数
             lastReadIndex: existing.lastReadIndex || 0, // 保留本地已读消息索引
             unreadMentionCount: existing.unreadMentionCount || 0, // 保留本地未读@提及数
+            // 服务端频道意味着用户已在会话中，避免被误判成临时频道
+            isTemporary: false,
             // 保留本地的权限信息和缓存时间
             memberPermissions: existing.memberPermissions,
             permissionsLastUpdated: existing.permissionsLastUpdated,
@@ -2836,7 +2851,12 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           await this.db.saveChannel(mergedToSave)
         } else {
           // 新频道
-          mergedChannels.push({...serverChannel, unreadCount: 0, lastReadIndex: 0})
+          mergedChannels.push({
+            ...serverChannel,
+            unreadCount: 0,
+            lastReadIndex: 0,
+            isTemporary: false,
+          })
           // 安全保存，移除可能有问题的字段
           const serverToSave = { ...serverChannel }
           // delete serverToSave.serverData
