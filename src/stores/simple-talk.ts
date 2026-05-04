@@ -104,19 +104,26 @@ class SimpleChatDB {
     this.dbName = nextDbName
 
     return new Promise((resolve, reject) => {
-      // 添加超时保护（15秒）
+      // 超时保护：5 秒足够打开数据库，超过说明浏览器异常（无痕模式等）
+      const DB_INIT_TIMEOUT_MS = 5000
+      let resolved = false
       const timeoutId = setTimeout(() => {
-        console.error('❌ IndexedDB 初始化超时（15秒）')
+        if (resolved) return
+        console.error('❌ IndexedDB 初始化超时（5s），请检查浏览器是否无痕模式或数据库被占用')
         reject(new Error('IndexedDB initialization timeout'))
-      }, 15000)
+      }, DB_INIT_TIMEOUT_MS)
 
       const request = indexedDB.open(this.dbName, this.DB_VERSION)
-      
-      // 处理数据库被阻塞的情况（其他标签页占用）
+
+      // 处理数据库被阻塞的情况（其他标签页占用），2s 后降级
       request.onblocked = () => {
-        if (import.meta.env.DEV) console.warn('⚠️ IndexedDB 被其他连接阻塞，请关闭其他标签页后重试')
         clearTimeout(timeoutId)
-        // 不拒绝，而是继续等待，但记录警告
+        if (!resolved) {
+          console.warn('⚠️ IndexedDB 被其他标签页阻塞，2s 后降级使用服务端数据')
+          setTimeout(() => {
+            if (!resolved) reject(new Error('IndexedDB blocked by another tab'))
+          }, 2000)
+        }
       }
 
       request.onupgradeneeded = (event) => {
@@ -308,12 +315,14 @@ class SimpleChatDB {
       }
 
       request.onsuccess = () => {
+        resolved = true
         clearTimeout(timeoutId)
         this.db = request.result
         resolve()
       }
 
       request.onerror = () => {
+        resolved = true
         clearTimeout(timeoutId)
         reject(request.error)
       }
@@ -426,6 +435,31 @@ class SimpleChatDB {
       
       request.onsuccess = () => resolve()
       request.onerror = () => reject(request.error)
+    })
+  }
+  // 批量保存频道（单事务），避免 mergeChannels 中逐个 saveChannel 产生 N 次事务
+  async saveChannels(channels: SimpleChannel[]): Promise<void> {
+    if (!this.db || channels.length === 0) return
+
+    const cloned = channels.map(c => ({
+      ...this.createCloneableChannel(c),
+      userPrefix: this.userPrefix,
+    }))
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(["channels"], "readwrite")
+      const store = transaction.objectStore("channels")
+
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+      transaction.onabort = () => reject(transaction.error)
+
+      for (const channel of cloned) {
+        const req = store.put(channel)
+        req.onerror = () => {
+          if (import.meta.env.DEV) console.warn("批量保存频道失败:", channel.id, req.error)
+        }
+      }
     })
   }
 
@@ -1604,6 +1638,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     isInitialized: false,
     isInitializing: false,
     isLoading: false,
+    isSyncing: false,
     lastSyncTime: 0,
     
     // 红包相关状态
@@ -2543,12 +2578,22 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
      * 从服务端同步数据
      */
     async syncFromServer(): Promise<void> {
+      // 节流：30 秒内不重复全量同步，避免 WebSocket 重连时重复拉取
+      const SYNC_THROTTLE_MS = 30000
+      if (this.lastSyncTime && Date.now() - this.lastSyncTime < SYNC_THROTTLE_MS) {
+        return
+      }
+      // 防止并发同步
+      if (this.isSyncing) return
+      this.isSyncing = true
+
       const endSyncSpan = createPerfSpan('simpleTalk.syncFromServer', {
         currentChannels: this.channels.length,
       })
       if (!this.selfGlobalMetaId) {  // 改为 globalMetaId
         if (import.meta.env.DEV) console.warn('⚠️ 未找到用户信息，跳过同步')
         endSyncSpan({ skipped: true, reason: 'missingSelfGlobalMetaId' })
+        this.isSyncing = false
         return
       }
 
@@ -2592,9 +2637,11 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         console.log(`✅ 同步完成，共 ${serverChannels.length} 个频道`)
         
       } catch (error) {
+        this.isSyncing = false
         console.error('❌ 同步服务端数据失败:', error)
       } finally {
         this.isLoading = false
+        this.isSyncing = false
         endSyncSpan({
           success,
           fetchedItems,
@@ -2942,6 +2989,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async mergeChannels(serverChannels: SimpleChannel[]): Promise<void> {
       const existingMap = new Map(this.channels.map(c => [c.id, c]))
       const mergedChannels: SimpleChannel[] = []
+      const channelsToSave: SimpleChannel[] = []
 
       // 处理服务端频道
       for (const serverChannel of serverChannels) {
@@ -2976,24 +3024,22 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           mergedChannels.push(merged)
       
           existingMap.delete(serverChannel.id)
-          // 安全保存，移除可能有问题的字段
-          const mergedToSave = { ...merged }
-          // delete mergedToSave.serverData
-          await this.db.saveChannel(mergedToSave)
+          channelsToSave.push(merged)
         } else {
           // 新频道
-          mergedChannels.push({
+          const newChannel: SimpleChannel = {
             ...serverChannel,
             unreadCount: 0,
             lastReadIndex: 0,
             isTemporary: false,
-          })
-          // 安全保存，移除可能有问题的字段
-          const serverToSave = { ...serverChannel }
-          // delete serverToSave.serverData
-          await this.db.saveChannel(serverToSave)
+          }
+          mergedChannels.push(newChannel)
+          channelsToSave.push(newChannel)
         }
       }
+
+      // 批量写入所有频道到 IndexedDB（单事务，避免 N 次独立事务）
+      await this.db.saveChannels(channelsToSave)
 
       // 保留本地独有频道（包括子群聊频道）
       existingMap.forEach(localChannel => {
@@ -3042,6 +3088,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       if (channelsWithEncryptedNames.length > 0) {
         console.log(`🔓 发现 ${channelsWithEncryptedNames.length} 个私密群聊名称需要解密...`)
         
+        const decryptedChannels: SimpleChannel[] = []
         for (const channel of channelsWithEncryptedNames) {
           let hasChanges = false
           
@@ -3076,8 +3123,12 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
           
           if (hasChanges) {
-            await this.db.saveChannel(channel)
+            decryptedChannels.push(channel)
           }
+        }
+        // 批量保存解密后的频道
+        if (decryptedChannels.length > 0) {
+          await this.db.saveChannels(decryptedChannels)
         }
       }
       

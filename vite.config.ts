@@ -279,8 +279,15 @@ export default ({ mode, command }) => {
       },
     },
     optimizeDeps: {
-      include: ['buffer', 'process'],
-      
+      include: [
+        'buffer',
+        'process',
+        'crypto-js',
+        'socket.io-client',
+        '@tanstack/vue-query',
+        'vue-i18n',
+        'marked',
+      ],
       // disabled: true
     },
     define: {
