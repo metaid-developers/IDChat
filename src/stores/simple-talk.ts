@@ -97,7 +97,7 @@ class SimpleChatDB {
       try {
         this.db.close()
       } catch (error) {
-        console.warn('⚠️ 关闭旧数据库失败:', error)
+        if (import.meta.env.DEV) console.warn('⚠️ 关闭旧数据库失败:', error)
       }
       this.db = null
     }
@@ -114,7 +114,7 @@ class SimpleChatDB {
       
       // 处理数据库被阻塞的情况（其他标签页占用）
       request.onblocked = () => {
-        console.warn('⚠️ IndexedDB 被其他连接阻塞，请关闭其他标签页后重试')
+        if (import.meta.env.DEV) console.warn('⚠️ IndexedDB 被其他连接阻塞，请关闭其他标签页后重试')
         clearTimeout(timeoutId)
         // 不拒绝，而是继续等待，但记录警告
       }
@@ -454,7 +454,7 @@ class SimpleChatDB {
         } : undefined
       }
     } catch (error) {
-      console.warn('创建安全成员数据失败:', error)
+      if (import.meta.env.DEV) console.warn('创建安全成员数据失败:', error)
       return {
         metaId: member.metaId ? String(member.metaId) : '',
         rule: 0,
@@ -527,7 +527,7 @@ class SimpleChatDB {
           // 使用 JSON 序列化测试是否可克隆，并过滤不可序列化的数据
           cloneable.serverData = JSON.parse(JSON.stringify(channel.serverData))
         } catch (error) {
-          console.warn('频道 serverData 包含不可序列化的数据，将被忽略:', error)
+          if (import.meta.env.DEV) console.warn('频道 serverData 包含不可序列化的数据，将被忽略:', error)
           cloneable.serverData = { 
             _error: 'Non-serializable data removed',
             _timestamp: Date.now()
@@ -560,7 +560,7 @@ class SimpleChatDB {
     return new Promise((resolve) => {
       // 添加超时保护（5秒）
       const timeoutId = setTimeout(() => {
-        console.warn('⚠️ getChannels 超时（5秒），返回空数组')
+        if (import.meta.env.DEV) console.warn('⚠️ getChannels 超时（5秒），返回空数组')
         resolve([])
       }, 5000)
 
@@ -620,7 +620,7 @@ class SimpleChatDB {
     const channelId = this.resolveChannelIdForMessage(safeMessageData)
 
     if (!channelId) {
-      console.warn('⚠️ 无法确定消息的频道ID，跳过保存')
+      if (import.meta.env.DEV) console.warn('⚠️ 无法确定消息的频道ID，跳过保存')
       return null
     }
 
@@ -745,7 +745,7 @@ class SimpleChatDB {
           JSON.parse(JSON.stringify(message.data))
           safeData = message.data
         } catch (error) {
-          console.warn('消息 data 字段包含不可序列化的数据，将被置为 null:', error)
+          if (import.meta.env.DEV) console.warn('消息 data 字段包含不可序列化的数据，将被置为 null:', error)
           safeData = null
         }
       } else if (message.data !== null && message.data !== undefined) {
@@ -844,7 +844,7 @@ class SimpleChatDB {
     return new Promise((resolve) => {
       // 添加超时保护（5秒）
       const timeoutId = setTimeout(() => {
-        console.warn('⚠️ getMessages 超时（5秒），返回空数组')
+        if (import.meta.env.DEV) console.warn('⚠️ getMessages 超时（5秒），返回空数组')
         resolve([])
       }, 5000)
 
@@ -1130,7 +1130,7 @@ class SimpleChatDB {
    */
   async markMentionAsRead(mentionId: string): Promise<void> {
     if (!this.db) {
-      console.warn('❌ 数据库未初始化，无法标记@提及已读')
+      if (import.meta.env.DEV) console.warn('❌ 数据库未初始化，无法标记@提及已读')
       return
     }
     
@@ -1159,7 +1159,7 @@ class SimpleChatDB {
             reject(putRequest.error)
           }
         } else {
-          console.warn(`⚠️ 未找到@提及记录: ${mentionId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到@提及记录: ${mentionId}`)
           resolve() // 找不到记录也算成功，避免阻塞
         }
       }
@@ -1921,7 +1921,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           if (window.metaidwallet && typeof (window.metaidwallet as any).setAppBadge === 'function') {
             ;(window.metaidwallet as any).setAppBadge(totalCount)
           } else {
-            console.warn('⚠️ window.metaidwallet.setAppBadge 方法不可用')
+            if (import.meta.env.DEV) console.warn('⚠️ window.metaidwallet.setAppBadge 方法不可用')
           }
         }
       } catch (error) {
@@ -1964,7 +1964,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
         
         if (!currentUserMetaId) {
-          console.warn('⚠️ 用户未登录，无法初始化聊天系统')
+          if (import.meta.env.DEV) console.warn('⚠️ 用户未登录，无法初始化聊天系统')
           return
         }
 
@@ -1997,7 +1997,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               await this.loadSubChannelHeaderStatusFromDB()
             })
             .catch(error => {
-              console.warn('⚠️ 后台同步失败:', error)
+              if (import.meta.env.DEV) console.warn('⚠️ 后台同步失败:', error)
             })
             .finally(() => {
               if (!ENABLE_STARTUP_HISTORY_BACKFILL) {
@@ -2007,7 +2007,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               const maxChannels = normalizePositiveInteger(STARTUP_HISTORY_BACKFILL_MAX_CHANNELS, 3)
               setTimeout(() => {
                 this.loadRecentHistoryMessages({ maxChannels }).catch(error => {
-                  console.warn('⚠️ 后台加载历史消息失败:', error)
+                  if (import.meta.env.DEV) console.warn('⚠️ 后台加载历史消息失败:', error)
                 })
               }, delayMs)
             })
@@ -2037,7 +2037,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           // 即使初始化失败，也标记为已初始化，避免卡在 loading 页面
           // 用户可以看到界面，只是可能没有数据
           this.isInitialized = true
-          console.warn('⚠️ 初始化失败但仍标记为已初始化，用户可以看到界面')
+          if (import.meta.env.DEV) console.warn('⚠️ 初始化失败但仍标记为已初始化，用户可以看到界面')
           throw error
         } finally {
           this.isInitializing = false
@@ -2162,7 +2162,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               try {
                 await this.loadChannelHistoryMessagesIntelligent(channel.id, threeMonthsAgo)
               } catch (error) {
-                console.warn(`⚠️ 加载频道 ${channel.name} 历史消息失败:`, error)
+                if (import.meta.env.DEV) console.warn(`⚠️ 加载频道 ${channel.name} 历史消息失败:`, error)
               }
             })
           )
@@ -2423,7 +2423,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       // 保存更新后的频道信息（包括持久化的提及数量和时间戳）
       this.channels.forEach(channel => {
         this.db.saveChannel(channel).catch(error => {
-          console.warn(`保存频道 ${channel.id} 失败:`, error)
+          if (import.meta.env.DEV) console.warn(`保存频道 ${channel.id} 失败:`, error)
         })
       })
 
@@ -2547,7 +2547,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         currentChannels: this.channels.length,
       })
       if (!this.selfGlobalMetaId) {  // 改为 globalMetaId
-        console.warn('⚠️ 未找到用户信息，跳过同步')
+        if (import.meta.env.DEV) console.warn('⚠️ 未找到用户信息，跳过同步')
         endSyncSpan({ skipped: true, reason: 'missingSelfGlobalMetaId' })
         return
       }
@@ -2567,14 +2567,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           fetchedItems = allChannelsData.length
           console.log(`✅ 获取到 ${allChannelsData.length} 条聊天数据`)
         } catch (e) {
-          console.warn('获取聊天列表失败，使用本地数据:', e)
+          if (import.meta.env.DEV) console.warn('获取聊天列表失败，使用本地数据:', e)
           // 接口报错时不清空本地数据，直接返回
           return
         }
 
         // 如果返回空数组且本地有数据，也不覆盖本地数据
         if ((!allChannelsData || allChannelsData.length === 0) && this.channels.length > 0) {
-          console.warn('⚠️ 服务端返回空数据，保留本地数据')
+          if (import.meta.env.DEV) console.warn('⚠️ 服务端返回空数据，保留本地数据')
           return
         }
 
@@ -2641,7 +2641,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           console.log(`✅ 获取到 ${response.data.list.length} 个子频道`)
           return response.data.list
         } else {
-          console.warn(`⚠️ 获取子频道失败: ${response.message}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 获取子频道失败: ${response.message}`)
           return []
         }
       } catch (error) {
@@ -2686,7 +2686,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 找到对应的群聊频道
         const channelIndex = this.channels.findIndex(c => c.id === groupId && c.type === 'group')
         if (channelIndex === -1) {
-          console.warn(`⚠️ 未找到群聊频道: ${groupId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到群聊频道: ${groupId}`)
           return null
         }
         
@@ -2719,7 +2719,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       
       const channel = this.channels.find(c => c.id === groupId && c.type === 'group')
       if (!channel) {
-        console.warn(`⚠️ 未找到群聊频道: ${groupId}`)
+        if (import.meta.env.DEV) console.warn(`⚠️ 未找到群聊频道: ${groupId}`)
         return null
       }
       
@@ -2744,7 +2744,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async loadGroupChannels(groupId: string): Promise<void> {
       const groupChannel = this.channels.find(c => c.id === groupId && c.type === 'group')
       if (!groupChannel) {
-        console.warn(`⚠️ 未找到群聊: ${groupId}`)
+        if (import.meta.env.DEV) console.warn(`⚠️ 未找到群聊: ${groupId}`)
         return
       }
 
@@ -3056,7 +3056,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               hasChanges = true
             }
           } catch (error) {
-            console.warn(`⚠️ 解密群名称失败:`, channel.id, error)
+            if (import.meta.env.DEV) console.warn(`⚠️ 解密群名称失败:`, channel.id, error)
           }
           
           // 解密群公告
@@ -3071,7 +3071,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                 hasChanges = true
               }
             } catch (error) {
-              console.warn(`⚠️ 解密群公告失败:`, channel.id, error)
+              if (import.meta.env.DEV) console.warn(`⚠️ 解密群公告失败:`, channel.id, error)
             }
           }
           
@@ -3112,7 +3112,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       if (privateCreatorChannels.length > 0) {
         // 检查钱包是否可用
         if (!window.metaidwallet || typeof (window.metaidwallet as any).getPKHByPath !== 'function') {
-          console.warn('⚠️ 钱包不可用，私密群聊创建者无法获取 passwordKey')
+          if (import.meta.env.DEV) console.warn('⚠️ 钱包不可用，私密群聊创建者无法获取 passwordKey')
         } else {
           await Promise.allSettled(
             privateCreatorChannels.map(async (channel) => {
@@ -3140,7 +3140,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                     }
                   }
                 } catch (decryptError) {
-                  console.warn(`⚠️ 解密群名称失败，使用原名称:`, channel.name)
+                  if (import.meta.env.DEV) console.warn(`⚠️ 解密群名称失败，使用原名称:`, channel.name)
                   // 解密失败不影响整体流程，保留原名称
                 }
                 
@@ -3156,7 +3156,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                     }
                   }
                 } catch (decryptError) {
-                  console.warn(`⚠️ 解密群公告失败，使用原公告:`, channel.roomNote)
+                  if (import.meta.env.DEV) console.warn(`⚠️ 解密群公告失败，使用原公告:`, channel.roomNote)
                   // 解密失败不影响整体流程，保留原公告
                 }
 
@@ -3182,7 +3182,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         // 检查钱包是否可用（需要用来解密 passcode）
         if (!window.metaidwallet || typeof (window.metaidwallet as any).common?.ecdh !== 'function') {
-          console.warn('⚠️ 钱包不可用，无法解密 passcode')
+          if (import.meta.env.DEV) console.warn('⚠️ 钱包不可用，无法解密 passcode')
         } else {
           // 动态导入 API
           const { getGroupMetaidJoinList } = await import('@/api/talk')
@@ -3202,7 +3202,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                   const encryptedPasscode = joinItem.k
                   
                   if (!encryptedPasscode) {
-                    console.warn(`⚠️ 群聊 ${channel.name} 的加入记录中没有 passcode`)
+                    if (import.meta.env.DEV) console.warn(`⚠️ 群聊 ${channel.name} 的加入记录中没有 passcode`)
                     return
                   }
                   
@@ -3210,7 +3210,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                   const creatorChatPublicKey = channel.serverData?.createUserInfo?.chatPublicKey
                   
                   if (!creatorChatPublicKey) {
-                    console.warn(`⚠️ 无法获取群聊 ${channel.name} 的群主 chatPublicKey`)
+                    if (import.meta.env.DEV) console.warn(`⚠️ 无法获取群聊 ${channel.name} 的群主 chatPublicKey`)
                     return
                   }
                   
@@ -3228,7 +3228,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                     const passwordKey = decrypted.toString(CryptoJS.enc.Utf8)
                     
                     if (!passwordKey) {
-                      console.warn(`⚠️ 解密 passcode 失败，群聊: ${channel.name}`)
+                      if (import.meta.env.DEV) console.warn(`⚠️ 解密 passcode 失败，群聊: ${channel.name}`)
                       return
                     }
                     
@@ -3249,7 +3249,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                         }
                       }
                     } catch (decryptError) {
-                      console.warn(`⚠️ 解密群名称失败:`, channel.name, decryptError)
+                      if (import.meta.env.DEV) console.warn(`⚠️ 解密群名称失败:`, channel.name, decryptError)
                     }
                     
                     // 尝试解密群公告
@@ -3264,7 +3264,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                         }
                       }
                     } catch (decryptError) {
-                      console.warn(`⚠️ 解密群公告失败:`, channel.roomNote, decryptError)
+                      if (import.meta.env.DEV) console.warn(`⚠️ 解密群公告失败:`, channel.roomNote, decryptError)
                     }
                     
                     // 保存到数据库
@@ -3275,7 +3275,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                     console.error(`❌ ECDH 解密失败，群聊: ${channel.name}`, ecdhError)
                   }
                 } else {
-                  console.warn(`⚠️ 未找到群聊 ${channel.name} 的加入记录`)
+                  if (import.meta.env.DEV) console.warn(`⚠️ 未找到群聊 ${channel.name} 的加入记录`)
                 }
               } catch (error) {
                 console.error(`❌ 获取群聊 ${channel.name} 的加入信息失败:`, error)
@@ -3328,7 +3328,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             await this.loadGroupChannels(groupChannel.id)
             console.log(`✅ 群聊 ${groupChannel.name} 子频道加载完成`)
           } catch (error) {
-            console.warn(`⚠️ 群聊 ${groupChannel.name} 子频道加载失败:`, error)
+            if (import.meta.env.DEV) console.warn(`⚠️ 群聊 ${groupChannel.name} 子频道加载失败:`, error)
           }
         })
       )
@@ -3412,7 +3412,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
         }
       } catch (error) {
-        console.warn(`⚠️ 预加载本地消息失败: ${channelId}`, error)
+        if (import.meta.env.DEV) console.warn(`⚠️ 预加载本地消息失败: ${channelId}`, error)
       }
 
       const endLoadMessagesSpan = createPerfSpan('simpleTalk.setActiveChannel.loadMessages', {
@@ -3459,7 +3459,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
           // 在后台获取权限信息，不阻塞消息主链路
           this.getGroupMemberPermissions(channelId).catch(error => {
-            console.warn(`⚠️ 获取群聊 ${channelId} 权限信息失败:`, error)
+            if (import.meta.env.DEV) console.warn(`⚠️ 获取群聊 ${channelId} 权限信息失败:`, error)
           })
         }, normalizePositiveInteger(GROUP_PERMISSION_FETCH_DELAY_MS, 1200))
         groupPermissionFetchTimers.set(channelId, Number(timerId))
@@ -3547,7 +3547,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             const channelInfo = await getOneChannel(channelId)
             
             if (!channelInfo) {
-              console.warn(`⚠️ 群聊 ${channelId} 不存在或无权访问`)
+              if (import.meta.env.DEV) console.warn(`⚠️ 群聊 ${channelId} 不存在或无权访问`)
               return null
             }
 
@@ -3561,7 +3561,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
                 console.log('✅ 从数据库中恢复 passwordKey:', passwordKeyFromDB)
               }
             } catch (dbError) {
-              console.warn('⚠️ 无法从数据库获取 passwordKey:', dbError)
+              if (import.meta.env.DEV) console.warn('⚠️ 无法从数据库获取 passwordKey:', dbError)
             }
 
             const groupChannel: SimpleChannel = {
@@ -3653,7 +3653,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       const channel = this.channels.find(c => c.id === channelId)
       if (!channel) {
         endResolveChannelSpan({ found: false })
-        console.warn(`⚠️ 未找到频道 ${channelId}`)
+        if (import.meta.env.DEV) console.warn(`⚠️ 未找到频道 ${channelId}`)
         this.messageCache.set(channelId, [])
         return
       }
@@ -4099,7 +4099,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               }
             })
             .catch(error => {
-              console.warn(`⚠️ 频道 ${channelId} 慢请求晚到合并失败:`, error)
+              if (import.meta.env.DEV) console.warn(`⚠️ 频道 ${channelId} 慢请求晚到合并失败:`, error)
             })
 
           return
@@ -4219,7 +4219,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async loadNewestMessages(channelId?: string): Promise<void> {
       const targetChannelId = channelId || this.activeChannelId
       if (!targetChannelId) {
-        console.warn('⚠️ 没有指定频道ID且无当前激活频道')
+        if (import.meta.env.DEV) console.warn('⚠️ 没有指定频道ID且无当前激活频道')
         return
       }
 
@@ -4231,7 +4231,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 2. 查找频道信息
         const channel = this.channels.find(c => c.id === targetChannelId)
         if (!channel) {
-          console.warn(`⚠️ 未找到频道 ${targetChannelId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到频道 ${targetChannelId}`)
           this.messageCache.set(targetChannelId, [])
           return
         }
@@ -4271,7 +4271,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
               }
             })
             .catch(error => {
-              console.warn(`⚠️ 频道 ${targetChannelId} 最新消息晚到合并失败:`, error)
+              if (import.meta.env.DEV) console.warn(`⚠️ 频道 ${targetChannelId} 最新消息晚到合并失败:`, error)
             })
           return
         }
@@ -4336,7 +4336,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         this.messageCache.set(channelId, mergedMessages)
         console.log(`✅ 后台加载完成，更新了 ${mergedMessages.length} 条消息`)
       } catch (error) {
-        console.warn('⚠️ 后台加载服务器消息失败:', error)
+        if (import.meta.env.DEV) console.warn('⚠️ 后台加载服务器消息失败:', error)
       }
     },
 
@@ -4497,7 +4497,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
-          console.warn(`⚠️ 未找到频道 ${channelId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到频道 ${channelId}`)
           return
         }
 
@@ -4526,7 +4526,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
-          console.warn(`⚠️ 未找到频道 ${channelId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到频道 ${channelId}`)
           return false
         }
 
@@ -4758,7 +4758,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
-          console.warn(`⚠️ 未找到频道 ${channelId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到频道 ${channelId}`)
           return false
         }
 
@@ -5115,7 +5115,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             await this.db.saveChannel(channel)
             console.log(`✅ 频道 ${channel.name} 未读 @ 提及已清除`)
           }).catch(error => {
-            console.warn(`标记频道 ${channelId} 提及为已读失败:`, error)
+            if (import.meta.env.DEV) console.warn(`标记频道 ${channelId} 提及为已读失败:`, error)
           })
         }
       }
@@ -5132,13 +5132,13 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async setLastReadIndex(channelId: string, messageIndex: number, timestamp?: number): Promise<void> {
       try {
         if (!this.selfMetaId) {
-          console.warn(`⚠️ 未获取到用户MetaId，无法设置已读索引`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未获取到用户MetaId，无法设置已读索引`)
           return
         }
 
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
-          console.warn(`⚠️ 未找到频道 ${channelId}，无法设置已读索引`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到频道 ${channelId}，无法设置已读索引`)
           return
         }
         console.log(`🔖 设置频道 ${channelId} 的已读索引为 ${messageIndex} (当前值: ${channel.lastReadIndex})`)
@@ -5183,7 +5183,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async getLastReadIndex(channelId: string): Promise<number> {
       try {
         if (!this.selfMetaId) {
-          console.warn(`⚠️ 未获取到用户MetaId，无法获取已读索引`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未获取到用户MetaId，无法获取已读索引`)
           return 0
         }
 
@@ -5221,7 +5221,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async getLastReadIndexWithTimestamp(channelId: string): Promise<{ index: number, timestamp: number | null }> {
       try {
         if (!this.selfMetaId) {
-          console.warn(`⚠️ 未获取到用户MetaId，无法获取已读索引`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未获取到用户MetaId，无法获取已读索引`)
           return { index: 0, timestamp: null }
         }
 
@@ -5324,7 +5324,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
 
         // 在后台获取新群聊的权限信息
         this.getGroupMemberPermissions(groupId).catch(error => {
-          console.warn(`⚠️ 获取新群聊 ${groupId} 权限信息失败:`, error)
+          if (import.meta.env.DEV) console.warn(`⚠️ 获取新群聊 ${groupId} 权限信息失败:`, error)
         })
 
         console.log(`✅ 创建群聊: ${name}`)
@@ -5403,7 +5403,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 查找频道
         const channel = this.channels.find(c => c.id === channelId)
         if (!channel) {
-          console.warn(`⚠️ 未找到频道 ${channelId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到频道 ${channelId}`)
           return false
         }
 
@@ -5645,7 +5645,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         if (!foundMessage || !foundChannelId) {
-          console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
           return
         }
 
@@ -5654,7 +5654,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           await this.db.deleteMessage(foundMessage.txId)
           console.log(`🗄️ 从数据库中删除消息: txId=${foundMessage.txId}`)
         } else {
-          console.warn(`⚠️ 消息没有 txId，跳过数据库删除: mockId=${mockId}`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 消息没有 txId，跳过数据库删除: mockId=${mockId}`)
         }
 
         console.log(`✅ 消息删除完成: mockId=${mockId}`)
@@ -5688,7 +5688,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         if (!foundMessage || !foundChannelId) {
-          console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
           return
         }
 
@@ -5733,7 +5733,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           }
         }
         if (!foundMessage || !foundChannelId) {
-          console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到 mockId 为 ${mockId} 的消息`)
           return
         }
        console.log(`✅ txId 设置完成: mockId=${mockId} txid=${txid}`)
@@ -5949,7 +5949,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       
       const channel = this.channels.find(c => c.id === channelId)
       if (!channel) {
-        console.warn(`频道 ${channelId} 不存在`)
+        if (import.meta.env.DEV) console.warn(`频道 ${channelId} 不存在`)
         return
       }
 
@@ -6236,7 +6236,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 检查子群聊是否存在
         const subChannel = this.channels.find(c => c.id === channelId)
         if (!subChannel) {
-          console.warn(`⚠️ 子群聊 ${channelId} 不存在`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 子群聊 ${channelId} 不存在`)
           return false
         }
         
@@ -6258,7 +6258,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         const subChannel = this.channels.find(c => c.id === subChannelId)
         if (!subChannel?.parentGroupId) {
-          console.warn(`⚠️ 无法找到子群聊 ${subChannelId} 的父群聊`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 无法找到子群聊 ${subChannelId} 的父群聊`)
           return false
         }
         
@@ -6563,7 +6563,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 3. 查找消息
         const targetMessage = messages.find(m => m.index === mention.messageIndex)
         if (!targetMessage) {
-          console.warn(`⚠️ 未找到 index=${mention.messageIndex} 的消息`)
+          if (import.meta.env.DEV) console.warn(`⚠️ 未找到 index=${mention.messageIndex} 的消息`)
           return false
         }
 

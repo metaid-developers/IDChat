@@ -113,93 +113,25 @@
 import { useLayoutStore } from '@/stores/layout'
 import { useUserStore } from '@/stores/user'
 import { isMobile, useRootStore } from '@/stores/root'
-import CreateCommunityModal from '@/views/talk/components/modals/community/Create.vue'
-import { onBeforeUnmount, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useWsStore } from '@/stores/ws_new'
 import { Community } from '@/@types/talk'
-const layout = useLayoutStore()
-const ws = useWsStore()
+// CreateCommunityModal 延迟加载，模板已注释暂不需要
+// import CreateCommunityModal from '@/views/talk/components/modals/community/Create.vue'
 
+const layout = useLayoutStore()
 const userStore = useUserStore()
 const route = useRoute()
 const rootStore = useRootStore()
 const i18n = useI18n()
-const isProduction = import.meta.env.MODE === 'mainnet'
-const whiteList = [
-  '7a7c301023d20f8dd3af3a4461f8e9726256286cc3c79b7fb0673a4a0d7d4625',
-  'e9ab42667c5f5a6a1e7d45ed023f8961ee6950bba8a771d68732c8fb460a7aae',
-]
-// const isInWhitelist = talk.selfMetaId && whiteList.includes(talk.selfMetaId)
+
+// WebSocket 生命周期由 App.vue 中 watch [isAuthorized, globalMetaId] 统一管理，
+// 此处不再重复 ws.init() / ws.disconnect()，避免重复连接。
 
 function getCommunityKey(community: Community) {
-  // return community.id
-
   return 'public'
-  if (!community.metaName) return community.id
-
-  const originalMetaName = community.metaName
-  // return originalMetaName.includes('.') ? originalMetaName : `${originalMetaName}.metaid`
-
-  // 目前不解析.eth
-  return originalMetaName.includes('.') ? community.id : `${originalMetaName}.metaid`
 }
 
-const apps = reactive([
-  // {
-  //   icon: 'feed',
-  //   path: '/buzz',
-  //   extraClass: 'left-navigation-item',
-  //   title: () => i18n.t('Talk.Community.feed'),
-  //   symbol: 'buzz',
-  // },
-  {
-    icon: 'talk',
-    path: '/talk/channels/@me',
-    title: () => i18n.t('Talk.Community.atme'),
-    symbol: '@me',
-  },
-  // {
-  //   icon: 'market',
-  //   path: '/nft/collection/index',
-  //   title: () => i18n.t('NFT.NFT Market'),
-  //   symbol: 'nft',
-  // },
-])
-
-if (userStore.isAuthorized) {
-  //talk.fetchCommunities()
-  // talk.initCommunityChannelIds()
-  // talk.initReceivedRedPacketIds()
-  // talk.initReadPointers()
-  ws.init()
-}
-
-watch(
-  () => userStore.isAuthorized,
-  isAuthorized => {
-    if (isAuthorized) {
-      //talk.fetchCommunities()
-      // talk.initCommunityChannelIds()
-      // talk.initReceivedRedPacketIds()
-      // talk.initReadPointers()
-      ws.init()
-    } else {
-      // talk.reset()
-      ws.disconnect()
-      // talk.saveReadPointers()
-      // talk.closeReadPointerTimer()
-    }
-  }
-)
-
-onBeforeUnmount(() => {
-  ws.disconnect()
-
-  // talk.saveReadPointers()
-  // talk.closeReadPointerTimer()
-})
-</script>
+// const apps = reactive([...])  // 模板已注释，暂不需要</script>
 
 <style lang="scss" scoped src="./LeftNavigation.scss"></style>

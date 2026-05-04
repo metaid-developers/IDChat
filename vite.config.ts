@@ -321,7 +321,27 @@ export default ({ mode, command }) => {
           sourcemap: isProduction ? false : 'inline',
             entryFileNames: `[name].[hash].js`,
             chunkFileNames: `[name].[hash].js`,
-            assetFileNames: `[name].[hash].[ext]`
+            assetFileNames: `[name].[hash].[ext]`,
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                // Vue 生态
+                if (id.includes('vue') || id.includes('pinia') || id.includes('@vueuse')) {
+                  return 'vendor-vue'
+                }
+                // UI 组件库
+                if (id.includes('element-plus') || id.includes('@element-plus') || id.includes('@headlessui')) {
+                  return 'vendor-ui'
+                }
+                // WebSocket
+                if (id.includes('socket.io')) {
+                  return 'vendor-socket'
+                }
+                // 加密库
+                if (id.includes('mvc-lib') || id.includes('bitcoinjs') || id.includes('elliptic') || id.includes('bip39') || id.includes('ethers') || id.includes('crypto')) {
+                  return 'vendor-crypto'
+                }
+              }
+            },
           // chunkFileNames: 'assets/[name].[hash].js',
           // entryFileNames: 'assets/[name].[hash].js',
           

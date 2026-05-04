@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, nextTick, watch, provide ,onBeforeUnmount,onUnmounted,computed} from 'vue'
+import { reactive, ref, onMounted, nextTick, watch, provide, onBeforeUnmount, onUnmounted, computed, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useRootStore } from '@/stores/root'
@@ -63,20 +63,21 @@ const initVConsoleForDebug = async (address: string) => {
   }
 }
 
-import ConnectWalletModalVue from './components/ConnectWalletModal/ConnectWalletModal.vue'
 import LeftNavigationVue from './components/LeftNavigation/LeftNavigation.vue'
-import DragonBall from './views/talk/components/DragonBall.vue'
-import SearchModal from './components/Search/Index.vue'
-//import PWA from './components/PWA/PWA.vue'
-import UserCardFloater from './components/UserCard/Floater.vue'
 import PullDownVue from './layout/PullDown/PullDown.vue'
-import ImagePreviewVue from '@/components/ImagePreview/ImagePreview.vue'
+// 首屏不可见的模态框/浮层改为懒加载，减少初始 bundle 大小
+const ConnectWalletModalVue = defineAsyncComponent(() => import('./components/ConnectWalletModal/ConnectWalletModal.vue'))
+const DragonBall = defineAsyncComponent(() => import('./views/talk/components/DragonBall.vue'))
+const SearchModal = defineAsyncComponent(() => import('./components/Search/Index.vue'))
+const ImagePreviewVue = defineAsyncComponent(() => import('@/components/ImagePreview/ImagePreview.vue'))
+//import PWA from './components/PWA/PWA.vue'
+//import UserCardFloater from './components/UserCard/Floater.vue'
 import { type Network, useNetworkStore } from '@/stores/network'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
 import {completeReload} from '@/utils/util'
 import { useI18n } from 'vue-i18n'
-import WalletMissingModal from './components/ConnectWalletModal/WalletMissingModal.vue'
+const WalletMissingModal = defineAsyncComponent(() => import('./components/ConnectWalletModal/WalletMissingModal.vue'))
 import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { sleep } from '@/utils/util'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
@@ -358,14 +359,10 @@ async function connectMetalet() {
     //    window.location.reload()
     //  }, 2000);
     }else{
-     setTimeout(async() => {
-         await simpleTalkStore.init()
-
-     }, 1000);
-
-      simpleTalkStore.initMuteNotify().then().catch((e)=>{
-
-                })
+      await simpleTalkStore.init()
+      simpleTalkStore.initMuteNotify().then().catch((e) => {
+        console.error('initMuteNotify failed:', e)
+      })
     // let newChannelId
     // const myChannelList= await getChannels({
     //   metaId:userStore.last.metaid
@@ -403,12 +400,15 @@ async function connectMetalet() {
 
 onMounted(async () => {
 
-  // 确保老用户有正确的 globalMetaId
+  // 后台验证 globalMetaId（不阻塞 UI），Pinia 已从 localStorage 恢复了缓存值
   if (userStore.last?.address) {
-    const hasGlobalMetaId = await userStore.ensureGlobalMetaId()
-    if (!hasGlobalMetaId) {
-      console.warn('⚠️ 无法获取 globalMetaId，部分功能可能受限')
-    }
+    userStore.ensureGlobalMetaId().then(hasGlobalMetaId => {
+      if (!hasGlobalMetaId) {
+        console.warn('⚠️ 无法获取 globalMetaId，部分功能可能受限')
+      } else if (!simpleTalkStore.isInitialized) {
+        simpleTalkStore.init()
+      }
+    })
   }
 
   let retryCount = 0
