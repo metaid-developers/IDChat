@@ -359,6 +359,6 @@ export default ({ mode, command }) => {
         
       },
     },
-    sourcemap: command === 'build' ? false : 'inline',
+    sourcemap: command === 'build' ? false : false,  // 关闭 dev sourcemap 加速首次加载
   })
 }

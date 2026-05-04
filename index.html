@@ -13,10 +13,11 @@
    style-src  'self' 'unsafe-inline' *"
     />
     <meta http-equiv="X-UA-Compatible" content="IE=8" />
-    <meta http-equiv="Expires" content="0" />
-    <meta http-equiv="Pragma" content="no-store" />
-    <meta http-equiv="Cache-control" content="no-store no-cache, no-store must-revalidate" />
-    <meta http-equiv="Cache" content="no-store " />
+    <!-- 预连接 API 域名，减少首次 DNS + TCP + TLS 握手延迟 -->
+    <link rel="dns-prefetch" href="https://api.idchat.io" />
+    <link rel="dns-prefetch" href="https://file.metaid.io" />
+    <link rel="preconnect" href="https://api.idchat.io" crossorigin />
+    <link rel="preconnect" href="https://file.metaid.io" crossorigin />
     <!-- <link rel="alternate icon" href="/favicon.ico" type="image/png" sizes="16x16" /> -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <link rel="mask-icon" href="pwa-512x512.png" color="#FFFFFF" />
