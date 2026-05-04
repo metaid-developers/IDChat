@@ -150,6 +150,20 @@ const summarizeByKey = (metrics: PerfMetric[], keyGetter: (metric: PerfMetric) =
     .sort((a, b) => b.p95 - a.p95)
 }
 
+const normalizeApiUrl = (raw: string): string => {
+  if (!raw) return ''
+  try {
+    const base =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'http://localhost'
+    const url = new URL(raw, base)
+    return `${url.origin}${url.pathname}`
+  } catch {
+    return raw.split('?')[0].split('#')[0]
+  }
+}
+
 export const getPerfMetrics = (): PerfMetric[] => [...getMetricsStore()]
 
 export const clearPerfMetrics = (): void => {
@@ -169,6 +183,10 @@ export const summarizePerfMetrics = () => {
     apis: summarizeByKey(apiMetrics, item => {
       const api = item as ApiPerfMetric
       return `${api.method} ${api.url}`
+    }).slice(0, 20),
+    apisByPath: summarizeByKey(apiMetrics, item => {
+      const api = item as ApiPerfMetric
+      return `${api.method} ${normalizeApiUrl(api.url)}`
     }).slice(0, 20),
     spans: summarizeByKey(spanMetrics, item => (item as SpanPerfMetric).name).slice(0, 20),
   }
@@ -214,6 +232,7 @@ const setupPerfConsoleHelpers = (): void => {
     clear: () => clearPerfMetrics(),
     get: () => getPerfMetrics(),
     summary: () => summarizePerfMetrics(),
+    summaryByPath: () => summarizePerfMetrics().apisByPath,
   }
 }
 

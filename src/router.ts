@@ -43,6 +43,7 @@ export const router = createRouter({
       name: 'buzz',
       component: () => import('@/views/buzz/Layout.vue'),
       meta: { keepAlive: true },
+      redirect: '/talk/channels/public/index',
       // redirect: async() => {
       //   const userStore=useUserStore()
       //    const talk = useTalkStore()

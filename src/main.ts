@@ -30,6 +30,7 @@ import VueVirtualScroller from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 import { loadRuntimeConfig } from './config/runtime-config'
+import './utils/axios-perf'
 // import VConsole from 'vconsole'
 // if (import.meta.env.MODE !== 'prod') {
 //   const vConsole = new VConsole()

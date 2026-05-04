@@ -24,6 +24,9 @@ export const useWsStore = defineStore('ws', {
   state: () => {
     return {
       ws: null as SocketIOClient | null,
+      currentMetaId: '' as string,
+      currentUrl: '' as string,
+      currentPath: '' as string,
       //wsHeartBeatTimer: null as NodeJS.Timeout | null,
     }
   },
@@ -63,6 +66,24 @@ export const useWsStore = defineStore('ws', {
         metaid: selfGlobalMetaId, // 参数名改为 metaid（小写），值使用 globalMetaId
         type: rootStore.isWebView || isIOS || isAndroid ? 'app' : 'pc',
       }
+
+      const sameConfig =
+        this.currentMetaId === config.metaid &&
+        this.currentUrl === config.url &&
+        this.currentPath === config.path
+
+      if (this.ws && sameConfig && this.ws.isConnected()) {
+        return
+      }
+
+      if (this.ws) {
+        this.ws.disconnect()
+        this.ws = null
+      }
+
+      this.currentMetaId = config.metaid
+      this.currentUrl = config.url
+      this.currentPath = config.path
 
       this.ws = new SocketIOClient(config)
       // this.ws=client
@@ -112,6 +133,10 @@ export const useWsStore = defineStore('ws', {
 
     disconnect() {
       this.ws?.disconnect()
+      this.ws = null
+      this.currentMetaId = ''
+      this.currentUrl = ''
+      this.currentPath = ''
     },
 
     // close() {
@@ -126,8 +151,17 @@ export const useWsStore = defineStore('ws', {
     async _handleReceivedMessage(data: MessageData) {
       const jobsStore = useJobsStore()
       const simpleTalkStore = useSimpleTalkStore()
-      // event.data
-      const messageWrapper = JSON.parse(data)
+      let messageWrapper: any
+      try {
+        messageWrapper = typeof data === 'string' ? JSON.parse(data) : data
+      } catch (error) {
+        console.error('❌ Socket消息解析失败:', error, data)
+        return
+      }
+      if (!messageWrapper?.M) {
+        console.warn('⚠️ Socket消息缺少类型字段 M:', messageWrapper)
+        return
+      }
       switch (messageWrapper.M) {
         case 'WS_SERVER_NOTIFY_GROUP_CHAT':
           // await talk.handleNewGroupMessage(messageWrapper.D)

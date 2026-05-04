@@ -66,20 +66,43 @@ const normalizePositiveInteger = (value: number, fallback: number): number => {
 // IndexedDB 管理类
 class SimpleChatDB {
   private db: IDBDatabase | null = null
-  private readonly DB_NAME = 'SimpleChatDB'
-  private readonly DB_VERSION = 7 // 增加版本号以添加 settings 表
+  private readonly BASE_DB_NAME = 'SimpleChatDB'
+  private readonly DB_VERSION = 8 // 增加版本号以支持消息范围索引
   private userPrefix = 'default_' // 用户数据前缀（使用 globalMetaId）
+  private userId = 'default'
+  private dbName = this.BASE_DB_NAME
 
   constructor(globalMetaId?: string) {
-    this.userPrefix = globalMetaId ? `user_${globalMetaId}_` : 'default_'
+    this.setUser(globalMetaId || '')
+    this.dbName = this.buildDbName(globalMetaId)
+  }
+
+  private buildDbName(globalMetaId?: string): string {
+    const normalized = String(globalMetaId || '').trim()
+    if (!normalized) return `${this.BASE_DB_NAME}_default`
+    return `${this.BASE_DB_NAME}_${normalized}`
+  }
+
+  private resolveCurrentUserId(): string {
+    return this.userId || this.userPrefix.replace('user_', '').replace('_', '') || 'default'
   }
 
   async init(globalMetaId?: string): Promise<void> {
-    
     if (globalMetaId) {
-      this.userPrefix = `user_${globalMetaId}_`
+      this.setUser(globalMetaId)
     }
-    
+
+    const nextDbName = this.buildDbName(globalMetaId || this.userId)
+    if (this.db && this.db.name !== nextDbName) {
+      try {
+        this.db.close()
+      } catch (error) {
+        console.warn('⚠️ 关闭旧数据库失败:', error)
+      }
+      this.db = null
+    }
+    this.dbName = nextDbName
+
     return new Promise((resolve, reject) => {
       // 添加超时保护（15秒）
       const timeoutId = setTimeout(() => {
@@ -87,7 +110,7 @@ class SimpleChatDB {
         reject(new Error('IndexedDB initialization timeout'))
       }, 15000)
 
-      const request = indexedDB.open(this.DB_NAME, this.DB_VERSION)
+      const request = indexedDB.open(this.dbName, this.DB_VERSION)
       
       // 处理数据库被阻塞的情况（其他标签页占用）
       request.onblocked = () => {
@@ -136,6 +159,8 @@ class SimpleChatDB {
           messageStore.createIndex('userPrefix', 'userPrefix')
           messageStore.createIndex('channelId', 'channelId')
           messageStore.createIndex('timestamp', 'timestamp')
+          messageStore.createIndex('userChannelIndex', ['userPrefix', 'channelId', 'index'])
+          messageStore.createIndex('userChannelTimestamp', ['userPrefix', 'channelId', 'timestamp'])
           console.log('✅ 创建消息表')
         } else {
           // 表已存在，检查并添加缺失的索引
@@ -153,6 +178,14 @@ class SimpleChatDB {
             if (!messageStore.indexNames.contains('timestamp')) {
               messageStore.createIndex('timestamp', 'timestamp')
               console.log('✅ 添加消息表 timestamp 索引')
+            }
+            if (!messageStore.indexNames.contains('userChannelIndex')) {
+              messageStore.createIndex('userChannelIndex', ['userPrefix', 'channelId', 'index'])
+              console.log('✅ 添加消息表 userChannelIndex 索引')
+            }
+            if (!messageStore.indexNames.contains('userChannelTimestamp')) {
+              messageStore.createIndex('userChannelTimestamp', ['userPrefix', 'channelId', 'timestamp'])
+              console.log('✅ 添加消息表 userChannelTimestamp 索引')
             }
           }
         }
@@ -289,7 +322,9 @@ class SimpleChatDB {
 
   // 设置当前用户
   setUser(userMetaId: string): void {
-    this.userPrefix = `user_${userMetaId}_`
+    const normalized = String(userMetaId || '').trim()
+    this.userId = normalized || 'default'
+    this.userPrefix = normalized ? `user_${normalized}_` : 'default_'
   }
 
   // 获取数据库实例
@@ -549,16 +584,40 @@ class SimpleChatDB {
     })
   }
 
+  private resolveChannelIdForMessage(message: UnifiedChatMessage): string | undefined {
+    const hasGroupChannel =
+      (message.channelId && message.channelId.trim() !== '') ||
+      (message.groupId && message.groupId.trim() !== '')
+    if (hasGroupChannel) {
+      return message.channelId && message.channelId.trim() !== '' ? message.channelId : message.groupId
+    }
+
+    const rawFrom = (message.fromGlobalMetaId || (message as any).from || (message as any).fromGlobalMetaId) as
+      | string
+      | undefined
+    const rawTo = (message.toGlobalMetaId || (message as any).to || (message as any).toGlobalMetaId) as
+      | string
+      | undefined
+
+    if (rawFrom && rawTo) {
+      const currentUserId = this.resolveCurrentUserId()
+      if (currentUserId) {
+        if (currentUserId === rawFrom) return String(rawTo)
+        if (currentUserId === rawTo) return String(rawFrom)
+      }
+      if (this.userPrefix.includes(String(rawFrom))) return String(rawTo)
+      if (this.userPrefix.includes(String(rawTo))) return String(rawFrom)
+      return String(rawFrom)
+    }
+
+    const channelId = message.channelId && message.channelId.trim() !== '' ? message.channelId : message.groupId
+    return channelId
+  }
+
   private buildMessageRecord(message: UnifiedChatMessage): Record<string, any> | null {
     // 创建可以安全存储到 IndexedDB 的消息副本
     const safeMessageData = this.createCloneableMessage(message)
-    const isPrivateChat = isPrivateChatMessage(safeMessageData)
-    // 确定频道ID（使用 fromGlobalMetaId/toGlobalMetaId）
-    const channelId = isPrivateChat
-      ? this.userPrefix.indexOf(safeMessageData.fromGlobalMetaId) !== -1
-        ? safeMessageData.toGlobalMetaId
-        : safeMessageData.fromGlobalMetaId
-      : message.channelId || message.groupId
+    const channelId = this.resolveChannelIdForMessage(safeMessageData)
 
     if (!channelId) {
       console.warn('⚠️ 无法确定消息的频道ID，跳过保存')
@@ -605,6 +664,12 @@ class SimpleChatDB {
   // 创建可以安全克隆的消息数据
   private createCloneableMessage(message: UnifiedChatMessage): UnifiedChatMessage {
     try {
+      const rawFrom = (message.fromGlobalMetaId || (message as any).from || (message as any).fromGlobalMetaId) as
+        | string
+        | undefined
+      const rawTo = (message.toGlobalMetaId || (message as any).to || (message as any).toGlobalMetaId) as
+        | string
+        | undefined
       // 安全处理 userInfo
       const safeUserInfo = message.userInfo ? {
         metaid: String(message.userInfo.metaid || message.metaId || ''),
@@ -716,9 +781,9 @@ class SimpleChatDB {
         error: message.error ? String(message.error) : undefined,
 
         // 私聊特有字段（使用 globalMetaId）
-        fromGlobalMetaId: message.fromGlobalMetaId ? String(message.fromGlobalMetaId) : undefined,
+        fromGlobalMetaId: rawFrom ? String(rawFrom) : undefined,
         fromUserInfo: safeFromUserInfo,
-        toGlobalMetaId: message.toGlobalMetaId ? String(message.toGlobalMetaId) : undefined,
+        toGlobalMetaId: rawTo ? String(rawTo) : undefined,
         toUserInfo: safeToUserInfo,
 
         // 群聊特有字段
@@ -786,7 +851,44 @@ class SimpleChatDB {
       const transaction = this.db!.transaction(['messages'], 'readonly')
       const store = transaction.objectStore('messages')
 
-      // 优先使用 channelId 索引获取
+      if (store.indexNames.contains('userChannelIndex')) {
+        const index = store.index('userChannelIndex')
+        const upperBound = [this.userPrefix, channelId, Number.MAX_SAFE_INTEGER]
+        const lowerBound = [this.userPrefix, channelId, 0]
+        const range = IDBKeyRange.bound(lowerBound, upperBound)
+        const results: any[] = []
+
+        const cursorRequest = index.openCursor(range, 'prev')
+        cursorRequest.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result
+          if (cursor) {
+            results.push(cursor.value)
+            if (limit > 0 && results.length >= limit) {
+              clearTimeout(timeoutId)
+              const messages = results
+                .map(({ userPrefix, id, ...message }: any) => message)
+                .reverse()
+              resolve(messages)
+              return
+            }
+            cursor.continue()
+          } else {
+            clearTimeout(timeoutId)
+            const messages = results
+              .map(({ userPrefix, id, ...message }: any) => message)
+              .reverse()
+            resolve(messages)
+          }
+        }
+        cursorRequest.onerror = () => {
+          clearTimeout(timeoutId)
+          console.error('❌ 获取消息失败:', cursorRequest.error)
+          resolve([])
+        }
+        return
+      }
+
+      // 兼容旧索引路径
       let request: IDBRequest
       if (store.indexNames.contains('channelId')) {
         const index = store.index('channelId')
@@ -822,6 +924,35 @@ class SimpleChatDB {
     return new Promise((resolve) => {
       const transaction = this.db!.transaction(['messages'], 'readonly')
       const store = transaction.objectStore('messages')
+
+      if (store.indexNames.contains('userChannelIndex')) {
+        const index = store.index('userChannelIndex')
+        const lowerBound = [this.userPrefix, channelId, startIndex]
+        const upperBound = [this.userPrefix, channelId, endIndex]
+        const range = IDBKeyRange.bound(lowerBound, upperBound)
+        const results: any[] = []
+
+        const cursorRequest = index.openCursor(range, 'next')
+        cursorRequest.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result
+          if (cursor) {
+            results.push(cursor.value)
+            cursor.continue()
+          } else {
+            const messages = results
+              .map(({ userPrefix, id, ...message }: any) => message)
+              .sort((a, b) => a.index - b.index)
+            console.log(`📋 获取索引范围 [${startIndex}-${endIndex}] 的消息: ${messages.length} 条`)
+            resolve(messages)
+          }
+        }
+        cursorRequest.onerror = () => {
+          console.error('❌ 获取消息失败:', cursorRequest.error)
+          resolve([])
+        }
+        return
+      }
+
       const request = store.getAll()
       
       request.onsuccess = () => {
@@ -3745,6 +3876,52 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     },
 
     /**
+     * 统一解析消息所属频道（兼容私聊 from/to 字段）
+     */
+    resolveChannelIdFromMessage(message: UnifiedChatMessage): {
+      channelId?: string
+      isPrivate: boolean
+      isSubGroup: boolean
+    } {
+      const hasGroupChannel =
+        (message.channelId && message.channelId.trim() !== '') ||
+        (message.groupId && message.groupId.trim() !== '')
+      if (hasGroupChannel) {
+        const hasSubChannel = message.channelId && message.channelId.trim() !== ''
+        return {
+          channelId: hasSubChannel ? message.channelId : message.groupId,
+          isPrivate: false,
+          isSubGroup: hasSubChannel,
+        }
+      }
+
+      const rawFrom = (message.fromGlobalMetaId || (message as any).from || (message as any).fromGlobalMetaId) as
+        | string
+        | undefined
+      const rawTo = (message.toGlobalMetaId || (message as any).to || (message as any).toGlobalMetaId) as
+        | string
+        | undefined
+
+      if (rawFrom && rawTo) {
+        const selfId = this.selfMetaId
+        if (selfId && selfId === rawFrom) {
+          return { channelId: String(rawTo), isPrivate: true, isSubGroup: false }
+        }
+        if (selfId && selfId === rawTo) {
+          return { channelId: String(rawFrom), isPrivate: true, isSubGroup: false }
+        }
+        return { channelId: String(rawFrom), isPrivate: true, isSubGroup: false }
+      }
+
+      const hasSubChannel = message.channelId && message.channelId.trim() !== ''
+      return {
+        channelId: hasSubChannel ? message.channelId : message.groupId,
+        isPrivate: false,
+        isSubGroup: hasSubChannel,
+      }
+    },
+
+    /**
      * 根据 lastReadIndex 从本地数据库加载消息
      */
     async loadMessagesAroundReadIndex(channelId: string, lastReadIndex: number): Promise<{
@@ -4505,6 +4682,41 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return new Promise((resolve) => {
         const transaction = this.db.database!.transaction(['messages'], 'readonly')
         const store = transaction.objectStore('messages')
+        if (store.indexNames.contains('userChannelIndex')) {
+          const index = store.index('userChannelIndex')
+          const lowerBound = [this.db.prefix, channelId, 1]
+          const upperBound = [this.db.prefix, channelId, maxIndex]
+          const range = IDBKeyRange.bound(lowerBound, upperBound)
+          const results: any[] = []
+
+          const cursorRequest = index.openCursor(range, 'prev')
+          cursorRequest.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result
+            if (cursor) {
+              results.push(cursor.value)
+              if (limit > 0 && results.length >= limit) {
+                const historyMessages = results
+                  .map(({ userPrefix, id, ...message }: any) => message)
+                  .reverse()
+                console.log(`📊 本地历史查询: channelId=${channelId}, maxIndex=${maxIndex}, 找到 ${historyMessages.length} 条消息`)
+                resolve(historyMessages)
+                return
+              }
+              cursor.continue()
+            } else {
+              const historyMessages = results
+                .map(({ userPrefix, id, ...message }: any) => message)
+                .reverse()
+              console.log(`📊 本地历史查询: channelId=${channelId}, maxIndex=${maxIndex}, 找到 ${historyMessages.length} 条消息`)
+              resolve(historyMessages)
+            }
+          }
+          cursorRequest.onerror = () => {
+            console.error('❌ 加载本地历史消息失败:', cursorRequest.error)
+            resolve([])
+          }
+          return
+        }
         let request: IDBRequest
         if (store.indexNames.contains('channelId')) {
           request = store.index('channelId').getAll(channelId)
@@ -4662,6 +4874,37 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return new Promise((resolve) => {
         const transaction = this.db.database!.transaction(['messages'], 'readonly')
         const store = transaction.objectStore('messages')
+        if (store.indexNames.contains('userChannelIndex')) {
+          const index = store.index('userChannelIndex')
+          const lowerBound = [this.db.prefix, channelId, minIndex]
+          const upperBound = [this.db.prefix, channelId, Number.MAX_SAFE_INTEGER]
+          const range = IDBKeyRange.bound(lowerBound, upperBound)
+          const results: any[] = []
+
+          const cursorRequest = index.openCursor(range, 'next')
+          cursorRequest.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result
+            if (cursor) {
+              results.push(cursor.value)
+              if (limit > 0 && results.length >= limit) {
+                const newestMessages = results.map(({ userPrefix, id, ...message }: any) => message)
+                console.log(`📊 本地最新消息查询: channelId=${channelId}, minIndex=${minIndex}, 找到 ${newestMessages.length} 条消息`)
+                resolve(newestMessages)
+                return
+              }
+              cursor.continue()
+            } else {
+              const newestMessages = results.map(({ userPrefix, id, ...message }: any) => message)
+              console.log(`📊 本地最新消息查询: channelId=${channelId}, minIndex=${minIndex}, 找到 ${newestMessages.length} 条消息`)
+              resolve(newestMessages)
+            }
+          }
+          cursorRequest.onerror = () => {
+            console.error('❌ 加载本地最新消息失败:', cursorRequest.error)
+            resolve([])
+          }
+          return
+        }
         let request: IDBRequest
         if (store.indexNames.contains('channelId')) {
           request = store.index('channelId').getAll(channelId)
@@ -5602,16 +5845,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async addMessage(message: UnifiedChatMessage): Promise<void> {
       try {
         // 确定频道ID - 支持子群聊
-        let channelId: string | undefined;
-        
-        const isPrivateChat = isPrivateChatMessage(message);
-        if (isPrivateChat) {
-          // 私聊：使用发送者或接收者的 globalMetaId
-          channelId = message.toGlobalMetaId === this.selfMetaId ? message.fromGlobalMetaId : message.toGlobalMetaId;
-        } else {
-          // 群聊：优先使用 channelId（子群聊），其次使用 groupId（主群聊）
-          channelId = message.channelId || message.groupId;
-        }
+        const { channelId, isPrivate: isPrivateChat } = this.resolveChannelIdFromMessage(message)
 
         if (!channelId) {
           console.error('无法确定消息的频道ID', {
@@ -5765,20 +5999,16 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // }
 
         
-        const isPrivateChat = isPrivateChatMessage(message);
-        if (isPrivateChat) {
-          // 私聊：使用发送者或接收者的 globalMetaId
-          channelId = message.toGlobalMetaId === this.selfMetaId ? message.fromGlobalMetaId : message.toGlobalMetaId;
-        } else {
-          // 群聊：检查是否是子群聊消息
-          // 如果 channelId 不为空且不是空字符串，则是子群聊消息
-          const hasSubChannel = message.channelId && message.channelId.trim() !== '';
-          channelId = hasSubChannel ? message.channelId : message.groupId;
-          
+        const resolved = this.resolveChannelIdFromMessage(message)
+        channelId = resolved.channelId
+        const isPrivateChat = resolved.isPrivate
+        const isSubGroupMessage = resolved.isSubGroup
+
+        if (!isPrivateChat) {
           console.log('📩 群聊消息分析:', {
             channelId: message.channelId,
             groupId: message.groupId,
-            hasSubChannel,
+            hasSubChannel: isSubGroupMessage,
             targetChannelId: channelId
           });
         }
@@ -5796,7 +6026,6 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         // 检查是否是子群聊消息
-        const isSubGroupMessage = !isPrivateChat && message.channelId && message.channelId.trim() !== '';
         console.log(`📩 消息目标频道: ${channelId} ${isSubGroupMessage ? '(子群聊)' : '(主群聊/私聊)'}`)
 
         // 如果是子群聊消息，确保子群聊频道存在
@@ -5893,16 +6122,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     async updateMessage(message: UnifiedChatMessage): Promise<void> {
       try {
         // 确定频道ID - 支持子群聊
-        let channelId: string | undefined;
-        
-        const isPrivateChat = isPrivateChatMessage(message);
-        if (isPrivateChat) {
-          // 私聊：使用发送者或接收者的 globalMetaId
-          channelId = message.toGlobalMetaId === this.selfMetaId ? message.fromGlobalMetaId : message.toGlobalMetaId;
-        } else {
-          // 群聊：优先使用 channelId（子群聊），其次使用 groupId（主群聊）
-          channelId = message.channelId || message.groupId;
-        }
+        const { channelId, isPrivate: isPrivateChat } = this.resolveChannelIdFromMessage(message)
         
         if (!channelId) {
           console.error('无法确定消息的频道ID', {

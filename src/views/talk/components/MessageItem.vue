@@ -64,18 +64,21 @@
 
       <!-- 消息主体 -->
       <div class="flex" :class="[isMyMessage ? 'flex-row-reverse' : '']">
-        <UserAvatar
-          :image="props.message.userInfo?.avatar"
-          :name="
-            props.message.userInfo?.name
-              ? props.message.userInfo?.name
-              : props.message.userInfo?.metaid.slice(0, 6)
-          "
-          :meta-id="props.message.userInfo?.metaid"
-          :meta-name="''"
-          @click="toPrivateChat(props.message)"
-          class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
-        />
+        <GroupUserInfoPopover :message="props.message" :group-id="groupIdForActions">
+          <template #reference>
+            <UserAvatar
+              :image="props.message.userInfo?.avatar"
+              :name="
+                props.message.userInfo?.name
+                  ? props.message.userInfo?.name
+                  : props.message.userInfo?.metaid.slice(0, 6)
+              "
+              :meta-id="props.message.userInfo?.metaid"
+              :meta-name="''"
+              class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
+            />
+          </template>
+        </GroupUserInfoPopover>
         <div
           class="grow"
           :class="[isMyMessage ? 'mr-2 lg:mr-4 pl-8 lg:pl-12' : 'ml-2 lg:ml-4 pr-8 lg:pr-12']"
@@ -551,7 +554,6 @@ import { NodeName ,ChatChain} from '@/enum'
 import { marked } from 'marked'
 import { containsString } from '@/utils/util'
 import { ElMessage } from 'element-plus'
-import type { ChatMessageItem } from '@/@types/common'
 import { isMobile, useRootStore } from '@/stores/root'
 import { useRouter } from 'vue-router'
 import ChatImage from '@/components/ChatImage/ChatImage.vue'
@@ -566,6 +568,7 @@ import { DB } from '@/utils/db'
 import TalkImagePreview from './ImagePreview.vue'
 import ProtocolCard from '@/components/ProtocolCard/index.vue'
 import CardMsgCard from '@/components/CardMsgCard/index.vue'
+import GroupUserInfoPopover from './GroupUserInfoPopover.vue'
 
 const i18n = useI18n()
 
@@ -696,6 +699,14 @@ const mentionedUsers = ref<Map<string, MentionedUser>>(new Map())
 
 const isText = computed(() => containsString(props.message.protocol, NodeName.SimpleGroupChat))
 const isMarkdown = computed(() => props.message.contentType === 'text/markdown')
+const groupIdForActions = computed(() => {
+  const activeChannel = simpleTalk.activeChannel
+  if (!activeChannel) return ''
+  if (activeChannel.type === 'sub-group' && activeChannel.parentGroupId) {
+    return activeChannel.parentGroupId
+  }
+  return activeChannel.id || ''
+})
 // console.log("props.message",props.message)
 // 触摸状态管理
 const touchStartTime = ref(0)
@@ -781,59 +792,6 @@ function handlerScrollIndex(index:number){
 }
 
 
-async function toPrivateChat(message:ChatMessageItem){
-  // if(message.userInfo.metaid == userStore.last.metaid){
-  //    return
-  // }
-  if(!userStore.last?.chatpubkey){
-     return ElMessage.error(`${i18n.t('self_private_chat_unsupport')}`)
-  }
-
-//   getUserInfoByAddress(message.userInfo.address).then((res)=>{
-//     if(res.chatpubkey){
-//        router.push({
-//   name:'talkAtMe',
-//   params:{
-//     channelId:message.userInfo.metaid,
-//     // metaid:message.userInfo.metaid
-//   }
-//  })
-//     }else{
-//       return ElMessage.error(`${i18n.t('user_private_chat_unsupport')}`)
-//     }
-//   })
-
-// 优先使用 globalMetaId，如果不可用则通过 API 解析
-let targetGlobalMetaId = message.globalMetaId || message.userInfo?.globalMetaId
-
-if (!targetGlobalMetaId) {
-  try {
-    const address = message.userInfo?.address || message.address
-    const metaId = message.userInfo?.metaid || message.metaId
-    if (address) {
-      const info = await getUserInfoByAddress(address)
-      targetGlobalMetaId = info?.globalMetaId
-    } else if (metaId) {
-      const info = await getUserInfoByMetaId(metaId)
-      targetGlobalMetaId = info?.globalMetaId
-    }
-  } catch (e) {
-    console.warn('获取 globalMetaId 失败:', e)
-  }
-}
-
-if (!targetGlobalMetaId) return
-router.push({
-  name:'talkAtMe',
-  params:{
-    channelId: targetGlobalMetaId,
-  }
- })
- simpleTalk.setActiveChannel(targetGlobalMetaId)
-
-
-
-}
 // 在组件挂载和卸载时处理事件监听器和定时器清理
 onMounted(() => {
   // 初始化被提及用户信息

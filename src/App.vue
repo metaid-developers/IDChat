@@ -118,6 +118,18 @@ const networkStore = useNetworkStore()
 const connectionStore = useConnectionStore()
 const credentialsStore = useCredentialsStore()
 
+watch(
+  () => [userStore.isAuthorized, userStore.last?.globalMetaId],
+  ([isAuthorized, globalMetaId]) => {
+    if (isAuthorized && globalMetaId) {
+      wsStore.init()
+    } else {
+      wsStore.disconnect()
+    }
+  },
+  { immediate: true }
+)
+
 // const currentMetaletAddress=computed(async()=>{
 //   return window.metaidwallet && window.metaidwallet.getAddress().then((res)=>{
 //     return res

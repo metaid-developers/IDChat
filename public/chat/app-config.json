@@ -10,7 +10,8 @@
   },
   "api": {
     "mvcBaseApi": "https://api.mvcscan.com/browser",
-    "metaSoBaseURL": "https://www.show.now",
+    "manApi": "https://man.metaid.io",
+    "metaSoBaseURL": "https://api.idchat.io",
     "metaFSBaseURL": "https://file.metaid.io",
     "paths": {
       "fileApi": "/metafile-indexer/api/v1/files",
