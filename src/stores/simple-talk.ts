@@ -2000,12 +2000,14 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         
         if (!currentUserMetaId) {
           if (import.meta.env.DEV) console.warn('⚠️ 用户未登录，无法初始化聊天系统')
+          this.isInitializing = false
           return
         }
 
         // 检查是否需要重新初始化（用户切换）
         const needReinit = !this.isInitialized || this.currentUserMetaId !== currentUserMetaId
         if (!needReinit) {
+          this.isInitializing = false
           return
         }
 
@@ -2608,7 +2610,13 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         // 使用统一的 latest-chat-info-list 接口获取所有聊天数据
         let allChannelsData: any[] = []
         try {
-          allChannelsData = await this.fetchLatestChatInfo()
+          // 15 秒超时，避免 API 无响应时永久卡住
+          allChannelsData = await Promise.race([
+            this.fetchLatestChatInfo(),
+            new Promise<any[]>((_, reject) =>
+              setTimeout(() => reject(new Error('获取聊天列表超时（15s）')), 15000)
+            ),
+          ])
           fetchedItems = allChannelsData.length
           console.log(`✅ 获取到 ${allChannelsData.length} 条聊天数据`)
         } catch (e) {

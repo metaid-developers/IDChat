@@ -44,7 +44,7 @@ import { useLayoutStore } from '@/stores/layout'
 import DirectContactSearch from './Search.vue'
 import DirectContactItem from './Item.vue'
 import SearchModal from './SearchModal.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useCredentialsStore } from '@/stores/credentials'
@@ -84,6 +84,16 @@ onMounted(async () => {
     needModifyPubkey.value = true
   }
 })
+
+// 监听登录状态：用户连接钱包登录后重新初始化聊天列表
+watch(
+  () => userStore.isAuthorized,
+  (authorized) => {
+    if (authorized && !simpleTalkStore.isInitialized) {
+      simpleTalkStore.ensureInitialized()
+    }
+  }
+)
 
 // const test=computed(()=>{
 // 搜索弹窗状态
