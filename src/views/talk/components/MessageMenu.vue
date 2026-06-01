@@ -25,14 +25,13 @@
 </template>
 
 <script lang="ts" setup>
-import { Translate } from '@/api/core'
 import { EnvMode, NodeName, ChatChain } from '@/enum'
 import { useTalkStore } from '@/stores/talk'
 import copy from 'copy-to-clipboard'
-import { decryptedMessage } from '@/utils/talk'
+import { decryptedMessage } from '@/utils/message-lite'
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { containsString, fetchTranlateResult } from '@/utils/util'
+import { containsString } from '@/utils/light'
 import { ShareChatMessageData } from '@/@types/common'
 import { isMobile } from '@/stores/root'
 import { ElMessage } from 'element-plus'
@@ -111,6 +110,7 @@ const actions = computed(() => {
               to: 'en' as const,
             }
 
+            const { fetchTranlateResult } = await import('@/utils/util')
             const translateRes = await fetchTranlateResult(params)
 
             // const translateRes = await Translate(params)

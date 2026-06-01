@@ -43,10 +43,10 @@
 
 <script setup lang="ts">
 import { useImagePreview } from '@/stores/imagePreview'
-import { decryptedMessage } from '@/utils/talk'
+import { decryptedMessage } from '@/utils/message-lite'
 import { NodeName } from '@/enum'
 import { UserInfo as newUserInfo } from '@/api/man'
-import { containsString } from '@/utils/util'
+import { containsString } from '@/utils/light'
 interface Props {
   quote: {
     avatarImage: string

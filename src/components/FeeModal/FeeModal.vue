@@ -371,6 +371,7 @@ watch(
   () => props.modelValue,
   (newValue) => {
     if (newValue) {
+      chainStore.ensureFeeRatesFresh()
       // Initialize with current store state
       selectedChain.value = chainStore.state.currentChain
       if (selectedChain.value === 'btc') {

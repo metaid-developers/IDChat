@@ -5,7 +5,6 @@ import { useConnectionStore } from '@/stores/connection'
 import { SIGNING_MESSAGE } from '@/data/constants'
 // import { login } from '@/queries/orders-api'
 import {useUserStore} from '@/stores/user'
-import { update } from 'lodash'
 
 
 export const useCredentialsStore =defineStore('credentials', {

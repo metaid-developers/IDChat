@@ -61,7 +61,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import type { SimpleChannel } from '@/@types/simple-chat.d'
 import {MessageType} from '@/@types/simple-chat.d'
 import { useI18n } from 'vue-i18n'
-import { decrypt, ecdhDecrypt } from '@/utils/crypto'
+import { decrypt } from '@/utils/crypto-lite'
 import { useRouter } from 'vue-router'
 import { CircleClose } from '@element-plus/icons-vue'
 

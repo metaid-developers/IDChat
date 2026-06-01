@@ -24,7 +24,6 @@ import { ref, watch } from 'vue'
 import DefaultAvatar from '@/assets/images/default_avatar.png'
 import DefaultMetafile from '@/assets/images/release_add_img.svg?url'
 // import 'lazysizes'
-import { DB } from '@/utils/db'
 
 interface Props {
   src: string
@@ -69,6 +68,7 @@ async function getImageUrl() {
   const src = props.src
 
   try {
+    const { DB } = await import('@/utils/db')
     const res = await DB.getMetaFile(
       src,
       props.width,

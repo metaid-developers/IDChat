@@ -144,7 +144,12 @@
     </div>
   </div>
 
-  <Publish v-model="isShowPublish" :repostTxId="repostBuzzTxId" ref="PublishRef" />
+  <Publish
+    v-if="isShowPublish"
+    v-model="isShowPublish"
+    :repostTxId="repostBuzzTxId"
+    ref="PublishRef"
+  />
 </template>
 
 <script setup lang="ts">
@@ -157,6 +162,7 @@ import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   ref,
   watch,
@@ -168,17 +174,16 @@ import MessageItem from './MessageItem.vue'
 import MessageItemForSession from './MessageItemForSession.vue'
 import BroadcastChatHeader from '@/components/BroadcastChatHeader.vue'
 import BroadcastChatHeaderBack from '@/components/BroadcastChatHeaderBack.vue'
-import { openLoading, sleep } from '@/utils/util'
+import { sleep } from '@/utils/light'
 import { useUserStore } from '@/stores/user'
-import Publish from '@/views/buzz/components/Publish.vue'
-import { IsEncrypt, NodeName, ChatChain } from '@/enum'
-import { decrypt } from '@/utils/crypto'
+import { NodeName } from '@/enum'
 import { ShareChatMessageData } from '@/@types/common'
-import { useBulidTx } from '@/hooks/use-build-tx'
 import { isMobile } from '@/stores/root'
 import { Bottom } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import { VITE_ADDRESS_HOST } from '@/config/app-config'
+
+const Publish = defineAsyncComponent(() => import('@/views/buzz/components/Publish.vue'))
 
 const isLoadingTop = ref(false) // 控制顶部加载器
 const isNoMoreTop = ref(false) // 控制顶部没有更多数据
@@ -195,7 +200,6 @@ const layout = useLayoutStore()
 const isShowPublish = ref(false)
 const repostBuzzTxId = ref('')
 const PublishRef = ref()
-const buildTx = useBulidTx()
 const messagesScroll = ref<HTMLElement>()
 const showScrollToBottom = ref(false)
 
@@ -964,7 +968,12 @@ function scrollToTimeStamp(timestamp: number) {
 // 注：子频道选择功能已简化，现在子群聊作为独立频道显示在频道列表中
 
 async function onToBuzz(data: ShareChatMessageData) {
+  const [{ openLoading }, { useBulidTx }] = await Promise.all([
+    import('@/utils/util'),
+    import('@/hooks/use-build-tx'),
+  ])
   const loading = openLoading()
+  const buildTx = useBulidTx()
 
   console.log('data12313', data)
 

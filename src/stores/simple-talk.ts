@@ -6,11 +6,8 @@ import { isPrivateChatMessage, MessageType } from '@/@types/simple-chat.d'
 import { useUserStore } from './user'
 import { useEcdhsStore } from './ecdh'
 
-import { getEcdhPublickey } from '@/wallet-adapters/metalet'
-import { decrypt } from '@/utils/crypto'
 import { useChainStore } from './chain'
-import { tryCreateNode } from '@/utils/talk'
-import { getTimestampInSeconds, sleep, tx } from '@/utils/util'
+import { getTimestampInSeconds, sleep } from '@/utils/light'
 import { NodeName } from '@/enum'
 import { getMyBlockChatList} from "@/api/chat-notify";
 import { SubChannel } from '@/@types/talk'
@@ -37,6 +34,16 @@ const GROUP_PERMISSION_FETCH_DELAY_MS = Number(
   import.meta.env.VITE_CHAT_GROUP_PERMISSION_FETCH_DELAY_MS || '1200'
 )
 const DEFAULT_SERVER_FETCH_SIZE = Number(import.meta.env.VITE_CHAT_SERVER_FETCH_SIZE || '30')
+
+const tryCreateNode = async (node: any, mockId?: string) => {
+  const talkUtils = await import('@/utils/talk')
+  return talkUtils.tryCreateNode(node, mockId)
+}
+
+const getWalletEcdhPublickey = async (pubkey?: string) => {
+  const walletAdapter = await import('@/wallet-adapters/metalet')
+  return walletAdapter.getEcdhPublickey(pubkey)
+}
 
 let initInFlight: Promise<void> | null = null
 const lastReadRecordCache = new Map<string, { index: number; timestamp: number | null }>()
@@ -5136,7 +5143,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
     /**
      * 解密消息内容
      */
-    decryptMessageContent(content: string, channelId: string, encryption?: string): string {
+    async decryptMessageContent(content: string, channelId: string, encryption?: string): Promise<string> {
       if (!content) return ''
       if (encryption === '0' || !encryption) {
         return content
@@ -5145,6 +5152,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       try {
         // 使用频道ID的前16个字符作为解密密钥
         const decryptKey = channelId.substring(0, 16)
+        const { decrypt } = await import('@/utils/crypto-lite')
         return decrypt(content, decryptKey)
       } catch (error) {
         console.error('❌ 消息解密失败:', error)
@@ -5415,7 +5423,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const ecdhsStore = useEcdhsStore()
         let ecdh = ecdhsStore.getEcdh(userInfo.chatPublicKey)
         if (!ecdh) {
-          ecdh = await getEcdhPublickey(userInfo.chatPublicKey)
+          ecdh = await getWalletEcdhPublickey(userInfo.chatPublicKey)
           if (ecdh) {
             ecdhsStore.insert(ecdh, ecdh.externalPubKey)
           }

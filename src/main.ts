@@ -20,7 +20,6 @@ import 'virtual:svg-icons-register'
 import Image from '@/components/Image/Image.vue'
 import UserName from '@/components/UserName/UserName.vue'
 import Icon from '@/components/Icon/Icon.vue'
-import GlobalDialog from '@/components/GlobalDialog/index.vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query' // TanStack Query
 import { createHead } from '@vueuse/head'

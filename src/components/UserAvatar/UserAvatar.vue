@@ -22,25 +22,16 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, render, h, ref, nextTick, onMounted, watch } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import DefaultAvatar from '@/assets/images/default_user.png'
-import UserCard from '../UserCard/UserCard.vue'
-import { v1 } from 'uuid'
-import i18n from '@/utils/i18n'
-import { createPopper, VariationPlacement } from '@popperjs/core'
 
 const router = useRouter()
 // const userCardWarpId = `user-card-warp-${v1()}`
 const prefix = 'avatarsContainer'
-const uuid = ref(v1())
+const uuid = ref(`${Date.now()}-${Math.random().toString(36).slice(2)}`)
 const avatarsContainer = ref(`${prefix}-${uuid.value}`)
 const AvatarRef = ref()
-let popper: any
-const popperLeftRange = [0, 0]
-const buttonLeftRange = [0, 0]
-const buttonTopRange = [0, 0]
-const popperTopRange = [0, 0]
 
 interface Props {
   name?: string

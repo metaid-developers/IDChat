@@ -22,29 +22,18 @@
 
 <script lang="ts" setup>
 import { useRoute } from 'vue-router'
-import { nextTick, onBeforeUnmount, onMounted, onUnmounted, watch, computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
-import { useTalkStore } from '@/stores/talk'
-import { GroupChannelType } from '@/enum'
-import { verifyPassword } from '@/utils/talk'
-import { useLayoutStore } from '@/stores/layout'
-import { GetGenesisNFTs, GetNFT, GetFT, GetFTs } from '@/api/aggregation'
 import { useUserStore } from '@/stores/user'
-import { sleep } from '@/utils/util'
-
-import ChannelSettings from './ChannelSettings.vue'
-import ChannelWelcome from './ChannelWelcome.vue'
-import ChannelContent from './ChannelContent.vue'
-import { GetOwnerStakeInfo } from '@/api/dao'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
-import welcome from '@/assets/images/welcome.png'
 import { VITE_AppDescription, VITE_AppLogo } from '@/config/app-config'
+
+const ChannelContent = defineAsyncComponent(() => import('./ChannelContent.vue'))
 // const talk = useTalkStore()
-const layout = useLayoutStore()
 const user = useUserStore()
 const route = useRoute()
 const simpleTalk = useSimpleTalkStore()
-const { communityId, channelId } = route.params
+const { channelId } = route.params
 
 const isWelcomePage = computed(() => {
   if (channelId == 'welcome') {

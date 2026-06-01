@@ -29,19 +29,19 @@
       </template>
     </PullDownVue>
   </div>
-  <DragonBall />
-  <SearchModal />
-  <ConnectWalletModalVue />
-  <WalletMissingModal />
+  <DragonBall v-if="shouldMountDragonBall" />
+  <SearchModal v-if="shouldMountSearchModal" />
+  <ConnectWalletModalVue v-if="shouldMountConnectWalletModal" />
+  <WalletMissingModal v-if="shouldMountWalletMissingModal" />
   <!-- <UserCardFloater /> -->
   <!-- <PWA /> -->
 
   <!-- 图片预览 -->
-  <ImagePreviewVue />
+  <ImagePreviewVue v-if="shouldMountImagePreview" />
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, nextTick, watch, provide, onBeforeUnmount, onUnmounted, computed, defineAsyncComponent } from 'vue'
+import { reactive, ref, onMounted, watch, onBeforeUnmount, onUnmounted, computed, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useRootStore } from '@/stores/root'
@@ -75,24 +75,25 @@ const ImagePreviewVue = defineAsyncComponent(() => import('@/components/ImagePre
 import { type Network, useNetworkStore } from '@/stores/network'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
-import {completeReload} from '@/utils/util'
+import { completeReload, sleep } from '@/utils/light'
 import { useI18n } from 'vue-i18n'
 const WalletMissingModal = defineAsyncComponent(() => import('./components/ConnectWalletModal/WalletMissingModal.vue'))
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
-import { sleep } from '@/utils/util'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import {
-  getChannels,
   GetUserEcdhPubkeyForPrivateChat
 } from '@/api/talk'
-import { openLoading } from '@/utils/util'
 import { ElMessage } from 'element-plus'
 import { useLayoutStore } from './stores/layout'
-import { settings } from 'cluster'
 import { useSimpleTalkStore } from './stores/simple-talk'
 import { useWsStore } from './stores/ws_new'
-const { closeConnectionModal } =
-  useConnectionModal()
+import { useImagePreview } from '@/stores/imagePreview'
+
+const {
+  closeConnectionModal,
+  openConnectionModal,
+  isConnectionModalOpen,
+  isWalletMissingModalOpen,
+} = useConnectionModal()
 const MAX_RETRY_TIME = 10000 // 最大等待时间（毫秒）
 const RETRY_INTERVAL = 100  // 重试间隔（毫秒）
 const rootStore = useRootStore()
@@ -106,6 +107,23 @@ const i18n = useI18n()
 const accountInterval=ref()
 const layout=useLayoutStore()
 const wsStore=useWsStore()
+const imagePreview = useImagePreview()
+
+const shouldMountDragonBall = computed(() => userStore.isAuthorized)
+const shouldMountSearchModal = computed(() => layout.isShowSearchModal)
+const shouldMountConnectWalletModal = computed(
+  () => isConnectionModalOpen.value || rootStore.isShowLogin
+)
+const shouldMountWalletMissingModal = computed(() => isWalletMissingModalOpen.value)
+const shouldMountImagePreview = computed(() => imagePreview.visibale)
+
+const onSearchKeyDown = (event: KeyboardEvent) => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    layout.isShowSearchModal = true
+  }
+}
+
 const routeKey = (route: any) => {
   // 对于 talk 路由，统一使用 'talk' 作为 key，避免重新创建组件
   if (route.path.startsWith('/talk')) {
@@ -129,6 +147,24 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => rootStore.isShowLogin,
+  isShowLogin => {
+    if (isShowLogin && !isConnectionModalOpen.value) {
+      openConnectionModal()
+    }
+  }
+)
+
+watch(
+  isConnectionModalOpen,
+  isOpen => {
+    if (!isOpen && rootStore.isShowLogin) {
+      rootStore.$patch({ isShowLogin: false })
+    }
+  }
 )
 
 // const currentMetaletAddress=computed(async()=>{
@@ -399,6 +435,7 @@ async function connectMetalet() {
 
 
 onMounted(async () => {
+  window.addEventListener('keydown', onSearchKeyDown)
 
   // 后台验证 globalMetaId（不阻塞 UI），Pinia 已从 localStorage 恢复了缓存值
   if (userStore.last?.address) {
@@ -584,6 +621,8 @@ watch(
 )
 
 onBeforeUnmount(async () => {
+  window.removeEventListener('keydown', onSearchKeyDown)
+
   // remove event listener
   try {
     ;(window.metaidwallet as any)?.removeListener(

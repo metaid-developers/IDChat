@@ -94,11 +94,8 @@ import { ChatChain } from '@/enum'
 import { useChainStore } from '@/stores/chain'
 import { useUserStore } from '@/stores/user'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
-import { createPinWithBtc } from '@/utils/pin'
-import { createPin } from '@/utils/userInfo'
 import { VITE_ADDRESS_HOST, VITE_SHOW_NOW_HOST } from '@/config/app-config'
 import { getUserInfoByAddress, getUserInfoByMetaId } from '@/api/man'
-import { copy } from '@/utils/util'
 import type { UnifiedChatMessage } from '@/@types/simple-chat'
 
 interface Props {
@@ -164,6 +161,7 @@ const canManageMember = computed(() => {
 
 const copyMetaId = async () => {
   if (!metaId.value) return
+  const { copy } = await import('@/utils/util')
   await copy(metaId.value)
 }
 
@@ -224,6 +222,7 @@ const createProtocolPin = async (protocolPath: string, body: Record<string, unkn
   const feeRate = chainData[selectedFeeType]
 
   if (currentChain === ChatChain.btc) {
+    const { createPinWithBtc } = await import('@/utils/pin')
     await createPinWithBtc({
       inscribeDataArray: [metaidData],
       options: {
@@ -235,6 +234,7 @@ const createProtocolPin = async (protocolPath: string, body: Record<string, unkn
     return
   }
 
+  const { createPin } = await import('@/utils/userInfo')
   await createPin(metaidData, {
     network: 'mainnet',
     signMessage: 'update Group Info',

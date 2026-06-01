@@ -321,10 +321,9 @@ import { computed, ref, toRaw, Ref, onMounted, onBeforeUnmount, nextTick, watch 
 import { Popover, PopoverButton, PopoverPanel, TransitionRoot } from '@headlessui/vue'
 import { ElMessage, ElPopover, ElMessageBox } from 'element-plus'
 
-import { sendMessage, validateTextMessage, isImage, isFileTooLarge } from '@/utils/talk'
+import { validateTextMessage, isImage, isFileTooLarge } from '@/utils/message-lite'
 import { useUserStore } from '@/stores/user'
 import { useConnectionStore } from '@/stores/connection'
-import { FileToAttachmentItem, compressImage, atobToHex } from '@/utils/util'
 import { useCredentialsStore } from '@/stores/credentials'
 import {
   encrypt,
@@ -332,7 +331,7 @@ import {
   ecdhDecrypt,
   ecdhEncryptForPrivateImg,
   decrypt,
-} from '@/utils/crypto'
+} from '@/utils/crypto-lite'
 import { useTalkStore } from '@/stores/talk'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { ChannelType, MessageType, ChatChain } from '@/enum'
@@ -346,9 +345,7 @@ import Decimal from 'decimal.js-light'
 import { router } from '@/router'
 import { useChainStore } from '@/stores/chain'
 import { useI18n } from 'vue-i18n'
-import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 import { useEcdhsStore } from '@/stores/ecdh'
-import { needWebRefresh } from '@/wallet-adapters/metalet'
 import { useRootStore } from '@/stores/root'
 import { searchChannelMembers, getChannelMembers } from '@/api/talk'
 
@@ -357,6 +354,15 @@ interface Props {
 }
 const props = withDefaults(defineProps<Props>(), {})
 const emit = defineEmits(['update:quote', 'toQuote', 'scrollToBottom'])
+
+const setNeedWebRefresh = (isNeed: boolean) => {
+  import('@/wallet-adapters/metalet').then(({ needWebRefresh }) => needWebRefresh({ isNeed }))
+}
+
+const loadEcdhPublickey = async (publicKey: string) => {
+  const { getEcdhPublickey } = await import('@/wallet-adapters/metalet')
+  return getEcdhPublickey(publicKey)
+}
 
 const doNothing = () => {}
 const i18n = useI18n()
@@ -487,7 +493,7 @@ const openImageUploader = (close: Function) => {
   // 延迟触发文件选择，确保弹窗完全关闭
   setTimeout(() => {
     if (rootStore.isWebView) {
-      needWebRefresh({ isNeed: false })
+      setNeedWebRefresh(false)
     }
 
     // 重置 input 的值，确保可以重复选择同一文件
@@ -562,7 +568,7 @@ const handleImageChange = (e: Event) => {
 
   rootStore.checkWebViewBridge()
   if (rootStore.isWebView) {
-    needWebRefresh({ isNeed: false })
+    setNeedWebRefresh(false)
   }
 
   const target = e.target as HTMLInputElement
@@ -605,6 +611,8 @@ const trySendImage = async () => {
   // 发送图片成功后滚动到底部
   emit('scrollToBottom')
   let image = imageFile.value as NonNullable<typeof imageFile.value>
+  const { FileToAttachmentItem, compressImage } = await import('@/utils/util')
+
   // 压缩图片
   if (useCompression.value) {
     const compressedFile = await compressImage(imageFile.value!)
@@ -622,7 +630,7 @@ const trySendImage = async () => {
     }
     let ecdh = ecdhsStore.getEcdh(simpleTalk.activeChannel?.publicKeyStr)
     if (!ecdh) {
-      ecdh = await getEcdhPublickey(simpleTalk.activeChannel.publicKeyStr)
+      ecdh = await loadEcdhPublickey(simpleTalk.activeChannel.publicKeyStr)
       ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
     }
 
@@ -683,6 +691,7 @@ const trySendImage = async () => {
   }
 
   emit('update:quote', undefined)
+  const { sendMessage } = await import('@/utils/talk')
   await sendMessage(messageDto)
 }
 /** ------ */
@@ -1125,7 +1134,7 @@ const trySendText = async (_e: any) => {
     let ecdh = ecdhsStore.getEcdh(simpleTalk.activeChannel?.publicKeyStr)
 
     if (!ecdh) {
-      ecdh = await getEcdhPublickey(simpleTalk.activeChannel.publicKeyStr)
+      ecdh = await loadEcdhPublickey(simpleTalk.activeChannel.publicKeyStr)
       if (ecdh) {
         ecdhsStore.insert(ecdh, ecdh?.externalPubKey)
       }

@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
-import { useJobsStore } from './jobs'
 import { useUserStore } from './user'
 import { SocketIOClient } from '@/lib/socket'
-import { disconnect } from 'process'
 import { useSimpleTalkStore } from './simple-talk'
 import { useRootStore, isIOS, isAndroid } from './root'
 import { VITE_CHAT_WS_PATH, VITE_CHAT_WS } from '@/config/app-config'
@@ -18,6 +16,11 @@ interface SocketConfig {
   path: string
   metaid: string // 参数名改为 metaid（小写），值使用 globalMetaId
   type: 'pc' | 'app'
+}
+
+async function getJobsStore() {
+  const { useJobsStore } = await import('./jobs')
+  return useJobsStore()
 }
 
 export const useWsStore = defineStore('ws', {
@@ -149,7 +152,6 @@ export const useWsStore = defineStore('ws', {
     // },
     //MessageEvent
     async _handleReceivedMessage(data: MessageData) {
-      const jobsStore = useJobsStore()
       const simpleTalkStore = useSimpleTalkStore()
       let messageWrapper: any
       try {
@@ -168,19 +170,19 @@ export const useWsStore = defineStore('ws', {
           console.log('收到新消息', messageWrapper.D)
           await simpleTalkStore.receiveMessage(messageWrapper.D)
 
-          jobsStore.playNotice()
+          ;(await getJobsStore()).playNotice()
           return
         case 'WS_SERVER_NOTIFY_PRIVATE_CHAT':
           // await talk.handleNewSessionMessage(messageWrapper.D)
           console.log('收到新消息', messageWrapper.D)
           await simpleTalkStore.receiveMessage(messageWrapper.D)
-          jobsStore.playNotice()
+          ;(await getJobsStore()).playNotice()
           return
         case 'WS_SERVER_NOTIFY_GROUP_ROLE':
           await simpleTalkStore.receiveUserRoleMessage(messageWrapper.D)
           return
         case 'WS_SERVER_NOTIFY_TX_TASK':
-          await jobsStore.handleWsMessage(messageWrapper.D)
+          await (await getJobsStore()).handleWsMessage(messageWrapper.D)
           return
 
         default:

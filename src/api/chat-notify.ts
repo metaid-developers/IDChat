@@ -2,14 +2,11 @@ import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth,SubChannel,MemberListRes } from '@/@types/talk'
 
 import type { GroupChannel, GroupChannelListResponse,GroupUserRoleInfo } from '@/@types/simple-chat.d'
-import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId } from "@/api/man";
 import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
 import {  NodeName,MemberRule } from '@/enum'
 import type { PriviteChatMessageItem } from '@/@types/common'
-import { useEcdhsStore } from '@/stores/ecdh'
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { useSimpleTalkStore } from '@/stores/simple-talk';
 import { useCredentialsStore } from '@/stores/credentials';
 import { getRuntimeConfig } from '@/config/runtime-config'

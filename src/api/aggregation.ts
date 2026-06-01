@@ -7,11 +7,9 @@ import {
   NFTApiGetNFTDetailRes,
 } from '@/@types/api'
 import { Chains, CollectionOrderType, CollectionSortType, NFTSellType } from '@/enum'
-import { PostTag } from '@/stores/buzz/tag'
+import type { PostTag } from '@/stores/buzz/tag'
 import HttpRequest from '@/utils/request'
-import { error } from 'console'
-import { ethers } from 'ethers'
-import { changeSymbol } from '@/utils/util'
+import { changeSymbol } from '@/utils/light'
 import { mvcApi } from '@/api'
 import Decimal from 'decimal.js-light'
 import { getRuntimeConfig } from '@/config/runtime-config'

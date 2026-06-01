@@ -1,5 +1,4 @@
 import { Channel } from '@/@types/talk'
-import { checkUserLogin } from '@/utils/util'
 import { defineStore } from 'pinia'
 
 export const useLayoutStore = defineStore('layout', {

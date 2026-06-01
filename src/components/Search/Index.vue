@@ -111,9 +111,8 @@
 
 <script lang="ts" setup>
 import { TransitionRoot, TransitionChild, Dialog, DialogPanel } from '@headlessui/vue'
-import { ref, computed, onBeforeUnmount, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { useVirtualizer } from '@tanstack/vue-virtual'
 
 import { useLayoutStore } from '@/stores/layout'
 import { performSearch } from '@/queries/search'
@@ -121,22 +120,6 @@ import { performSearch } from '@/queries/search'
 import SearchImg from '@/assets/images/house_searching.svg?url'
 import ErrorImg from '@/assets/images/server_down.svg?url'
 import EmptyImg from '@/assets/images/empty.svg?url'
-
-// 往window上添加按键监控事件
-const onSearchKeyDown = (e: KeyboardEvent) => {
-  // 如果是meta+k或者ctrl+k，打开搜索框
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    e.preventDefault()
-    const layout = useLayoutStore()
-    layout.isShowSearchModal = true
-  }
-}
-window.addEventListener('keydown', onSearchKeyDown)
-
-// 卸载组件时，移除按键监控事件
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onSearchKeyDown)
-})
 
 const layout = useLayoutStore()
 

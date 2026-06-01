@@ -1,10 +1,14 @@
 import { GetMetaNameResolver } from '@/api/aggregation'
 import { getOneNft } from '@/api/metasv-proxy'
-import sha256 from 'crypto-js/sha256'
 
 const metaNameRegex = /[\s\S]+[.][a-zA-Z0-9_-]+/
 
 const publicChannelRegex=/public/
+
+const sha256Hex = async (value: string) => {
+  const { default: sha256 } = await import('crypto-js/sha256')
+  return sha256(value).toString()
+}
 
 export function isMetaName(name: string) {
   return metaNameRegex.test(name)
@@ -76,7 +80,7 @@ export async function resolveMetaName(metaName: string) {
   let communityId
   
   if (inWhiteList || !isMetaIdSolution) {
-    communityId = sha256(metaNameWithoutSuffix).toString()
+    communityId = await sha256Hex(metaNameWithoutSuffix)
   } else {
 
     if(metaNameWithoutSuffix == 'mvc'){
@@ -85,24 +89,24 @@ export async function resolveMetaName(metaName: string) {
       
     }else{
 
-    communityId = await GetMetaNameResolver({ name: metaNameWithoutSuffix })
-    .then((res: any) => {
-      let communityId = res.data.communityId
+      try {
+        communityId = await GetMetaNameResolver({ name: metaNameWithoutSuffix })
+          .then(async (res: any) => {
+            let communityId = res.data.communityId
       
-      if (!communityId) {
-        console.log('metaname接口无社区id，尝试本地解析')
-        communityId = sha256(metaNameWithoutSuffix).toString()
-      }
-      return communityId
-    })
+            if (!communityId) {
+              console.log('metaname接口无社区id，尝试本地解析')
+              communityId = await sha256Hex(metaNameWithoutSuffix)
+            }
+            return communityId
+          })
 
-    .catch((err: any) => {
-      console.log('metaname接口无法解析，尝试本地解析')
-      communityId = sha256(metaNameWithoutSuffix).toString()
-      console.log('本地解析结果：', communityId)
+      } catch (err) {
+        console.log('metaname接口无法解析，尝试本地解析')
+        communityId = await sha256Hex(metaNameWithoutSuffix)
+        console.log('本地解析结果：', communityId)
       
-      return communityId
-    })
+      }
     }
 
   }

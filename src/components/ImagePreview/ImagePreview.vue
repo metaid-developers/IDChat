@@ -14,60 +14,75 @@
 <script setup lang="ts">
 import Viewer from 'viewerjs'
 import 'viewerjs/dist/viewer.min.css'
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, watch } from 'vue'
 import { isAndroid,isIOS } from '@/stores/root'
-import { checkAppHasMethod, downloadFile, urlToBase64,downloadImage } from '@/utils/util'
-import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized } from 'vue-router'
+import { urlToBase64,downloadImage } from '@/utils/util'
 import { useImagePreview } from '@/stores/imagePreview'
 
-let viewer: Viewer
-const emit = defineEmits(['update:modelValue'])
+let viewer: Viewer | undefined
 const imagePreview = useImagePreview()
+
+const destroyViewer = () => {
+  viewer?.destroy()
+  viewer = undefined
+}
+
+const openViewer = () => {
+  nextTick(() => {
+    const imagesElement = document.getElementById('images')
+    if (!imagesElement) return
+
+    destroyViewer()
+    viewer = new Viewer(imagesElement, {
+      button: false,
+      navbar: true,
+      title: false,
+      inline: true,
+      movable: true,
+      rotatable: true,
+      scalable: true,
+      zoomable: true,
+      zoomOnTouch: true,
+      zoomOnWheel: true,
+      initialViewIndex: imagePreview.index,
+      toolbar: {
+        oneToOne: true,
+        prev: true,
+        next: true,
+        rotateLeft: true,
+        rotateRight: true,
+        reset: true,
+        zoomIn: true,
+        zoomOut: true,
+        download: async function() {
+          if (!viewer?.image) return
+
+          let url: string = viewer.image.src
+          if (isAndroid || isIOS) {
+            url = await urlToBase64(url)
+          }
+
+          downloadImage(url, viewer.image.alt)
+        },
+      },
+    })
+    viewer.view()
+  })
+}
 
 watch(
   () => imagePreview.visibale,
-  async () => {
-    if (imagePreview.visibale) {
-      nextTick(() => {
-        viewer = new Viewer(document.getElementById('images')!, {
-          button: false,
-          navbar: true,
-          title: false,
-          inline: true,
-          movable: true,
-          rotatable: true,
-          scalable: true,
-          zoomable: true,
-          zoomOnTouch: true,
-          zoomOnWheel: true,
-          initialViewIndex: imagePreview.index,
-          toolbar: {
-            oneToOne: true,
-            prev: true,
-            next: true,
-            rotateLeft: true,
-            rotateRight: true,
-            reset: true,
-            zoomIn: true,
-            zoomOut: true,
-            download: async function() {
-              // @ts-ignore
-              let url: string = viewer.image.src
-              if (isAndroid || isIOS) {
-                url = await urlToBase64(url)
-                
-              }
-              
-              // @ts-ignore
-              downloadImage(url, viewer.image.alt)
-            },
-          },
-        })
-        viewer.view()
-      })
+  isVisible => {
+    if (isVisible) {
+      openViewer()
+    } else {
+      destroyViewer()
     }
-  }
+  },
+  { immediate: true }
 )
+
+onBeforeUnmount(destroyViewer)
 
 function close() {
   imagePreview.visibale = false

@@ -2,18 +2,21 @@ import HttpRequest from '@/utils/request'
 import { Channel, Community, CommunityAuth,SubChannel,MemberListRes } from '@/@types/talk'
 
 import type { GroupChannel, GroupChannelListResponse,GroupUserRoleInfo, SearchGroupsAndUsersResponse, SearchUserItem } from '@/@types/simple-chat.d'
-import { containsString, sleep } from '@/utils/util'
 import { getUserInfoByAddress,getUserInfoByMetaId, getUserInfoByGlobalMetaId } from "@/api/man";
 import axios from 'axios';
 import {ChannelMsg_Size} from '@/data/constants'
 import {  NodeName,MemberRule } from '@/enum'
 import type { PriviteChatMessageItem } from '@/@types/common'
 import { useEcdhsStore } from '@/stores/ecdh'
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
 
 export const TESTGROUPID='525b620f60330de2a6943e49d98dc12a4f56444219335c8e9278e8905cd3a094i0'
+
+const getWalletEcdhPublickey = async (pubkey?: string) => {
+  const walletAdapter = await import('@/wallet-adapters/metalet')
+  return walletAdapter.getEcdhPublickey(pubkey)
+}
 
 // 使用工厂函数创建延迟初始化的 API 客户端
 const TalkApi = createLazyApiClient(
@@ -349,7 +352,7 @@ export const getChannels = async ({
                if(!ecdhsStore.getEcdh(channel.userInfo.chatPublicKey)){
                 console.log(`🔑 获取私聊用户 ${channel.userInfo.chatPublicKey} 的 ECDH 公钥中...`)
                 try{
-                  const ecdh = await getEcdhPublickey(channel.userInfo.chatPublicKey)
+                  const ecdh = await getWalletEcdhPublickey(channel.userInfo.chatPublicKey)
                 console.log(`✅ 获取到私聊用户 ${channel.userInfo.chatPublicKey} 的 ECDH 公钥`, ecdh)
                  if(ecdh){
                       ecdhsStore.insert(ecdh,ecdh?.externalPubKey)
@@ -1038,4 +1041,3 @@ export const getGroupMetaidJoinList = async ({
   }).toString()
   return TalkApi.get(`/group-metaid-join-list?${_query}`)
 }
-

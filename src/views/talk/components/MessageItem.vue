@@ -525,6 +525,7 @@ import {
   inject,
   ref,
   Ref,
+  defineAsyncComponent,
   onMounted,
   onUnmounted,
   nextTick,
@@ -535,7 +536,7 @@ import {
   useAttrs,
 } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatTimestamp, decryptedMessage, sendMessage } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage } from '@/utils/message-lite'
 import { useUserStore } from '@/stores/user'
 import giftImage from '@/assets/images/gift.svg?url'
 import giftBtcImage from '@/assets/images/gift_btc.svg?url'
@@ -552,7 +553,7 @@ import { createLazyApiClient } from '@/utils/api-factory'
 import MessageItemQuote from './MessageItemQuote.vue'
 import { NodeName ,ChatChain} from '@/enum'
 import { marked } from 'marked'
-import { containsString } from '@/utils/util'
+import { containsString } from '@/utils/light'
 import { ElMessage } from 'element-plus'
 import { isMobile, useRootStore } from '@/stores/root'
 import { useRouter } from 'vue-router'
@@ -560,15 +561,13 @@ import ChatImage from '@/components/ChatImage/ChatImage.vue'
 import btcIcon from '@/assets/images/btc.png'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
-import {openAppBrowser} from '@/wallet-adapters/metalet'
 import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 import { VideoPlay } from '@element-plus/icons-vue'
-import { isPrivate } from 'tiny-secp256k1'
-import { DB } from '@/utils/db'
 import TalkImagePreview from './ImagePreview.vue'
-import ProtocolCard from '@/components/ProtocolCard/index.vue'
-import CardMsgCard from '@/components/CardMsgCard/index.vue'
 import GroupUserInfoPopover from './GroupUserInfoPopover.vue'
+
+const ProtocolCard = defineAsyncComponent(() => import('@/components/ProtocolCard/index.vue'))
+const CardMsgCard = defineAsyncComponent(() => import('@/components/CardMsgCard/index.vue'))
 
 const i18n = useI18n()
 
@@ -582,6 +581,27 @@ const reply: any = inject('Reply')
 const router=useRouter()
 const imagePreview = useImagePreview()
 const visiableMenu = ref(false)
+
+const getMetaFileData = async (
+  metafile: string,
+  width = 235,
+  isPrivateChat = false,
+  chatPubkeyForDecrypt = '',
+  chatPasswordForDecrypt = ''
+) => {
+  const { DB } = await import('@/utils/db')
+  return DB.getMetaFileData(
+    metafile,
+    width,
+    isPrivateChat,
+    chatPubkeyForDecrypt,
+    chatPasswordForDecrypt
+  )
+}
+
+const openWalletBrowser = (options: { url: string }) => {
+  import('@/wallet-adapters/metalet').then(({ openAppBrowser }) => openAppBrowser(options))
+}
 
 // 获取用于图片解密的 passwordKey（处理子群聊的情况）
 const chatPasswordKeyForDecrypt = computed(() => {
@@ -860,7 +880,7 @@ const decryptedImageMessage = computed(() => {
 
 const decryptedImgMessage=async (content:string,chatPubkeyForDecrypt:string): Promise<string | undefined> => {
   try {
-    const res=await  DB.getMetaFileData(content, 235,true,'',chatPubkeyForDecrypt)
+    const res = await getMetaFileData(content, 235, true, '', chatPubkeyForDecrypt)
     return URL.createObjectURL(res.data)
   } catch (error) {
     console.error('Failed to decrypt image:', error)
@@ -1044,7 +1064,7 @@ const handleMessageClick = (event: MouseEvent) => {
     event.preventDefault()
     const url = target.getAttribute('data-webview-url')
     if (url) {
-      openAppBrowser({ url })
+      openWalletBrowser({ url })
     }
     return
   }
@@ -1434,7 +1454,7 @@ const decryptedContentForProtocolCard = computed(() => {
 })
 
 // ProtocolCard 组件的引用
-const protocolCardRef = ref<InstanceType<typeof ProtocolCard> | null>(null)
+const protocolCardRef = ref<any>(null)
 
 // 是否应该使用 ProtocolCard 渲染（由 ProtocolCard 组件内部判断）
 const shouldUseProtocolCard = computed(() => {
@@ -1593,7 +1613,7 @@ const handleMetaAppLinkClick = () => {
   if (linkInfo.fullUrl) {
     // 在新窗口打开 MetaApp 链接
     if (rootstore.isWebView) {
-      openAppBrowser({url:linkInfo.fullUrl})
+      openWalletBrowser({ url: linkInfo.fullUrl })
       return
     }
     window.open(linkInfo.fullUrl, openWindowTarget())
@@ -1731,7 +1751,7 @@ const handleBuzzOrNoteLinkClick = () => {
 
   if (messageContent) {
     if (rootstore.isWebView) {
-      openAppBrowser({ url: messageContent })
+      openWalletBrowser({ url: messageContent })
       return
     }
     window.open(messageContent, openWindowTarget())

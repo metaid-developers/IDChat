@@ -1,14 +1,9 @@
-import { createRouter, createWebHistory, RouterView } from 'vue-router'
-import { getChannels, getAllChannels } from '@/api/talk'
+import { createRouter, createWebHistory } from 'vue-router'
 const NotFoundPage = () => import('@/views/404.vue')
 //
-import { ElMessage } from 'element-plus'
-import i18n from '@/utils/i18n'
 import { useRootStore } from './stores/root'
 import { useUserStore } from './stores/user'
-import { GetBandProposalList } from '@/api/strapi'
 import { useLayoutStore } from './stores/layout'
-import { KeepAlive } from 'vue'
 
 //import.meta.env.VITE_BASE_URL
 //export const routerHistory = createWebHistory()

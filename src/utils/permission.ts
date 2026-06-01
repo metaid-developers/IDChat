@@ -1,18 +1,11 @@
 import { router } from '@/router'
 import { useUserStore } from '@/stores/user'
-import { ElMessageBox } from 'element-plus'
+import { ElLoading } from 'element-plus'
 
-import { isApp, isIosApp, useRootStore } from '@/stores/root'
-import { openLoading } from './util'
-import { SDK } from './sdk'
-import { usePostTagStore } from '@/stores/buzz/tag'
-import { useMetaNameStore } from '@/stores/metaname'
+import { isIosApp, useRootStore } from '@/stores/root'
 import { useHead } from '@vueuse/head'
 import { RouteLocationNormalized } from 'vue-router'
 import { useImagePreview } from '@/stores/imagePreview'
-import { MetaletWallet } from '@/utils/wallet/Metalet-wallet'
-import { MetaletSDK } from '@/utils/metalet-sdk'
-import { resolve } from 'path'
 let loading: any
 
 function sleep(time: number) {
@@ -23,12 +16,17 @@ function sleep(time: number) {
   })
 }
 
+function openRouteLoading() {
+  return ElLoading.service({
+    background: 'rgba(0,0,0,0.3)',
+    lock: true,
+  })
+}
+
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   const rootStore = useRootStore()
-  const metaNameStore = useMetaNameStore()
   const imagePreview = useImagePreview()
-  const postTagStroe = usePostTagStore()
 
   // 当正在全屏预览图片时， 后退操作会变成关闭预览不后退
   if (imagePreview.visibale) {
@@ -42,7 +40,7 @@ router.beforeEach(async (to, from, next) => {
   const isTalkRoutes = (route: any) => route.name?.startsWith('talk')
   if (isTalkRoutes(to) && isTalkRoutes(from)) return next()
 
-  loading = openLoading()
+  loading = openRouteLoading()
   // 设置页面标题
   document.title = `${to.meta.title ? to.meta.title + ' - ' : ''}` + import.meta.env.VITE_AppName
 

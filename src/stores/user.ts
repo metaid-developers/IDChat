@@ -1,11 +1,8 @@
-import { defineStore, storeToRefs } from 'pinia'
+import { defineStore } from 'pinia'
 import { useLocalStorage, type RemovableRef } from '@vueuse/core'
 import { type UserInfo, getUserInfoByAddress } from '@/api/man'
 import { useConnectionStore } from '@/stores/connection'
 import { useLayoutStore } from './layout'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import {getEcdhPublickey} from '@/wallet-adapters/metalet'
 export const useUserStore = defineStore('user', {
   state: () => {
     return {

@@ -1,19 +1,6 @@
-import * as RequestSDK from 'request-sdk'
+import axios, { type AxiosResponse } from 'axios'
 import i18n from './i18n'
 import { nowMs, recordApiPerfMetric } from '@/utils/perf-monitor'
-
-function resolveRequestCtor(mod: any): any {
-  const globalRequest = (globalThis as any)?.HttpRequest
-  const candidates = [mod?.default, mod?.HttpRequest, mod, globalRequest]
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'function') return candidate
-  }
-
-  throw new Error('request-sdk constructor not found')
-}
-
-const RequestCtor: any = resolveRequestCtor(RequestSDK)
 
 // 默认超时时间：60秒
 const DEFAULT_TIMEOUT = 120000
@@ -24,20 +11,51 @@ export default class HttpRequest {
   constructor(
     baseUrl: string,
     params?: {
-      header?: { [key: string]: any } // 自定义 header
+      header?: { [key: string]: any } | (() => { [key: string]: any }) // 自定义 header
       errorHandel?: (error: any) => Promise<any> // 自定义 错误处理
-      responseHandel?: (response: any) => Promise<any> // 自定义 错误处理
+      responseHandel?: (response: AxiosResponse<any>) => Promise<any> // 自定义响应处理
       timeout?: number
       timeoutErrorMessage?: string
     }
   ) {
     this.baseUrl = baseUrl
-    this.request = new RequestCtor(baseUrl, {
-      timeout: DEFAULT_TIMEOUT,
-      // @ts-ignore
-      timeoutErrorMessage: i18n.global.t('Request Timeout'),
+    this.request = axios.create({
+      baseURL: baseUrl,
+      timeout: params?.timeout || DEFAULT_TIMEOUT,
+      timeoutErrorMessage: params?.timeoutErrorMessage || i18n.global.t('Request Timeout'),
       ...params,
-    }).request
+    })
+
+    this.request.interceptors.request.use(
+      async config => {
+        if (!params?.header) return config
+
+        const headers = typeof params.header === 'function' ? params.header() : params.header
+        for (const key in headers) {
+          if (!config.headers) config.headers = {}
+          const value = headers[key]
+          config.headers[key] = typeof value === 'function' ? value() : value
+        }
+
+        return config
+      },
+      error => Promise.reject(error)
+    )
+
+    this.request.interceptors.response.use(
+      async response => {
+        if (params?.responseHandel) {
+          return await params.responseHandel(response)
+        }
+        return response.data
+      },
+      error => {
+        if (params?.errorHandel) {
+          return params.errorHandel(error)
+        }
+        return Promise.reject(error)
+      }
+    )
 
     this.setupPerfInstrumentation()
   }

@@ -89,19 +89,18 @@ export default defineComponent({
 </script>
 
 <script lang="ts" setup>
-import { formatTimestamp, decryptedMessage } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage } from '@/utils/message-lite'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
 import { computed, toRaw, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
-import { decrypt, ecdhDecrypt } from '@/utils/crypto'
+import { decrypt, ecdhDecrypt } from '@/utils/crypto-lite'
 import { useCredentialsStore } from '@/stores/credentials'
 import { useConnectionStore } from '@/stores/connection'
-import { atobToHex, containsString } from '@/utils/util'
+import { containsString } from '@/utils/light'
 import { NodeName, IsEncrypt, ChatType, ChannelType } from '@/enum'
-import { nextTick } from 'process'
 import { storeToRefs } from 'pinia'
 import { useEcdhsStore } from '@/stores/ecdh'
 const i18n = useI18n()

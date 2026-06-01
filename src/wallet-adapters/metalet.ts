@@ -3,7 +3,6 @@ import { ElMessage } from 'element-plus'
 import { Buffer } from 'buffer'
 
 import { useConnectionStore } from '@/stores/connection'
-import { TxComposer } from 'meta-contract'
 import { useApprovedStore } from '@/stores/approved'
 import { useChainStore } from '@/stores/chain'
 import { MAN_PUB_KEY } from '@/data/constants'

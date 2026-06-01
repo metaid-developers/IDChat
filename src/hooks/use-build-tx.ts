@@ -71,6 +71,7 @@ export const useBulidTx = createGlobalState(() => {
   const createPin = async(metaidData:MetaIdData,isBroadcast=true,needSmallpay:boolean=true,payTo:any[]=[],SerialTransactions:any[]=[]) => {
  const layoutStore=useLayoutStore()
     const chainStore=useChainStore()
+    await chainStore.ensureFeeRatesFresh()
 
 
 

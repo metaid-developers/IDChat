@@ -1,6 +1,6 @@
-import { HttpRequests, ApiRequestTypes } from '@/utils/wallet/request2'
+import { HttpRequests, type ApiRequestTypes } from '@/utils/wallet/request2'
 import { ElMessage } from 'element-plus'
-import { Reqswapargs } from '@/utils/wallet/hd-wallet'
+import type { Reqswapargs } from '@/utils/wallet/hd-wallet'
 
 export interface ApiResultTypes {
   code: number

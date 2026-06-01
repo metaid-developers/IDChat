@@ -16,6 +16,7 @@
     </div>
 
     <ChannelMemberListDrawer
+      v-if="layout.isShowMemberListDrawer"
       v-model="layout.isShowMemberListDrawer"
       :key="($route.params.channelId as string)"
     />
@@ -25,7 +26,7 @@
     <RequireNftModal v-if="layout.isShowRequireNftModal" />
     <RequireFtModal v-if="layout.isShowRequireFtModal" />
     <RequireNativeModal v-if="layout.isShowRequireNativeModal" />
-    <CheckingPass />
+    <CheckingPass v-if="layout.isShowCheckingPass" />
     <InviteModal v-if="layout.isShowInviteModal" />
     <CommunityCardModal v-if="layout.isShowCommunityCardModal" />
     <AcceptInviteModal v-if="layout.isShowAcceptInviteModal" />
@@ -39,7 +40,7 @@
     <ShareSuccessModal v-if="layout.isShowShareSuccessModal" />
     <CommunitySettingsModal v-if="layout.isShowCommunitySettingsModal" />
     <!-- <NoMetaNameModal v-if="layout.isShowNoMetaNameModal" /> -->
-    <leaveCommunityModal v-if="layout.isShowLeaveCommunityModal" />
+    <LeaveCommunityModal v-if="layout.isShowLeaveCommunityModal" />
     <CreatePublicChannelModal v-if="layout.isShowCreatePublicChannelModal" />
     <CreateBroadcastChannelModal v-if="layout.isShowCreateBroadcastChannelModal" />
     <!-- <CreateGroupTypeModal v-if="layout.isShowCreateGroupTypeModal" /> -->
@@ -47,49 +48,72 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onUnmounted, watch, onMounted, onActivated } from 'vue'
+import { defineAsyncComponent, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useTalkStore } from '@/stores/talk'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
-import { isMetaName, resolveMetaName, isPublicChannel } from '@/utils/meta-name'
+import { isPublicChannel } from '@/utils/meta-name'
 
 import ChannelHeader from './components/ChannelHeader.vue'
-import CommunityInfo from './components/CommunityInfo.vue'
-import ChannelMemberListWrap from './components/ChannelMemberListWrap.vue'
-import ChannelMemberListDrawer from './components/ChannelMemberListDrawer.vue'
-import PasswordModal from './components/modals/consensus/Password.vue'
-import CommunitySettingsModal from './components/modals/community/settings/Index.vue'
-import RequireNftModal from './components/modals/consensus/RequireNft.vue'
-import RequireFtModal from './components/modals/consensus/RequireFt.vue'
-import CheckingPass from './components/modals/consensus/CheckingPass.vue'
-import RequireNativeModal from './components/modals/consensus/RequireNative.vue'
-import RedPacketOpenModal from './components/modals/red-packet/Open.vue'
-import RedPacketResultModal from './components/modals/red-packet/Result.vue'
-import RedPacketCreateModal from './components/modals/red-packet/Create.vue'
-import AcceptInviteModal from './components/modals/invite/Accept.vue'
-import ChannelAcceptInviteModal from './components/modals/invite/ChannelAccept.vue'
-import InviteModal from './components/modals/invite/Invite.vue'
-import CommunityCardModal from './components/modals/invite/CommunityCard.vue'
-import ShareToBuzzModal from './components/modals/invite/ShareToBuzz.vue'
-import ShareSuccessModal from './components/modals/invite/ShareSuccess.vue'
-import NoMetaNameModal from './components/modals/community/NoMetaName.vue'
-import leaveCommunityModal from './components/modals/community/Leave.vue'
 import DirectContactList from './components/direct-contact/List.vue'
-import CreatePublicChannelModal from './components/modals/CreatePublicChannelModal.vue'
-import CreateBroadcastChannelModal from './components/modals/CreateBroadcastChannelModal.vue'
 //import CreateGroupTypeModal from './components/modals/CreateGroupTypeModal.vue'
-import LoadingCover from './components/modals/LoadingCover.vue'
 import { useUserStore } from '@/stores/user'
-import { useI18n } from 'vue-i18n'
+
+const ChannelMemberListDrawer = defineAsyncComponent(
+  () => import('./components/ChannelMemberListDrawer.vue')
+)
+const PasswordModal = defineAsyncComponent(() => import('./components/modals/consensus/Password.vue'))
+const CommunitySettingsModal = defineAsyncComponent(
+  () => import('./components/modals/community/settings/Index.vue')
+)
+const RequireNftModal = defineAsyncComponent(
+  () => import('./components/modals/consensus/RequireNft.vue')
+)
+const RequireFtModal = defineAsyncComponent(() => import('./components/modals/consensus/RequireFt.vue'))
+const CheckingPass = defineAsyncComponent(
+  () => import('./components/modals/consensus/CheckingPass.vue')
+)
+const RequireNativeModal = defineAsyncComponent(
+  () => import('./components/modals/consensus/RequireNative.vue')
+)
+const RedPacketOpenModal = defineAsyncComponent(
+  () => import('./components/modals/red-packet/Open.vue')
+)
+const RedPacketResultModal = defineAsyncComponent(
+  () => import('./components/modals/red-packet/Result.vue')
+)
+const RedPacketCreateModal = defineAsyncComponent(
+  () => import('./components/modals/red-packet/Create.vue')
+)
+const AcceptInviteModal = defineAsyncComponent(() => import('./components/modals/invite/Accept.vue'))
+const ChannelAcceptInviteModal = defineAsyncComponent(
+  () => import('./components/modals/invite/ChannelAccept.vue')
+)
+const InviteModal = defineAsyncComponent(() => import('./components/modals/invite/Invite.vue'))
+const CommunityCardModal = defineAsyncComponent(
+  () => import('./components/modals/invite/CommunityCard.vue')
+)
+const ShareToBuzzModal = defineAsyncComponent(
+  () => import('./components/modals/invite/ShareToBuzz.vue')
+)
+const ShareSuccessModal = defineAsyncComponent(
+  () => import('./components/modals/invite/ShareSuccess.vue')
+)
+const LeaveCommunityModal = defineAsyncComponent(() => import('./components/modals/community/Leave.vue'))
+const LoadingCover = defineAsyncComponent(() => import('./components/modals/LoadingCover.vue'))
+const CreatePublicChannelModal = defineAsyncComponent(
+  () => import('./components/modals/CreatePublicChannelModal.vue')
+)
+const CreateBroadcastChannelModal = defineAsyncComponent(
+  () => import('./components/modals/CreateBroadcastChannelModal.vue')
+)
 
 // const talk = useTalkStore()
 const simpleTalk = useSimpleTalkStore()
 const user = useUserStore()
 const route = useRoute()
 const layout = useLayoutStore()
-const i18n = useI18n()
 console.log('route', route)
 // onMounted(()=>{
 

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { reportTask } from '@/api/metaid-base'
 import { JobStatus, JobStepStatus } from '@/enum'
-import { sleep } from '@/utils/util'
+import { sleep } from '@/utils/light'
 import NoticeAudio from '@/assets/audio/noctice.mp3'
 import { useSimpleTalkStore } from './simple-talk'
 

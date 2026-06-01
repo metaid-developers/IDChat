@@ -2,26 +2,67 @@ import { defineStore } from 'pinia'
 import { useLocalStorage, type RemovableRef } from '@vueuse/core'
 // import type { Psbt } from 'bitcoinjs-lib'
 import { ElMessage } from 'element-plus'
-import { TxComposer } from 'meta-contract'
 // import * as unisatAdapter from '@/wallet-adapters/unisat'
 // import * as okxAdapter from '@/wallet-adapters/okx'
-import * as metaletAdapter from '@/wallet-adapters/metalet'
 import { useCredentialsStore } from '@/stores/credentials'
 
-import { Network, useNetworkStore } from './network'
+import { useNetworkStore } from './network'
 import { useUserStore } from './user'
-import { useRouter, Router } from 'vue-router'
+import type { Router } from 'vue-router'
 import { useApprovedStore } from './approved'
-import { useTalkStore } from './talk'
 import { useEcdhsStore } from './ecdh'
-import { useLayoutStore } from './layout'
 import { useSimpleTalkStore } from './simple-talk'
-function getWalletAdapter(wallet: Wallet) {
+
+type WalletAdapter = Record<string, (...args: any[]) => any>
+
+async function loadWalletAdapter(wallet: Wallet): Promise<WalletAdapter> {
   switch (wallet) {
     case 'metalet':
-      return metaletAdapter
+      return await import('@/wallet-adapters/metalet')
     default:
       throw new Error(`Unsupported wallet: ${wallet}`)
+  }
+}
+
+async function callWalletAdapter(wallet: Wallet, method: string, ...args: any[]) {
+  const adapter = await loadWalletAdapter(wallet)
+  const fn = adapter[method]
+  if (typeof fn !== 'function') {
+    throw new Error(`Unsupported wallet method: ${method}`)
+  }
+
+  return fn(...args)
+}
+
+function getWalletAdapter(wallet: Wallet) {
+  const bind = (method: string) => (...args: any[]) => callWalletAdapter(wallet, method, ...args)
+
+  return {
+    connect: bind('connect'),
+    metaletConnect: bind('metaletConnect'),
+    disconnect: bind('disconnect'),
+    getAddress: bind('getAddress'),
+    getMvcAddress: bind('getMvcAddress'),
+    getBtcAddress: bind('getBtcAddress'),
+    getDogeAddress: bind('getDogeAddress'),
+    getMvcBalance: bind('getMvcBalance'),
+    getDogeBalance: bind('getDogeBalance'),
+    getDogePublicKey: bind('getDogePublicKey'),
+    getDogeUtxos: bind('getDogeUtxos'),
+    getUseableUtxo: bind('getUseableUtxo'),
+    signMvcMessage: bind('signMvcMessage'),
+    getMvcPublickey: bind('getMvcPublickey'),
+    getEcdhPublickey: bind('getEcdhPublickey'),
+    getNetwork: bind('getNetwork'),
+    switchNetwork: bind('switchNetwork'),
+    signMessage: bind('signMessage'),
+    pay: bind('pay'),
+    smallPay: bind('smallPay'),
+    autoPaymentStatus: bind('autoPaymentStatus'),
+    autoPayment: bind('autoPayment'),
+    needWebRefresh: bind('needWebRefresh'),
+    openAppBrowser: bind('openAppBrowser'),
+    saveBase64Image: bind('saveBase64Image'),
   }
 }
 
@@ -80,78 +121,7 @@ export const useConnectionStore = defineStore('connection', {
     adapter: (state) => {
       if (!state.last) throw new Error('No connection')
 
-      const adapter: {
-        // initPsbt: () => Psbt
-        getMvcBalance: () => Promise<any>
-        getMvcAddress: () => Promise<string>
-        getBtcAddress: () => Promise<string>
-        pay:(toPayTransactions:{
-        transations:Array<{
-        txComposer: string
-        message?: string
-        }>,
-
-        hasMetaid: boolean,
-        feeb?: number
-        }
-
-      )=>{
-        payedTransactions:string[]
-      }
-      smallPay:(toPayTransactions:{
-        transations:Array<{
-        txComposer: string
-        message?: string
-        }>,
-
-        hasMetaid: boolean,
-        feeb?: number
-        }
-
-      )=>{
-        payedTransactions:string[]
-      }
-      autoPaymentStatus:()=>{
-        isEnabled:boolean,
-         isApproved:boolean,
-         autoPaymentAmount:number
-      }
-      autoPayment:()=>{
-        message:string
-      }
-
-        finishPsbt: (psbt: string) => string
-        getAddress: () => Promise<string>
-
-        signMvcMessage: (message: any) => Promise<any>
-        getMvcPublickey: () => Promise<string>
-        getPubKey: () => Promise<string>
-        connect: () => Promise<{
-          address: string
-          pubKey: string
-        }>
-        metaletConnect?: () => Promise<{
-          address: string
-          pubKey: string
-        }>
-        disconnect: () => Promise<void>
-        getBalance: () => Promise<number>
-        inscribe: (tick: string) => Promise<string | undefined>
-        signPsbt: (psbt: string, options?: any) => Promise<string>
-        signPsbts: (psbts: string[], options?: any) => Promise<string[]>
-        pushPsbt: (psbt: string) => Promise<string>
-        signMessage: (message: string) => Promise<string>
-        getPublicKey(): any
-        getNetwork: () => Promise<Network>
-        switchNetwork: (network: 'livenet' | 'testnet') => Promise<{
-        address: string
-        network: 'mainnet' | 'testnet'
-        status: string
-        }>
-        // switchNetwork: (
-        //   network: 'livenet' | 'testnet',
-        // ) => Promise<'livenet' | 'testnet'>
-      } = getWalletAdapter(state.last.wallet)
+      const adapter = getWalletAdapter(state.last.wallet)
 
       return adapter
     },

@@ -60,7 +60,8 @@
     </div>
     <div class="flex flex-row-reverse items-center justify-between grow">
       <div class="shrink-0 flex items-center">
-        <LoginedUserOperate />
+        <GuestUserOperate v-if="shouldUseGuestUserOperate" />
+        <LoginedUserOperate v-else />
         <div
           class="ml-1 cursor-pointer "
           v-if="userStore.isAuthorized && activeChannel?.type === 'group' && !isWelcomePage"
@@ -100,13 +101,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, reactive, watch, defineAsyncComponent } from 'vue'
 
 import { useLayoutStore } from '@/stores/layout'
 import { useTalkStore } from '@/stores/talk'
-import { isMobile, useRootStore } from '@/stores/root'
+import { isAndroid, isIOS, isMobile, useRootStore } from '@/stores/root'
 
-import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
+import GuestUserOperate from '@/components/LoginedUserOperate/GuestUserOperate.vue'
 import { useWsStore } from '@/stores/ws_new'
 import { useRoute, useRouter } from 'vue-router'
 import { getOneChannel } from '@/api/talk'
@@ -119,6 +120,9 @@ import darkBar from '@/assets/images/darkBar.png'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { storeToRefs } from 'pinia'
 
+const LoginedUserOperate = defineAsyncComponent(
+  () => import('@/components/LoginedUserOperate/LoginedUserOperate.vue')
+)
 // const talkStore = useTalkStore()
 const { activeChannel: simpleTalkActiveChannel } = storeToRefs(useSimpleTalkStore())
 const layout = useLayoutStore()
@@ -128,6 +132,9 @@ const route = useRoute()
 const router = useRouter()
 const rootStore = useRootStore()
 const currentChannelId = ref(route.params?.channelId || '')
+const shouldUseGuestUserOperate = computed(
+  () => !userStore.isAuthorized && !rootStore.isWebView && !isAndroid && !isIOS
+)
 
 const activeChannel = computed(() => {
   return simpleTalkActiveChannel.value?.type === 'sub-group'

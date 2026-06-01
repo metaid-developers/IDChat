@@ -600,42 +600,60 @@
 </template>
 
 <script setup lang="ts">
-import { ecdhDecrypt } from '@/utils/crypto'
 import NftLabel from './NftLabel.vue'
 import MessageMenu from './MessageMenu.vue'
 import redEnvelopeImg from '@/assets/images/red-envelope.svg?url'
 import TalkImagePreview from './ImagePreview.vue'
-import { computed, ref, toRaw, Ref, inject } from 'vue'
+import { computed, defineAsyncComponent, ref, toRaw, Ref, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { formatTimestamp, decryptedMessage } from '@/utils/talk'
+import { formatTimestamp, decryptedMessage } from '@/utils/message-lite'
 import { useUserStore } from '@/stores/user'
 import { useTalkStore } from '@/stores/talk'
 import { useJobsStore } from '@/stores/jobs'
 import { NodeName,ChatChain } from '@/enum'
 import { marked } from 'marked'
 import MessageItemQuote from './MessageItemQuote.vue'
-import { containsString } from '@/utils/util'
+import { containsString } from '@/utils/light'
 import type { PriviteChatMessageItem } from '@/@types/common'
 import btcIcon from '@/assets/images/btc.png'
 import { useImagePreview } from '@/stores/imagePreview'
-import { DB } from '@/utils/db'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { UnifiedChatMessage } from '@/@types/simple-chat'
 import { getOneChannel,getGroupChannelList } from '@/api/talk'
 import { getUserInfoByAddress, getUserInfoByGlobalMetaId } from '@/api/man'
 import { useRootStore } from '@/stores/root'
-import {openAppBrowser} from '@/wallet-adapters/metalet'
 import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
 import { VideoPlay } from '@element-plus/icons-vue'
-import ProtocolCard from '@/components/ProtocolCard/index.vue'
-import CardMsgCard from '@/components/CardMsgCard/index.vue'
+const ProtocolCard = defineAsyncComponent(() => import('@/components/ProtocolCard/index.vue'))
+const CardMsgCard = defineAsyncComponent(() => import('@/components/CardMsgCard/index.vue'))
 const reply: any = inject('Reply')
 const i18n = useI18n()
 const rootStore=useRootStore()
 const showImagePreview = ref(false)
+
+const getMetaFileData = async (
+  metafile: string,
+  width = 235,
+  isPrivateChat = false,
+  chatPubkeyForDecrypt = '',
+  chatPasswordForDecrypt = ''
+) => {
+  const { DB } = await import('@/utils/db')
+  return DB.getMetaFileData(
+    metafile,
+    width,
+    isPrivateChat,
+    chatPubkeyForDecrypt,
+    chatPasswordForDecrypt
+  )
+}
+
+const openWalletBrowser = (options: { url: string }) => {
+  import('@/wallet-adapters/metalet').then(({ openAppBrowser }) => openAppBrowser(options))
+}
 // 群信息缓存
 const channelInfo = ref<any>(null)
 const subChannelInfo=ref<any>(null)
@@ -844,7 +862,7 @@ const handleMessageClick = (event: MouseEvent) => {
     const url = target.getAttribute('data-webview-url')
     if (url) {
 
-     openAppBrowser({ url })
+     openWalletBrowser({ url })
     }
   }
 }
@@ -894,7 +912,7 @@ const decryptedContentForProtocolCard = computed(() => {
 })
 
 // ProtocolCard 组件的引用
-const protocolCardRef = ref<InstanceType<typeof ProtocolCard> | null>(null)
+const protocolCardRef = ref<any>(null)
 
 // 是否应该使用 ProtocolCard 渲染（由 ProtocolCard 组件内部判断）
 const shouldUseProtocolCard = computed(() => {
@@ -1054,7 +1072,7 @@ const handleMetaAppLinkClick = () => {
   const linkInfo = metaAppLinkInfo.value
   if (linkInfo.fullUrl) {
     if(rootStore.isWebView){
-      openAppBrowser({ url: linkInfo.fullUrl })
+      openWalletBrowser({ url: linkInfo.fullUrl })
       return
     }
     // 在新窗口打开 MetaApp 链接
@@ -1156,7 +1174,7 @@ const handleBuzzOrNoteLinkClick = () => {
 
   if (messageContent) {
     if(rootStore.isWebView){
-      openAppBrowser({ url: messageContent })
+      openWalletBrowser({ url: messageContent })
       return
     }
     window.open(messageContent, openWindowTarget())
@@ -1414,7 +1432,7 @@ const decryptedImageMessage = computed(() => {
 
 const decryptedImgMessage=async (content:string, pubkeyForDecrypt:string, passwordForDecrypt:string)=>{
   try {
-    const res=await  DB.getMetaFileData(content, 235, true, pubkeyForDecrypt, passwordForDecrypt)
+    const res = await getMetaFileData(content, 235, true, pubkeyForDecrypt, passwordForDecrypt)
    return URL.createObjectURL(res.data)
   } catch (error) {
 

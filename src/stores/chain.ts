@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { useLocalStorage } from '@vueuse/core'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onScopeDispose, ref } from 'vue'
 
 export interface FeeRateApi {
   fastestFee: number
@@ -150,6 +150,20 @@ export const useChainStore = defineStore('chain', () => {
     await Promise.allSettled([updateBtcFeeRate(), updateMvcFeeRate(), updateDogeFeeRate()])
   }
 
+  const shouldRefreshFeeRates = (): boolean => {
+    const now = Date.now()
+    return (['btc', 'mvc', 'doge'] as const).some(
+      chain => now - state.value[chain].lastUpdated >= UPDATE_INTERVAL
+    )
+  }
+
+  const ensureFeeRatesFresh = async (): Promise<void> => {
+    if (shouldRefreshFeeRates()) {
+      await updateAllFeeRates()
+    }
+    startAutoUpdate()
+  }
+
   const setBtcCustomizeFee = (feeRate: number): void => {
     state.value.btc.customizeFee = feeRate
     state.value.btc.lastUpdated = Date.now()
@@ -194,15 +208,7 @@ export const useChainStore = defineStore('chain', () => {
     }
   }
 
-  // Initialize on store creation
-  onMounted(() => {
-    // Update fee rates immediately on store creation
-    updateAllFeeRates()
-    // Start auto-update
-    startAutoUpdate()
-  })
-
-  onUnmounted(() => {
+  onScopeDispose(() => {
     stopAutoUpdate()
   })
 
@@ -236,6 +242,7 @@ export const useChainStore = defineStore('chain', () => {
     updateMvcFeeRate,
     updateDogeFeeRate,
     updateAllFeeRates,
+    ensureFeeRatesFresh,
     setBtcCustomizeFee,
     setMvcCustomizeFee,
     setDogeCustomizeFee,

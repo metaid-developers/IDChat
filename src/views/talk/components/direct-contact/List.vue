@@ -33,7 +33,11 @@
         </div>
 
         <!-- 搜索弹窗 -->
-        <SearchModal v-model="isSearchModalVisible" @select="handleContactSelect" />
+        <SearchModal
+          v-if="isSearchModalVisible"
+          v-model="isSearchModalVisible"
+          @select="handleContactSelect"
+        />
       </div>
     </div>
   </div>
@@ -42,21 +46,20 @@
 <script lang="ts" setup>
 import { useLayoutStore } from '@/stores/layout'
 import DirectContactSearch from './Search.vue'
-import DirectContactItem from './Item.vue'
-import SearchModal from './SearchModal.vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
-import { useCredentialsStore } from '@/stores/credentials'
 import { useUserStore } from '@/stores/user'
-import CreatePubkey from './create-pubkey.vue'
-import { getEcdhPublickey } from '@/wallet-adapters/metalet'
 
 import Welcome from '@/components/Welcome/welcome.vue'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useRootStore } from '@/stores/root'
+
+const DirectContactItem = defineAsyncComponent(() => import('./Item.vue'))
+const SearchModal = defineAsyncComponent(() => import('./SearchModal.vue'))
+const CreatePubkey = defineAsyncComponent(() => import('./create-pubkey.vue'))
+
 const layout = useLayoutStore()
-const credentialsStore = useCredentialsStore()
 const userStore = useUserStore()
 const rootStore = useRootStore()
 const needModifyPubkey = ref(false)
@@ -72,25 +75,30 @@ const getSessionKey = (session: any) => {
 }
 
 const _allChannels = computed(() => {
+  if (!userStore.isAuthorized) return []
   return allChannels.value.filter(
     channel => (channel.type === 'private' || channel.type === 'group') && !channel.isTemporary
   )
 })
 
-onMounted(async () => {
-  const pubkey = userStore.last.chatpubkey
+const ensureDirectContactReady = async () => {
+  if (!userStore.isAuthorized) return
+  const { getEcdhPublickey } = await import('@/wallet-adapters/metalet')
+  const pubkey = userStore.last?.chatpubkey
   const [ecdh] = await Promise.all([getEcdhPublickey(), simpleTalkStore.ensureInitialized()])
   if (pubkey && pubkey !== ecdh.ecdhPubKey) {
     needModifyPubkey.value = true
   }
-})
+}
+
+onMounted(ensureDirectContactReady)
 
 // 监听登录状态：用户连接钱包登录后重新初始化聊天列表
 watch(
   () => userStore.isAuthorized,
   (authorized) => {
-    if (authorized && !simpleTalkStore.isInitialized) {
-      simpleTalkStore.ensureInitialized()
+    if (authorized) {
+      ensureDirectContactReady()
     }
   }
 )
