@@ -4278,8 +4278,46 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
       return serverMessages
     },
 
+    getNewestMessageRange(channel: SimpleChannel, pageSize: number): { startIndex: number, endIndex: number } | null {
+      const endIndex = Number(channel.lastMessage?.index || 0)
+      if (!Number.isFinite(endIndex) || endIndex <= 0) {
+        return null
+      }
+
+      const normalizedPageSize = normalizePositiveInteger(pageSize, 30)
+      return {
+        startIndex: Math.max(1, endIndex - normalizedPageSize + 1),
+        endIndex,
+      }
+    },
+
+    async tryLoadNewestMessagesFromLocal(
+      channelId: string,
+      channel: SimpleChannel,
+      pageSize = DEFAULT_SERVER_FETCH_SIZE
+    ): Promise<UnifiedChatMessage[] | null> {
+      const range = this.getNewestMessageRange(channel, pageSize)
+      if (!range) return null
+
+      try {
+        const localMessages = await this.db.getMessagesInRange(channelId, range.startIndex, range.endIndex)
+        const sortedMessages = localMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
+
+        if (!this.checkMessageRangeContinuity(sortedMessages, range.startIndex, range.endIndex)) {
+          console.log(`⚠️ 本地最新消息范围 [${range.startIndex}, ${range.endIndex}] 不连续，需要从服务器补齐`)
+          return null
+        }
+
+        console.log(`✅ 本地最新消息范围 [${range.startIndex}, ${range.endIndex}] 连续，直接使用 IndexedDB`)
+        return sortedMessages
+      } catch (error) {
+        if (import.meta.env.DEV) console.warn(`⚠️ 读取本地最新消息范围失败: ${channelId}`, error)
+        return null
+      }
+    },
+
     /**
-     * 加载最新消息（清空当前消息缓存，从服务器获取最新消息）
+     * 加载最新消息：优先使用本地连续缓存，缺失时再从服务器补齐
      * 用于用户想要快速跳转到最新消息位置的场景
      */
     async loadNewestMessages(channelId?: string): Promise<void> {
@@ -4302,8 +4340,15 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           return
         }
 
-        // 3. 强制从服务器获取最新消息（慢请求软超时）
-        console.log(`📡 强制从服务器获取最新消息...`)
+        const fetchSize = normalizePositiveInteger(DEFAULT_SERVER_FETCH_SIZE, 30)
+        const localNewestMessages = await this.tryLoadNewestMessagesFromLocal(targetChannelId, channel, fetchSize)
+        if (localNewestMessages) {
+          this.messageCache.set(targetChannelId, localNewestMessages)
+          return
+        }
+
+        // 3. 本地缺失或不连续时，从服务器获取最新消息（慢请求软超时）
+        console.log(`📡 本地最新消息缺失或不连续，从服务器获取最新消息...`)
         const timeoutMs = normalizePositiveInteger(LOAD_MESSAGES_SERVER_TIMEOUT_MS, 6000)
         const fetchPromise = this.fetchServerMessages(targetChannelId, channel)
         const timeoutToken = Symbol('loadNewestFetchTimeout')
@@ -4348,28 +4393,36 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         const serverMessages = racedResult
         
         if (serverMessages.length === 0) {
-          console.log(`📭 服务器没有返回消息`)
-          this.messageCache.set(targetChannelId, [])
+          console.log(`📭 服务器没有返回消息，保留本地缓存`)
+          const fallbackMessages =
+            this.messageCache.get(targetChannelId) || (await this.db.getMessages(targetChannelId, fetchSize))
+          this.messageCache.set(
+            targetChannelId,
+            fallbackMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
+          )
           return
         }
-         // 1. 清空当前消息缓存
-        this.messageCache.delete(targetChannelId)
-        console.log(`🗑️ 已清空频道 ${targetChannelId} 的消息缓存`)
 
-        // 4. 按时间排序并设置为当前消息
-        const sortedMessages = serverMessages.sort((a, b) => a.timestamp - b.timestamp)
-        this.messageCache.set(targetChannelId, sortedMessages)
-
-        // 5. 批量保存新消息到本地数据库，避免逐条事务开销
+        // 4. 先保存服务端返回，再尽量从本地连续范围读取，保持 IndexedDB 作为持久缓存层
         await this.db.saveMessages(serverMessages)
+        const persistedMessages = await this.tryLoadNewestMessagesFromLocal(targetChannelId, channel, fetchSize)
+        const finalMessages = persistedMessages || serverMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
+        this.messageCache.set(targetChannelId, finalMessages)
         channelLastServerSyncAt.set(targetChannelId, Date.now())
 
-        console.log(`✅ 已加载 ${sortedMessages.length} 条最新消息`)
+        console.log(`✅ 已加载 ${finalMessages.length} 条最新消息`)
         
       } catch (error) {
         console.error('❌ 加载最新消息失败:', error)
-        // 出错时设置空数组
-        this.messageCache.set(targetChannelId, [])
+        const fallbackMessages =
+          this.messageCache.get(targetChannelId) ||
+          (await this.db
+            .getMessages(targetChannelId, normalizePositiveInteger(DEFAULT_SERVER_FETCH_SIZE, 30))
+            .catch(() => []))
+        this.messageCache.set(
+          targetChannelId,
+          fallbackMessages.sort((a, b) => (a.index || 0) - (b.index || 0))
+        )
       }
     },
 

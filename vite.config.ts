@@ -10,7 +10,6 @@ import AutoImport from 'unplugin-auto-import/vite'
  import IconsResolver from 'unplugin-icons/resolver'
 import Components from 'unplugin-vue-components/vite'
  import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 import inject from '@rollup/plugin-inject'
 import stdLibBrowser from 'node-stdlib-browser'
 import { viteExternalsPlugin } from 'vite-plugin-externals'
@@ -178,24 +177,6 @@ export default ({ mode, command }) => {
       }),
       svgLoader(),
       VitePluginHtmlEnv(),
-      createSvgIconsPlugin({
-        // 指定需要缓存的图标文件夹
-        iconDirs: [path.resolve(process.cwd(), 'src/assets/icons')],
-        // 指定symbolId格式
-        symbolId: 'icon-[dir]-[name]',
-
-        /**
-         * 自定义插入位置
-         * @default: body-last
-         */
-        // inject?: 'body-last' | 'body-first'
-
-        /**
-         * custom dom id
-         * @default: __svg__icons__dom__
-        //  */
-        customDomId: '__svg__icons__dom__',
-      }),
       // viteExternalsPlugin({
       //   'mvc-lib': 'mvc',
       //   'mvc-lib/ecies': 'ECIES',

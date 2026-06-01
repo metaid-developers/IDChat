@@ -58,11 +58,13 @@
 
 <script lang="ts" setup>
 import { useLayoutStore } from '@/stores/layout'
-import LoginedUserOperate from '@/components/LoginedUserOperate/LoginedUserOperate.vue'
 import { useTalkStore } from '@/stores/talk'
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { Back } from '@element-plus/icons-vue'
+const LoginedUserOperate = defineAsyncComponent(
+  () => import('@/components/LoginedUserOperate/LoginedUserOperate.vue')
+)
 const talkStore = useTalkStore()
 const userStore = useUserStore()
 const layout = useLayoutStore()

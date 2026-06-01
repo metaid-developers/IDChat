@@ -148,20 +148,20 @@
     </template>
   </ElDropdown>
 
-  <Teleport to="body">
+  <Teleport v-if="layout.isShowSettingsModal" to="body">
     <SettingsModalVue v-model="layout.isShowSettingsModal" />
   </Teleport>
 
   <!-- Fee Modal -->
-  <Teleport to="body">
+  <Teleport v-if="showFeeModal" to="body">
     <FeeModal v-model="showFeeModal" @confirm="handleFeeConfirm" />
   </Teleport>
 
   <!-- wallet -->
-  <MyWalletVue v-model="layout.isShowWallet" />
+  <MyWalletVue v-if="layout.isShowWallet" v-model="layout.isShowWallet" />
 
   <!-- Profile Edit Modal -->
-  <Teleport to="body">
+  <Teleport v-if="layout.isShowProfileEditModal" to="body">
     <ProfileEditModal v-model="layout.isShowProfileEditModal" />
   </Teleport>
 </template>
@@ -172,14 +172,10 @@ import { useUserStore } from '@/stores/user'
 import { useChainStore } from '@/stores/chain'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { ElDropdown, ElMessageBox, ElMessage } from 'element-plus'
-import { computed, ref, nextTick } from 'vue'
+import { computed, defineAsyncComponent, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import SettingsModalVue from '@/components/Settings/SettingsModal.vue'
-import FeeModal from '@/components/FeeModal/FeeModal.vue'
 import { useLayoutStore } from '@/stores/layout'
 import { useRouter } from 'vue-router'
-import MyWalletVue from './MyWallet.vue'
-import ProfileEditModal from '@/components/ProfileEditModal/ProfileEditModal.vue'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
 import { useConnectionStore } from '@/stores/connection'
 import { useCredentialsStore } from '@/stores/credentials'
@@ -188,6 +184,11 @@ import btcIcon from '@/assets/images/btc.png'
 import mvcIcon from '@/assets/images/mvc.png'
 import { CaretRight } from '@element-plus/icons-vue'
 import { isAndroid, isIOS } from '@/stores/root'
+
+const SettingsModalVue = defineAsyncComponent(() => import('@/components/Settings/SettingsModal.vue'))
+const FeeModal = defineAsyncComponent(() => import('@/components/FeeModal/FeeModal.vue'))
+const MyWalletVue = defineAsyncComponent(() => import('./MyWallet.vue'))
+const ProfileEditModal = defineAsyncComponent(() => import('@/components/ProfileEditModal/ProfileEditModal.vue'))
 
 const { openConnectionModal } = useConnectionModal()
 

@@ -16,8 +16,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useLayoutStore } from '@/stores/layout'
 import { useConnectionModal } from '@/hooks/use-connection-modal'
-import { sleep } from '@/utils/util'
-import { joinChannel } from '@/utils/talk'
+import { sleep } from '@/utils/light'
 const layout = useLayoutStore()
 const user = useUserStore()
 const router = useRouter()
@@ -37,6 +36,7 @@ const tryJoinChannel = async () => {
       return loginFirst()
     }
     const simpleTalk = useSimpleTalkStore()
+    const { joinChannel } = await import('@/utils/talk')
 
     layout[ShowControl.isShowChannelAcceptInviteModal] = false
     layout.isShowLoading = true

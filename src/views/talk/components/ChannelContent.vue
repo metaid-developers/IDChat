@@ -41,16 +41,16 @@ import {
   watch,
 } from 'vue'
 import TheInput from './TheInput.vue'
-import MuteInput from './subChannel/MuteInput.vue'
 import TheErrorBox from './TheErrorBox.vue'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
-import JoinInput from './JoinInput.vue'
 // import { useTalkStore } from '@/stores/talk'
 // const talk = useTalkStore()
 const quote: { val: any } = reactive({ val: undefined })
 const MessageList = defineAsyncComponent({
   loader: () => import('./MessageList.vue'),
 })
+const MuteInput = defineAsyncComponent(() => import('./subChannel/MuteInput.vue'))
+const JoinInput = defineAsyncComponent(() => import('./JoinInput.vue'))
 const MessageListRef = ref()
 const bottomAreaRef = ref<HTMLElement | null>(null)
 const simpleTalk = useSimpleTalkStore()
