@@ -182,6 +182,17 @@ async function getImageUrl() {
   })
 }
 
+const getProfileBioText = (bio: unknown): string => {
+  if (!bio) return ''
+  if (typeof bio === 'string') return bio
+
+  try {
+    return JSON.stringify(bio)
+  } catch {
+    return ''
+  }
+}
+
 // 初始化表单数据（只在modal第一次打开时初始化）
 let hasInitialized = false
 watch(
@@ -191,7 +202,7 @@ watch(
       // 只在modal第一次打开时初始化，避免死循环
       avatarPreview.value = userStore.last?.avatar || ''
       username.value = userStore.last?.name || ''
-      profile.value = userStore.last?.bio || ''
+      profile.value = getProfileBioText(userStore.last?.bio)
       hasInitialized = true
     } else if (!newVal) {
       // modal关闭时重置表单
@@ -207,7 +218,7 @@ const hasChanges = computed(() => {
   return (
     imageUrl.value ||
     username.value !== (userStore.last?.name || '') ||
-    profile.value !== (userStore.last?.bio || '')
+    profile.value !== getProfileBioText(userStore.last?.bio)
   )
 })
 
@@ -340,7 +351,7 @@ const save = async () => {
     if (username.value !== userStore.last?.name) {
       values.name = username.value
     }
-    if (profile.value !== userStore.last?.bio) {
+    if (profile.value !== getProfileBioText(userStore.last?.bio)) {
       values.bio = profile.value
     }
     if (!userStore.last?.chatpubkey) {

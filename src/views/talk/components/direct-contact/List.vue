@@ -10,12 +10,21 @@
       <div
         class="h-full bg-dark-100 dark:bg-gray-800 grow lg:w-70 flex flex-col justify-between items-stretch relative"
       >
-        <div class="flex lg:w-[364PX] flex-col overflow-y-hidden">
+        <div class="relative flex h-full min-h-0 lg:w-[364PX] flex-col overflow-y-hidden">
           <!-- 搜索栏 -->
 
           <!---->
 
-          <DirectContactSearch @open-search="handleOpenSearchModal" />
+          <DirectContactSearch
+            :is-online-bot-panel-open="isOnlineBotPanelVisible"
+            @open-search="handleOpenSearchModal"
+            @open-online-bots="handleOpenOnlineBots"
+          />
+          <OnlineBotPanel
+            v-if="isOnlineBotPanelVisible && userStore.isAuthorized"
+            @close="handleCloseOnlineBots"
+            @select="handleOnlineBotSelect"
+          />
           <CreatePubkey
             v-model:needModifyPubkey="needModifyPubkey"
             v-if="userStore.isAuthorized && rootStore.showCreatePubkey && !needModifyPubkey"
@@ -23,7 +32,7 @@
           <Welcome v-show="!_allChannels?.length && layout.isShowLeftNav"></Welcome>
 
           <!-- 联系人列表 -->
-          <div class="overflow-y-auto" v-show="userStore.isAuthorized">
+          <div class="min-h-0 flex-1 overflow-y-auto" v-show="userStore.isAuthorized">
             <DirectContactItem
               v-for="session in _allChannels"
               :key="getSessionKey(session)"
@@ -54,10 +63,15 @@ import { useUserStore } from '@/stores/user'
 import Welcome from '@/components/Welcome/welcome.vue'
 import { useSimpleTalkStore } from '@/stores/simple-talk'
 import { useRootStore } from '@/stores/root'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import type { OnlineBot } from '@/api/online-bots'
+import { useI18n } from 'vue-i18n'
 
 const DirectContactItem = defineAsyncComponent(() => import('./Item.vue'))
 const SearchModal = defineAsyncComponent(() => import('./SearchModal.vue'))
 const CreatePubkey = defineAsyncComponent(() => import('./create-pubkey.vue'))
+const OnlineBotPanel = defineAsyncComponent(() => import('./OnlineBotPanel.vue'))
 
 const layout = useLayoutStore()
 const userStore = useUserStore()
@@ -65,6 +79,8 @@ const rootStore = useRootStore()
 const needModifyPubkey = ref(false)
 const simpleTalkStore = useSimpleTalkStore()
 const { allChannels } = storeToRefs(simpleTalkStore)
+const router = useRouter()
+const i18n = useI18n()
 
 // console.log('talkStore', simpleTalkStore.allChannels)
 
@@ -106,11 +122,52 @@ watch(
 // const test=computed(()=>{
 // 搜索弹窗状态
 const isSearchModalVisible = ref(false)
+const isOnlineBotPanelVisible = ref(false)
 
 // 处理搜索模态框打开
 const handleOpenSearchModal = () => {
   console.log('Opening search modal')
+  isOnlineBotPanelVisible.value = false
   isSearchModalVisible.value = true
+}
+
+const handleOpenOnlineBots = () => {
+  if (!userStore.isAuthorized) return
+  isSearchModalVisible.value = false
+  isOnlineBotPanelVisible.value = true
+}
+
+const handleCloseOnlineBots = () => {
+  isOnlineBotPanelVisible.value = false
+}
+
+const handleOnlineBotSelect = async (bot: OnlineBot) => {
+  if (!bot.globalMetaId) return
+
+  if (bot.globalMetaId === userStore.last?.globalMetaId) {
+    ElMessage.warning('不能和自己发起私聊')
+    return
+  }
+
+  if (!userStore.last?.chatpubkey) {
+    ElMessage.warning(`${i18n.t('self_private_chat_unsupport')}`)
+    return
+  }
+
+  const privateChannel = await simpleTalkStore.createPrivateChat(bot.globalMetaId)
+  if (!privateChannel) {
+    ElMessage.warning('无法创建私聊')
+    return
+  }
+
+  if (privateChannel.isTemporary) {
+    simpleTalkStore.convertTemporaryToRegular(bot.globalMetaId)
+  }
+
+  isOnlineBotPanelVisible.value = false
+  await simpleTalkStore.setActiveChannel(bot.globalMetaId)
+  await router.push({ name: 'talkAtMe', params: { channelId: bot.globalMetaId } })
+  layout.isShowLeftNav = false
 }
 
 // 处理联系人选择

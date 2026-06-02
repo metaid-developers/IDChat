@@ -2,7 +2,7 @@ import { getRuntimeConfig } from '@/config/runtime-config'
 import { createLazyApiClient } from '@/utils/api-factory'
 
 const manApi = createLazyApiClient(() => `${getRuntimeConfig().api.manApi}/api`, {
-  responseHandel: response => {
+  responseHandel: (response: any) => {
     return new Promise((resolve, reject) => {
       if (response?.data && typeof response.data?.code === 'number') {
         if (response.data.code === 1) {
@@ -22,7 +22,7 @@ const manApi = createLazyApiClient(() => `${getRuntimeConfig().api.manApi}/api`,
 
 // 新的 metafile-indexer API 客户端
 const metafileIndexerApi = createLazyApiClient(() => getRuntimeConfig().api.metafileIndexerApi, {
-  responseHandel: response => {
+  responseHandel: (response: any) => {
     return new Promise((resolve, reject) => {
       if (response?.data && typeof response.data?.code === 'number') {
         if (response.data.code === 1) {
@@ -51,6 +51,8 @@ export interface ChatUserInfo {
   name: string
 }
 
+export type UserBio = string | Record<string, unknown>
+
 // 新版 metafile-indexer API 返回的用户信息接口
 export interface MetafileUserInfo {
   metaid: string
@@ -59,6 +61,8 @@ export interface MetafileUserInfo {
   address: string
   avatar: string
   avatarId: string
+  bio?: UserBio
+  bioId?: string
   chatpubkey: string
   chatpubkeyId: string
 }
@@ -69,7 +73,7 @@ export interface UserInfo {
   avatar: string
   avatarId: string
   background?: string
-  bio?: string
+  bio?: UserBio
   bioId?: string
   blocked?: boolean
   chainName?: string
@@ -151,6 +155,8 @@ const normalizeUserInfo = (res: MetafileUserInfo): UserInfo => {
     address: res.address,
     avatar: res.avatar,
     avatarId: res.avatarId,
+    bio: res.bio,
+    bioId: res.bioId,
     chatpubkey: res.chatpubkey,
     chatpubkeyId: res.chatpubkeyId,
   }

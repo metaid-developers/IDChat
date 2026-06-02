@@ -239,6 +239,7 @@ watch(
     <div
       v-show="
         currentSrc &&
+          !shouldShowInitialsFallback &&
           ((hasError && hasStartedLoading) || (!isFirstLoad && hasStartedLoading && !isLoaded))
       "
       class="flex items-center justify-center overflow-hidden"
@@ -271,7 +272,7 @@ watch(
 
     <!-- 真实图片 - 只有加载成功后才显示 -->
     <img
-      v-show="isLoaded && !hasError"
+      v-show="currentSrc && isLoaded && !hasError"
       :src="currentSrc"
       :alt="alt"
       class=" object-cover"
@@ -283,29 +284,24 @@ watch(
 
     <!-- 隐藏的图片预加载 - 用于检测加载状态 -->
     <img
-      v-if="currentSrc && !isLoaded"
+      v-if="currentSrc && !isLoaded && !hasError"
       :src="currentSrc"
       style="display: none;"
       @load="handleLoad"
       @error="handleError"
     />
 
-    <!-- 无图片源的情况 -->
-    <div
-      v-if="!props.src && props.alt"
-      class="flex items-center justify-center dark:bg-gray-800 rounded-xl p-4"
+    <!-- 无图片源或最终加载失败时，复用用户名首两位兜底头像 -->
+    <UserAvatar
+      v-if="shouldShowInitialsFallback"
+      :image="''"
+      :name="fallbackName"
+      :meta-name="''"
+      is-custom
       :class="customClass || 'min-h-[120px]'"
-    >
-      <UserAvatar
-        :image="''"
-        :name="props.alt"
-        :meta-name="''"
-        is-custom
-        :class="customClass"
-        :disabled="true"
-        :size="props.size || 48"
-      />
-    </div>
+      :disabled="true"
+      :size="props.size || 48"
+    />
   </div>
 </template>
 
@@ -352,6 +348,12 @@ const currentSrc = computed(() => {
   }
 
   return httpUrl
+})
+
+const fallbackName = computed(() => props.alt?.trim() || 'Bot')
+
+const shouldShowInitialsFallback = computed(() => {
+  return !props.src || hasError.value
 })
 
 // 图片开始加载

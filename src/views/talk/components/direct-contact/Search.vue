@@ -1,9 +1,28 @@
 <template>
   <div class="bg-inherit p-3 pr-3.5">
-    <div class="flex items-center space-x-3 max-w-full">
-      <div class="bg-white dark:bg-gray-950 grow p-2 rounded-full relative flex items-center h-9">
+    <div class="flex max-w-full items-center gap-3">
+      <button
+        v-if="userStore.isAuthorized"
+        class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors"
+        :class="[
+          props.isOnlineBotPanelOpen
+            ? 'bg-gray-200 text-dark-800 dark:bg-gray-900 dark:text-gray-100'
+            : 'text-dark-400 hover:bg-gray-200 hover:text-dark-800 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-gray-100',
+        ]"
+        type="button"
+        @click="openOnlineBotPanel"
+      >
+        <span
+          class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.14)]"
+          aria-hidden="true"
+        ></span>
+        在线Bot
+      </button>
+      <div
+        class="relative flex h-9 min-w-0 grow items-center rounded-full bg-white p-2 dark:bg-gray-950"
+      >
         <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-          <Icon name="search" class="w-3.5 h-3.5 text-dark-250" />
+          <SearchIcon class="h-3.5 w-3.5 text-dark-250" />
         </span>
         <input
           type="text"
@@ -41,13 +60,22 @@ export default defineComponent({
 
 <script lang="ts" setup>
 import { useUserStore } from '@/stores/user'
-import { ref, watch, computed } from 'vue'
+import { ref } from 'vue'
 import { useLayoutStore } from '@/stores/layout'
+import { Search as SearchIcon } from '@element-plus/icons-vue'
+
+interface Props {
+  isOnlineBotPanelOpen?: boolean
+}
 
 interface Emits {
   (e: 'open-search'): void
+  (e: 'open-online-bots'): void
 }
 
+const props = withDefaults(defineProps<Props>(), {
+  isOnlineBotPanelOpen: false,
+})
 const emit = defineEmits<Emits>()
 
 // const groupWhiteList = [
@@ -71,6 +99,10 @@ const handleSearch = () => {
 const openSearchModal = () => {
   console.log('Search clicked, emitting open-search event')
   emit('open-search')
+}
+
+const openOnlineBotPanel = () => {
+  emit('open-online-bots')
 }
 
 // const whiteList = computed(() => {
