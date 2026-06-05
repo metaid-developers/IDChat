@@ -17,8 +17,10 @@
 
       <div class="flex shrink-0 items-center">
         <UserAvatar
-          :image="activeChannel?.userInfo?.avatarImage"
+          :image="activeChannel?.userInfo?.avatar || activeChannel?.userInfo?.avatarImage"
           :meta-id="activeChannel?.id"
+          :global-meta-id="activeChannel?.userInfo?.globalMetaId || activeChannel?.id"
+          :address="activeChannel?.userInfo?.address || ''"
           :name="activeChannel?.userInfo?.name"
           :meta-name="''"
           class="w-8 h-8 shrink-0 select-none hidden lg:block mr-2"

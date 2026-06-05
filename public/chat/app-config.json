@@ -15,7 +15,7 @@
     "metaFSBaseURL": "https://file.metaid.io",
     "paths": {
       "fileApi": "/metafile-indexer/api/v1/files",
-      "avatarContentApi": "/metafile-indexer/thumbnail",
+      "avatarContentApi": "/metafile-indexer/content",
       "metafileIndexerApi": "/metafile-indexer/api",
       "chatApi": "/chat-api",
       "chatNotify": "",

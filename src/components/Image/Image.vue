@@ -23,10 +23,12 @@
 import { ref, watch } from 'vue'
 import DefaultAvatar from '@/assets/images/default_avatar.png'
 import DefaultMetafile from '@/assets/images/release_add_img.svg?url'
+import { VITE_AVATAR_CONTENT_API } from '@/config/app-config'
+import { buildUserAvatarContentUrl, normalizeImageSource } from '@/utils/avatar'
 // import 'lazysizes'
 
 interface Props {
-  src: string
+  src?: string
   customClass?: string
   width?: number
   type?: 'metafile' | 'metaId'
@@ -65,7 +67,26 @@ watch(
 
 async function getImageUrl() {
   isSkeleton.value = true
-  const src = props.src
+  const src = normalizeImageSource(props.src)
+
+  if (src.startsWith('data:image/') || src.startsWith('blob:')) {
+    url.value = src
+    isSkeleton.value = false
+    return
+  }
+
+  if (!src) {
+    url.value = props.type === 'metafile' ? Default.metafile : Default.metaId
+    isSkeleton.value = false
+    return
+  }
+
+  if (props.type === 'metaId') {
+    const resolvedAvatarUrl = buildUserAvatarContentUrl(VITE_AVATAR_CONTENT_API(), src, props.width)
+    url.value = resolvedAvatarUrl || src
+    isSkeleton.value = false
+    return
+  }
 
   try {
     const { DB } = await import('@/utils/db')
@@ -91,9 +112,10 @@ const handleLoad = (event: Event) => {
 }
 
 function fail(event: Event) {
-  const img = event.target as HTMLImageElement
-  img.src = props.type === 'metafile' ? Default.metafile : Default.metaId
-  img.onerror = null // 防止闪图
+  const fallbackUrl = props.type === 'metafile' ? Default.metafile : Default.metaId
+  if (url.value !== fallbackUrl) {
+    url.value = fallbackUrl
+  }
   emit('error', event)
 }
 

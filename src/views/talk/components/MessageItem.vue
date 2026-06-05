@@ -46,17 +46,21 @@
       <!-- quote -->
       <MessageItemQuote
         v-if="message.replyInfo"
-        :quote="{ avatarImage: message.replyInfo?.userInfo?.avatar,
-        index: message.replyInfo?.index,
-    metaName: '',
-    
-    channelId:message?.replyInfo?.channelId || '',
-    metaId: message.replyInfo?.metaId,
-    nickName: message.replyInfo?.userInfo?.name,
-    protocol: message.replyInfo?.protocol,
-    content: message.replyInfo?.content,
-    encryption: message.replyInfo?.encryption,
-    timestamp: message.replyInfo!.timestamp}"
+        :quote="{
+          avatarImage: resolveUserAvatarSource(
+            message.replyInfo?.userInfo?.avatar,
+            message.replyInfo?.userInfo?.avatarImage
+          ),
+          index: message.replyInfo?.index,
+          metaName: '',
+          channelId: message?.replyInfo?.channelId || '',
+          metaId: message.replyInfo?.metaId,
+          nickName: message.replyInfo?.userInfo?.name,
+          protocol: message.replyInfo?.protocol,
+          content: message.replyInfo?.content,
+          encryption: message.replyInfo?.encryption,
+          timestamp: message.replyInfo!.timestamp,
+        }"
         v-bind="$attrs"
         @toTimeStamp="handlerScrollIndex"
         :isMyMessage="(isMyMessage as boolean)"
@@ -67,13 +71,15 @@
         <GroupUserInfoPopover :message="props.message" :group-id="groupIdForActions">
           <template #reference>
             <UserAvatar
-              :image="props.message.userInfo?.avatar"
+              :image="messageUserAvatar"
               :name="
                 props.message.userInfo?.name
                   ? props.message.userInfo?.name
                   : props.message.userInfo?.metaid.slice(0, 6)
               "
-              :meta-id="props.message.userInfo?.metaid"
+              :meta-id="messageUserMetaId"
+              :global-meta-id="messageUserGlobalMetaId"
+              :address="messageUserAddress"
               :meta-name="''"
               class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none cursor-pointer"
             />
@@ -565,6 +571,7 @@ import UnreadMessagesDivider from './UnreadMessagesDivider.vue'
 import { VideoPlay } from '@element-plus/icons-vue'
 import TalkImagePreview from './ImagePreview.vue'
 import GroupUserInfoPopover from './GroupUserInfoPopover.vue'
+import { resolveUserAvatarSource } from '@/utils/avatar'
 
 const ProtocolCard = defineAsyncComponent(() => import('@/components/ProtocolCard/index.vue'))
 const CardMsgCard = defineAsyncComponent(() => import('@/components/CardMsgCard/index.vue'))
@@ -786,6 +793,20 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     isSubChannelMsg:false
 })
+
+const messageUserAvatar = computed(() =>
+  resolveUserAvatarSource(props.message.userInfo?.avatar, props.message.userInfo?.avatarImage)
+)
+
+const messageUserMetaId = computed(() => props.message.userInfo?.metaid || props.message.metaId)
+const messageUserGlobalMetaId = computed(
+  () =>
+    props.message.userInfo?.globalMetaId ||
+    props.message.globalMetaId ||
+    props.message.fromGlobalMetaId ||
+    props.message.toGlobalMetaId
+)
+const messageUserAddress = computed(() => props.message.userInfo?.address || props.message.address)
 
 
 

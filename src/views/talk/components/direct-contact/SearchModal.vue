@@ -86,7 +86,24 @@
                     <div
                       class="rounded-3xl w-12 h-12 shrink-0 relative bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
                     >
+                      <UserAvatar
+                        v-if="contact.type === 'private'"
+                        :image="resolveUserAvatarSource(contact?.avatar)"
+                        :name="contact?.name"
+                        :meta-id="contact?.targetMetaId || contact?.id"
+                        :global-meta-id="
+                          contact?.serverData?.userInfo?.globalMetaId ||
+                            contact?.targetMetaId ||
+                            contact?.id
+                        "
+                        :address="contact?.serverData?.userInfo?.address || ''"
+                        :meta-name="''"
+                        :disabled="true"
+                        :image-class="'w-12 h-12 rounded-full'"
+                        class="w-12 h-12"
+                      />
                       <ChatIcon
+                        v-else
                         :src="contact?.avatar || ''"
                         :alt="contact?.name"
                         :customClass="'w-12 h-12 rounded-full'"
@@ -123,7 +140,20 @@
                     <div
                       class="rounded-3xl w-12 h-12 shrink-0 relative bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
                     >
+                      <UserAvatar
+                        v-if="group.type === 'user'"
+                        :image="resolveUserAvatarSource(group?.avatar)"
+                        :name="group?.userName || group?.groupName"
+                        :meta-id="group?.globalMetaId || group?.metaId"
+                        :global-meta-id="group?.globalMetaId"
+                        :address="group?.address || ''"
+                        :meta-name="''"
+                        :disabled="true"
+                        :image-class="'w-12 h-12 rounded-full'"
+                        class="w-12 h-12"
+                      />
                       <ChatIcon
+                        v-else
                         :src="group?.groupIcon || group?.avatar || ''"
                         :alt="group?.groupName || group?.userName"
                         :customClass="'w-12 h-12 rounded-full'"
@@ -201,7 +231,24 @@
                   <div
                     class="rounded-3xl w-12 h-12 shrink-0 relative bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
                   >
+                    <UserAvatar
+                      v-if="contact.type === 'private'"
+                      :image="resolveUserAvatarSource(contact?.avatar)"
+                      :name="contact?.name"
+                      :meta-id="contact?.targetMetaId || contact?.id"
+                      :global-meta-id="
+                        contact?.serverData?.userInfo?.globalMetaId ||
+                          contact?.targetMetaId ||
+                          contact?.id
+                      "
+                      :address="contact?.serverData?.userInfo?.address || ''"
+                      :meta-name="''"
+                      :disabled="true"
+                      :image-class="'w-12 h-12 rounded-full'"
+                      class="w-12 h-12"
+                    />
                     <ChatIcon
+                      v-else
                       :src="contact?.avatar || ''"
                       :alt="contact?.name"
                       :customClass="'w-12 h-12 rounded-full'"
@@ -231,6 +278,7 @@ import { storeToRefs } from 'pinia'
 import { useTalkStore } from '@/stores/talk'
 import { useI18n } from 'vue-i18n'
 import ChatIcon from '@/components/ChatIcon/ChatIcon.vue'
+import { resolveUserAvatarSource } from '@/utils/avatar'
 import { router } from '@/router'
 import { useLayoutStore } from '@/stores/layout'
 import { GetUserEcdhPubkeyForPrivateChat } from '@/api/talk'
@@ -444,6 +492,7 @@ export default defineComponent({
       selectContact,
       selectRemoteGroup,
       closeModal,
+      resolveUserAvatarSource,
       i18n,
       ecdhsStore,
     }

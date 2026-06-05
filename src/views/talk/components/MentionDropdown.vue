@@ -28,22 +28,17 @@
           @click="selectUser(user)"
           @mouseenter="selectedIndex = index"
         >
-          <!-- 头像：优先显示图片，加载失败或无头像时显示默认头像 -->
-          <img
-            v-if="
-              user.userInfo?.avatarImage && !avatarErrorMap[user.metaId || user.userInfo?.metaid]
-            "
-            :src="user.userInfo.avatarImage"
-            alt=""
-            class="w-8 h-8 rounded-full mr-3 object-cover"
-            @error="handleAvatarError(user.metaId || user.userInfo?.metaid)"
+          <UserAvatar
+            :image="resolveUserAvatarSource(user.userInfo?.avatar, user.userInfo?.avatarImage)"
+            :name="user.userInfo?.name || 'Unknown'"
+            :meta-id="user.userInfo?.metaid || user.metaId"
+            :global-meta-id="user.userInfo?.globalMetaId || user.globalMetaId"
+            :address="user.userInfo?.address || user.address"
+            :meta-name="''"
+            :disabled="true"
+            :image-class="'w-8 h-8 rounded-full object-cover'"
+            class="w-8 h-8 rounded-full mr-3"
           />
-          <div
-            v-else
-            class="w-8 h-8 rounded-full mr-3 bg-primary flex items-center justify-center text-dark-800 font-semibold"
-          >
-            {{ user.userInfo?.name?.charAt(0).toUpperCase() || 'U' }}
-          </div>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-dark-800 dark:text-gray-100 truncate">
               {{ user.userInfo?.name || 'Unknown' }}
@@ -76,6 +71,8 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
+import UserAvatar from '@/components/UserAvatar/UserAvatar.vue'
+import { resolveUserAvatarSource } from '@/utils/avatar'
 
 export interface MentionUser {
   metaId: string
@@ -144,21 +141,11 @@ const dropdownStyle = computed(() => {
   return style
 })
 
-// 头像加载错误记录
-const avatarErrorMap = ref<Record<string, boolean>>({})
-
-// 处理头像加载错误
-const handleAvatarError = (metaId: string) => {
-  avatarErrorMap.value[metaId] = true
-}
-
 // 监听用户列表变化，重置选中索引和头像错误记录
 watch(
   () => props.users,
   () => {
     selectedIndex.value = 0
-    // 清空头像错误记录，因为用户列表已更新
-    avatarErrorMap.value = {}
   }
 )
 

@@ -62,7 +62,9 @@
     <div class="flex" :class="[isMyMessage ? 'flex-row-reverse' : '']">
       <UserAvatar
         :image="messageAvatarImage"
-        :meta-id="'undefined'"
+        :meta-id="messageAvatarMetaId"
+        :global-meta-id="messageAvatarGlobalMetaId"
+        :address="messageAvatarAddress"
         :name="message?.fromUserInfo?.name"
         :meta-name="''"
         class="w-10 h-10 lg:w-13.5 lg:h-13.5 shrink-0 select-none"
@@ -1668,6 +1670,21 @@ const messageAvatarImage = computed(() => {
 
   return activeChannel.value?.avatar
 })
+
+const messageAvatarMetaId = computed(
+  () => props.message.fromUserInfo?.metaid || props.message.userInfo?.metaid || props.message.metaId || activeChannel.value?.id
+)
+const messageAvatarGlobalMetaId = computed(
+  () =>
+    props.message.fromUserInfo?.globalMetaId ||
+    props.message.userInfo?.globalMetaId ||
+    props.message.globalMetaId ||
+    props.message.fromGlobalMetaId ||
+    activeChannel.value?.id
+)
+const messageAvatarAddress = computed(
+  () => props.message.fromUserInfo?.address || props.message.userInfo?.address || props.message.address || ''
+)
 
 const nftPrice = computed(() => {
   if (props.message.data?.sellUtxo?.price) {

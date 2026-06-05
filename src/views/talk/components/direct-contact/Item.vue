@@ -5,7 +5,20 @@
     @click="switchChannel"
   >
     <div class="rounded-3xl w-12 h-12 shrink-0  relative">
+      <UserAvatar
+        v-if="isPrivateChannel"
+        :image="sessionAvatarSource"
+        :name="session?.name || ''"
+        :meta-id="sessionAvatarMetaId"
+        :global-meta-id="sessionAvatarGlobalMetaId"
+        :address="sessionAvatarAddress"
+        :meta-name="''"
+        :disabled="true"
+        :image-class="'w-12 h-12 rounded-full'"
+        class="w-12 h-12"
+      />
       <ChatIcon
+        v-else
         :src="session?.avatar || ''"
         :alt="session?.name"
         :customClass="'w-12 h-12 rounded-full'"
@@ -103,6 +116,7 @@ import { containsString } from '@/utils/light'
 import { NodeName, IsEncrypt, ChatType, ChannelType } from '@/enum'
 import { storeToRefs } from 'pinia'
 import { useEcdhsStore } from '@/stores/ecdh'
+import { resolveUserAvatarSource } from '@/utils/avatar'
 const i18n = useI18n()
 
 const layout = useLayoutStore()
@@ -111,6 +125,21 @@ const route = useRoute()
 
 const imageType = ['jpg', 'jpeg', 'png', 'gif']
 const props = defineProps(['session'])
+const isPrivateChannel = computed(() => props.session?.type === 'private')
+const sessionAvatarSource = computed(() =>
+  resolveUserAvatarSource(
+    props.session?.serverData?.userInfo?.avatar,
+    props.session?.avatar,
+    props.session?.serverData?.userInfo?.avatarImage
+  )
+)
+const sessionAvatarMetaId = computed(
+  () => props.session?.serverData?.userInfo?.metaid || props.session?.targetMetaId || props.session?.id
+)
+const sessionAvatarGlobalMetaId = computed(
+  () => props.session?.serverData?.userInfo?.globalMetaId || props.session?.targetMetaId || props.session?.id
+)
+const sessionAvatarAddress = computed(() => props.session?.serverData?.userInfo?.address || '')
 
 const simpleTalkStore = useSimpleTalkStore()
 const unReadCount = (session: SimpleChannel) => {

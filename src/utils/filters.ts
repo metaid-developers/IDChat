@@ -6,6 +6,7 @@ import { router } from '@/router'
 import utc from 'dayjs/plugin/utc'
 import { Chains } from '@/enum'
 import { VITE_FILE_API, VITE_AVATAR_CONTENT_API } from '@/config/app-config'
+import { buildUserAvatarContentUrl } from '@/utils/avatar'
 dayjs.extend(utc)
 
 export const ellipsisMiddle = (str: string, frontKeep = 20, backKeep = 5) => {
@@ -162,16 +163,7 @@ export function metafile(metafile: string, width = 235, type: 'metafile' | 'meta
     // ETH 图片地址
     path = '/metafile/eth/ipfs/'
   } else if (type === 'metaId') {
-    // 用户头像使用 avatarContentApi
-    // 处理 /content/xxx 格式，提取 pinId
-    let pinId = metafile
-    if (metafile.startsWith('/content/')) {
-      pinId = metafile.replace('/content/', '')
-    }
-    const avatarUrl = `${VITE_AVATAR_CONTENT_API()}/${pinId}`
-    return width === -1
-      ? avatarUrl
-      : `${avatarUrl}?x-oss-process=image/auto-orient,1/quality,q_80/resize,m_lfit,w_${width}`
+    return buildUserAvatarContentUrl(VITE_AVATAR_CONTENT_API(), metafile, width)
   } else if (metafile.indexOf('sensible://') !== -1) {
     metafile = metafile.replace('sensible://', 'sensible/')
     path = '/metafile/'

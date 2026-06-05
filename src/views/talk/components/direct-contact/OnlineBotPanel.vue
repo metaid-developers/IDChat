@@ -68,11 +68,15 @@
             @click="emit('select', bot)"
           >
             <div class="h-12 w-12 shrink-0 rounded-full">
-              <ChatIcon
-                :src="bot.avatar"
-                :alt="bot.name"
-                :customClass="'w-12 h-12 rounded-full'"
-                :maxRetries="0"
+              <UserAvatar
+                :image="bot.avatar"
+                :name="bot.name"
+                :meta-id="bot.globalMetaId"
+                :global-meta-id="bot.globalMetaId"
+                :meta-name="''"
+                :disabled="true"
+                :image-class="'w-12 h-12 rounded-full'"
+                class="w-12 h-12"
               />
             </div>
             <div class="flex min-w-0 flex-1 flex-col justify-center">

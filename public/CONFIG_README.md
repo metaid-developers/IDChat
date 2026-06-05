@@ -30,7 +30,7 @@
 | metaSoBaseURL            | MetaSo 服务基础 URL      |
 | metaFSBaseURL            | MetaFS 文件服务 URL      |
 | paths.fileApi            | 文件 API 路径            |
-| paths.avatarContentApi   | 头像缩略图 API 路径      |
+| paths.avatarContentApi   | 头像内容 API 路径        |
 | paths.metafileIndexerApi | Metafile 索引器 API 路径 |
 | paths.chatApi            | 聊天 API 路径            |
 | paths.chatNotify         | 聊天通知服务路径         |

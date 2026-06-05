@@ -13,6 +13,10 @@
             <UserAvatar
               :image="activeChannel?.avatar || ''"
               :meta-id="activeChannel?.id"
+              :global-meta-id="
+                activeChannel?.serverData?.userInfo?.globalMetaId || activeChannel?.id
+              "
+              :address="activeChannel?.serverData?.userInfo?.address || ''"
               :name="activeChannel?.name"
               :meta-name="''"
               class="lg:w-8 lg:h-8 shrink-0 select-none w-6 h-6 lg:block mr-2"
