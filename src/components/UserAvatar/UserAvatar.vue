@@ -5,7 +5,6 @@
     :type="type"
     :default-image="DefaultAvatar"
     :custom-class="customClass"
-    @error="handleAvatarError"
     ref="AvatarRef"
     v-if="!isCustom"
   />
@@ -23,18 +22,10 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import DefaultAvatar from '@/assets/images/default_user.png'
-import { getUserInfoByAddress, getUserInfoByGlobalMetaId, getUserInfoByMetaId } from '@/api/man'
-import {
-  resolveCurrentUserAvatarSource,
-  resolveUserAvatarFromInfo,
-  resolveUserAvatarLookupCandidates,
-  resolveUserAvatarSource,
-  shouldHydrateUserAvatarSource,
-  type UserAvatarLookupCandidate,
-} from '@/utils/avatar'
+import { resolveUserAvatarSource } from '@/utils/avatar'
 
 const router = useRouter()
 // const userCardWarpId = `user-card-warp-${v1()}`
@@ -66,75 +57,7 @@ const customClass = computed(() => {
   return props.imageClass ? props.imageClass + ' avatar-rounded' : 'avatar-rounded'
 })
 
-const localImageSource = computed(() => resolveUserAvatarSource(props.image))
-const hydratedAvatarSource = ref('')
-const avatarLoadError = ref(false)
-let hydrateRunId = 0
-
-const lookupCandidates = computed(() =>
-  resolveUserAvatarLookupCandidates({
-    globalMetaId: props.globalMetaId || props.metaId,
-    metaid: props.metaId,
-    address: props.address,
-  })
-)
-
-const resolvedImage = computed(() =>
-  resolveCurrentUserAvatarSource(
-    hydratedAvatarSource.value ? { avatar: hydratedAvatarSource.value } : null,
-    localImageSource.value ? { avatar: localImageSource.value } : null
-  )
-)
-
-const fetchAvatarByCandidate = async (
-  candidate: UserAvatarLookupCandidate
-): Promise<string> => {
-  if (candidate.type === 'globalMetaId') {
-    return resolveUserAvatarFromInfo(await getUserInfoByGlobalMetaId(candidate.value))
-  }
-
-  if (candidate.type === 'metaId') {
-    return resolveUserAvatarFromInfo(await getUserInfoByMetaId(candidate.value))
-  }
-
-  return resolveUserAvatarFromInfo(await getUserInfoByAddress(candidate.value))
-}
-
-const handleAvatarError = () => {
-  if (avatarLoadError.value) return
-  avatarLoadError.value = true
-}
-
-watch(localImageSource, () => {
-  avatarLoadError.value = false
-})
-
-watch(
-  [lookupCandidates, localImageSource, avatarLoadError],
-  async ([candidates, localSource, hasLoadError]) => {
-    const runId = ++hydrateRunId
-    hydratedAvatarSource.value = ''
-
-    if (!shouldHydrateUserAvatarSource(localSource, candidates, hasLoadError)) return
-
-    for (const candidate of candidates) {
-      try {
-        const avatar = await fetchAvatarByCandidate(candidate)
-        if (runId !== hydrateRunId) return
-        if (avatar) {
-          hydratedAvatarSource.value = avatar
-          return
-        }
-      } catch (error) {
-        if (runId !== hydrateRunId) return
-        if (import.meta.env.DEV) {
-          console.warn('Failed to hydrate user avatar:', candidate, error)
-        }
-      }
-    }
-  },
-  { immediate: true }
-)
+const resolvedImage = computed(() => resolveUserAvatarSource(props.image))
 
 const customAvatar = () => {
   if (props.isCustom && props.name) {
