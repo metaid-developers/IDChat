@@ -12,8 +12,13 @@ import { NodeName } from '@/enum'
 import { getMyBlockChatList} from "@/api/chat-notify";
 import { SubChannel } from '@/@types/talk'
 import { useRootStore } from './root'
-import { VITE_AVATAR_CONTENT_API, VITE_FILE_API } from '@/config/app-config'
+import { VITE_FILE_API } from '@/config/app-config'
 import { createPerfSpan } from '@/utils/perf-monitor'
+import {
+  getAvatarProfileByGlobalMetaId,
+  mergeAvatarProfileIntoUserInfo,
+} from '@/api/avatar-profile'
+import { resolveUserAvatarSource } from '@/utils/avatar'
 
 const ENABLE_STARTUP_HISTORY_BACKFILL =
   import.meta.env.VITE_CHAT_ENABLE_STARTUP_HISTORY_BACKFILL === 'true'
@@ -34,6 +39,7 @@ const GROUP_PERMISSION_FETCH_DELAY_MS = Number(
   import.meta.env.VITE_CHAT_GROUP_PERMISSION_FETCH_DELAY_MS || '1200'
 )
 const DEFAULT_SERVER_FETCH_SIZE = Number(import.meta.env.VITE_CHAT_SERVER_FETCH_SIZE || '30')
+const PRIVATE_PROFILE_LOOKUP_CONCURRENCY = 6
 
 const tryCreateNode = async (node: any, mockId?: string) => {
   const talkUtils = await import('@/utils/talk')
@@ -2639,7 +2645,8 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         }
 
         // 转换数据格式
-        const serverChannels = this.transformLatestChatInfo(allChannelsData)
+        const normalizedChannelsData = await this.enrichPrivateChatUserProfiles(allChannelsData)
+        const serverChannels = this.transformLatestChatInfo(normalizedChannelsData)
         mergedChannels = serverChannels.length
         console.log(`✅ 转换为 ${serverChannels.length} 个频道数据`)
 
@@ -2689,6 +2696,47 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
         endSpan({ error: error?.message || String(error) })
         throw error
       }
+    },
+
+    /**
+     * 用当前 globalMetaId profile 修正私聊 userInfo，避免聊天列表沿用旧 avatar pin。
+     */
+    async enrichPrivateChatUserProfiles(serverChannels: any[]): Promise<any[]> {
+      if (!Array.isArray(serverChannels) || serverChannels.length === 0) return serverChannels
+
+      const normalizedChannels = serverChannels.map(channel => ({ ...channel }))
+      const privateChannelTargets = normalizedChannels
+        .map((channel, index) => ({
+          channel,
+          index,
+          globalMetaId: String(channel?.userInfo?.globalMetaId || channel?.targetMetaId || '').trim(),
+        }))
+        .filter(item => item.channel?.type === '2' && item.globalMetaId)
+
+      if (!privateChannelTargets.length) return normalizedChannels
+
+      let nextIndex = 0
+      const workerCount = Math.min(
+        PRIVATE_PROFILE_LOOKUP_CONCURRENCY,
+        privateChannelTargets.length
+      )
+
+      await Promise.all(
+        Array.from({ length: workerCount }, async () => {
+          while (nextIndex < privateChannelTargets.length) {
+            const currentIndex = nextIndex
+            nextIndex += 1
+            const { channel, globalMetaId } = privateChannelTargets[currentIndex]
+            const profile = await getAvatarProfileByGlobalMetaId(globalMetaId)
+            channel.userInfo = mergeAvatarProfileIntoUserInfo(
+              { ...(channel.userInfo || {}), globalMetaId },
+              profile
+            )
+          }
+        })
+      )
+
+      return normalizedChannels
     },
 
     /**
@@ -2946,7 +2994,7 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
             id: targetGlobalMetaId,
             type: 'private' as ChatType,
             name: userInfo?.name || '未知用户',
-            avatar: userInfo?.avatarImage.length>64?userInfo?.avatarImage.replace('/content','/thumbnail'):'',
+            avatar: resolveUserAvatarSource(userInfo?.avatar, userInfo?.avatarImage),
             members: [this.selfMetaId, targetGlobalMetaId],
             createdBy: this.selfMetaId,
             createdAt: channel.timestamp || Date.now(),
@@ -5493,7 +5541,10 @@ export const useSimpleTalkStore = defineStore('simple-talk', {
           unreadCount: 0,
           lastReadIndex: 0, // 显式初始化已读索引为 0
           targetMetaId: targetGlobalMetaId,
-          publicKeyStr: userInfo.chatPublicKey
+          publicKeyStr: userInfo.chatPublicKey,
+          serverData: {
+            userInfo,
+          },
         }
 
         this.channels.unshift(newChat)

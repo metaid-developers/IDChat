@@ -1,12 +1,11 @@
 import { VITE_CHAT_API } from '@/config/app-config'
-import { getUserInfoByGlobalMetaId, type UserInfo } from '@/api/man'
+import { getAvatarProfileByGlobalMetaId } from '@/api/avatar-profile'
 import { resolveCurrentUserAvatarSource, resolveUserAvatarFromInfo } from '@/utils/avatar'
 
 export const ONLINE_BOT_PAGE_SIZE = 100
 
 const LLM_BIO_PREFIX = 'LLM：'
 const BIO_LOOKUP_CONCURRENCY = 8
-const BOT_PROFILE_CACHE_TTL_MS = 5 * 60 * 1000
 
 export interface OnlineBot {
   globalMetaId: string
@@ -67,25 +66,10 @@ interface OnlineUsersResponse {
   processingTime?: number
 }
 
-interface BotProfileSnapshot {
-  avatar: string
-  llmBio: string
-}
-
-interface BotProfileCacheEntry {
-  value: BotProfileSnapshot
-  expiresAt: number
-}
-
-const botProfileCache = new Map<string, BotProfileCacheEntry>()
-const botProfileInFlight = new Map<string, Promise<BotProfileSnapshot>>()
-
 const compactGlobalMetaId = (globalMetaId: string) => {
   if (globalMetaId.length <= 12) return globalMetaId
   return `${globalMetaId.slice(0, 8)}...${globalMetaId.slice(-4)}`
 }
-
-const normalizeGlobalMetaId = (globalMetaId: string): string => String(globalMetaId || '').trim()
 
 const findRecordValue = (record: Record<string, unknown>, key: string): unknown => {
   if (Object.prototype.hasOwnProperty.call(record, key)) return record[key]
@@ -161,56 +145,6 @@ const normalizeLlmBio = (bio: unknown): string => {
   return provider ? `${LLM_BIO_PREFIX}${provider}` : ''
 }
 
-const normalizeBotProfileSnapshot = (userInfo?: UserInfo | null): BotProfileSnapshot => {
-  return {
-    avatar: resolveUserAvatarFromInfo(userInfo),
-    llmBio: normalizeLlmBio(userInfo?.bio),
-  }
-}
-
-const getCachedBotProfile = (globalMetaId: string): BotProfileSnapshot | null => {
-  const entry = botProfileCache.get(globalMetaId)
-  if (!entry) return null
-  if (entry.expiresAt <= Date.now()) {
-    botProfileCache.delete(globalMetaId)
-    return null
-  }
-
-  return entry.value
-}
-
-const setCachedBotProfile = (globalMetaId: string, value: BotProfileSnapshot): void => {
-  botProfileCache.set(globalMetaId, {
-    value,
-    expiresAt: Date.now() + BOT_PROFILE_CACHE_TTL_MS,
-  })
-}
-
-const getBotProfileByGlobalMetaId = async (globalMetaId: string): Promise<BotProfileSnapshot> => {
-  const key = normalizeGlobalMetaId(globalMetaId)
-  if (!key) return normalizeBotProfileSnapshot()
-
-  const cachedValue = getCachedBotProfile(key)
-  if (cachedValue !== null) return cachedValue
-
-  const inFlight = botProfileInFlight.get(key)
-  if (inFlight) return inFlight
-
-  const promise = getUserInfoByGlobalMetaId(key)
-    .then(userInfo => normalizeBotProfileSnapshot(userInfo))
-    .catch(() => normalizeBotProfileSnapshot())
-    .then(value => {
-      setCachedBotProfile(key, value)
-      return value
-    })
-    .finally(() => {
-      botProfileInFlight.delete(key)
-    })
-
-  botProfileInFlight.set(key, promise)
-  return promise
-}
-
 const isBotEligible = (
   globalMetaId: string,
   userInfo?: OnlineUserInfo
@@ -240,12 +174,12 @@ const normalizeOnlineBot = (item: OnlineUserItem): OnlineBot | null => {
 }
 
 const enrichOnlineBotProfile = async (bot: OnlineBot): Promise<OnlineBot> => {
-  const profile = await getBotProfileByGlobalMetaId(bot.globalMetaId)
+  const profile = await getAvatarProfileByGlobalMetaId(bot.globalMetaId)
 
   return {
     ...bot,
-    avatar: resolveCurrentUserAvatarSource({ avatar: profile.avatar }, { avatar: bot.avatar }),
-    bio: bot.bio.startsWith(LLM_BIO_PREFIX) ? bot.bio : profile.llmBio || bot.bio,
+    avatar: resolveCurrentUserAvatarSource(profile, { avatar: bot.avatar }),
+    bio: bot.bio.startsWith(LLM_BIO_PREFIX) ? bot.bio : normalizeLlmBio(profile?.bio) || bot.bio,
   }
 }
 

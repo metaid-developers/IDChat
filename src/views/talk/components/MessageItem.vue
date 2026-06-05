@@ -794,9 +794,60 @@ const props = withDefaults(defineProps<Props>(), {
     isSubChannelMsg:false
 })
 
-const messageUserAvatar = computed(() =>
-  resolveUserAvatarSource(props.message.userInfo?.avatar, props.message.userInfo?.avatarImage)
-)
+const normalizeAvatarIdentifier = (value?: string | null) => String(value || '').trim().toLowerCase()
+
+const activePrivateUserInfo = computed(() => {
+  const activeChannel = simpleTalk.activeChannel
+  return activeChannel?.type === 'private' ? activeChannel.serverData?.userInfo : null
+})
+
+const isMessageFromActivePrivatePeer = computed(() => {
+  const activeChannel = simpleTalk.activeChannel
+  const activeUserInfo = activePrivateUserInfo.value
+  if (activeChannel?.type !== 'private' || !activeUserInfo) return false
+
+  const peerIdentifiers = new Set(
+    [
+      activeUserInfo.globalMetaId,
+      activeChannel.targetMetaId,
+      activeChannel.id,
+      activeUserInfo.metaid,
+      activeUserInfo.address,
+    ]
+      .map(normalizeAvatarIdentifier)
+      .filter(Boolean)
+  )
+
+  const senderIdentifiers = new Set(
+    [
+      props.message.fromGlobalMetaId,
+      props.message.globalMetaId,
+      props.message.userInfo?.globalMetaId,
+      props.message.metaId,
+      props.message.userInfo?.metaid,
+      props.message.address,
+      props.message.userInfo?.address,
+    ]
+      .map(normalizeAvatarIdentifier)
+      .filter(Boolean)
+  )
+
+  for (const id of senderIdentifiers) {
+    if (peerIdentifiers.has(id)) return true
+  }
+
+  return false
+})
+
+const messageUserAvatar = computed(() => {
+  const activePrivateProfile = isMessageFromActivePrivatePeer.value ? activePrivateUserInfo.value : null
+  return resolveUserAvatarSource(
+    activePrivateProfile?.avatar,
+    props.message.userInfo?.avatar,
+    activePrivateProfile?.avatarImage,
+    props.message.userInfo?.avatarImage
+  )
+})
 
 const messageUserMetaId = computed(() => props.message.userInfo?.metaid || props.message.metaId)
 const messageUserGlobalMetaId = computed(
